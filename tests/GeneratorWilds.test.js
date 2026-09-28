@@ -20,8 +20,19 @@ test('every climate archetype fills the grid and marks landmarks on open ground'
       const gen = generateWilds(palette, size, mulberry32(seed), archetype);
       const label = `${archetype} ${seed}`;
       assert.equal(gen.tiles.length, size * size, `${label}: fully tiled`);
-      assert.equal(gen.entry, `${size / 2},${size - 1}`, `${label}: bottom-center entry`);
-      const landmarks = gen.tiles.filter((t) => t.metadata.poiType === 'landmark');
+      const [ex, ey] = gen.entry.split(',').map(Number);
+      assert.ok(
+        ex === 0 || ey === 0 || ex === size - 1 || ey === size - 1,
+        `${label}: border entry`,
+      );
+      const entryTile = gen.tiles.find((t) => t.id === gen.entry);
+      assert.ok(
+        gen.entry === `${size / 2},${size - 1}` || /\/road\//.test(String(entryTile?.overlayRef)),
+        `${label}: the entry is a road end or the bottom center`,
+      );
+      const landmarks = gen.tiles.filter(
+        (t) => t.metadata.poiType === 'landmark' && !t.imageRef.includes('/castle/'),
+      );
       assert.ok(landmarks.length >= 1, `${label}: has landmarks`);
       const spots = landmarks.map((t) => t.id.split(',').map(Number));
       for (const [i, [x, y]] of spots.entries()) {
@@ -145,4 +156,18 @@ test('a landmark with no marker art in the palette is skipped', () => {
   const terrain = wildTerrain(14, 'wilderness', mulberry32(4));
   const tiles = terrainTiles(bare, terrain, mulberry32(4));
   assert.deepEqual(placeLandmarks(bare, terrain, tiles, 2, mulberry32(4)), []);
+});
+
+test('a site with no marker art keeps its terrain tile', () => {
+  const bare = new TilePalette();
+  for (const type of ['settlement', 'port', 'castle', 'dungeon']) bare.entries.delete(type);
+  const gen = generateWilds(bare, 22, mulberry32(6));
+  assert.ok(gen.sites.length > 0);
+  for (const site of gen.sites) {
+    const tile = gen.tiles.find((t) => t.id === site.tileId);
+    assert.ok(
+      !tile?.imageRef.includes(`/${site.marker}/`),
+      `${site.tileId} shows no ${site.marker}`,
+    );
+  }
 });

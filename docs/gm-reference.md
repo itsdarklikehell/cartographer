@@ -207,6 +207,12 @@ the whole border. In each of them the north edge is colder than the south
 edge, rivers run down from the hills to water or to the map edge, and
 landmarks such as ruins, mines, and camps stand on open ground.
 
+An outdoor map also gets settlements, with farmland around them. A
+settlement beside open water is a port. A large map adds a keep, and a
+medium map or larger adds a hidden dungeon far from the settlements. Roads
+join the settlements and the keep, cross rivers on bridges, and leave the
+map at one edge, or at two edges on a huge or vast map.
+
 Each level of a multi-level dungeon becomes a child node. The stairs down
 of one level lead to the stairs up of the level below. The bottom level has
 no stairs down.

@@ -253,14 +253,14 @@ walk. Everything outside the interior set (terrain, markers, custom images)
 is `plain`.
 
 `Autotile.js` (`src/map/Autotile.js`) handles the detailed part of generated
-terrain. It picks connector overlay pieces, so that coastlines and rivers join
-up visually. It is pure and RNG-injected, like the palette:
+terrain. It picks connector overlay pieces, so that coastlines, rivers, and
+roads join up visually. It is pure and RNG-injected, like the palette:
 
 - `smoothCoastline` widens water until every shore outline matches a coast
   piece in the art set.
 - `coastOverlays` and `coastKind` name the shoreline overlay for each land
   cell along the water.
-- `ArmNetwork` records which edges of each cell a river crosses, and
+- `ArmNetwork` records which edges of each cell a river or a road crosses, and
   `connectorKind` names the piece for a set of edges. A network stores edges,
   not covered cells. Two rivers that run side by side then stay two rivers,
   because a piece picked from the neighbor cells would join them.
@@ -300,9 +300,43 @@ leaves the map, or reaches another river. A river that meets another river
 joins it as a tee. A river with no lower ground left ends in a pond, and the
 pond cell becomes water.
 
-The generator archetypes build on these helpers. The climate archetypes are
-in `src/map/GeneratorWilds.js` and the town in `src/map/GeneratorTown.js`,
-both dispatched from `MapGenerator`. The dungeon and the castle are in
+### Sites and roads
+
+After the rivers, `src/map/GeneratorSites.js` places the sites of an
+outdoor map. A site is a place that people built: a settlement, a keep, or
+a dungeon. Each site marks one tile with a marker and names the archetype
+that its own map would have (`town`, `castle`, or `dungeon`). `siteCounts`
+sets how many of each a map gets, from one settlement on a small map to
+five settlements, a keep, and a dungeon on a vast map.
+
+A settlement prefers grass near a river or a lake. A settlement with at
+least four water cells within two cells of it becomes a port. The keep
+prefers the foot of the hills, and the dungeon stands as far from the
+settlements as it can. No site stands on a river, on a shoreline, or within
+two cells of the border. The marker then hides no overlay, and a road can
+reach the site from every side. Grass around each settlement turns into
+farmland at random.
+
+`src/map/GeneratorRoads.js` routes roads with an A* search. Each terrain
+type has a step cost in `ROAD_COST`, and a type that is not in the table,
+such as water or mountain, takes no road. A step along an existing road is
+cheap, so a new road joins the old one instead of running beside it. A
+road crosses a river only over a straight channel, and it leaves the river
+cell in the direction it entered, because the art has only the `bridge-h`
+and `bridge-v` pieces. For this rule the search state is a cell plus the
+direction of entry.
+
+`connectSites` joins the settlements and the keep as a minimum spanning
+tree. Then it runs one road off the map edge, and a map of 32 cells or more
+gets a second exit far from the first. The dungeon gets no road. The first
+exit becomes the entry of the map. A map with no exit, such as an island
+with its whole border under water, enters at the bottom-center border tile.
+
+The generator archetypes build on these helpers, and `MapGenerator`
+dispatches to them. The climate archetypes are in
+`src/map/GeneratorWilds.js`, with their sites and roads in
+`src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
+`src/map/GeneratorTown.js`. The dungeon and the castle are in
 `src/map/GeneratorInteriors.js`. The example world in
 `campaign/ExampleWorld.js` uses them too.
 

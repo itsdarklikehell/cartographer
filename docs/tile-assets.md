@@ -198,3 +198,21 @@ without its own art has a placeholder here.
 | `snow-hills/snow-hills-1.svg` | Cold hills: snow over rolling ground | `snow` |
 
 A finished terrain tile follows the rules in [Terrain variants](#terrain-variants).
+
+### Markers and pieces
+
+| Placeholder | Intended use | Drawn with today |
+| --- | --- | --- |
+| `village/village.svg` | A small settlement on a map with few roads | `settlement` |
+| `city/city.svg` | The largest settlement of a huge or vast map | `settlement` |
+| `oasis/oasis.svg` | A landmark in the desert, by water | `ruins`, `camp`, and the other landmarks |
+| `lighthouse/lighthouse.svg` | A landmark on the shore beside a port | nothing |
+| `watchtower/watchtower.svg` | A landmark on a road through the hills | nothing |
+| `river/river-ford-h.svg`, `river/river-ford-v.svg` | A road across a river bend, where no bridge fits | nothing: the road goes around the bend |
+
+Marker art sits on a grass background, so a marker on desert or snow shows
+a square of grass. A settlement in the desert then reads as an oasis, which
+fits, but a settlement in the snow does not. A set of markers with
+transparent backgrounds, drawn as overlays over the terrain, removes this
+limit. No placeholder stands for this set, because it replaces every
+marker.
