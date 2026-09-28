@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { createTile } from '../src/map/TileGrid.js';
-import { interiorArt, isBlocked, kindOf, tileKind } from '../src/map/TileKinds.js';
+import { interiorArt, isBlocked, kindOf, tileKind, townWallArt } from '../src/map/TileKinds.js';
 
 test('kindOf reports what an interior piece means to the rules', () => {
   const palette = new TilePalette();
@@ -60,4 +60,22 @@ test('isBlocked keeps the party off walls and obstacles only', () => {
   assert.equal(isBlocked({ ...floor, overlayRef: interiorArt('chest') }), false);
   assert.equal(isBlocked(createTile('0,0', interiorArt('cave-wall'))), true);
   assert.equal(isBlocked(createTile('0,1', interiorArt('door-h'))), false);
+});
+
+test('a town wall blocks the party, and its gates let the party through', () => {
+  const palette = new TilePalette();
+  const grass = createTile('3,3', /** @type {any} */ (palette.get('grass-1')).imageRef);
+  /** @param {string} piece */
+  const on = (piece) => ({
+    ...grass,
+    overlayRef: /** @type {any} */ (palette.getTownWallPiece(piece)).imageRef,
+  });
+  for (const piece of ['wall-h', 'wall-v', 'wall-corner-ne', 'wall-corner-sw']) {
+    assert.equal(tileKind(on(piece)), 'wall', piece);
+    assert.equal(isBlocked(on(piece)), true, piece);
+  }
+  for (const piece of ['gate-h', 'gate-v', 'water-gate-h', 'water-gate-v']) {
+    assert.equal(isBlocked(on(piece)), false, piece);
+  }
+  assert.equal(kindOf(townWallArt('wall-corner-se')), 'wall');
 });

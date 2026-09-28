@@ -4,6 +4,8 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { ARMS } from '../src/map/Autotile.js';
 import { generateTown, planTown, townRiver } from '../src/map/GeneratorTown.js';
 import { mulberry32 } from '../src/util/Rng.js';
+import { resolveEntryTile } from '../src/map/EntryPoint.js';
+import { isBlocked } from '../src/map/TileKinds.js';
 
 const palette = new TilePalette();
 
@@ -223,6 +225,19 @@ test('a walled town draws its wall, corner towers, gates, and water gates', () =
   );
   const open = generateTown(palette, 22, mulberry32(1));
   assert.ok(!open.tiles.some((t) => String(t.overlayRef).includes('town-')), 'seed 1 has no wall');
+});
+
+test('the party never lands on a town wall, only beside it or in a gate', () => {
+  const gen = generateTown(palette, 22, mulberry32(9));
+  const node = /** @type {any} */ ({ id: 'town', width: 22, height: 22, tiles: gen.tiles });
+  const walls = gen.tiles.filter((t) => isBlocked(t));
+  assert.ok(walls.length > 40, 'seed 9 has a wall');
+  for (const wall of walls) {
+    const landing = gen.tiles.find((t) => t.id === resolveEntryTile(node, wall.id));
+    assert.ok(landing && !isBlocked(landing), `off the wall at ${wall.id}`);
+  }
+  const gate = /** @type {any} */ (gen.tiles.find((t) => String(t.overlayRef).includes('gate-')));
+  assert.equal(resolveEntryTile(node, gate.id), gate.id, 'a gate is open ground');
 });
 
 test('each building with an inside is a site over its four cells', () => {

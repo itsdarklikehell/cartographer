@@ -1,13 +1,19 @@
 import { capitalize } from '../util/text.js';
-import { FURNISHING_KINDS, INTERIOR_KINDS, interiorArt } from './TileKinds.js';
+import {
+  FURNISHING_KINDS,
+  INTERIOR_KINDS,
+  TOWN_WALL_KINDS,
+  interiorArt,
+  townWallArt,
+} from './TileKinds.js';
 
 /** @typedef {import('./TilePalette.js').PaletteEntry} PaletteEntry */
 
 /**
  * The built-in tile catalog: one table per tile family, and the builder that
  * turns the tables into palette entries. A tile exists for the app only when
- * its family table names it. The interior and furnishing tables are in
- * TileKinds.js, beside the rule meaning of each piece.
+ * its family table names it. The interior, furnishing, and town wall tables
+ * are in TileKinds.js, beside the rule meaning of each piece.
  */
 
 const TILE_ROOT = 'assets/tiles';
@@ -122,27 +128,6 @@ const COAST_KINDS = [
 export function isOverlayType(type) {
   return ['road', 'river', 'coast', 'town-wall', 'furnishing'].includes(type);
 }
-
-/**
- * Town wall pieces, overlays in `assets/tiles/town/`. The straight pieces and
- * the gates run east-west (`h`) or north-south (`v`). A gate draws its own
- * street through the wall, and a water gate draws its own river under the
- * wall. A corner is named for its open edges like the interior walls, so
- * `wall-corner-se` caps the north-west corner of a ring.
- * @type {string[]}
- */
-const TOWN_WALL_KINDS = [
-  'wall-h',
-  'wall-v',
-  'wall-corner-ne',
-  'wall-corner-nw',
-  'wall-corner-se',
-  'wall-corner-sw',
-  'gate-h',
-  'gate-v',
-  'water-gate-h',
-  'water-gate-v',
-];
 
 /**
  * Town buildings with no variants, in `assets/tiles/town/`. The art draws
@@ -274,12 +259,12 @@ export function buildBuiltins() {
     });
   }
 
-  for (const kind of TOWN_WALL_KINDS) {
+  for (const kind of Object.keys(TOWN_WALL_KINDS)) {
     entries.push({
       id: `town-${kind}`,
       type: 'town-wall',
       label: `Town Wall (${kind})`,
-      imageRef: `${TILE_ROOT}/town/town-${kind}.svg`,
+      imageRef: townWallArt(kind),
       custom: false,
     });
   }

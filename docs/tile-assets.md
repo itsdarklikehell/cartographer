@@ -12,9 +12,9 @@ town wall, and one folder for each POI marker, for example `settlement/`,
 `castle/`, and `tavern/`. `src/map/TileCatalog.js` defines the catalog and
 the paths that it expects, so anyone who adds or renames files reads
 `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
-`MARKER_TYPES`, `TOWN_BUILDINGS`, and `TOWN_WALL_KINDS` in that file first.
-The interior pieces and the furnishings are in `INTERIOR_KINDS` and
-`FURNISHING_KINDS` in `src/map/TileKinds.js`.
+`MARKER_TYPES`, and `TOWN_BUILDINGS` in that file first. The interior
+pieces, the furnishings, and the town wall pieces are in `INTERIOR_KINDS`,
+`FURNISHING_KINDS`, and `TOWN_WALL_KINDS` in `src/map/TileKinds.js`.
 
 ## Terrain variants
 
@@ -155,7 +155,9 @@ it. `water-gate-h` and `water-gate-v` take a river under the wall in the
 same way, and each one draws its own copy of the river so it joins the
 river tiles on both sides. Like the interior wall corners, each corner is named for its two open
 edges, so `wall-corner-se` connects south and east and caps the north-west
-corner of a ring.
+corner of a ring. The straight pieces and the corners have the rule meaning
+`wall`, so the party cannot stand on them. The gates and the water gates
+are `plain`.
 
 ## Interior pieces
 

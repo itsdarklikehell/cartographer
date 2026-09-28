@@ -4,7 +4,8 @@ import { overlayList } from './TileGrid.js';
 /** @typedef {import('../types/map.js').Tile} Tile */
 
 /**
- * The interior art that the game rules read, with the meaning of each piece.
+ * The interior and town wall art that the game rules read, with the meaning
+ * of each piece.
  * The party cannot stand on a wall or an obstacle, a door is the authored
  * way into a space, and stairs connect one level to the next. Keeping the
  * meaning here, beside the art list, lets `kindOf` answer from an image
@@ -67,6 +68,29 @@ export const FURNISHING_KINDS = {
 };
 
 /**
+ * Town wall pieces, overlays in `assets/tiles/town/`. The straight pieces and
+ * the gates run east-west (`h`) or north-south (`v`). A gate draws its own
+ * street through the wall, and a water gate draws its own river under the
+ * wall. A corner is named for its open edges like the interior walls, so
+ * `wall-corner-se` caps the north-west corner of a ring. The party cannot
+ * stand on a wall segment or a corner tower. A gate and a water gate are
+ * `plain`, so a landing or a link can go on a gate.
+ * @type {Record<string, TileKind>}
+ */
+export const TOWN_WALL_KINDS = {
+  'wall-h': 'wall',
+  'wall-v': 'wall',
+  'wall-corner-ne': 'wall',
+  'wall-corner-nw': 'wall',
+  'wall-corner-se': 'wall',
+  'wall-corner-sw': 'wall',
+  'gate-h': 'plain',
+  'gate-v': 'plain',
+  'water-gate-h': 'plain',
+  'water-gate-v': 'plain',
+};
+
+/**
  * The image reference of an interior piece or a furnishing.
  * @param {string} kind
  * @returns {string}
@@ -74,23 +98,32 @@ export const FURNISHING_KINDS = {
 export const interiorArt = (kind) => `assets/tiles/interior/interior-${kind}.svg`;
 
 /**
+ * The image reference of a town wall piece.
+ * @param {string} kind
+ * @returns {string}
+ */
+export const townWallArt = (kind) => `assets/tiles/town/town-${kind}.svg`;
+
+/**
  * Every built-in image reference that has a rule meaning, mapped to that
  * meaning. Renaming an asset cannot change a rule without notice, because
  * the art path and the meaning come from the same table.
  * @type {Map<string, TileKind>}
  */
-const KIND_BY_REF = new Map(
-  Object.entries({ ...INTERIOR_KINDS, ...FURNISHING_KINDS }).map(([kind, meaning]) => [
-    interiorArt(kind),
-    meaning,
-  ]),
-);
+const KIND_BY_REF = new Map([
+  ...Object.entries({ ...INTERIOR_KINDS, ...FURNISHING_KINDS }).map(
+    ([kind, meaning]) => /** @type {[string, TileKind]} */ ([interiorArt(kind), meaning]),
+  ),
+  ...Object.entries(TOWN_WALL_KINDS).map(
+    ([kind, meaning]) => /** @type {[string, TileKind]} */ ([townWallArt(kind), meaning]),
+  ),
+]);
 
 /**
- * What one image means to the rules. Anything outside the interior set is
- * `plain`, which is walkable and has no special meaning. This includes
- * outdoor terrain, POI markers, and every custom or `data:` image that a GM
- * supplies.
+ * What one image means to the rules. Anything outside the interior,
+ * furnishing, and town wall sets is `plain`, which is walkable and has no
+ * special meaning. This includes outdoor terrain, POI markers, and every
+ * custom or `data:` image that a GM supplies.
  * @param {string} imageRef
  * @returns {TileKind}
  */

@@ -253,8 +253,10 @@ base image decides when no overlay has one. `kindOf` matches whole
 references against the catalog instead of looking for a word in a file
 name, so a GM's own art called `interior-wall-h.svg` stays plain art and
 renaming a built-in asset cannot quietly change where the party can walk.
-Everything outside the interior and furnishing sets (terrain, markers,
-custom images) is `plain`.
+A town wall segment and a corner tower are walls too, and a gate and a
+water gate are `plain`, so a landing or a new link can go on a gate but
+never on the wall beside it. Everything outside the interior, furnishing, and town
+wall sets (terrain, markers, custom images) is `plain`.
 
 `Autotile.js` (`src/map/Autotile.js`) handles the detailed part of generated
 terrain. It picks connector overlay pieces, so that coastlines, rivers, and
