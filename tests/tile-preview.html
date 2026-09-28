@@ -99,20 +99,21 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'watchtower',
   ].map((m) => img(`${m}/${m}`)).join('');
 
-  const TOWN = ['house', 'cottage', 'market', 'well', 'fountain'];
+  const TOWN = ['house', 'cottage', 'market', 'well', 'fountain',
+    'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables'];
   document.getElementById('town').innerHTML = TOWN.map((b) => img(`town/${b}`)).join('');
 
-  // A 10x8 block of grass split by two crossing streets. Each building is a
+  // A 14x8 block of grass split by two crossing streets. Each building is a
   // 128px image laid over the 2x2 block of cells that it covers, the same
   // way the map draws a span-2 tile.
   const street = (x, y) => (x === 4 && y === 3 ? 'road-cross' : y === 3 ? 'road-h' : x === 4 ? 'road-v' : null);
   const scene = document.getElementById('town-scene');
-  scene.innerHTML = `<div class="grid" style="grid-template-columns: repeat(10, 64px);">${Array.from({ length: 80 }, (_, i) => {
-    const r = street(i % 10, Math.floor(i / 10));
+  scene.innerHTML = `<div class="grid" style="grid-template-columns: repeat(14, 64px);">${Array.from({ length: 112 }, (_, i) => {
+    const r = street(i % 14, Math.floor(i / 14));
     return r ? cell('grass/grass-1', `road/${r}`) : cell(`grass/grass-${(i % 3) + 1}`);
   }).join('')}</div>` + [
-    ['house', 2, 1], ['house', 5, 1], ['well', 7, 1], ['cottage', 0, 5],
-    ['market', 2, 4], ['fountain', 5, 4], ['cottage', 8, 5],
+    ['town-hall', 0, 1], ['house', 2, 1], ['house', 5, 1], ['well', 7, 1], ['guildhall', 9, 1], ['bakery', 11, 1],
+    ['cottage', 0, 5], ['market', 2, 4], ['fountain', 5, 4], ['cottage', 8, 5], ['warehouse', 10, 4], ['stables', 12, 4],
   ].map(([b, x, y]) => `<img src="../assets/tiles/town/${b}.svg" style="position: absolute; left: ${x * 64}px; top: ${y * 64}px; width: 128px; height: 128px;">`).join('');
 
   // The lighthouse shoreline mirrors the port shoreline, so the edge heights
