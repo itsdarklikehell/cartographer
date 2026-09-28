@@ -103,6 +103,16 @@ export class TilePalette {
   }
 
   /**
+   * Look up a dock piece by kind, for example "pier-v", "pier-head-n", or
+   * "quay-e".
+   * @param {string} kind
+   * @returns {PaletteEntry | undefined}
+   */
+  getDockPiece(kind) {
+    return this.entries.get(`dock-${kind}`);
+  }
+
+  /**
    * Look up a town wall piece by kind, for example "wall-h",
    * "wall-corner-se", or "gate-v".
    * @param {string} kind

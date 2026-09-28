@@ -106,6 +106,22 @@ test('overlay families stack in draw order, whichever is painted first', () => {
   assert.deepEqual(getTile(node, '0,0').overlayRef, [coast, river, road]);
 });
 
+test('a dock piece stacks over the coast and road pieces of its tile', () => {
+  const coast = 'assets/tiles/coast/coast-n.svg';
+  const road = 'assets/tiles/road/road-end-s.svg';
+  const quay = 'assets/tiles/dock/dock-quay-n.svg';
+  let node = paintTile(node2x2(), '0,0', quay, true);
+  node = paintTile(node, '0,0', road, true);
+  node = paintTile(node, '0,0', coast, true);
+  assert.deepEqual(getTile(node, '0,0').overlayRef, [coast, road, quay]);
+  node = paintTile(node, '0,0', 'assets/tiles/dock/dock-pier-v.svg', true);
+  assert.deepEqual(getTile(node, '0,0').overlayRef, [
+    coast,
+    road,
+    'assets/tiles/dock/dock-pier-v.svg',
+  ]);
+});
+
 test('repainting within an overlay family swaps that piece, keeping the rest', () => {
   const coast = 'assets/tiles/coast/coast-n.svg';
   const riverV = 'assets/tiles/river/river-v.svg';

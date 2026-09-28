@@ -10,8 +10,8 @@ without a code change.
 ## 1. Read the family rules first
 
 Open [Tile assets](tile-assets.md) and read the section for the family you
-are adding: terrain variants, road pieces, river pieces, coast pieces, POI
-markers, or interior pieces. Each family has its own rule for backgrounds
+are adding: terrain variants, road pieces, river pieces, coast pieces, dock
+pieces, POI markers, or interior pieces. Each family has its own rule for backgrounds
 and edges, and a tile that breaks the rule shows a visible line against its
 neighbors on the map.
 
@@ -38,6 +38,7 @@ The interior, furnishing, and town wall tables are in `src/map/TileKinds.js`.
 | Road | `ROAD_KINDS` | The kind name |
 | River | `RIVER_KINDS` | The kind name |
 | Coast | `COAST_KINDS` | The kind name |
+| Dock | `DOCK_KINDS` | The kind name |
 | POI marker | `MARKER_TYPES` | The marker name |
 | Interior | `INTERIOR_KINDS` | The kind name and its rule meaning |
 | Furnishing | `FURNISHING_KINDS` | The kind name and its rule meaning |

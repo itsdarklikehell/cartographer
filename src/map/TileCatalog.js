@@ -119,14 +119,39 @@ const COAST_KINDS = [
 ];
 
 /**
+ * Dock pieces, overlays in `assets/tiles/dock/`. `pier-h` and `pier-v` are
+ * straight runs of pier that go on a water tile. A `pier-head-*` piece is
+ * the far end of a pier. A `quay-*` piece goes on a shore tile over its
+ * straight coast piece, with the street on the land side and the pier on
+ * the water side. Both families are named for the side that the pier runs
+ * out to, so `quay-n` goes over `coast-n` and `pier-head-n` ends a pier
+ * that runs north. No dock piece has a rule meaning, so each one is
+ * `plain` and the party can walk out along a pier.
+ * @type {string[]}
+ */
+export const DOCK_KINDS = [
+  'pier-h',
+  'pier-v',
+  'pier-head-n',
+  'pier-head-e',
+  'pier-head-s',
+  'pier-head-w',
+  'quay-n',
+  'quay-e',
+  'quay-s',
+  'quay-w',
+];
+
+/**
  * Palette types painted as a tile's overlayRef, layered over terrain, rather
  * than as its base image. This lets a path or shoreline cross sand, snow, or
- * other terrain, and a furnishing stand on any floor.
+ * other terrain, a pier stand on any water, and a furnishing stand on any
+ * floor.
  * @param {string} type
  * @returns {boolean}
  */
 export function isOverlayType(type) {
-  return ['road', 'river', 'coast', 'town-wall', 'furnishing'].includes(type);
+  return ['road', 'river', 'coast', 'dock', 'town-wall', 'furnishing'].includes(type);
 }
 
 /**
@@ -235,6 +260,16 @@ export function buildBuiltins() {
       type: 'coast',
       label: `Coast (${kind})`,
       imageRef: `${TILE_ROOT}/coast/coast-${kind}.svg`,
+      custom: false,
+    });
+  }
+
+  for (const kind of DOCK_KINDS) {
+    entries.push({
+      id: `dock-${kind}`,
+      type: 'dock',
+      label: `Dock (${kind})`,
+      imageRef: `${TILE_ROOT}/dock/dock-${kind}.svg`,
       custom: false,
     });
   }

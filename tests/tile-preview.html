@@ -85,6 +85,14 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="coast-lake"></div>
 </div>
 
+<h2>Docks (a quay over each straight coast piece, and a pier out to its head)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-n"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-e"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-w"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="dock-s"></div>
+</div>
+
 <script>
   const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
   // Overlay pieces such as a road stack in order over a base tile, and a
@@ -323,6 +331,31 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['mountain/mountain-1'], ['mountain/mountain-1', 'coast/coast-e'], ['water/water-3'],
     ['mountain/mountain-2'], ['mountain/mountain-3', 'coast/coast-e'], ['water/water-1'],
   ].map(([base, over]) => cell(base, over)).join('');
+
+  // Four 5x5 shores, one per sea side. The quay goes over the straight coast
+  // piece, a street leaves it on the land side, and the pier runs two cells
+  // out to its head. The base terrain changes per shore, because the dock
+  // pieces are overlays.
+  const dock = (side, land) => {
+    const water = (i) => `water/water-${(i % 3) + 1}`;
+    const ground = (i) => `${land}/${land}-${(i % 3) + 1}`;
+    return Array.from({ length: 25 }, (_, i) => {
+      const [x, y] = [i % 5, Math.floor(i / 5)];
+      // Turn the cell so that the sea is always at the top: u across, d down.
+      const [u, d] = side === 'n' ? [x, y] : side === 's' ? [4 - x, 4 - y] : side === 'e' ? [y, 4 - x] : [4 - y, x];
+      const axis = side === 'n' || side === 's' ? 'v' : 'h';
+      if (d < 3) {
+        const pier = u === 2 && d === 1 ? `dock/dock-pier-head-${side}` : u === 2 && d === 2 ? `dock/dock-pier-${axis}` : null;
+        return cell(water(i), pier);
+      }
+      if (d === 3) return cell(ground(i), `coast/coast-${side}`, u === 2 && `dock/dock-quay-${side}`);
+      return cell(ground(i), u === 2 && `road/road-${axis}`);
+    }).join('');
+  };
+  document.getElementById('dock-n').innerHTML = dock('n', 'grass');
+  document.getElementById('dock-e').innerHTML = dock('e', 'desert');
+  document.getElementById('dock-w').innerHTML = dock('w', 'snow');
+  document.getElementById('dock-s').innerHTML = dock('s', 'grass');
 </script>
 </body>
 </html>

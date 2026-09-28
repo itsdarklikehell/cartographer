@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { isOverlayType, isTerrainType } from '../src/map/TileCatalog.js';
+import { DOCK_KINDS, isOverlayType, isTerrainType } from '../src/map/TileCatalog.js';
+import { kindOf } from '../src/map/TileKinds.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
   const palette = new TilePalette();
@@ -70,6 +71,18 @@ test('TilePalette ships with coast transition pieces', () => {
   );
   assert.equal(palette.getCoastPiece('inner-se').type, 'coast');
   assert.equal(palette.listVariants('coast').length, 12);
+});
+
+test('TilePalette ships with dock pieces that the party can walk on', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.getDockPiece('pier-v').imageRef, 'assets/tiles/dock/dock-pier-v.svg');
+  assert.equal(palette.getDockPiece('quay-e').label, 'Dock (quay-e)');
+  assert.equal(palette.getDockPiece('pier-head-w').type, 'dock');
+  assert.equal(palette.listVariants('dock').length, DOCK_KINDS.length);
+  for (const kind of DOCK_KINDS) {
+    assert.equal(kindOf(palette.getDockPiece(kind).imageRef), 'plain', kind);
+  }
+  assert.equal(palette.getDockPiece('pier-x'), undefined);
 });
 
 test('TilePalette ships with single-image POI markers', () => {
@@ -196,7 +209,7 @@ test('listBuiltins excludes custom entries, and listCustom the built-ins', () =>
 });
 
 test('isOverlayType flags the terrain-crossing overlay types only', () => {
-  for (const type of ['road', 'river', 'coast', 'town-wall', 'furnishing']) {
+  for (const type of ['road', 'river', 'coast', 'dock', 'town-wall', 'furnishing']) {
     assert.equal(isOverlayType(type), true);
   }
   for (const type of ['grass', 'poi-town', 'interior', 'house']) {

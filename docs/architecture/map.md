@@ -399,8 +399,7 @@ shore, so it flows into the sea. Its cells under the water drop out of the
 network, and the last channel drains into the sea. A port of 8 cells has no
 river, because the sea and a river together leave too little ground for
 its three buildings. Streets keep off the sea. Walls and buildings also
-keep off the shore cells, because their art would hide the shoreline. The
-catalog has no dock or pier tile, so a port has none.
+keep off the shore cells, because their art would hide the shoreline.
 
 The streets use `routeRoad` with a `turn` cost of 0.6 for each bend, so a
 street on open grass runs straight. The `heading` argument counts the first

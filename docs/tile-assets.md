@@ -7,12 +7,12 @@ Built-in tile art lives under `assets/tiles/<type>/`. Each tile type has its
 own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`,
 `swamp/`, `snow/`, `hills/`, `farmland/`, one folder for each biome of the
 climate model, for example `jungle/` and `deep-water/`, `road/`, `river/`,
-`coast/`, `plaza/`, `interior/`, `town/` for the town buildings and the
-town wall, and one folder for each POI marker, for example `settlement/`,
+`coast/`, `dock/`, `plaza/`, `interior/`, `town/` for the town buildings and
+the town wall, and one folder for each POI marker, for example `settlement/`,
 `castle/`, and `tavern/`. `src/map/TileCatalog.js` defines the catalog and
 the paths that it expects, so anyone who adds or renames files reads
 `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
-`MARKER_TYPES`, and `TOWN_BUILDINGS` in that file first. The interior
+`DOCK_KINDS`, `MARKER_TYPES`, and `TOWN_BUILDINGS` in that file first. The interior
 pieces, the furnishings, and the town wall pieces are in `INTERIOR_KINDS`,
 `FURNISHING_KINDS`, and `TOWN_WALL_KINDS` in `src/map/TileKinds.js`.
 
@@ -113,6 +113,41 @@ the land side is fully transparent. The terrain beneath, for example grass,
 desert, snow, or mountain, supplies the shore color, so one set of twelve
 pieces serves every biome and no piece is needed per combination of water
 and another terrain.
+
+## Dock pieces
+
+`dock/` contains ten pier and quay pieces, found through
+`palette.getDockPiece(kind)`. They are overlays with a transparent ground,
+like the coast pieces, so one set serves every water variant and every
+shore biome.
+
+- `pier-v` and `pier-h` are straight runs of pier over a water tile.
+- `pier-head-n/e/s/w` end a pier with a wide landing, two bollards, and a
+  moored rowboat.
+- `quay-n/e/s/w` go on a shore tile, on top of the straight coast piece
+  of the same name. A wharf deck covers the waterline, a street comes in
+  from the land edge, and the pier leaves by the water edge.
+
+A pier head and a quay are both named for the side that the pier runs out
+to, so `quay-n` goes over `coast-n` and `pier-head-n` ends a pier that
+runs north.
+
+Every piece uses one cross-section: a `#8a6f4a` deck 16 units wide,
+centered on the tile, between two `#5f4529` stringers, with `#6f583a`
+plank joints on a 4-unit period and `#4a3a26` pile heads on a 32-unit
+period. The deck and the timber colors are the ones of `river-bridge-h`.
+A pier crosses the tile edge at the same place on every piece, so a
+straight run joins its quay and its head. The street of a quay matches
+`road-v` or `road-h` at the land edge. The shadow is a soft `#1f3b4d`
+contact pad around the footprint of the timber, with no offset in any
+direction, so a piece can turn a quarter turn and its shadow still fits.
+The `e`, `s`, and `w` pieces are the `n` piece turned inside a
+`rotate` group, and `pier-h` is `pier-v` turned the same way.
+
+No dock piece has a rule meaning, so each one is `plain` and the party can
+walk out along a pier. When a GM paints a dock piece, it stacks over the
+coast and road pieces of its tile (see `stackOverlay` in
+`src/map/TilePaint.js`).
 
 ## POI markers
 
@@ -240,6 +275,7 @@ tables are in `src/map/TileKinds.js`, beside the rule meanings.
 | `ROAD_KINDS` | The fifteen road connector kinds |
 | `RIVER_KINDS` | The fifteen river connector kinds, two bridges, and two fords |
 | `COAST_KINDS` | The twelve shoreline pieces |
+| `DOCK_KINDS` | The ten pier, pier head, and quay pieces |
 | `MARKER_TYPES` | The single-image POI markers |
 | `TOWN_BUILDINGS` | The span-2 town buildings |
 | `TOWN_WALL_KINDS` | The ten town wall, gate, and water gate pieces |
