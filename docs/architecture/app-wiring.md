@@ -224,6 +224,12 @@ that shows the generic marker of another archetype, and it leaves stairs and
 doors alone. A region block on a world map has no marker, so
 `GeneratorNames.renamedFor` gives a generated name the pattern of the new
 archetype, and the region label on the world map follows it.
+`RegionRepaint.repaintRegionBlock` then paints the linked block with the
+ground mix of the new climate archetype (`REGION_GROUND`). It keeps water,
+coast, points of interest, spans, and overlays, and it returns the parent
+unchanged when `GeneratorWorld.regionFor` already reads the block as that
+archetype. The regenerate snapshot records the parent, so undo restores the
+old tiles.
 `coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
 hand-edited save from writing a kind that the renderer does not know.
 

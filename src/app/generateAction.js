@@ -10,6 +10,7 @@ import {
 } from '../map/MapGenerator.js';
 import { expandTree } from '../map/GeneratorTree.js';
 import { renamedFor } from '../map/GeneratorNames.js';
+import { repaintRegionBlock } from '../map/RegionRepaint.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { ENTRANCE_ART, entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
@@ -198,7 +199,10 @@ export function wireGenerateAction(app, env) {
     // one (a POI marker matching the archetype) on the parent tile nearest
     // its center, so there is always a way in. Tell the GM where it landed,
     // so the GM can move it. An existing link keeps its tile, and its marker
-    // changes to match the new archetype.
+    // changes to match the new archetype. The ground of the linked block, such
+    // as a region on a world map, changes to the climate of the new archetype
+    // (`RegionRepaint.repaintRegionBlock`). The snapshot above records the
+    // parent, so undo restores both.
     const parent = grid.getParent(node);
     if (parent) {
       const artFor = entranceArtFor(values.archetype);
@@ -212,7 +216,8 @@ export function wireGenerateAction(app, env) {
           Object.values(ENTRANCE_ART).map((art) => palette.get(art.marker)?.imageRef ?? ''),
         ),
       });
-      if (linked.node !== parent) grid.updateNode(linked.node);
+      const painted = repaintRegionBlock(linked.node, node.id, values.archetype, palette, tree.rng);
+      if (painted !== parent) grid.updateNode(painted);
       if (linked.tileId) {
         alertModal(
           `Linked "${gen.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,

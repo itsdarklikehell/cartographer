@@ -142,7 +142,8 @@ tile near the center of the parent and tells you where. Repaint or relink
 that tile to move the entrance. If a parent tile already links to the node,
 the app changes its marker to match the new archetype. A world region has
 no marker, so a generated region name, such as "The Ashford Hills", takes
-the name pattern of the new archetype, such as "The Ashford Sands".
+the name pattern of the new archetype, such as "The Ashford Sands". Its
+block on the world map takes the ground of the new climate.
 
 To take back a generation, undo once. The undo also removes every sub-map
 that the generation created.

@@ -215,6 +215,16 @@ becomes "Dunholt Caves". A name that you typed, a name of one word, and the
 name of a building or of a level in a stack do not change. Undo restores
 the old name.
 
+The tiles on the parent map that link to a regenerated wilderness,
+highlands, frontier, desert, or wetlands take the ground of that climate.
+For example, a region block regenerated as highlands becomes mostly hills
+and mountains. Water, coast tiles, points of interest, and tiles that link
+to another map keep their art, and a river keeps its course. Each tile
+keeps its fog state and its notes. A block that already reads as the new
+climate keeps its art. A region regenerated as a town, an island, or a
+world keeps its ground and gets no marker, because the world generator
+places no settlements. Undo restores the old tiles.
+
 The six outdoor archetypes differ in climate. Wilderness is temperate, with
 grass, forest, lakes, and some hills. Highlands have ranges of hills and
 mountains. Frontier is cold, with snow and snowy forest. Desert is hot and

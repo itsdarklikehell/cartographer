@@ -621,7 +621,8 @@ The dungeon is in `src/map/GeneratorInteriors.js`, the cave in
 `src/map/GeneratorHalls.js`. They all draw furnishings with
 `src/map/GeneratorFurnish.js`. The world is in `src/map/GeneratorWorld.js`,
 and `src/map/GeneratorTree.js` and `src/map/GeneratorNames.js` build and
-name the sub-maps. The example world in
+name the sub-maps. `src/map/RegionRepaint.js` repaints the block of a
+regenerated region on its parent map. The example world in
 `campaign/ExampleWorld.js` uses them too.
 
 A tile's `overlayRef` can be either a single reference or a draw-ordered
