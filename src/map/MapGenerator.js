@@ -156,8 +156,9 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  * guarantees `entry`: a border tile that exists and connects to the layout's
  * walkable area (a door for interiors, a road end or open ground for
  * regions). A generated space is then always reachable from its parent map.
- * The world archetype is the exception, because the sea surrounds it, and
- * its entry is the shore nearest the middle of the south border.
+ * A world and an open map with no road exit, such as an island, enter on
+ * the land tile nearest the middle of the south border instead, because
+ * their border can be sea.
  *
  * `sites` lists the places on the map that open into sub-maps of their own.
  * `GeneratorTree.expandTree` builds those sub-maps. A dungeon or a cave with
