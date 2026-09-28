@@ -304,7 +304,10 @@ A river starts on the hills or at the foot of a range, and each step goes to
 the lowest free neighbor. A step can climb 0.02 of the elevation range, so a
 river crosses small ripples in the noise. A river ends where it meets water,
 leaves the map, or reaches another river. A river that meets another river
-joins it as a tee. A river with no lower ground left ends in a pond, and the
+joins it as a tee, or as a cross where the other river has a tee. The head
+of the river joins every river cell beside it, so no two channels run side
+by side without a join. A head beside a river and water both joins the
+river and drains into the water. A river with no lower ground left ends in a pond, and the
 pond cell becomes water.
 
 ### Sites and roads

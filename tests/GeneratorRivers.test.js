@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { traceRivers } from '../src/map/GeneratorRivers.js';
-import { ARMS } from '../src/map/Autotile.js';
+import { ARMS, OPPOSITE } from '../src/map/Autotile.js';
+import { wildTerrain } from '../src/map/GeneratorGround.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 /**
@@ -119,6 +120,44 @@ test('a source with no room to run is dropped instead of drawn as a stub', () =>
   const field = fieldFrom(['MMM', 'MnM', '~~~']);
   const { network } = traceRivers(field, 1, mulberry32(1));
   assert.equal(network.arms.size, 0);
+});
+
+/**
+ * The pairs of side-by-side river cells whose shared edge has no arm on
+ * either side.
+ * @param {import('../src/map/Autotile.js').ArmNetwork} network
+ */
+function besideUnjoined(network) {
+  /** @type {string[]} */
+  const pairs = [];
+  for (const [id, arms] of network.arms) {
+    const [x, y] = id.split(',').map(Number);
+    for (const [arm, dx, dy] of ARMS) {
+      if (arms.has(arm) || !network.has(x + dx, y + dy)) continue;
+      if (!network.at(x + dx, y + dy).has(OPPOSITE[arm])) pairs.push(`${id} ${arm}`);
+    }
+  }
+  return pairs;
+}
+
+test('two rivers that meet side by side join across the edge they share', () => {
+  // On wilderness vast seed 12, a river bends at 33,13 beside the river
+  // in column 34.
+  const { rivers } = wildTerrain(48, 'wilderness', mulberry32(12));
+  assert.deepEqual(besideUnjoined(rivers), []);
+  assert.deepEqual([...rivers.at(33, 13)].sort(), ['e', 's', 'w']);
+  assert.deepEqual([...rivers.at(34, 13)].sort(), ['n', 's', 'w']);
+});
+
+test('no two river channels run side by side without joining', () => {
+  for (const archetype of ['wilderness', 'highlands', 'wetlands']) {
+    for (const size of [14, 22, 48]) {
+      for (let seed = 0; seed < 12; seed++) {
+        const { rivers } = wildTerrain(size, archetype, mulberry32(seed));
+        assert.deepEqual(besideUnjoined(rivers), [], `${archetype} ${size} ${seed}`);
+      }
+    }
+  }
 });
 
 test('no sources means no rivers', () => {

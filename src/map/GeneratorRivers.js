@@ -7,7 +7,8 @@ import { shuffle } from './GeneratorRandom.js';
  * Rivers for the open-terrain generators. Each river starts on high ground
  * and walks to the lowest free neighbor until it reaches water, the map
  * edge, or another river. A river that reaches another river joins it,
- * so tributaries form tees. A river that reaches a sink, with no lower
+ * so tributaries form tees, or a cross where the other river already has
+ * a tee. A river that reaches a sink, with no lower
  * ground to go to, ends in a pond there.
  */
 
@@ -87,22 +88,25 @@ export function traceRivers({ size, elevation, cells }, count, rng) {
       ARMS.some(
         ([, dx, dy]) => !(x + dx === px && y + dy === py) && onPath.has((y + dy) * size + (x + dx)),
       );
-    /** @type {{ x: number, y: number, arm: Arm } | null} the way the river leaves the path */
+    /**
+     * @type {{ x: number, y: number, joins: Arm[], drain?: Arm } | null}
+     * the head where the river leaves the path: the arms toward each river
+     * it joins, and the arm into water or off the map
+     */
     let mouth = null;
     let pond = false;
     for (let steps = 0; steps < size * size; steps++) {
       const [x, y] = path[path.length - 1];
       const here = elevation[y * size + x];
-      // Water or another river beside the head ends the walk there.
-      const outlet = ARMS.find(([, dx, dy]) => {
-        const nx = x + dx;
-        const ny = y + dy;
-        if (!inside(nx, ny)) return false;
-        if (type(nx, ny) === 'water') return true;
-        return network.has(nx, ny) && network.at(nx, ny).size < 3;
-      });
-      if (outlet) {
-        mouth = { x, y, arm: outlet[0] };
+      // Water or another river beside the head ends the walk there. The
+      // head joins every river beside it, so no two channels run side by
+      // side, and it drains into the first water beside it.
+      const joins = ARMS.filter(([, dx, dy]) => network.has(x + dx, y + dy)).map(([arm]) => arm);
+      const water = ARMS.find(
+        ([, dx, dy]) => inside(x + dx, y + dy) && type(x + dx, y + dy) === 'water',
+      );
+      if (joins.length || water) {
+        mouth = { x, y, joins, drain: water?.[0] };
         break;
       }
       const moves = ARMS.map(([arm, dx, dy]) => ({ arm, x: x + dx, y: y + dy })).filter(
@@ -121,7 +125,7 @@ export function traceRivers({ size, elevation, cells }, count, rng) {
       const edgeArm = ARMS.find(([, dx, dy]) => !inside(x + dx, y + dy));
       // A river on the border leaves the map when nothing inside is lower.
       if (edgeArm && (!best || elevation[best.y * size + best.x] >= here)) {
-        mouth = { x, y, arm: edgeArm[0] };
+        mouth = { x, y, joins: [], drain: edgeArm[0] };
         break;
       }
       if (!best) {
@@ -141,16 +145,10 @@ export function traceRivers({ size, elevation, cells }, count, rng) {
       network.join(ax, ay, arm);
     }
     if (mouth) {
-      // A mouth into water or off the map adds an arm to the head only. A
-      // mouth into another river also adds the arm on that river's side.
-      const [, dx, dy] = /** @type {readonly [Arm, number, number]} */ (
-        ARMS.find(([a]) => a === mouth?.arm)
-      );
-      if (inside(mouth.x + dx, mouth.y + dy) && network.has(mouth.x + dx, mouth.y + dy)) {
-        network.join(mouth.x, mouth.y, mouth.arm);
-      } else {
-        network.add(mouth.x, mouth.y, mouth.arm);
-      }
+      // A join adds an arm on both sides. A drain into water or off the map
+      // adds an arm to the head only.
+      for (const arm of mouth.joins) network.join(mouth.x, mouth.y, arm);
+      if (mouth.drain) network.add(mouth.x, mouth.y, mouth.drain);
     } else if (pond) {
       // The head becomes a pond. The cell before it drains into the pond.
       const [px, py] = path[path.length - 1];
