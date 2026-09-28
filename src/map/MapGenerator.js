@@ -1,6 +1,8 @@
 import { generateWilds } from './GeneratorWilds.js';
 import { generateTown } from './GeneratorTown.js';
-import { generateDungeon, generateCastle } from './GeneratorInteriors.js';
+import { generateDungeon } from './GeneratorInteriors.js';
+import { generateCave } from './GeneratorCave.js';
+import { generateBuilding, generateCastle } from './GeneratorHalls.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -11,7 +13,8 @@ import { generateDungeon, generateCastle } from './GeneratorInteriors.js';
  * Build UI offers, and the dispatchers that run a generator and hand the
  * caller a stampable tile grid. The archetype generators themselves live in
  * GeneratorWilds.js (wilderness and its climate variants), GeneratorTown.js
- * (town), and GeneratorInteriors.js (dungeon, castle).
+ * (town), GeneratorInteriors.js (dungeon), GeneratorCave.js (cave), and
+ * GeneratorHalls.js (castle, building).
  */
 
 /**
@@ -52,7 +55,9 @@ export const ARCHETYPES = {
   ],
   interior: [
     { value: 'dungeon', label: 'Dungeon (rooms + corridors)' },
+    { value: 'cave', label: 'Cave (winding caverns)' },
     { value: 'castle', label: 'Castle (walls + halls)' },
+    { value: 'building', label: 'Building (a few small rooms)' },
   ],
 };
 
@@ -74,13 +79,21 @@ export function generateNodeTiles(palette, { archetype, size }, rng) {
   let gen;
   if (archetype === 'town') gen = generateTown(palette, n, rng);
   else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng, { descend: false });
+  else if (archetype === 'cave') gen = generateCave(palette, n, rng, { descend: false });
   else if (archetype === 'castle') gen = generateCastle(palette, n, rng);
+  else if (archetype === 'building') gen = generateBuilding(palette, n, rng);
   else gen = generateWilds(palette, n, rng, archetype);
   return { width: n, height: n, tiles: gen.tiles, entry: gen.entry };
 }
 
 /**
- * Generate a multi-level dungeon as a chain of levels. Level 1 is entered
+ * The archetypes that stack into levels joined by stairs. The Generate
+ * dialog shows its Levels field for these alone.
+ */
+export const STACKED_ARCHETYPES = ['dungeon', 'cave'];
+
+/**
+ * Generate a multi-level dungeon or cave as a chain of levels. Level 1 is entered
  * from the map edge through a corridor and a border door. Each deeper level
  * is entered by stairs. Every level's stairs-down tile links, through the
  * existing `childNodeId` zoom link, to the level below it, so stairs always
@@ -92,14 +105,16 @@ export function generateNodeTiles(palette, { archetype, size }, rng) {
  * This returns one entry per level, top first. The caller stamps level 1's
  * tiles into the node being generated and creates a child node per deeper level.
  * @param {TilePalette} palette
- * @param {{ size: string, levels: number }} options
+ * @param {{ archetype?: string, size: string, levels: number }} options
+ *   `archetype` is dungeon or cave, and defaults to dungeon
  * @param {() => number} rng
  * @param {() => string} makeId
  * @returns {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]}
  *   `id` is null for the first level (it fills the existing node) and a fresh
  *   node id for each level below.
  */
-export function generateDungeonLevels(palette, { size, levels }, rng, makeId) {
+export function generateLevels(palette, { archetype, size, levels }, rng, makeId) {
+  const level = archetype === 'cave' ? generateCave : generateDungeon;
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
   const count = Math.max(1, Math.floor(levels) || 1);
   /** @type {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]} */
@@ -108,11 +123,11 @@ export function generateDungeonLevels(palette, { size, levels }, rng, makeId) {
   let pendingStairs = null;
   for (let i = 0; i < count; i++) {
     const last = i === count - 1;
-    const gen = generateDungeon(palette, n, rng, {
+    const gen = level(palette, n, rng, {
       entrance: i === 0 ? 'edge' : 'stairs',
       // A level gets stairs-down only if a level genuinely exists below it.
-      // A level that failed to place them (a degenerate single-room layout
-      // with no free neighbor) ends the chain early instead of orphaning levels.
+      // A level that failed to place them, because its floor is one cell,
+      // ends the chain early instead of orphaning levels.
       descend: !last,
     });
     const id = i === 0 ? null : makeId();

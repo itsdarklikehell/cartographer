@@ -2,8 +2,9 @@ import { createMapNode } from '../map/TileGrid.js';
 import { withNodeTiles } from '../map/TileIndex.js';
 import {
   generateNodeTiles,
-  generateDungeonLevels,
+  generateLevels,
   ARCHETYPES,
+  STACKED_ARCHETYPES,
   SIZE_OPTIONS,
 } from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
@@ -71,11 +72,11 @@ export function wireGenerateAction(app, env) {
      * Build and cache the full generation result for a dialog choice. The
      * RNG is seeded from the choice, so the preview the dialog draws and the
      * layout stamped on accept are the same map. The seed shown to the GM
-     * reproduces it later. This function builds multi-level dungeons whole,
+     * reproduces it later. This function builds multi-level dungeons and caves whole,
      * so the preview's level 1 carries the exact stairs the accepted map will.
      * The rng is kept so the entrance art drawn after the layout follows the
      * seed too.
-     * @type {{ key: string, gen: Layout, levels: ReturnType<typeof generateDungeonLevels> | null, rng: () => number } | null}
+     * @type {{ key: string, gen: Layout, levels: ReturnType<typeof generateLevels> | null, rng: () => number } | null}
      */
     let candidate = null;
     const freshId = () => freshNodeId((id) => Boolean(grid.getNode(id)));
@@ -90,15 +91,15 @@ export function wireGenerateAction(app, env) {
     /**
      * @param {GenerateChoice} choice
      * @param {() => number} rng
-     * @returns {{ gen: Layout, levels: ReturnType<typeof generateDungeonLevels> | null }}
+     * @returns {{ gen: Layout, levels: ReturnType<typeof generateLevels> | null }}
      */
     const buildLayout = (choice, rng) => {
-      if (choice.archetype === 'dungeon') {
-        // A dungeon can be a chain of levels. Each level's stairs-down
+      if (STACKED_ARCHETYPES.includes(choice.archetype)) {
+        // A dungeon or a cave can be a chain of levels. Each level's stairs-down
         // links to a freshly created child node that holds the level
         // below, so stairs always connect to a real generated level.
-        const options = { size: choice.size, levels: choice.levels };
-        const levels = generateDungeonLevels(palette, options, rng, freshId);
+        const options = { archetype: choice.archetype, size: choice.size, levels: choice.levels };
+        const levels = generateLevels(palette, options, rng, freshId);
         return { gen: levels[0], levels };
       }
       const options = { kind: node.kind, archetype: choice.archetype, size: choice.size };
@@ -110,6 +111,7 @@ export function wireGenerateAction(app, env) {
     const values = await generateDialog({
       archetypes,
       sizes: SIZE_OPTIONS,
+      stacked: STACKED_ARCHETYPES,
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,
       returnFocus: generateBtn,

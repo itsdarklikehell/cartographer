@@ -216,3 +216,36 @@ fits, but a settlement in the snow does not. A set of markers with
 transparent backgrounds, drawn as overlays over the terrain, removes this
 limit. No placeholder stands for this set, because it replaces every
 marker.
+
+### Interior pieces
+
+The cave, dungeon, castle, and building generators in `src/map/` draw with
+the pieces in `interior/`. The cave pieces replace the stone floor, wall,
+and door pieces on a cave level. A cave wall is one rough rock piece with
+no connector kinds, because a cave wall has no straight runs to join.
+
+| Placeholder | Intended use | Drawn with today |
+| --- | --- | --- |
+| `interior/interior-cave-floor-1.svg`, `interior/interior-cave-floor-2.svg` | Cave floor variants | `floor-1` to `floor-3` |
+| `interior/interior-cave-wall.svg` | Cave wall | the stone wall pieces |
+| `interior/interior-cave-mouth-h.svg`, `interior/interior-cave-mouth-v.svg` | The cave entrance on the map border | `door-h`, `door-v` |
+
+The furnishing placeholders have transparent backgrounds, because each one
+draws as an overlay on a floor tile. A furnishing needs a meaning in
+`INTERIOR_KINDS`. A pillar, a table, and a bookshelf block movement, and a
+trapdoor leads down like `stairs-down`.
+
+| Placeholder | Intended use |
+| --- | --- |
+| `interior/interior-altar.svg` | A temple or a shrine room |
+| `interior/interior-chest.svg` | Treasure at the end of a dungeon |
+| `interior/interior-pillar.svg` | Rows of columns in a large hall |
+| `interior/interior-throne.svg` | The great hall of a castle |
+| `interior/interior-bed.svg` | A bedroom in a building or a castle |
+| `interior/interior-table.svg` | A tavern or a dining hall |
+| `interior/interior-hearth.svg` | The main room of a house |
+| `interior/interior-bookshelf.svg` | A library or a wizard tower |
+| `interior/interior-barrel.svg` | A cellar or a storeroom |
+| `interior/interior-rubble.svg` | A collapsed part of a dungeon or a cave |
+| `interior/interior-pool.svg` | Water in a cave |
+| `interior/interior-trapdoor.svg` | A hidden way down from a building |

@@ -7,12 +7,18 @@ import {
   SIZE_OPTIONS,
   ARCHETYPES,
   generateNodeTiles,
-  generateDungeonLevels,
+  generateLevels,
 } from '../src/map/MapGenerator.js';
-import { wallKind, generateDungeon } from '../src/map/GeneratorInteriors.js';
+import { generateDungeon } from '../src/map/GeneratorInteriors.js';
+import { wallKind } from '../src/map/GeneratorInteriorMask.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
+
+/** Interior archetypes with a few seeds each, for the layout invariants. */
+const INTERIOR_CASES = ['dungeon', 'cave', 'castle', 'building'].flatMap((archetype) =>
+  [3, 11, 27, 42].map((seed) => /** @type {const} */ ([archetype, seed])),
+);
 
 test('an unknown size preset falls back to the medium dimensions', () => {
   const med = GENERATOR_SIZES.medium;
@@ -23,8 +29,8 @@ test('an unknown size preset falls back to the medium dimensions', () => {
   );
   assert.equal(gen.width, med);
   assert.equal(gen.height, med);
-  // generateDungeonLevels shares the same size lookup and clamps the count.
-  const levels = generateDungeonLevels(
+  // generateLevels shares the same size lookup and clamps the count.
+  const levels = generateLevels(
     palette,
     { size: 'gargantuan', levels: 0 },
     mulberry32(1),
@@ -262,7 +268,7 @@ test('multi-level dungeon links each stairs-down to the level below, none on the
   for (const seed of [5, 21]) {
     const ids = ['lvl-2', 'lvl-3', 'lvl-4'];
     let next = 0;
-    const levels = generateDungeonLevels(
+    const levels = generateLevels(
       palette,
       { size: 'medium', levels: 3 },
       mulberry32(seed),
@@ -316,11 +322,11 @@ test('wallKind picks pieces by connected wall arms', () => {
   assert.equal(wallKind(false, false, false, false), 'wall-h');
 });
 
-test('dungeon wall pieces match their neighbors, junctions included', () => {
-  for (const seed of [3, 11, 27, 42]) {
+test('interior wall pieces match their neighbors, junctions included', () => {
+  for (const [archetype, seed] of INTERIOR_CASES) {
     const gen = generateNodeTiles(
       palette,
-      { kind: 'interior', archetype: 'dungeon', size: 'medium' },
+      { kind: 'interior', archetype, size: 'medium' },
       mulberry32(seed),
     );
     const byId = new Map(gen.tiles.map((t) => [t.id, t]));
@@ -340,7 +346,7 @@ test('dungeon wall pieces match their neighbors, junctions included', () => {
       );
       assert.ok(
         t.imageRef.includes(expected),
-        `seed ${seed}: wall ${t.id} is ${expected} (got ${t.imageRef})`,
+        `${archetype} seed ${seed}: wall ${t.id} is ${expected} (got ${t.imageRef})`,
       );
     }
   }
@@ -373,15 +379,11 @@ test('castle is a walled ring with a floored interior and doors', () => {
     gen.tiles.some((t) => t.imageRef.includes('stairs')),
     'has stairs',
   );
-  // Ring corners connect inward (NW corner continues east and south), and the
-  // partition tees into both side walls.
-  const py = Math.floor(n / 2);
+  // Ring corners connect inward: the NW corner continues east and south.
   assert.ok(byId.get('0,0').imageRef.includes('wall-corner-se'));
   assert.ok(byId.get(`${n - 1},0`).imageRef.includes('wall-corner-sw'));
   assert.ok(byId.get(`0,${n - 1}`).imageRef.includes('wall-corner-ne'));
   assert.ok(byId.get(`${n - 1},${n - 1}`).imageRef.includes('wall-corner-nw'));
-  assert.ok(byId.get(`0,${py}`).imageRef.includes('wall-tee-e'));
-  assert.ok(byId.get(`${n - 1},${py}`).imageRef.includes('wall-tee-w'));
 });
 
 test('every archetype returns a border entry that exists and is walkable', () => {
@@ -389,7 +391,9 @@ test('every archetype returns a border entry that exists and is walkable', () =>
     ['region', 'wilderness'],
     ['region', 'town'],
     ['interior', 'dungeon'],
+    ['interior', 'cave'],
     ['interior', 'castle'],
+    ['interior', 'building'],
   ];
   for (const [kind, archetype] of cases) {
     for (const seed of [1, 2, 3, 4, 5]) {
@@ -404,12 +408,11 @@ test('every archetype returns a border entry that exists and is walkable', () =>
   }
 });
 
-test('dungeon entry connects to the whole floor network', () => {
-  for (const seed of [3, 11, 27]) {
-    const n = GENERATOR_SIZES.medium;
+test('interior entry connects to the whole floor network', () => {
+  for (const [archetype, seed] of INTERIOR_CASES) {
     const gen = generateNodeTiles(
       palette,
-      { kind: 'interior', archetype: 'dungeon', size: 'medium' },
+      { kind: 'interior', archetype, size: 'medium' },
       mulberry32(seed),
     );
     const walkable = new Set(
@@ -436,9 +439,8 @@ test('dungeon entry connects to the whole floor network', () => {
     assert.equal(
       seen.size,
       walkable.size,
-      `seed ${seed}: every walkable tile reachable from the entry (${seen.size}/${walkable.size})`,
+      `${archetype} seed ${seed}: every walkable tile reachable from the entry (${seen.size}/${walkable.size})`,
     );
-    assert.ok(n * n > walkable.size, 'sanity: dungeon is sparse');
   }
 });
 

@@ -187,15 +187,15 @@ The Generate card fills the current node with a generated layout.
 
 | Field | Values |
 | --- | --- |
-| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, or town. For an interior: dungeon or castle |
+| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, or town. For an interior: dungeon, cave, castle, or building |
 | Size | small (8 x 8), medium (14 x 14), large (22 x 22), huge (32 x 32), or vast (48 x 48) |
 | Seed | The number that reproduces the layout |
-| Levels | For a dungeon, how many levels to create |
+| Levels | For a dungeon or a cave, how many levels to create |
 
 The dialog previews the exact layout before it stamps anything. Every
-generated layout can reach its parent map. A dungeon gets an entrance
-corridor with a door on the map edge. A castle gets a gate in the south
-wall. A town gets roads that run edge to edge. When nothing on the parent
+generated layout can reach its parent map. A dungeon or a cave gets an
+entrance tunnel with a door on the map edge. A castle or a building gets a
+door in the south wall. A town gets roads that run edge to edge. When nothing on the parent
 map links to the node, generation places an entrance tile near the center
 of the parent and reports where.
 
@@ -213,8 +213,15 @@ medium map or larger adds a hidden dungeon far from the settlements. Roads
 join the settlements and the keep, cross rivers on bridges, and leave the
 map at one edge, or at two edges on a huge or vast map.
 
-Each level of a multi-level dungeon becomes a child node. The stairs down
-of one level lead to the stairs up of the level below. The bottom level has
+The four interior archetypes differ in layout. A dungeon has rooms joined
+by corridors, with some round rooms and more than one way through. A cave
+has winding caverns of uneven width. A castle splits into halls and
+chambers behind a wall ring, with stairs up and down. A building splits
+into a few small rooms and has no stairs.
+
+Each level of a multi-level dungeon or cave becomes a child node. The stairs
+down of one level lead to the stairs up of the level below. The stairs down
+stand as far from the stairs up as the level allows. The bottom level has
 no stairs down.
 
 ### Link warnings

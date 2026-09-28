@@ -332,13 +332,59 @@ gets a second exit far from the first. The dungeon gets no road. The first
 exit becomes the entry of the map. A map with no exit, such as an island
 with its whole border under water, enters at the bottom-center border tile.
 
+### Interior layouts
+
+Each interior generator carves a flat array of cell codes: void, floor,
+wall, and a door in a horizontal or a vertical wall. The helpers in
+`src/map/GeneratorInteriorMask.js` finish the mask. `wrapWalls` turns each
+void cell beside floor into wall, in all eight directions, so no floor cell
+touches the void. `maskTiles` then gives each floor cell a random floor
+variant and each wall cell the piece from `wallKind` that joins the walls
+and doors beside it. A void cell gets no tile. A door counts as part of the
+wall around it, so the wall pieces on each side of a door join through it.
+
+A dungeon level (`src/map/GeneratorInteriors.js`) places rectangular rooms
+that do not touch. About one room in three with sides of five cells or more
+trims its corners and reads as round. Rooms grow with the map. `roomLinks`
+joins the room centers with a minimum spanning tree, plus about one loop
+for every seven rooms between near rooms that the tree does not join. Each
+corridor bends once, and a coin toss picks the order of its two legs.
+
+A cave level (`src/map/GeneratorCave.js`) grows with a cellular automaton.
+Each cell starts as rock with a chance of 0.45. In each of four rounds, a
+cell with five or more rock neighbors turns to rock, and a cell with three
+or fewer opens. Only the largest connected cavern stays. The generator
+tries again when the cavern covers less than a fifth of the map, and after
+six tries it uses a room of three by three cells in the middle.
+
+A dungeon level and a cave level finish the same way, in `finishLevel`. An
+edge level cuts a straight tunnel from its stairs up to the nearest border
+and sets a door there. `interiorExits` in `MapExits.js` accepts a door on
+the border as a way out, so the party can walk back to the parent map. The
+stairs down go on the cell farthest from the stairs up by walking distance.
+`generateLevels` in `MapGenerator.js` chains the levels and links each
+stairs down to the level below through `childNodeId`.
+
+A castle and a building (`src/map/GeneratorHalls.js`) fill the whole grid
+with a wall ring and a door in the middle of the south wall. `hallLayout`
+splits the floor by binary space partition. Each split draws a wall across
+one room, with one door in it, and each half can split again. The split
+cuts the longer side, so rooms stay near square. A new wall never ends
+beside a door in the wall around its room, because that wall would block
+the door from one side. A castle keeps rooms of at least three cells a side
+and has stairs, and a building keeps rooms of at least two cells a side,
+with no stairs.
+
+### Generator modules
+
 The generator archetypes build on these helpers, and `MapGenerator`
 dispatches to them. The climate archetypes are in
 `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
-`src/map/GeneratorTown.js`. The dungeon and the castle are in
-`src/map/GeneratorInteriors.js`. The example world in
-`campaign/ExampleWorld.js` uses them too.
+`src/map/GeneratorTown.js`. The dungeon is in
+`src/map/GeneratorInteriors.js`, the cave in `src/map/GeneratorCave.js`,
+and the castle and the building in `src/map/GeneratorHalls.js`. The example
+world in `campaign/ExampleWorld.js` uses them too.
 
 A tile's `overlayRef` can be either a single reference or a draw-ordered
 stack of them (`TileGrid.overlayList` normalizes the two forms). The stack

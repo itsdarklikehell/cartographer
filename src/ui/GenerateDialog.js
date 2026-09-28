@@ -32,6 +32,7 @@ import { openDialog } from './Modal.js';
  * @param {{
  *   archetypes: { value: string, label: string }[],
  *   sizes: { value: string, label: string }[],
+ *   stacked?: string[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
  *   imageCache?: Map<string, HTMLImageElement>,
  *   returnFocus?: HTMLElement | null,
@@ -67,12 +68,16 @@ export function generateDialog(options) {
 
       const sizeSelect = field('Size', select(options.sizes, 'medium'));
 
-      // Only a dungeon stacks levels, so the field shows for that archetype
-      // alone. A region lists no dungeon, so there it never shows.
+      // Only the archetypes in `stacked`, such as a dungeon, stack levels, so
+      // the field shows for those alone. A region lists none of them, so
+      // there it never shows.
       const levelsInput = field('Levels', numberField(1, { min: 1 }));
       const levelsField = /** @type {HTMLElement} */ (levelsInput.closest('.modal__field'));
       const syncLevels = () =>
-        levelsField.classList.toggle('modal__field--hidden', archetypeSelect.value !== 'dungeon');
+        levelsField.classList.toggle(
+          'modal__field--hidden',
+          !(options.stacked ?? []).includes(archetypeSelect.value),
+        );
       syncLevels();
       archetypeSelect.addEventListener('change', syncLevels);
 

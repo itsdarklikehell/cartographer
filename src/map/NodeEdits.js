@@ -67,7 +67,9 @@ export function relandedTile({ tileId, width, height, entry, landing }) {
  */
 export const ENTRANCE_ART = {
   dungeon: { marker: 'dungeon', poi: 'dungeon' },
+  cave: { marker: 'cave-entrance', poi: 'dungeon' },
   castle: { marker: 'castle', poi: 'landmark' },
+  building: { marker: 'settlement', poi: 'settlement' },
   town: { marker: 'settlement', poi: 'settlement' },
 };
 
