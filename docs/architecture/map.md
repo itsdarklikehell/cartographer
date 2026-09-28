@@ -162,7 +162,7 @@ The canvas code splits so that each file owns one concern:
     +-- MapRenderer ......... terrain / fog / grid / region passes
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- MapMarkers ....... party, encounter, NPC, token markers
-    |     +-- MapDecorations ... cursor, marquee, selection, POI,
+    |     +-- MapDecorations ... cursor, selection, POI,
     |                            coordinate chrome
     |
     +-- MapCanvasPointer .... right-drag/touch pan, cursor-anchored wheel

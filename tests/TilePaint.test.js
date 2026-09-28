@@ -5,9 +5,7 @@ import {
   eraseTile,
   erasePath,
   isInBounds,
-  normalizeRect,
-  tilesInRect,
-  linkTilesInRect,
+  paintRegion,
   stampRegionLink,
   ensureChildLink,
   spanBlocks,
@@ -175,42 +173,31 @@ test('eraseTile removes a tile and no-ops when absent', () => {
   assert.equal(eraseTile(node, '0,0'), node);
 });
 
-test('normalizeRect orders corners regardless of drag direction', () => {
-  const expected = { minX: 1, minY: 0, maxX: 3, maxY: 2 };
-  assert.deepEqual(normalizeRect({ x: 1, y: 0 }, { x: 3, y: 2 }), expected);
-  assert.deepEqual(normalizeRect({ x: 3, y: 2 }, { x: 1, y: 0 }), expected);
-});
-
-test('tilesInRect returns only existing tiles inside the inclusive rect', () => {
-  let node = createMapNode('n', 'N', null, 4, 4);
-  node = setTile(node, createTile('1,1', 'grass.svg'));
-  node = setTile(node, createTile('2,2', 'grass.svg'));
-  node = setTile(node, createTile('3,3', 'grass.svg'));
-  node = setTile(node, createTile('poi', 'town.svg'));
-  const rect = { minX: 1, minY: 1, maxX: 2, maxY: 2 };
-  assert.deepEqual(
-    tilesInRect(node, rect)
-      .map((t) => t.id)
-      .sort(),
-    ['1,1', '2,2'],
-  );
-});
-
-test('linkTilesInRect stamps childNodeId onto in-rect tiles only, creating none', () => {
+test('paintRegion links an existing cell and creates no tile on an empty one', () => {
   let node = createMapNode('n', 'N', null, 4, 4);
   node = setTile(node, createTile('0,0', 'grass.svg'));
-  node = setTile(node, createTile('1,0', 'grass.svg'));
-  node = setTile(node, createTile('3,3', 'grass.svg', { childNodeId: 'other' }));
-  const linked = linkTilesInRect(node, { minX: 0, minY: 0, maxX: 1, maxY: 1 }, 'region');
+  const linked = paintRegion(node, '0,0', 'region');
   assert.equal(getTile(linked, '0,0').childNodeId, 'region');
-  assert.equal(getTile(linked, '1,0').childNodeId, 'region');
-  assert.equal(getTile(linked, '3,3').childNodeId, 'other');
-  assert.equal(linked.tiles.length, 3); // empty cells in the rect stay empty
+  assert.equal(paintRegion(linked, '1,1', 'region'), linked);
+  assert.equal(linked.tiles.length, 1);
 });
 
-test('linkTilesInRect is a no-op node when the rect covers no tiles', () => {
-  const node = node2x2();
-  assert.equal(linkTilesInRect(node, { minX: 0, minY: 0, maxX: 1, maxY: 1 }, 'region'), node);
+test('paintRegion moves a cell out of the region it was in', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = setTile(node, createTile('0,0', 'grass.svg', { childNodeId: 'a' }));
+  node = setTile(node, createTile('1,0', 'grass.svg', { childNodeId: 'a' }));
+  const moved = paintRegion(node, '0,0', 'b');
+  assert.equal(getTile(moved, '0,0').childNodeId, 'b');
+  assert.equal(getTile(moved, '1,0').childNodeId, 'a');
+});
+
+test('paintRegion clears a link with null, and returns the node when nothing changes', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = setTile(node, createTile('0,0', 'grass.svg', { childNodeId: 'a' }));
+  node = setTile(node, createTile('1,0', 'grass.svg'));
+  assert.equal(getTile(paintRegion(node, '0,0', null), '0,0').childNodeId, null);
+  assert.equal(paintRegion(node, '0,0', 'a'), node);
+  assert.equal(paintRegion(node, '1,0', null), node);
 });
 
 test('stampRegionLink stamps a 2x2 block on an outdoor node', () => {
@@ -258,7 +245,7 @@ test('stampRegionLink re-points a whole linked block at a new child', () => {
     (acc, tile) => setTile(acc, tile),
     createMapNode('world', 'World', null, 5, 5),
   );
-  const node = linkTilesInRect(painted, { minX: 0, minY: 0, maxX: 2, maxY: 2 }, 'vale');
+  const node = painted.tiles.reduce((acc, tile) => paintRegion(acc, tile.id, 'vale'), painted);
   const relinked = stampRegionLink(node, '1,1', 'moor');
   for (let x = 0; x < 3; x++) {
     for (let y = 0; y < 3; y++) {
@@ -473,4 +460,16 @@ test('spanBlocks is memoized per node', () => {
   assert.equal(spanBlocks(node), blocks, 'same node yields the cached block array');
   const repainted = paintTile(node, '3,3', 'keep.svg', false, 2);
   assert.notEqual(spanBlocks(repainted), blocks, 'a mutated (replaced) node recomputes');
+});
+
+test('paintRegion leaves a site entrance as it is', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  const marker = createTile('0,0', 'town.svg', { childNodeId: 'town' });
+  node = setTile(node, { ...marker, metadata: { ...marker.metadata, poiType: 'town' } });
+  node = setTile(node, createTile('1,0', 'grass.svg', { childNodeId: 'cave' }));
+  node = setTile(node, createTile('2,0', 'grass.svg', { childNodeId: 'moor' }));
+  const isInterior = (/** @type {string} */ id) => id === 'cave';
+  assert.equal(paintRegion(node, '0,0', 'vale', isInterior), node);
+  assert.equal(paintRegion(node, '1,0', null, isInterior), node);
+  assert.equal(getTile(paintRegion(node, '2,0', 'vale', isInterior), '2,0').childNodeId, 'vale');
 });

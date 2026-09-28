@@ -17,7 +17,7 @@ const COORD_SCALE = { factor: 0.3, min: 14, max: 42 };
 
 /**
  * This class draws the decoration layer of the map render. It covers
- * interaction chrome (keyboard cursor, region-tool marquee, Build selection
+ * interaction chrome (keyboard cursor, Build selection
  * outline), the point-of-interest glow, and the edge coordinate labels.
  * MapRenderer does not do this work directly, so the renderer keeps only the
  * terrain, fog, and region passes. This layer reads the host's ctx and
@@ -214,39 +214,6 @@ export class MapDecorations {
     ctx.lineWidth = 3;
     ctx.setLineDash([4, 3]);
     ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
-    ctx.restore();
-  }
-
-  /** Draw a dashed outline and tint over the region tool's drag block in progress.
-   * @param {MapView} view */
-  renderMarquee(view) {
-    if (!view.marquee) return;
-    const { ctx, tileSize } = this.host;
-    const topLeft = tileRect(
-      view.marquee.minX,
-      view.marquee.minY,
-      tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    const bottomRight = tileRect(
-      view.marquee.maxX,
-      view.marquee.maxY,
-      tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-    const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-    ctx.save();
-    ctx.fillStyle = INK.marqueeFill;
-    ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
-    ctx.strokeStyle = INK.gold;
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(topLeft.sx + 1, topLeft.sy + 1, w - 2, h - 2);
     ctx.restore();
   }
 

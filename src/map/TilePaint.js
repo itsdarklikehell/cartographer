@@ -182,67 +182,43 @@ export function erasePath(node, tileId) {
   return setTile(node, { ...existing, overlayRef: null });
 }
 
-/**
- * A tile-coordinate rectangle, inclusive on all edges.
- * @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} CellRect
- */
+/** The tile kinds of a link that the party takes as a way in, not a marker. */
+const WAY_KINDS = new Set(['door', 'stairs-up', 'stairs-down']);
 
 /**
- * The inclusive rectangle spanned by two corner cells, in either drag
- * direction. This makes sure that a marquee anchored bottom-right and
- * released top-left still yields a well-ordered rect.
- * @param {{ x: number, y: number }} a
- * @param {{ x: number, y: number }} b
- * @returns {CellRect}
+ * Whether a tile is the entrance of a site, which the Region brush leaves
+ * alone: a point-of-interest marker, a door or a staircase, or a link to an
+ * interior. A region stroke drawn across a town marker or a cave mouth
+ * otherwise takes the link off it, and the town or the cave has no way in.
+ * The inspector's link control still changes such a tile.
+ * @param {import('../types/map.js').Tile} tile
+ * @param {(childNodeId: string) => boolean} isInterior whether a node id names an interior
+ * @returns {boolean}
  */
-export function normalizeRect(a, b) {
-  return {
-    minX: Math.min(a.x, b.x),
-    minY: Math.min(a.y, b.y),
-    maxX: Math.max(a.x, b.x),
-    maxY: Math.max(a.y, b.y),
-  };
+export function isSiteEntrance(tile, isInterior) {
+  if (tile.metadata.poiType || WAY_KINDS.has(tileKind(tile))) return true;
+  return !!tile.childNodeId && isInterior(tile.childNodeId);
 }
 
 /**
- * The node's existing tiles whose coordinates fall inside a rect. Empty
- * cells contribute nothing. A region link lives on tiles, so linking a block
- * only stamps tiles already painted there.
+ * Link one cell to a child node, the Region brush's paint, or unlink it with
+ * null. A cell belongs to at most one region, so a cell that already links
+ * to another child now links to this one instead, and the old region loses
+ * the cell. The region link lives on the tile, so an empty cell stays empty
+ * and the node comes back unchanged. A site entrance (`isSiteEntrance`) also
+ * stays as it is. A cell that already has this link returns the node itself
+ * too, so a drag back and forth over painted cells makes no new node.
  * @param {MapNode} node
- * @param {CellRect} rect
- * @returns {import('../types/map.js').Tile[]}
- */
-export function tilesInRect(node, rect) {
-  return node.tiles.filter((tile) => {
-    const coords = parseCoords(tile.id);
-    if (!coords) return false;
-    return (
-      coords.x >= rect.minX &&
-      coords.x <= rect.maxX &&
-      coords.y >= rect.minY &&
-      coords.y <= rect.maxY
-    );
-  });
-}
-
-/**
- * Stamp a childNodeId onto every existing tile inside a rect, returning a new
- * node. This is the area-authoring counterpart to linking tiles one at a
- * time in the inspector. Pass null to unlink the block instead. The function
- * skips empty cells and creates no tile there. If the caller wants to warn
- * about a block with nothing to link, call tilesInRect first.
- * @param {MapNode} node
- * @param {CellRect} rect
+ * @param {string} tileId
  * @param {string | null} childNodeId
+ * @param {(childNodeId: string) => boolean} [isInterior] whether a node id names an interior
  * @returns {MapNode}
  */
-export function linkTilesInRect(node, rect, childNodeId) {
-  const targets = new Set(tilesInRect(node, rect).map((t) => t.id));
-  if (!targets.size) return node;
-  return withNodeTiles(
-    node,
-    node.tiles.map((t) => (targets.has(t.id) ? { ...t, childNodeId } : t)),
-  );
+export function paintRegion(node, tileId, childNodeId, isInterior = () => false) {
+  const tile = getTile(node, tileId);
+  if (!tile || (tile.childNodeId ?? null) === childNodeId) return node;
+  if (isSiteEntrance(tile, isInterior)) return node;
+  return setTile(node, { ...tile, childNodeId });
 }
 
 /**
@@ -321,9 +297,6 @@ export function stampRegionLink(node, tileId, childNodeId) {
  * the generator stamps for any archetype (`NodeEdits.ENTRANCE_ART`), as
  * opposed to the art of a particular place, such as an inn.
  */
-
-/** The tile kinds of a link that the party takes as a way in, not a marker. */
-const WAY_KINDS = new Set(['door', 'stairs-up', 'stairs-down']);
 
 /**
  * Bring the marker of an existing link to a child up to date with `art`,

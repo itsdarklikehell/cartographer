@@ -176,7 +176,7 @@ forest, shop, or temple. The tag is description only.
 | Brush | Paints the selected terrain, road, or marker on every cell the pointer crosses |
 | Erase | Clears cells back to empty |
 | Inspect | Selects one cell and opens it in the tile inspector |
-| Region | Marks the dragged rectangle as one sub-region |
+| Region | Links every cell the pointer crosses to the child node in **Paint region**, and moves a cell out of any other region. It skips site entrances. |
 
 The Size row (1x, 2x, 3x) sets how large the next painted tile draws. At 2x
 or 3x, one click stamps one tile whose image stretches across a 2x2 or 3x3

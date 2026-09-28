@@ -55,7 +55,6 @@ import { isGM } from '../view/ViewRole.js';
  *   selectedTileId: string | null,
  *   activeBrush: import('../ui/PalettePanel.js').Brush,
  *   fogTool: 'reveal' | 'hide' | null,
- *   regionAnchor: { x: number, y: number } | null,
  *   goToNode: (nodeId: string) => void,
  *   selectTile: (tileId: string) => void,
  *   clearSelection: () => void,
@@ -101,7 +100,6 @@ export function wireMapView(app) {
       selectedTileId: null, // tile id selected for inspection/editing in Build mode
       activeBrush: null, // active Build-mode paint brush
       fogTool: null, // active Play-mode GM fog brush
-      regionAnchor: null, // first cell of an in-progress region-tool drag
       goToNode,
       selectTile,
       clearSelection,
@@ -473,6 +471,11 @@ export function wireMapView(app) {
       env.activeBrush = brush;
     },
     tileTooltip,
+    {
+      list: () =>
+        grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
+      create: () => env.nodeActions.addChildNode(navigator.currentNodeId),
+    },
   );
   env.palettePanel = palettePanel;
 
@@ -567,7 +570,6 @@ export function wireMapView(app) {
   app.actions.onModeChanged = (mode) => {
     mapCanvas.setRevealAll(mode === 'build');
     tileTooltip.hide();
-    env.regionAnchor = null;
     // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
     // down settles the authoring gesture and the crosshair for the new mode.
     setFogTool(null);

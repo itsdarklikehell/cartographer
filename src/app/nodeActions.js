@@ -93,8 +93,10 @@ export function createNodeActions(app, env) {
       }),
     );
     // This is not a resync. A new empty node changes nothing that the
-    // canvas or the breadcrumb draws, only the tree it appears in.
+    // canvas or the breadcrumb draws, only the tree it appears in and the
+    // Region brush list.
     env.worldTree.update();
+    env.palettePanel.regionPicker.refresh();
     app.actions.markDirty();
     return id;
   }

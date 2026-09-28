@@ -193,7 +193,6 @@ export async function renderNodeToCanvas(node, options = {}) {
     selectedTileId: null,
     cursorCellId: null,
     focused: false,
-    marquee: null,
   });
   return canvas;
 }

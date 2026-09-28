@@ -166,12 +166,20 @@ that the generation created.
 1. Pick the **Inspect** tool and click the tile.
 2. Click **Set party start here** in the tile inspector.
 
-### Link a region so the party can zoom in
+### Paint a region so the party can zoom in
 
 1. Pick the **Region** tool.
-2. Drag a rectangle over the block of tiles.
-3. On release, link the block to an existing child node, or create a new
-   one. Every tile in the block then leads into that child.
+2. In **Paint region**, pick the child node to link. To make a new child
+   node, click **New**.
+3. Drag over the tiles of the region. Each tile that you cross then leads
+   into that child.
+
+A tile is in one region only. If you paint over a tile of another region,
+the tile moves to the region that you paint. To clear the link of a tile,
+pick **No region (clear link)** and paint over it. The Region tool does not
+change a site entrance: a point-of-interest marker, a door, a staircase, or
+a link to an interior. A toast tells you when a stroke skips one. On a node
+with no child nodes, the first stroke asks you for a new child node.
 
 To link one tile instead, use **Zooms into** or **New region here** in the
 tile inspector. On an outdoor map this stamps a 2x2 block: the tile plus

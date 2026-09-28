@@ -120,7 +120,7 @@ renderer's block and marker passes follow the same rule: when a pass
 consumes a rect immediately, the code computes it as arithmetic on the cell
 extent rather than as a `tileRect` object, because these passes run for each
 block and each marker in every frame. `tileRect` remains the right choice
-for chrome that runs once for each frame (selection, cursor, marquee,
+for chrome that runs once for each frame (selection, cursor,
 keyboard scroll-into-view). The code releases anything a pass memoizes
 against the view snapshot at the end of the frame (`MapMarkers.releaseFrame`),
 so an idle map keeps no reference to the finished view or to the node behind

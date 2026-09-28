@@ -10,7 +10,7 @@
  */
 
 export const INK = {
-  /** Party dots, the Build selection outline, and the region marquee. */
+  /** Party dots and the Build selection outline. */
   gold: '#e0c14b',
   /** The dark rim that keeps a gold fill legible over bright terrain. */
   goldRim: '#3a2f0a',
@@ -18,8 +18,6 @@ export const INK = {
   goldLit: '#ffd24a',
   /** The glow around a discovered point of interest. */
   goldGlow: 'rgba(255, 190, 60, 0.9)',
-  /** The region tool's drag block, tinted so the block reads while dragging. */
-  marqueeFill: 'rgba(224, 193, 75, 0.18)',
 
   /** Parchment text: the labels that sit on a plate or inside a band. */
   labelText: '#f2e4bd',

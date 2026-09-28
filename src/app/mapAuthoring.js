@@ -4,9 +4,8 @@ import {
   paintTile,
   eraseTile,
   erasePath,
-  normalizeRect,
-  tilesInRect,
-  linkTilesInRect,
+  paintRegion,
+  isSiteEntrance,
   stampRegionLink,
 } from '../map/TilePaint.js';
 import { isOverlayType } from '../map/TileCatalog.js';
@@ -26,7 +25,6 @@ import {
 } from '../map/EditHistory.js';
 import { revertEdit } from '../map/EditRevert.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
-import { promptModal, alertModal } from '../ui/Modal.js';
 import { resyncMapViews } from './mapResync.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -185,69 +183,71 @@ export function createMapAuthoring(app, env) {
     app.actions.markDirty();
   }
 
+  /** @param {string} id */
+  const isInteriorId = (id) => grid.getNode(id)?.kind === 'interior';
+  /** The site entrances the current Region stroke left alone. */
+  const keptEntrances = new Set();
+
   /**
-   * Resolve a completed region-tool drag. Link every existing tile in the
-   * marquee block to a child node. The user picks the child node from the
-   * current node's children, or creates a new one. This function is the
-   * area version of the inspector's per-tile link.
+   * Paint one cell with the Region brush: link it to the region the palette
+   * picker names, or clear its link for "No region". A cell in another region
+   * moves to this one (`TilePaint.paintRegion`). The canvas recomputes its
+   * region groups on each cell, where a terrain stroke waits for the end of
+   * the stroke, because the region outline is the only thing a region stroke
+   * changes on screen. A cell of the 48x48 example world repaints and
+   * regroups in about 0.5 ms. A site entrance keeps its link, and the stroke
+   * counts it for the toast at its end.
+   * @param {string} tileId
+   * @returns {boolean} whether the cell changed
    */
-  async function finishRegionStroke() {
-    const rect = env.mapCanvas.marquee;
-    env.regionAnchor = null;
-    env.mapCanvas.setMarquee(null);
-    if (!rect) return;
+  function paintRegionCell(tileId) {
     const node = navigator.getCurrentNode();
-    if (!tilesInRect(node, rect).length) {
-      await alertModal('No tiles in the selected block. Paint tiles first, then link them.');
-      return;
+    const target = env.palettePanel.regionPicker.getTarget();
+    const updated = paintRegion(node, tileId, target, isInteriorId);
+    if (updated === node) {
+      const tile = getTile(node, tileId);
+      if (tile && (tile.childNodeId ?? null) !== target && isSiteEntrance(tile, isInteriorId)) {
+        keptEntrances.add(tileId);
+      }
+      return false;
     }
-    const children = grid.getChildren(node.id);
-    /** @type {string | null} */
-    let childId;
-    if (children.length) {
-      const values = await promptModal(
-        'Link region block',
-        [
-          {
-            name: 'target',
-            label: 'Link to',
-            type: 'select',
-            options: [
-              ...children.map((c) => ({ value: c.id, label: c.name })),
-              { value: '', label: 'Create new region...' },
-            ],
-          },
-        ],
-        { submitLabel: 'Link' },
-      );
-      if (!values) return;
-      childId = values.target || (await env.nodeActions.addChildNode(node.id));
-    } else {
-      childId = await env.nodeActions.addChildNode(node.id);
-    }
-    if (!childId) return;
-    snapshotEdit(navigator.getCurrentNode());
-    const updated = linkTilesInRect(navigator.getCurrentNode(), rect, childId);
     grid.updateNode(updated);
     env.mapCanvas.refreshNode(updated);
-    if (env.selectedTileId)
-      env.inspector.setTile(getTile(updated, env.selectedTileId) ?? null, true);
-    // Same as the per-tile link, but for a whole block. Every tile in the
-    // block now leads further into the map instead of out.
-    env.syncExits();
-    finishEdit();
+    if (tileId === env.selectedTileId) {
+      env.inspector.setTile(getTile(updated, tileId) ?? null, true);
+    }
     app.actions.markDirty();
+    return true;
+  }
+
+  /**
+   * Start the first Region stroke on a node with no children yet. The GM
+   * names the new region in the node prompt. The pressed cell then takes the
+   * link, and the rest of that drag does nothing, because the prompt took the
+   * pointer. The next drag paints as usual.
+   * @param {string} tileId
+   */
+  async function paintFirstRegion(tileId) {
+    const id = await env.nodeActions.addChildNode(navigator.currentNodeId);
+    if (!id) return;
+    env.palettePanel.regionPicker.pick(id);
+    snapshotEdit(navigator.getCurrentNode());
+    paintRegionCell(tileId);
+    settleAfterStroke();
+    finishEdit();
   }
 
   // Build-mode authoring uses strokes. A left-drag applies the active brush
   // to every cell it crosses. A click is a one-cell stroke. This lets the
   // user paint a row in one gesture instead of one click per tile. The
-  // Region brush instead drags out a marquee block. The block resolves to a
-  // child-node link on release.
+  // Region brush paints a region link the same way.
   /** Whether the current stroke changed any cell. This tells the stroke's
    * end function to settle the deferred derived state. An inspect click
    * never changes a cell. */
   let strokeTouched = false;
+  /** Whether the current Region stroke waits on the prompt for a first
+   * region, so the rest of the drag paints nothing. */
+  let strokeHeld = false;
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null, first: boolean) => void} */
   const onStrokeCell = (x, y, tile, first) => {
     const id = tileIdAt(x, y);
@@ -262,15 +262,16 @@ export function createMapAuthoring(app, env) {
       return;
     }
     // A whole drag counts as one stroke. One snapshot on the first cell
-    // makes the stroke the unit of undo. Inspect mode and the region
-    // marquee do not change data here. The region tool takes its snapshot
-    // at link time.
-    if (first && env.activeBrush && env.activeBrush !== 'region') {
-      snapshotEdit(navigator.getCurrentNode());
+    // makes the stroke the unit of undo. Inspect mode does not change data.
+    if (first && env.activeBrush === 'region' && !env.palettePanel.regionPicker.hasRegions()) {
+      strokeHeld = true;
+      void paintFirstRegion(id);
+      return;
     }
+    if (strokeHeld) return;
+    if (first && env.activeBrush) snapshotEdit(navigator.getCurrentNode());
     if (env.activeBrush === 'region') {
-      if (first) env.regionAnchor = { x, y };
-      if (env.regionAnchor) env.mapCanvas.setMarquee(normalizeRect(env.regionAnchor, { x, y }));
+      if (paintRegionCell(id)) strokeTouched = true;
     } else if (env.activeBrush === 'erase') {
       strokeTouched = true;
       applyToTile(id, (node) => eraseTile(node, id));
@@ -312,7 +313,13 @@ export function createMapAuthoring(app, env) {
   }
 
   const onStrokeEnd = () => {
-    if (env.regionAnchor) finishRegionStroke();
+    strokeHeld = false;
+    if (keptEntrances.size) {
+      const n = keptEntrances.size;
+      const what = n === 1 ? 'a site entrance' : `${n} site entrances`;
+      toasts.show(`The Region brush left ${what} unchanged. Use the Tile tab to relink one.`);
+      keptEntrances.clear();
+    }
     if (strokeTouched && state.mode === 'build' && env.activeBrush === 'erase') {
       unbindErasedTiles();
     }

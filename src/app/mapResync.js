@@ -49,4 +49,6 @@ export function resyncMapViews(app, env, { reframe = false } = {}) {
   env.breadcrumb.update(app.navigator.getBreadcrumb());
   env.worldTree.update();
   env.regionTree.update();
+  // The Region brush lists the children of the node in view, as the trees do.
+  env.palettePanel.regionPicker.refresh();
 }

@@ -211,7 +211,6 @@ export function generateDialog(options) {
           selectedTileId: null,
           cursorCellId: null,
           focused: false,
-          marquee: null,
         });
       }
 

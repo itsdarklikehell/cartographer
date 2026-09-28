@@ -72,7 +72,6 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
- * @property {import('./TilePaint.js').CellRect | null} marquee
  * @property {number} [pixelRatio] buffer pixels per CSS pixel, from devicePixelRatio. A label sized in CSS pixels multiplies by it, so it reads at one size on every screen. It defaults to 1.
  */
 
@@ -155,7 +154,6 @@ export class MapRenderer {
       this._renderTiles(view, groupCover);
       this._renderCellGrid(view, frame);
       this._renderRegionGroups(view, frame);
-      this._decorations.renderMarquee(view);
       this._decorations.renderSelection(view);
       this._markers.renderEncounterMarkers(view);
       this._markers.renderNPCMarkers(view);

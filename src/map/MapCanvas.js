@@ -91,8 +91,6 @@ export class MapCanvas {
      * onStrokeCell and onStrokeEnd, and panning moves to the right button.
      * This way authoring gestures and navigation do not share one button. */
     this.authoring = false;
-    /** @type {import('./TilePaint.js').CellRect | null} marquee highlight for the region tool */
-    this.marquee = null;
     /** @type {string | null} keyboard cursor cell id, drawn only while the canvas has focus */
     this.cursorCellId = null;
     /** @type {boolean} whether the canvas is focused, so the cursor outline shows */
@@ -435,17 +433,6 @@ export class MapCanvas {
   setAuthoring(value) {
     this.authoring = value;
     this._pointer.cancel();
-    this.setMarquee(null);
-  }
-
-  /**
-   * Highlight (or clear, with null) a rectangular block of cells. This is
-   * the live preview for the region tool's drag gesture.
-   * @param {import('./TilePaint.js').CellRect | null} rect
-   */
-  setMarquee(rect) {
-    this.marquee = rect;
-    this.render();
   }
 
   /**
@@ -475,7 +462,6 @@ export class MapCanvas {
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,
-      marquee: this.marquee,
       pixelRatio: globalThis.devicePixelRatio || 1,
     };
   }

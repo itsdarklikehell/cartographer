@@ -9,6 +9,7 @@ import { removeStored, writeStored } from '../storage/Footprint.js';
 /** localStorage key of the "Show variants" choice. Absent means off. */
 const SHOW_VARIANTS_KEY = 'campaign-builder:show-variants';
 import { buildDisclosure } from './Disclosure.js';
+import { mountRegionPicker } from './RegionPicker.js';
 import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
@@ -19,8 +20,9 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * Mount the tile palette: a picker of paint brushes for Build mode. The active
  * brush controls what a click on a tile does. An Inspect brush (null) selects
  * a tile for the inspector. An Erase brush removes a tile. A Region brush
- * drag-selects a block of tiles to link to a child node. Any tile swatch
- * paints that image. A brush pick invokes onBrushChange, and the panel
+ * paints each cell it crosses with a link to the child node that the region
+ * picker names, and the picker shows only while that brush is active. Any
+ * tile swatch paints that image. A brush pick invokes onBrushChange, and the panel
  * highlights the active brush. Swatches are also drag sources, so a GM can
  * drag a tile onto the grid in addition to click-to-paint. A hover over a
  * swatch shows its label in the supplied tooltip, because a swatch is
@@ -46,9 +48,16 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
  * @param {ReturnType<typeof import('./TileTooltip.js').mountTileTooltip>} [tooltip]
- * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void }}
+ * @param {import('./RegionPicker.js').RegionSource} [regions] the children the Region brush can paint
+ * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, regionPicker: ReturnType<typeof mountRegionPicker> }}
  */
-export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
+export function mountPalettePanel(
+  container,
+  palette,
+  onBrushChange,
+  tooltip,
+  regions = { list: () => [], create: async () => null },
+) {
   /** @type {Brush} */
   let brush = null;
   let scale = 1;
@@ -91,6 +100,8 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
       s.setAttribute('aria-pressed', String(active));
     }
     syncTabStops();
+    regionPicker.root.hidden = brush !== 'region';
+    if (brush === 'region') regionPicker.refresh();
     onBrushChange(brush);
   }
 
@@ -168,6 +179,9 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   // Grid order (row-major): Inspect, Region, Erase path, Erase tile.
   tools.append(inspectBtn, regionBtn, erasePathBtn, eraseBtn);
   root.appendChild(tools);
+
+  const regionPicker = mountRegionPicker(regions);
+  root.appendChild(regionPicker.root);
 
   // Scale row: how large the next painted tile's art draws, from 1x1 to 3x3.
   const scaleRow = el(
@@ -316,7 +330,8 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   function setKind(nextKind) {
     kind = nextKind;
     applyVisibility();
+    regionPicker.refresh();
   }
 
-  return { getBrush: () => brush, getScale: () => scale, setKind };
+  return { getBrush: () => brush, getScale: () => scale, setKind, regionPicker };
 }

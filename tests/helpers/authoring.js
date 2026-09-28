@@ -51,25 +51,37 @@ export function authoring({ mode = 'build', scale = 1 } = {}) {
   const env = /** @type {any} */ ({
     selectedTileId: null,
     activeBrush: { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` },
-    regionAnchor: null,
     fogTool: null,
     mapCanvas: {
       refreshNodeTiles: () => {},
       refreshNode: () => {},
       setNode: () => calls.push('setNode'),
-      marquee: null,
       tileSize: 32,
       offsetX: 0,
       offsetY: 0,
       scale: 1,
-      // The region tool drags out a block on the canvas and reads it back on
-      // release, so the stub has to remember it.
-      setMarquee(rect) {
-        this.marquee = rect;
-      },
     },
     inspector: { setTile: (/** @type {any} */ tile) => inspected.push(tile) },
-    palettePanel: { getScale: () => scale },
+    palettePanel: {
+      getScale: () => scale,
+      // The Region brush paints whichever child the picker names. `regions`
+      // lists the children it offers.
+      regionPicker: {
+        target: /** @type {string | null} */ (null),
+        regions: /** @type {string[]} */ ([]),
+        getTarget() {
+          return this.target;
+        },
+        hasRegions() {
+          return this.regions.length > 0;
+        },
+        pick(/** @type {string} */ id) {
+          this.regions.push(id);
+          this.target = id;
+        },
+        refresh: () => {},
+      },
+    },
     selectTile: () => calls.push('selectTile'),
     refreshMapDescription: () => calls.push('refreshMapDescription'),
     syncExits: () => calls.push('syncExits'),

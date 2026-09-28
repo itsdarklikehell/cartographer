@@ -41,28 +41,112 @@ test('linking a tile recomputes the ways out, because a linked tile is no longer
   assert.ok(calls.includes('syncExits'), calls.join(','));
 });
 
-test('a region block link recomputes the ways out too', async () => {
-  const { gestures, env, grid, calls } = authoring();
-  // No existing child, so the link goes straight to creating one instead of
-  // prompting for a target: node:test has no DOM for the dialog.
-  // The marquee only links tiles that exist, so paint the block first.
-  env.activeBrush = { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` };
-  gestures.onStrokeCell(0, 2, null, true);
-  gestures.onStrokeEnd();
-  calls.length = 0;
-
-  // The region tool drags out a block and resolves it to a child link on
-  // release, the area counterpart of the per-tile link above. It prompts, so the
-  // link lands a turn later than the gesture that started it.
-  env.activeBrush = 'region';
-  env.nodeActions = { addChildNode: async () => 'cellar' };
-  gestures.onStrokeCell(0, 2, null, true);
-  gestures.onStrokeEnd();
-  await new Promise((resolve) => {
+/** Wait one turn, for a gesture that awaits a prompt. */
+const tick = () =>
+  new Promise((resolve) => {
     setTimeout(resolve, 0);
   });
-  assert.equal(getTile(grid.getNode('keep') ?? null, '0,2')?.childNodeId, 'cellar');
+
+test('a region stroke links every cell it crosses and settles the ways out', () => {
+  const { gestures, env, grid, calls } = authoring();
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeCell(1, 0, null, false);
+  gestures.onStrokeEnd();
+  const keep = grid.getNode('keep') ?? null;
+  assert.equal(getTile(keep, '0,0')?.childNodeId, 'cellar');
+  assert.equal(getTile(keep, '1,0')?.childNodeId, 'cellar');
+  assert.equal(getTile(keep, '2,0')?.childNodeId, null);
+  assert.ok(settled(calls).includes('syncExits'), settled(calls).join(','));
+});
+
+test('a region stroke moves a cell out of the region it was in', () => {
+  const { gestures, env, grid } = authoring();
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  env.palettePanel.regionPicker.pick('crypt');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(getTile(grid.getNode('keep') ?? null, '0,0')?.childNodeId, 'crypt');
+});
+
+test('a region stroke with no region picked clears the links it crosses', () => {
+  const { gestures, env, grid } = authoring();
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  env.palettePanel.regionPicker.target = null;
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(getTile(grid.getNode('keep') ?? null, '0,0')?.childNodeId, null);
+});
+
+test('a region stroke over cells that already link there settles nothing', () => {
+  const { gestures, env, grid, calls } = authoring();
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  const before = grid.getNode('keep');
+  calls.length = 0;
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(grid.getNode('keep'), before);
+  assert.deepEqual(settled(calls), []);
+});
+
+test('one undo takes back a whole region stroke', () => {
+  const { gestures, env, grid } = authoring();
+  env.goToNode = () => {};
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeCell(1, 0, null, false);
+  gestures.onStrokeEnd();
+  gestures.undoStroke();
+  const keep = grid.getNode('keep') ?? null;
+  assert.equal(getTile(keep, '0,0')?.childNodeId ?? null, null);
+  assert.equal(getTile(keep, '1,0')?.childNodeId ?? null, null);
+});
+
+test('the first region stroke on a node with no children creates one', async () => {
+  const { gestures, env, grid, calls } = authoring();
+  env.activeBrush = 'region';
+  env.nodeActions = { addChildNode: async () => 'cellar' };
+  gestures.onStrokeCell(0, 0, null, true);
+  // The prompt took the pointer, so the rest of the drag paints nothing.
+  gestures.onStrokeCell(1, 0, null, false);
+  gestures.onStrokeEnd();
+  await tick();
+  const keep = grid.getNode('keep') ?? null;
+  assert.equal(getTile(keep, '0,0')?.childNodeId, 'cellar');
+  assert.equal(getTile(keep, '1,0')?.childNodeId, null);
+  assert.equal(env.palettePanel.regionPicker.getTarget(), 'cellar');
   assert.ok(calls.includes('syncExits'), calls.join(','));
+});
+
+test('a first region stroke the user cancels out of links nothing', async () => {
+  const { gestures, env, grid } = authoring();
+  env.activeBrush = 'region';
+  env.nodeActions = { addChildNode: async () => null };
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  await tick();
+  assert.equal(getTile(grid.getNode('keep'), '0,0')?.childNodeId, null);
+});
+
+test('a region stroke hands the inspector its tile back when one is selected', () => {
+  const { gestures, env, inspected } = authoring();
+  env.selectedTileId = '0,0';
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 0, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(inspected.at(-1)?.childNodeId, 'cellar');
 });
 
 test('a stroke on the selected tile hands the inspector the painted tile back', () => {
@@ -131,41 +215,6 @@ test('linkSelectedTile with nothing selected does nothing', () => {
   gestures.linkSelectedTile('cellar');
   assert.equal(grid.getNode('keep'), before);
   assert.deepEqual(calls, []);
-});
-
-test('a region drag the user cancels out of leaves the block unlinked', async () => {
-  const { gestures, env, grid } = authoring();
-  env.activeBrush = 'region';
-  env.nodeActions = { addChildNode: async () => null };
-  gestures.onStrokeCell(0, 0, null, true);
-  gestures.onStrokeEnd();
-  await new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-  assert.equal(getTile(grid.getNode('keep'), '0,0')?.childNodeId, null);
-});
-
-test('a region release with no marquee drawn does nothing', () => {
-  const { gestures, env, grid } = authoring();
-  const before = grid.getNode('keep');
-  env.regionAnchor = { x: 0, y: 0 };
-  env.mapCanvas.marquee = null;
-  gestures.onStrokeEnd();
-  assert.equal(env.regionAnchor, null, 'the release always clears the anchor');
-  assert.equal(grid.getNode('keep'), before);
-});
-
-test('a region block link hands the inspector its tile back when one is selected', async () => {
-  const { gestures, env, inspected } = authoring();
-  env.selectedTileId = '0,0';
-  env.activeBrush = 'region';
-  env.nodeActions = { addChildNode: async () => 'cellar' };
-  gestures.onStrokeCell(0, 0, null, true);
-  gestures.onStrokeEnd();
-  await new Promise((resolve) => {
-    setTimeout(resolve, 0);
-  });
-  assert.equal(inspected.at(-1)?.childNodeId, 'cellar');
 });
 
 /**
@@ -262,4 +311,24 @@ test('dropping a random-variant swatch paints one variant of its type', (t) => {
   gestures.wireCanvasDrop(/** @type {any} */ (canvas));
   canvas.fire('drop', dropEvent('any:plaza', 48, 48));
   assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, 'assets/tiles/plaza/plaza-3.svg');
+});
+
+test('a region stroke leaves a site entrance linked and says so once', () => {
+  const { gestures, env, grid, toastMessages } = authoring();
+  // A door on the outer wall is the way into the keep's cellar.
+  env.activeBrush = { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` };
+  gestures.onStrokeCell(0, 2, null, true);
+  gestures.onStrokeEnd();
+  env.activeBrush = 'region';
+  env.palettePanel.regionPicker.pick('cellar');
+  gestures.onStrokeCell(0, 1, null, true);
+  gestures.onStrokeCell(0, 2, null, false);
+  gestures.onStrokeCell(0, 2, null, false);
+  gestures.onStrokeEnd();
+  const keep = grid.getNode('keep') ?? null;
+  assert.equal(getTile(keep, '0,1')?.childNodeId, 'cellar');
+  assert.equal(getTile(keep, '0,2')?.childNodeId ?? null, null);
+  assert.deepEqual(toastMessages, [
+    'The Region brush left a site entrance unchanged. Use the Tile tab to relink one.',
+  ]);
 });
