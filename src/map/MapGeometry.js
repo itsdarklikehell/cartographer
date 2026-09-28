@@ -172,6 +172,27 @@ export function clientToBuffer(clientX, clientY, rect, bufferWidth, bufferHeight
 }
 
 /**
+ * Convert a client rect, such as an element laid over the canvas, to the
+ * canvas's buffer-pixel space. This applies clientToBuffer to the top-left
+ * corner and scales the size by the same ratio.
+ * @param {{ left: number, top: number, width: number, height: number }} client
+ * @param {DOMRect} rect result of canvas.getBoundingClientRect()
+ * @param {number} bufferWidth canvas.width
+ * @param {number} bufferHeight canvas.height
+ * @returns {{ x: number, y: number, w: number, h: number }}
+ */
+export function clientRectToBuffer(client, rect, bufferWidth, bufferHeight) {
+  const { x, y, scaleX, scaleY } = clientToBuffer(
+    client.left,
+    client.top,
+    rect,
+    bufferWidth,
+    bufferHeight,
+  );
+  return { x, y, w: client.width * scaleX, h: client.height * scaleY };
+}
+
+/**
  * The buffer-to-CSS pixel ratio of a canvas on its own, for cases that scale
  * a delta instead of converting a point. Examples are a drag or pinch
  * measured in client pixels, and panning an offset that lives in buffer

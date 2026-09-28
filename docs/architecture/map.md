@@ -1002,6 +1002,17 @@ is tested against cannot differ. The band is a bounded pill centered on the
 traveler's row or column (the exit's `along`), kept within the canvas, so panning the map's border out of view pins the
 arrow at the viewport edge instead of scrolling it away.
 
+HTML over the canvas, such as the mini-map, catches a click before the
+canvas does, so a band under it cannot be clicked. `MapCanvas.setOccluders`
+takes the rects in buffer pixels that such HTML covers, and the view passes
+them into the band geometry. `avoidOccluders` then slides a covered band
+along its own side, to the nearest place just before or just past an
+occluder that stays on the canvas and clear of every occluder. A west band
+under the mini-map moves down below it, and a north band moves right. When
+no place is clear, the band stays where it is. `mapWiring.js` converts the
+mini-map's client rect with `clientRectToBuffer` from a `ResizeObserver` on
+the mini-map and from each canvas resize.
+
 `mapExitTravel.js`'s `exitToParent` does the travel, and it moves whoever a
 click moves: the whole party for the GM, one character while the
 split-party toggle is on, and no one from a spectator tab, which follows the

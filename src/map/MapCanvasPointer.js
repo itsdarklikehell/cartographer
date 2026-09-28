@@ -209,6 +209,7 @@ export class MapCanvasPointer {
       canvasWidth: host.canvas.width,
       canvasHeight: host.canvas.height,
       partyTileId: host.partyTileId,
+      occluders: host.occluders,
     };
     for (const exit of host.exits) {
       if (exit.kind !== 'edge') continue;

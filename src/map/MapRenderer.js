@@ -65,6 +65,7 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
  * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. This array is empty in Build mode, where authoring the map is not the same as traveling it.
+ * @property {import('./ExitBands.js').Rect[]} [occluders] rects in buffer px that HTML over the canvas covers. Edge exit bands move off them.
  * @property {import('../types/map.js').ExitSide | null} [armedExitSide] edge exit a cursor key has armed, drawn with emphasis: the next press of the same arrow key takes it.
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId

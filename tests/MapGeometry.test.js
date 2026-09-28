@@ -8,6 +8,7 @@ import {
   screenToTile,
   clampZoom,
   clientToBuffer,
+  clientRectToBuffer,
   bufferScale,
   blockRect,
   cellEdge,
@@ -122,6 +123,13 @@ test('clientToBuffer scales client coords up when the canvas is CSS-shrunk', () 
   const rect = { left: 0, top: 0, width: 360, height: 270 };
   const p = clientToBuffer(180, 135, rect, 720, 540);
   assert.deepEqual(p, { x: 360, y: 270, scaleX: 2, scaleY: 2 });
+});
+
+test('clientRectToBuffer moves and scales a rect laid over the canvas', () => {
+  // The canvas draws at half its buffer size, 10 px from the viewport origin.
+  const rect = /** @type {DOMRect} */ ({ left: 10, top: 20, width: 360, height: 270 });
+  const over = { left: 18, top: 28, width: 100, height: 50 };
+  assert.deepEqual(clientRectToBuffer(over, rect, 720, 540), { x: 16, y: 16, w: 200, h: 100 });
 });
 
 test('clientToBuffer avoids division by zero on a zero-size rect', () => {

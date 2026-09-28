@@ -1,6 +1,6 @@
 import { getTile } from '../map/TileGrid.js';
 import { describeCursor, describeNode } from '../map/MapDescription.js';
-import { tileIdAt } from '../map/MapGeometry.js';
+import { clientRectToBuffer, tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens, followedPosition } from '../party/CharacterTokens.js';
@@ -500,6 +500,27 @@ export function wireMapView(app) {
   });
   miniMap = shownMiniMap;
 
+  // A click on the mini-map never reaches the canvas, so the edge exit bands
+  // move off the part of the canvas it covers. The observer fires when the
+  // mini-map shows, hides, or changes size. A canvas resize changes the
+  // buffer scale, so resizeMapToViewport calls this too.
+  const syncMapOccluders = () => {
+    const box = shownMiniMap.element;
+    if (box.hidden) {
+      mapCanvas.setOccluders([]);
+      return;
+    }
+    mapCanvas.setOccluders([
+      clientRectToBuffer(
+        box.getBoundingClientRect(),
+        canvasEl.getBoundingClientRect(),
+        canvasEl.width,
+        canvasEl.height,
+      ),
+    ]);
+  };
+  new ResizeObserver(syncMapOccluders).observe(shownMiniMap.element);
+
   mapControls = mountMapControls(mustGetElement('map-viewport'), {
     onZoomIn: () => mapCanvas.zoomBy(1.25),
     onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
@@ -632,6 +653,7 @@ export function wireMapView(app) {
       Math.max(1, Math.round(canvasEl.clientWidth * dpr)),
       Math.max(1, Math.round(canvasEl.clientHeight * dpr)),
     );
+    syncMapOccluders();
   };
   new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 

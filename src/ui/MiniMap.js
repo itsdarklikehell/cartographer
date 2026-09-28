@@ -32,7 +32,7 @@ const HIDDEN_KEY = 'campaign-builder:minimap-hidden';
  *   getView: () => MiniMapView | null,
  *   revealAll: () => boolean,
  * }} options
- * @returns {{ update: () => void, isOpen: () => boolean, toggle: () => void }}
+ * @returns {{ update: () => void, isOpen: () => boolean, toggle: () => void, element: HTMLElement }}
  */
 export function mountMiniMap(container, options) {
   const canvas = el('canvas', 'minimap__canvas');
@@ -196,5 +196,5 @@ export function mountMiniMap(container, options) {
     canvas.setAttribute('aria-label', describe(view));
   }
 
-  return { update, isOpen: () => open, toggle };
+  return { update, isOpen: () => open, toggle, element: root };
 }

@@ -81,6 +81,9 @@ export class MapCanvas {
     /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
      * border arrows and tile badges. This applies only in Play mode. The wiring supplies none while authoring. */
     this.exits = [];
+    /** @type {import('./ExitBands.js').Rect[]} rects in buffer px that HTML over the
+     * canvas covers, such as the mini-map. Edge exit bands move off them. */
+    this.occluders = [];
     /** @type {import('../types/map.js').ExitSide | null} edge exit that a cursor key
      * arms. The next press of the same arrow key takes it. The renderer highlights it. */
     this.armedExitSide = null;
@@ -403,6 +406,16 @@ export class MapCanvas {
   }
 
   /**
+   * Set the rects, in buffer px, that HTML over the canvas covers. A click
+   * there never reaches the canvas, so the edge exit bands move off them.
+   * @param {import('./ExitBands.js').Rect[]} rects
+   */
+  setOccluders(rects) {
+    this.occluders = rects;
+    this.render();
+  }
+
+  /**
    * Drop a cursor-armed edge exit, and tell the wiring so its narration
    * clears too. Any interaction other than the confirming second press calls
    * this function: a cursor move, another key, a pointer touch, a loss of
@@ -460,6 +473,7 @@ export class MapCanvas {
       npcTileIds: this.npcTileIds,
       characterTokens: this.characterTokens,
       exits: this.exits,
+      occluders: this.occluders,
       armedExitSide: this.armedExitSide,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,

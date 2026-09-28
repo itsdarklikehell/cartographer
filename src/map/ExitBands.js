@@ -30,10 +30,17 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * @property {number} canvasWidth
  * @property {number} canvasHeight
  * @property {number} alongCell cell index along the side to centre the band on
+ * @property {Rect[]} [occluders] rects in buffer px that HTML over the canvas covers
  */
+
+/** A rect in buffer px. */
+/** @typedef {{ x: number, y: number, w: number, h: number }} Rect */
 
 /** The band's rect in buffer px, with the type size its label is drawn at. */
 /** @typedef {{ x: number, y: number, w: number, h: number, fontSize: number }} ExitBand */
+
+/** The clear space between a band and the canvas edge or an occluder, in buffer px. */
+const BAND_INSET = 8;
 
 /**
  * The view state used to place an exit band: the pan, zoom, and canvas
@@ -46,6 +53,7 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * @property {number} canvasWidth
  * @property {number} canvasHeight
  * @property {string | null} [partyTileId]
+ * @property {Rect[]} [occluders]
  */
 
 /**
@@ -83,6 +91,7 @@ export function exitBandGeometry(node, view, tileSize, exit) {
     canvasWidth: view.canvasWidth,
     canvasHeight: view.canvasHeight,
     alongCell,
+    occluders: view.occluders ?? [],
   };
 }
 
@@ -130,13 +139,81 @@ export function edgeExitBand(exit, geom) {
     y = geom.offsetY + (along + 0.5) * size - h / 2;
     x = side === 'west' ? geom.offsetX - gap - w : geom.offsetX + geom.width * size + gap;
   }
-  return {
-    x: clamp(x, 8, Math.max(8, geom.canvasWidth - w - 8)),
-    y: clamp(y, 8, Math.max(8, geom.canvasHeight - h - 8)),
-    w,
-    h,
-    fontSize,
-  };
+  const placed = avoidOccluders(
+    {
+      x: clampToCanvas(x, w, geom.canvasWidth),
+      y: clampToCanvas(y, h, geom.canvasHeight),
+      w,
+      h,
+    },
+    side,
+    geom,
+  );
+  return { ...placed, fontSize };
+}
+
+/**
+ * Keep one coordinate of a band on the canvas, `BAND_INSET` from each edge.
+ * @param {number} p
+ * @param {number} size band extent on that axis
+ * @param {number} canvasSize
+ */
+function clampToCanvas(p, size, canvasSize) {
+  return clamp(p, BAND_INSET, Math.max(BAND_INSET, canvasSize - size - BAND_INSET));
+}
+
+/**
+ * Whether two rects overlap, with `BAND_INSET` of clear space required
+ * between them.
+ * @param {Rect} a
+ * @param {Rect} b
+ */
+function overlaps(a, b) {
+  return (
+    a.x < b.x + b.w + BAND_INSET &&
+    b.x < a.x + a.w + BAND_INSET &&
+    a.y < b.y + b.h + BAND_INSET &&
+    b.y < a.y + a.h + BAND_INSET
+  );
+}
+
+/**
+ * Move a band off the HTML that sits over the canvas, such as the mini-map.
+ * A click on that HTML never reaches the canvas, so a band under it can be
+ * seen in part but not clicked. The band slides along its own side, which
+ * keeps it beside the border it leads off. Each occluder offers two places,
+ * one just before it and one just past it on that axis. The band takes the
+ * nearest place that is on the canvas and clear of every occluder. When no
+ * place is clear, as on a canvas too small for both, the band stays where
+ * it is. This is a pure function.
+ * @param {Rect} band
+ * @param {ExitSide} side
+ * @param {ExitBandGeometry} geom
+ * @returns {Rect}
+ */
+export function avoidOccluders(band, side, geom) {
+  const occluders = geom.occluders ?? [];
+  if (!occluders.some((o) => overlaps(band, o))) return band;
+  const horizontal = sideAxis(side) === 'x';
+  /** @type {Rect | null} */
+  let best = null;
+  for (const o of occluders) {
+    const places = horizontal
+      ? [o.x - band.w - BAND_INSET, o.x + o.w + BAND_INSET].map((x) => ({
+          ...band,
+          x: clampToCanvas(x, band.w, geom.canvasWidth),
+        }))
+      : [o.y - band.h - BAND_INSET, o.y + o.h + BAND_INSET].map((y) => ({
+          ...band,
+          y: clampToCanvas(y, band.h, geom.canvasHeight),
+        }));
+    for (const place of places) {
+      if (occluders.some((other) => overlaps(place, other))) continue;
+      const shift = Math.abs(place.x - band.x) + Math.abs(place.y - band.y);
+      if (!best || shift < Math.abs(best.x - band.x) + Math.abs(best.y - band.y)) best = place;
+    }
+  }
+  return best ?? band;
 }
 
 /**

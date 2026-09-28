@@ -476,7 +476,8 @@ The mini-map draws fog the same way as the main map. In Play mode, a tile
 that the party has not seen draws as fog, and in Build mode every tile
 shows. The mini-map button in the map controls shows or hides the mini-map,
 and each browser keeps the choice. A click on the mini-map does nothing, so
-it never moves the party to a tile hidden under it.
+it never moves the party to a tile hidden under it. An exit arrow that the
+mini-map would cover moves along its side of the map until it is clear.
 
 ### The difficulty hint
 
