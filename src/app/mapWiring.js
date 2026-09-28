@@ -405,7 +405,6 @@ export function wireMapView(app) {
         : discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: travel.teleportToNode,
-    collapsible: true,
   });
   app.views.regionTree = regionTree;
   env.regionTree = regionTree;

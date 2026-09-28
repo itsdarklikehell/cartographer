@@ -1014,3 +1014,12 @@ is part of the tree's redraw signature, so `syncExits` also refreshes the
 tree, because a stroke on the parent can seal or unseal a child without a
 change to the rail warning for the node in view. Outside Build mode the check
 returns null, so a Play-mode party step never pays for a world scan.
+
+Most branches of the tree start closed, so a warning can sit on a row that
+the GM cannot see. For this reason a closed row shows the count of warnings
+in its branch, and the count badge hides when the branch opens. The row of
+the current node is never inside a closed branch, because a change of the
+current node opens every row that `ancestorIds` returns for it. A search
+uses `filterWorldTree`, which keeps each matching node and the path to it.
+Both functions live in `map/WorldTree.js` beside `buildWorldTree` and have
+unit tests.

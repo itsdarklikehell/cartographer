@@ -169,6 +169,23 @@ interiors hang beneath it.
 A node also has a free-text environment tag, for example grassland,
 forest, shop, or temple. The tag is description only.
 
+### World tree
+
+The World tree in the Build rail and the World panel in Play mode show the
+same node tree. Each tree scrolls in its own box. The Build rail stays in
+view when the page scrolls.
+
+| Control | What it does |
+| --- | --- |
+| Chevron | Opens or closes the nodes under a row |
+| Find a place | Shows only the nodes whose names contain the text, and the rows above them. It appears when the world has 12 or more nodes. Escape clears it |
+| Row name | Build: opens that map. Play: offers to teleport the party there |
+| Actions button (three dots) | Build only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu |
+
+A branch is closed when the tree first shows it, except the top node and
+the rows above the current map. When the map in view changes, the tree
+opens the rows above it and scrolls to its row.
+
 ### Palette tools
 
 | Tool | What a drag does |
@@ -386,7 +403,8 @@ map.
 
 Build mode shows a warning above the tool tabs when the node in view has no
 way in or out. The world tree marks each node that has a problem with a
-warning triangle.
+warning triangle. A closed branch shows a triangle and the number of nodes
+inside it that have a warning.
 
 | Warning | Meaning |
 | --- | --- |

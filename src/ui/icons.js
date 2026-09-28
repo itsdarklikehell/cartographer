@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -69,6 +69,12 @@ const PATHS = {
     'M18 17l-6 5',
   ],
   chevron: ['M9 6l6 6-6 6'],
+  // Three dots in a row open a menu of more actions.
+  more: [
+    'M5 11a1 1 0 100 2 1 1 0 000-2z',
+    'M12 11a1 1 0 100 2 1 1 0 000-2z',
+    'M19 11a1 1 0 100 2 1 1 0 000-2z',
+  ],
   // Arrows move an item one place up or down its list.
   up: ['M12 19V5', 'M6 11l6-6 6 6'],
   down: ['M12 5v14', 'M6 13l6 6 6-6'],

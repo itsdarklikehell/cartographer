@@ -30,8 +30,10 @@ Briarwick Vale contains the town of Briarwick, and the Barrowdowns contain
 Thornhold Keep and the Barrow of the Old King. The tree is how the world is
 built, because a node contains tiles and a tile can lead into another node.
 
-3. Click one of the child nodes. The map shows that node instead.
-4. Click the world map row again to come back.
+3. Click the chevron beside a region. Its towns, keeps, and caves open
+   below it.
+4. Click one of the child nodes. The map shows that node instead.
+5. Click the world map row again to come back.
 
 ## 3. Move the party
 

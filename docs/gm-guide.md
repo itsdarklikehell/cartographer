@@ -99,10 +99,11 @@ in the center, and the palette and tile inspector on the right.
 
 ### Add a node
 
-1. In the World tree, click the add-child control on the parent node.
+1. In the World tree, click the actions button (three dots) on the parent
+   node, then click **Add a child**.
 2. Give the node a name, a kind (Region or Interior), an environment tag,
    and a size.
-3. To resize the node later, use its edit control. Growing keeps the
+3. To resize the node later, use **Edit settings** in the same menu. Growing keeps the
    existing tiles. Shrinking removes anything outside the new bounds, and
    confirms first when that removes painted tiles.
 
@@ -195,7 +196,8 @@ above or below.
 ### Fix a broken link
 
 1. Look for a warning triangle in the World tree, or a warning above the
-   tool tabs.
+   tool tabs. A triangle with a number on a closed branch counts the
+   warnings inside it. Open the branch to find the node.
 2. If the warning reads "Nothing leads here", link a tile on the parent map
    to this node.
 3. If the warning reads "No way out", paint an outer door or a staircase
