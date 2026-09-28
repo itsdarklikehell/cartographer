@@ -307,8 +307,8 @@ leaves the map, or reaches another river. A river that meets another river
 joins it as a tee, or as a cross where the other river has a tee. The head
 of the river joins every river cell beside it, so no two channels run side
 by side without a join. A head beside a river and water both joins the
-river and drains into the water. A river with no lower ground left ends in a pond, and the
-pond cell becomes water.
+river and drains into the water. A river with no lower ground left ends in
+a pond, and the pond cell becomes water.
 
 ### Sites and roads
 
