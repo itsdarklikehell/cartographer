@@ -1,5 +1,5 @@
 import { ArmNetwork, ARMS, OPPOSITE } from './Autotile.js';
-import { terrainTiles } from './GeneratorWilds.js';
+import { terrainTiles } from './GeneratorGround.js';
 import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
 import { placeBuildings } from './GeneratorTownBuildings.js';
 import { randInt, shuffle } from './GeneratorRandom.js';

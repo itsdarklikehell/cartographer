@@ -568,8 +568,10 @@ same batch, so two new nodes never share an id.
 ### Generator modules
 
 The generator archetypes build on these helpers, and `MapGenerator`
-dispatches to them. The climate archetypes are in
-`src/map/GeneratorWilds.js`, with their sites and roads in
+dispatches to them. `src/map/GeneratorGround.js` builds the ground of the
+open maps with `wildTerrain` and draws it as tiles with `terrainTiles`. The
+wilderness, the town, and the world all draw with it. The climate
+archetypes are in `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
 `src/map/GeneratorTown.js`, with its buildings in
 `src/map/GeneratorTownBuildings.js` and its wall in

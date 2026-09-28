@@ -1,10 +1,11 @@
 import { tileIdAt } from './MapGeometry.js';
 import { ArmNetwork } from './Autotile.js';
+import { chebyshev } from './GeneratorGround.js';
 import { distanceTo, layRoad, ROAD_COST, routeRoad } from './GeneratorRoads.js';
 
 /** @typedef {import('../types/map.js').POIType} POIType */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
-/** @typedef {import('./GeneratorWilds.js').WildTerrain} WildTerrain */
+/** @typedef {import('./GeneratorGround.js').WildTerrain} WildTerrain */
 
 /**
  * The places on an open-terrain map that people built: settlements, a keep,
@@ -25,9 +26,6 @@ import { distanceTo, layRoad, ROAD_COST, routeRoad } from './GeneratorRoads.js';
  * `marker` is the palette id of the marker art. `archetype` is the
  * generator archetype for the place's own map: town, castle, or dungeon.
  */
-
-/** @param {number} ax @param {number} ay @param {number} bx @param {number} by */
-const chebyshev = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 
 /**
  * How many of each site a map of this side length gets. A small map holds

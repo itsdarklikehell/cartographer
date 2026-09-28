@@ -1,14 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ArmNetwork } from '../src/map/Autotile.js';
-import { wildTerrain } from '../src/map/GeneratorWilds.js';
+import { wildTerrain } from '../src/map/GeneratorGround.js';
 import { connectSites, plantFarmland, planSites, siteCounts } from '../src/map/GeneratorSites.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 /**
  * A plain grass terrain of the given size with no rivers.
  * @param {number} size
- * @returns {import('../src/map/GeneratorWilds.js').WildTerrain}
+ * @returns {import('../src/map/GeneratorGround.js').WildTerrain}
  */
 function meadow(size) {
   return {

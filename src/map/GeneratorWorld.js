@@ -1,6 +1,6 @@
 import { NEIGHBORS4, tileIdAt } from './MapGeometry.js';
 import { randInt } from './GeneratorRandom.js';
-import { terrainTiles, wildTerrain } from './GeneratorWilds.js';
+import { terrainTiles, wildTerrain } from './GeneratorGround.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */

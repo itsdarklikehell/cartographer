@@ -1,10 +1,8 @@
-import { createTile, tilesById } from './TileGrid.js';
+import { tilesById } from './TileGrid.js';
 import { tileIdAt } from './MapGeometry.js';
-import { ARMS, ArmNetwork, coastOverlays, smoothCoastline } from './Autotile.js';
+import { ARMS } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
-import { BIOME_TERRAIN, TERRAIN_PROFILES, terrainField } from './GeneratorTerrain.js';
-import { traceRivers } from './GeneratorRivers.js';
-import { bridgeAt } from './GeneratorRoads.js';
+import { chebyshev, terrainTiles, wildTerrain } from './GeneratorGround.js';
 import { connectSites, plantFarmland, planSites, siteMap } from './GeneratorSites.js';
 import { clamp } from '../util/num.js';
 
@@ -12,11 +10,13 @@ import { clamp } from '../util/num.js';
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./GeneratorSites.js').Site} Site */
+/** @typedef {import('./GeneratorGround.js').WildTerrain} WildTerrain */
 
 /**
  * The open-terrain archetypes: wilderness and its climate variants. Each one
- * runs the climate model in GeneratorTerrain.js with its own profile, traces
- * rivers down from the high ground, and draws shorelines. Then it places
+ * builds its ground with `wildTerrain` in GeneratorGround.js, which runs the
+ * climate model with the profile of the archetype, draws shorelines, and
+ * traces rivers down from the high ground. Then it places
  * settlements, a keep, and a dungeon, joins them with roads, and scatters
  * landmarks.
  * The terrain covers every cell, so the map meets its parent along the whole
@@ -60,112 +60,6 @@ const OPEN_WATER = 4;
 
 /** A road crossing farther than this from every town is a ford. */
 const FORD_DISTANCE = 3;
-
-/**
- * @typedef {{
- *   size: number,
- *   cells: string[],
- *   biomes: string[],
- *   elevation: Float64Array,
- *   rivers: ArmNetwork,
- *   roads: ArmNetwork,
- * }} WildTerrain
- * `cells` is the terrain class per cell and `biomes` the finer biome
- * per cell, both indexed `y * size + x`. `roads` starts empty.
- */
-
-/**
- * The terrain of one open-terrain map before any tile exists: classified
- * cells with shorelines the coast pieces can draw, and rivers. Rivers are
- * traced after the coastline is smoothed, because smoothing turns narrow
- * land into water and a river traced first could end up inside a lake.
- * @param {number} size
- * @param {string} archetype a key of TERRAIN_PROFILES
- * @param {() => number} rng
- * @returns {WildTerrain}
- */
-export function wildTerrain(size, archetype, rng) {
-  const profile = TERRAIN_PROFILES[archetype] ?? TERRAIN_PROFILES.wilderness;
-  const field = terrainField(size, profile, rng);
-  let cells = smoothCoastline(field.cells, size, size);
-  const count = Math.round(profile.rivers * Math.max(1, size / 12));
-  const { network, ponds } = traceRivers({ size, elevation: field.elevation, cells }, count, rng);
-  for (const i of ponds) cells[i] = 'water';
-  if (ponds.length) cells = smoothCoastline(cells, size, size);
-  // A pond can widen the water it joins, so a river cell can end up under
-  // water. The channel beside it still points into that water, so it drains
-  // there.
-  const biomes = field.biomes.map((b, i) =>
-    cells[i] === 'water' && b !== 'deep-water' ? 'water' : b,
-  );
-  for (let i = 0; i < cells.length; i++) {
-    if (cells[i] === 'water') network.drop(i % size, Math.floor(i / size));
-  }
-  return {
-    size,
-    cells,
-    biomes,
-    elevation: field.elevation,
-    rivers: network,
-    roads: new ArmNetwork(),
-  };
-}
-
-/**
- * Turn classified terrain into tiles. Each cell gets a random variant of its
- * biome, or of its terrain class where a later step changed the class, plus
- * its shoreline, river, and road overlays. The shoreline draws under the
- * channel, so a river drains through the beach into the water, and the
- * channel draws under the road. Where a road crosses a river, the bridge
- * piece draws in place of both, or the ford piece for a crossing in
- * `fords`. Cells in `bare` get no overlay, because a marker covers them and
- * an overlay would draw over its art.
- * @param {TilePalette} palette
- * @param {Pick<WildTerrain, 'size' | 'cells' | 'rivers' | 'roads'> & {
- *   biomes?: string[],
- *   fords?: ReadonlySet<string>,
- * }} terrain the town generator passes no biomes, so each cell draws its class
- * @param {() => number} rng
- * @param {ReadonlySet<string>} [bare] tile ids that take no overlay
- * @returns {Tile[]}
- */
-export function terrainTiles(palette, terrain, rng, bare = new Set()) {
-  const { size, cells, biomes, fords, rivers, roads } = terrain;
-  const coast = coastOverlays(cells, size, size);
-  const channel = rivers.pieces();
-  const paths = roads.pieces();
-  /** @type {Tile[]} */
-  const tiles = [];
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const id = tileIdAt(x, y);
-      const type = cells[y * size + x];
-      const biome = biomes?.[y * size + x];
-      const art = biome && BIOME_TERRAIN[biome] === type ? biome : type;
-      const base = palette.pickVariant(art, rng).imageRef;
-      if (bare.has(id)) {
-        tiles.push(createTile(id, base));
-        continue;
-      }
-      const crossing = paths.has(id) ? bridgeAt(rivers, x, y) : null;
-      const bridge = crossing && fords?.has(id) ? crossing.replace('bridge', 'ford') : crossing;
-      const shore = coast.get(id);
-      const river = bridge ?? channel.get(id);
-      const road = bridge ? undefined : paths.get(id);
-      const refs = [
-        shore && palette.getCoastPiece(shore),
-        river && palette.getRiverPiece(river),
-        road && palette.getRoadPiece(road),
-      ]
-        .filter((piece) => piece)
-        .map((piece) => /** @type {{ imageRef: string }} */ (piece).imageRef);
-      tiles.push(
-        createTile(id, base, refs.length ? { overlayRef: refs.length > 1 ? refs : refs[0] } : {}),
-      );
-    }
-  }
-  return tiles;
-}
 
 /**
  * Scatter landmark markers over open ground away from the border. Marker art
@@ -216,7 +110,7 @@ export function placeLandmarks(palette, terrain, tiles, count, rng) {
     for (let y = 1; y < size - 1; y++) {
       for (let x = 1; x < size - 1; x++) {
         if (!free(x, y)) continue;
-        if (placed.some(([px, py]) => Math.max(Math.abs(px - x), Math.abs(py - y)) < 3)) continue;
+        if (placed.some(([px, py]) => chebyshev(px, py, x, y) < 3)) continue;
         if (needs.on && cells[y * size + x] !== needs.on) continue;
         if (needs.shore && countNear(cells, size, x, y, 2, 'water') < OPEN_WATER) continue;
         let score = cells[y * size + x] === 'grass' ? 2 : 0;
@@ -280,7 +174,7 @@ export function fordCrossings(terrain, sites) {
   for (const id of terrain.roads.arms.keys()) {
     const [x, y] = id.split(',').map(Number);
     if (!terrain.rivers.has(x, y)) continue;
-    if (towns.every((s) => Math.max(Math.abs(s.x - x), Math.abs(s.y - y)) > FORD_DISTANCE)) {
+    if (towns.every((s) => chebyshev(s.x, s.y, x, y) > FORD_DISTANCE)) {
       fords.add(id);
     }
   }
