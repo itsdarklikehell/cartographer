@@ -30,19 +30,25 @@ A concrete example, using the names from the example campaign:
 ```
   world (MapNode, kind: 'world')
     |
-    |  tile "3,4" has childNodeId: 'darkwood'
+    |  194 tiles, "31,29" among them, have childNodeId: 'barrowdowns'
     v
-  darkwood (MapNode, kind: 'region', parentId: 'world')
+  barrowdowns (MapNode, kind: 'region', parentId: 'world')
     |
-    |  tiles "1,2" and "2,2" both have childNodeId: 'barrow'
+    |  tile "19,2" has childNodeId: 'barrow'
     v
-  barrow (MapNode, kind: 'interior', parentId: 'darkwood')
+  barrow (MapNode, kind: 'interior', parentId: 'barrowdowns')
+    |
+    |  tile "5,9" has childNodeId: 'barrow-1'
+    v
+  barrow-1 (MapNode, kind: 'interior', parentId: 'barrow')
 ```
 
-The world map has a tile at position (3,4) that zooms into the Darkwood
-region. Inside Darkwood, two adjacent tiles both zoom into the same barrow,
-which is legal and common, because a large landmark can occupy several tiles
-of its parent map and any of those tiles takes the party inside.
+On the world map, every tile of the Barrowdowns block zooms into the same
+Barrowdowns region. Many tiles that lead into one child is legal and common,
+because a large area can occupy several tiles of its parent map and any of
+those tiles takes the party inside. Inside the Barrowdowns, one tile leads
+into the first level of the barrow, and a staircase on that level leads
+down to the second.
 
 The model has no separate "region" entity to keep in sync with the tiles. A
 region is only a MapNode that one or more tiles point at through
@@ -79,7 +85,7 @@ alone instead of failing on them.
 
 ## Region grouping and multi-tile art
 
-As the barrow example above showed, a region can have more than one entry
+As the Barrowdowns example above showed, a region can have more than one entry
 tile. Any set of tiles that share the same non-null `childNodeId` and are
 contiguous (touching along an edge, not only at a corner) forms one **region
 group**, which is what counts as one landmark.
@@ -440,8 +446,9 @@ or the plaza, and draws with span 2. When no such block is free, a building
 takes the nearest free block off the streets. `buildingList` gives the
 main set, which has one building for each thirty cells of map area and
 never fewer than three. The core set (inn, tavern, blacksmith, general
-store, and temple) takes the blocks nearest the crossroads, so the example
-campaign finds its innkeeper, smith, and priest in each medium town. The
+store, and temple) takes the blocks nearest the crossroads, so every medium
+town has an inn, a smith, and a temple. The example campaign puts Bram,
+Sella, and Sister Alwyn in those three buildings of Briarwick. The
 civic set comes next: a well or a fountain, and on a map of 22 cells or
 more a market and a town hall.
 
@@ -715,7 +722,7 @@ fogged in on its own tile.
 `moveTo`'s `nodeId` can differ from the party's current node. Crossing
 between a parent map and a zoomed-in region (through `MapNavigator`) works
 the same way as moving within one node, and each node's revealed state stays
-independent, so exploring the barrow reveals nothing about Darkwood.
+independent, so exploring the barrow reveals nothing about the Barrowdowns.
 
 ### Walls and paths
 

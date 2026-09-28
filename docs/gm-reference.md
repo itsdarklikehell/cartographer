@@ -131,13 +131,28 @@ load gives the same maps and the same furnishings. The party starts in
 Briarwick Vale, and only that region is revealed on the world map. Every
 land tile of the world map leads into its region. To travel to another
 region, the party walks off the edge of its region map onto the world map,
-then enters the next region from there. The campaign ships an
-eleven-quest chain, two staffed towns of NPCs, field enemies in every
-biome, minor bosses and a major boss, lore handouts, a bestiary of reusable
-mob templates, and a party of four level-4 characters. The party shows a
-feat, an ability score increase, the Expertise of the Rogue, the Arcane
-Trickster and Eldritch Knight subclasses, and a fighter who multiclasses
-into wizard.
+then enters the next region from there.
+
+The story is about King Ostrand, who has risen in his barrow, and about
+Castellan Irenne Vane of Thornhold, who secretly works to free him. The
+campaign ships sixteen quests: nine that lead to the barrow and seven side
+quests. Each side quest gives a clue about the Castellan or a tool for the
+fight in the barrow. Quest steps that would give away the Castellan are
+hidden from the players until the GM shows them, and her secret is only in
+GM notes. Briarwick has a staffed inn, smithy, and temple, and Saltmere has
+its smuggler and its harbormaster. The party already knows four contacts:
+Dorn, Corvin, Lord Aldemar, and the Castellan. The campaign also has field
+enemies in every biome, minor bosses and a major boss, and a bestiary of
+reusable mob templates. The undead and beasts have their damage
+resistances and trained saves, and the Castellan and one of her cultists
+cast spells.
+
+Twelve of the sixteen handouts start hidden, and most of them sit on the
+tile where the party finds them. The other four are personal letters. Each
+character starts with one letter, and only the player tab of that character
+shows it. The party has four level-4 characters. It shows a feat, an
+ability score increase, the Expertise of the Rogue, the Arcane Trickster
+and Eldritch Knight subclasses, and a fighter who multiclasses into wizard.
 
 ## Build mode
 
@@ -1115,9 +1130,10 @@ range. It reads the notes in a GM tab only. A second region names the cursor cel
 column and row, its art, its point of interest, and whether it is explored.
 
 The ways out of a sub-region are real buttons. Tab past the map, and they
-appear over it, each naming its way out, for example "Return to Darkwood,
-through the stairs up at 4,1". A cursor walk off an edge takes two presses:
-the first lights the arrow, and the second travels.
+appear over it, each naming its way out, for example "Return to Barrow of
+the Old King, through the stairs up at column 11, row 7". A cursor walk off
+an edge takes two presses: the first lights the arrow, and the second
+travels.
 
 The turn ribbon and the board of the combat screen are one tab stop each.
 Arrow keys move between chips and between cards. Enter or Space picks a

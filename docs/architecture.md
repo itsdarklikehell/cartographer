@@ -102,9 +102,19 @@ Unit tests cover the pure logic, and the browser checks the glue (see
 `docs/testing.md`). When you add a feature, decide which part is a pure
 function and which part is glue, then split the code at that point so that
 both halves stay simple. Anything you can construct without the DOM belongs
-in a pure module. The example world's maps live in `campaign/ExampleWorld.js`
-and its populace in `campaign/ExampleContent.js`, not in the wiring module
-that loads them, for the same reason.
+in a pure module. For the same reason, the example campaign is built in
+`campaign/`, not in the wiring module that loads it:
+
+| File | What it builds |
+| --- | --- |
+| `ExampleWorld.js` | The generated world from one fixed seed, and the region names |
+| `ExampleRegions.js` | The hand edits of each region, and the story places |
+| `ExampleStaging.js` | The helpers that expand sites into sub-maps and pick tiles for the story places |
+| `ExampleContent.js` | The populace, combined from the four files below |
+| `ExampleParty.js` | The four level-4 characters |
+| `ExampleCast.js` | The creatures, the people, and the bestiary |
+| `ExampleStory.js` | The quests with their steps and links |
+| `ExampleHandouts.js` | The handouts, bound to their story places |
 
 Pure functions take a value and return a new value instead of changing the
 value in place: `applyDamage(creature, n)` returns a new creature, and
