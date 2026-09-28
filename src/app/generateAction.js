@@ -9,6 +9,7 @@ import {
   SIZE_OPTIONS,
 } from '../map/MapGenerator.js';
 import { expandTree } from '../map/GeneratorTree.js';
+import { renamedFor } from '../map/GeneratorNames.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { ENTRANCE_ART, entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
@@ -88,21 +89,27 @@ export function wireGenerateAction(app, env) {
      * seeded from the choice, so the preview is the map the GM gets, and the
      * seed shown to the GM reproduces it later. A multi-level dungeon or
      * cave previews its first level with the stairs down that lead to the
-     * level below.
+     * level below. A generated name follows the new archetype
+     * (`GeneratorNames.renamedFor`), so the label of a world region names
+     * its new climate. A level of a stack keeps its name, because its name
+     * comes from the top of the stack.
      * @param {GenerateChoice} choice
      * @returns {TreeRoot}
      */
-    const rootFor = (choice) => ({
-      id: node.id,
-      name: node.name,
-      base: stack ? stackBase(node.name) : node.name,
-      kind: node.kind,
-      environ: node.environ,
-      archetype: choice.archetype,
-      size: choice.size,
-      levels: choice.levels,
-      level: stack?.level,
-    });
+    const rootFor = (choice) => {
+      const name = stack ? node.name : renamedFor(node.name, choice.archetype);
+      return {
+        id: node.id,
+        name,
+        base: stack ? stackBase(node.name) : name,
+        kind: node.kind,
+        environ: node.environ,
+        archetype: choice.archetype,
+        size: choice.size,
+        levels: choice.levels,
+        level: stack?.level,
+      };
+    };
     /** @type {{ key: string, gen: Layout } | null} */
     let preview = null;
     /** @param {GenerateChoice} choice */
@@ -183,7 +190,9 @@ export function wireGenerateAction(app, env) {
       });
       grid.addNode(withNodeTiles(child, sub.tiles));
     }
-    grid.updateNode(withNodeTiles({ ...node, width: gen.width, height: gen.height }, gen.tiles));
+    grid.updateNode(
+      withNodeTiles({ ...node, name: gen.name, width: gen.width, height: gen.height }, gen.tiles),
+    );
     // A generated map must be reachable from the overworld, not just
     // internally connected. If no parent tile links to this node yet, stamp
     // one (a POI marker matching the archetype) on the parent tile nearest
@@ -206,7 +215,7 @@ export function wireGenerateAction(app, env) {
       if (linked.node !== parent) grid.updateNode(linked.node);
       if (linked.tileId) {
         alertModal(
-          `Linked "${node.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
+          `Linked "${gen.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
           { title: 'Entrance placed', label: 'OK' },
         );
       }
@@ -277,7 +286,7 @@ export function wireGenerateAction(app, env) {
     const extra = deeper.length ? ` with ${subs}` : '';
     const unbuilt = tree.skipped ? ` ${tree.skipped} more places have no map yet.` : '';
     app.toasts.show(
-      `Generated ${values.archetype} map in "${node.name}"${extra} (seed ${values.seed}).${unbuilt}`,
+      `Generated ${values.archetype} map in "${gen.name}"${extra} (seed ${values.seed}).${unbuilt}`,
     );
   });
 }

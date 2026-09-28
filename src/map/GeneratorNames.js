@@ -130,3 +130,32 @@ export function placeName(site, rng) {
   const patterns = PATTERNS[site.archetype] ?? PATTERNS.town;
   return patterns[randInt(rng, patterns.length)].replace('{w}', placeWord(rng));
 }
+
+/**
+ * The name of a node that the GM regenerates as `archetype`. A name that
+ * follows a pattern of another archetype takes the pattern of `archetype`
+ * at the same place in its list, with the same word. For example, "The
+ * Ashford Hills" regenerated as a desert becomes "The Ashford Sands". Any
+ * other name stays, so a name that the GM typed is kept. A one-word name
+ * matches no pattern, because the world and town pattern is the word alone
+ * and cannot tell a generated name from a typed one. An archetype with no
+ * patterns, such as a building, keeps the name, because a building takes
+ * its name from its label.
+ * @param {string} name
+ * @param {string} archetype
+ * @returns {string}
+ */
+export function renamedFor(name, archetype) {
+  const target = PATTERNS[archetype];
+  if (!target) return name;
+  for (const [from, patterns] of Object.entries(PATTERNS)) {
+    for (let i = 0; i < patterns.length; i++) {
+      if (patterns[i] === '{w}') continue;
+      const match = name.match(new RegExp(`^${patterns[i].replace('{w}', '([A-Z][a-z]+)')}$`));
+      if (!match) continue;
+      if (from === archetype) return name;
+      return target[i % target.length].replace('{w}', match[1]);
+    }
+  }
+  return name;
+}

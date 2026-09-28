@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { placeName, placeWord } from '../src/map/GeneratorNames.js';
+import { placeName, placeWord, renamedFor } from '../src/map/GeneratorNames.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 test('a place word follows the seed', () => {
@@ -36,4 +36,33 @@ test('other archetypes use their patterns, and an unknown one names like a town'
   const hills = placeName({ archetype: 'highlands', label: 'highlands' }, mulberry32(4));
   assert.match(hills, /Hills|Heights/);
   assert.match(placeName({ archetype: 'somewhere', label: 'x' }, mulberry32(4)), /^[A-Z][a-z]+$/);
+});
+
+test('a regenerated node takes the name pattern of its new archetype', () => {
+  assert.equal(renamedFor('The Ashford Hills', 'desert'), 'The Ashford Sands');
+  assert.equal(renamedFor('Kelamere Heights', 'wetlands'), 'Kelamere Marsh');
+  assert.equal(renamedFor('The Crypt of Dunholt', 'cave'), 'Dunholt Caves');
+  // The index wraps when the new archetype has fewer patterns.
+  assert.equal(renamedFor('The Vaults of Dunholt', 'castle'), 'Castle Dunholt');
+  assert.equal(renamedFor('Elmoor Isle', 'town'), 'Elmoor');
+});
+
+test('a regenerated node keeps a name that fits its new archetype or no pattern', () => {
+  assert.equal(renamedFor('The Ashford Sands', 'desert'), 'The Ashford Sands');
+  assert.equal(renamedFor('The Ashford Hills', 'building'), 'The Ashford Hills');
+  // A typed name and a one-word town name match no pattern.
+  assert.equal(renamedFor('Graypeak Highlands', 'desert'), 'Graypeak Highlands');
+  assert.equal(renamedFor('Ashford', 'wilderness'), 'Ashford');
+  assert.equal(renamedFor('The ashford hills', 'desert'), 'The ashford hills');
+});
+
+test('every generated name renames to a name of the new archetype', () => {
+  for (const from of ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands', 'dungeon']) {
+    for (let seed = 1; seed < 6; seed++) {
+      const name = placeName({ archetype: from, label: from }, mulberry32(seed));
+      const renamed = renamedFor(name, 'island');
+      assert.match(renamed, /^[A-Z][a-z]+ Isle$/, `${name} -> ${renamed}`);
+      assert.equal(renamedFor(renamed, 'island'), renamed);
+    }
+  }
 });

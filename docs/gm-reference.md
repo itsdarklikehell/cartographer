@@ -206,6 +206,15 @@ of a particular place, such as an inn, stays when the new archetype has the
 same point-of-interest type. A wilderness takes no marker, so its old marker
 becomes grass.
 
+A region block on a world map has no marker, and the name of the region is
+its label on the world map. When a generated name follows the pattern of
+another archetype, the node takes the pattern of the new archetype with the
+same word. For example, "The Ashford Hills" regenerated as a desert becomes
+"The Ashford Sands", and "The Crypt of Dunholt" regenerated as a cave
+becomes "Dunholt Caves". A name that you typed, a name of one word, and the
+name of a building or of a level in a stack do not change. Undo restores
+the old name.
+
 The six outdoor archetypes differ in climate. Wilderness is temperate, with
 grass, forest, lakes, and some hills. Highlands have ranges of hills and
 mountains. Frontier is cold, with snow and snowy forest. Desert is hot and

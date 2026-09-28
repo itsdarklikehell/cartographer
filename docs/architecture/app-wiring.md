@@ -219,7 +219,10 @@ its parent. `TilePaint.ensureChildLink` stamps that marker when no parent
 tile links to the node. When a link exists, `refreshChildMarker` changes a
 marker whose point-of-interest type differs from the new archetype, or one
 that shows the generic marker of another archetype, and it leaves stairs and
-doors alone. `coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
+doors alone. A region block on a world map has no marker, so
+`GeneratorNames.renamedFor` gives a generated name the pattern of the new
+archetype, and the region label on the world map follows it.
+`coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
 hand-edited save from writing a kind that the renderer does not know.
 
 `src/map/NodeCleanup.js` decides where every other location goes when a
