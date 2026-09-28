@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TilePalette, isOverlayType, kindOf } from '../src/map/TilePalette.js';
+import { existsSync } from 'node:fs';
+import { TilePalette, isOverlayType, isTerrainType, kindOf } from '../src/map/TilePalette.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
   const palette = new TilePalette();
@@ -17,6 +18,15 @@ test('TilePalette ships with built-in terrain variants', () => {
     snow: 3,
     hills: 3,
     farmland: 3,
+    'deep-water': 3,
+    jungle: 3,
+    taiga: 4,
+    savanna: 3,
+    badlands: 5,
+    volcanic: 3,
+    glacier: 3,
+    'snow-hills': 3,
+    'snow-mountain': 5,
   };
   for (const [type, count] of Object.entries(counts)) {
     assert.equal(
@@ -44,7 +54,8 @@ test('TilePalette ships with river connector and bridge pieces', () => {
   );
   assert.equal(palette.getRiverPiece('bridge-h').imageRef, 'assets/tiles/river/river-bridge-h.svg');
   assert.equal(palette.getRiverPiece('bridge-v').type, 'river');
-  assert.equal(palette.listVariants('river').length, 17);
+  assert.equal(palette.getRiverPiece('ford-v').imageRef, 'assets/tiles/river/river-ford-v.svg');
+  assert.equal(palette.listVariants('river').length, 19);
 });
 
 test('TilePalette ships with coast transition pieces', () => {
@@ -86,6 +97,11 @@ test('TilePalette ships with single-image POI markers', () => {
     'farm',
     'graveyard',
     'camp',
+    'village',
+    'city',
+    'oasis',
+    'lighthouse',
+    'watchtower',
   ]) {
     assert.ok(palette.get(type), `missing marker "${type}"`);
   }
@@ -194,4 +210,17 @@ test('listBuiltins excludes custom entries, and listCustom the built-ins', () =>
 test('isOverlayType flags the terrain-crossing overlay types only', () => {
   for (const type of ['road', 'river', 'coast']) assert.equal(isOverlayType(type), true);
   for (const type of ['grass', 'poi-town', 'interior']) assert.equal(isOverlayType(type), false);
+});
+
+test('every built-in entry points at a file that exists', () => {
+  for (const { id, imageRef } of new TilePalette().listBuiltins()) {
+    assert.ok(existsSync(new URL(`../${imageRef}`, import.meta.url)), `${id}: ${imageRef}`);
+  }
+});
+
+test('isTerrainType covers the variant types and custom art only', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.get('deep-water-2')?.label, 'Deep Water 2');
+  for (const type of ['grass', 'snow-mountain', 'custom']) assert.ok(isTerrainType(type), type);
+  for (const type of ['road', 'inn', 'interior']) assert.ok(!isTerrainType(type), type);
 });

@@ -5,8 +5,9 @@
 
 Built-in tile art lives under `assets/tiles/<type>/`. Each tile type has its
 own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`,
-`swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`,
-`interior/`, and one folder for each POI marker, for example `settlement/`,
+`swamp/`, `snow/`, `hills/`, `farmland/`, one folder for each biome of the
+climate model, for example `jungle/` and `deep-water/`, `road/`, `river/`,
+`coast/`, `interior/`, and one folder for each POI marker, for example `settlement/`,
 `castle/`, and `tavern/`. `TilePalette` (`src/map/TilePalette.js`) defines
 the catalog and the paths that it expects, so anyone who adds or renames
 files reads `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
@@ -15,8 +16,9 @@ files reads `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
 ## Terrain variants
 
 Each terrain type has 3 variants, for example `grass-1.svg`, `grass-2.svg`,
-and `grass-3.svg`. Mountain has 5, because its peaks are large and a
-range of 3 repeated layouts shows as rows. `VARIANT_COUNTS` in
+and `grass-3.svg`. Mountain, snow-mountain, and badlands have 5, and taiga
+has 4, because their landforms and trees are large and a range of 3
+repeated layouts shows as rows. `VARIANT_COUNTS` in
 `TilePalette.js` sets the count per type. `palette.pickVariant(type, rng)`
 selects one so that adjacent tiles of the same type do not look identical.
 The variants abut
@@ -83,6 +85,12 @@ Rivers follow the same pattern as roads. `palette.getRiverPiece(kind)` looks
 up the same fifteen connector kinds. Rivers are painted as transparent
 overlays (`overlayRef`), so a channel can cross grass, sand, or snow.
 
+Four more pieces show a road across a straight channel. `bridge-h` and
+`ford-h` take an east-west road across a north-south river, and `bridge-v`
+and `ford-v` take a north-south road across an east-west river. Each
+crossing piece draws its own copy of the road, so it replaces both the
+river piece and the road piece of its cell.
+
 ## Coast transition pieces
 
 `coast/` contains twelve shoreline pieces, found through
@@ -112,10 +120,17 @@ art stays inset from the tile edges.
 The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`,
 `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`,
 `wizard-tower`, `academy`, `barracks`, `ruins`, `cave-entrance`, `mine`,
-`port`, `farm`, `graveyard`, `camp`, and `standing-stones`.
+`port`, `farm`, `graveyard`, `camp`, `standing-stones`, `village`, `city`,
+`oasis`, `lighthouse`, and `watchtower`. The `lighthouse` fills its south
+half with water like the `port`.
 
 `dungeon` is the one marker with a stone background instead of grass. Every
 other marker sits on grass, and a new marker does too.
+
+A marker on desert or snow shows a square of grass, which reads as an oasis
+in the desert but not in the snow. A set of markers with transparent
+backgrounds, drawn as overlays over the terrain, removes this limit. No
+placeholder stands for this set, because it replaces every marker.
 
 ## Interior pieces
 
@@ -160,7 +175,7 @@ the app only when its family table names it.
 | --- | --- |
 | `VARIANT_COUNTS` | How many variants each terrain type has |
 | `ROAD_KINDS` | The fifteen road connector kinds |
-| `RIVER_KINDS` | The fifteen river connector kinds |
+| `RIVER_KINDS` | The fifteen river connector kinds, two bridges, and two fords |
 | `COAST_KINDS` | The twelve shoreline pieces |
 | `MARKER_TYPES` | The single-image POI markers |
 | `INTERIOR_KINDS` | Each interior piece with its rule meaning |
@@ -177,45 +192,6 @@ these files, so no map draws them. The folder layout matches
 `assets/tiles/`. To finish a placeholder, draw the art, move the file to
 `assets/tiles/<type>/`, and register the type in `TilePalette.js`. Then
 change the mapping in the generator that the table names.
-
-### Terrain
-
-The climate model in `src/map/GeneratorTerrain.js` classifies each cell
-into a biome. `BIOME_ART` maps each biome to the terrain type that draws it
-until the biome has art of its own. A unit test makes sure that each biome
-without its own art has a placeholder here.
-
-| Placeholder | Intended use | Draws as |
-| --- | --- | --- |
-| `jungle/jungle-1.svg` | Hot, wet lowland | `forest` |
-| `taiga/taiga-1.svg` | Cold, wet lowland: snowy conifer forest | `forest` |
-| `savanna/savanna-1.svg` | Hot grassland between desert and jungle | `grass` |
-| `badlands/badlands-1.svg` | Hot, dry hills: eroded mesas | `desert` |
-| `volcanic/volcanic-1.svg` | Hot, dry mountain: ash and lava | `mountain` |
-| `glacier/glacier-1.svg` | The coldest lowland: ice sheet | `snow` |
-| `deep-water/deep-water-1.svg` | Open sea far from the shore | `water` |
-| `snow-mountain/snow-mountain-1.svg` | Cold mountain: snow-capped peaks | `mountain` |
-| `snow-hills/snow-hills-1.svg` | Cold hills: snow over rolling ground | `snow` |
-
-A finished terrain tile follows the rules in [Terrain variants](#terrain-variants).
-
-### Markers and pieces
-
-| Placeholder | Intended use | Drawn with today |
-| --- | --- | --- |
-| `village/village.svg` | A small settlement on a map with few roads | `settlement` |
-| `city/city.svg` | The largest settlement of a huge or vast map | `settlement` |
-| `oasis/oasis.svg` | A landmark in the desert, by water | `ruins`, `camp`, and the other landmarks |
-| `lighthouse/lighthouse.svg` | A landmark on the shore beside a port | nothing |
-| `watchtower/watchtower.svg` | A landmark on a road through the hills | nothing |
-| `river/river-ford-h.svg`, `river/river-ford-v.svg` | A road across a river bend, where no bridge fits | nothing: the road goes around the bend |
-
-Marker art sits on a grass background, so a marker on desert or snow shows
-a square of grass. A settlement in the desert then reads as an oasis, which
-fits, but a settlement in the snow does not. A set of markers with
-transparent backgrounds, drawn as overlays over the terrain, removes this
-limit. No placeholder stands for this set, because it replaces every
-marker.
 
 ### Town pieces
 

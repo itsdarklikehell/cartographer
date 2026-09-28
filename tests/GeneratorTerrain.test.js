@@ -1,10 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { fbm, quantile, stretch, valueNoise } from '../src/map/GeneratorNoise.js';
 import {
-  BIOME_ART,
+  BIOME_TERRAIN,
   classifyBiome,
   TERRAIN_PROFILES,
   terrainField,
@@ -73,19 +72,12 @@ test('classifyBiome follows elevation, then temperature, then moisture', () => {
   assert.equal(classifyBiome(0.05, 0.8, 0.5, dry), 'swamp');
 });
 
-test('every biome draws as a terrain type the palette has', () => {
-  const drawn = new Set([
-    'water',
-    'grass',
-    'forest',
-    'swamp',
-    'desert',
-    'hills',
-    'mountain',
-    'snow',
-  ]);
-  for (const [biome, art] of Object.entries(BIOME_ART)) {
-    assert.ok(drawn.has(art), `${biome} draws as ${art}`);
+test('every biome has palette art and a terrain class the palette also draws', () => {
+  const palette = new TilePalette();
+  for (const [biome, terrain] of Object.entries(BIOME_TERRAIN)) {
+    assert.ok(palette.listVariants(biome).length > 0, `${biome} has art`);
+    assert.ok(palette.listVariants(terrain).length > 0, `${biome} counts as ${terrain}`);
+    assert.equal(BIOME_TERRAIN[terrain], terrain, `${terrain} is its own class`);
   }
 });
 
@@ -99,7 +91,7 @@ test('terrainField honors the profile water fraction and is seeded', () => {
   assert.ok(Math.abs(water - TERRAIN_PROFILES.wilderness.water) < 0.03, `water ${water}`);
   assert.deepEqual(
     a.cells,
-    a.biomes.map((biome) => BIOME_ART[biome]),
+    a.biomes.map((biome) => BIOME_TERRAIN[biome]),
   );
 });
 
@@ -142,15 +134,5 @@ test('a sea-bound profile puts the whole border under water at any size', () => 
       cells.some((c) => c !== 'water'),
       `${name} ${size}: some land`,
     );
-  }
-});
-
-test('each biome without art of its own has a placeholder the palette does not draw', () => {
-  const palette = new TilePalette();
-  for (const [biome, art] of Object.entries(BIOME_ART)) {
-    if (biome === art) continue;
-    const path = `assets/placeholders/${biome}/${biome}-1.svg`;
-    assert.ok(existsSync(new URL(`../${path}`, import.meta.url)), `${path} exists`);
-    assert.equal(palette.listVariants(biome).length, 0, `${biome} is not registered`);
   }
 });

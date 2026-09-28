@@ -1,8 +1,8 @@
 import { createTile, tilesById } from './TileGrid.js';
 import { tileIdAt } from './MapGeometry.js';
-import { ArmNetwork, coastOverlays, smoothCoastline } from './Autotile.js';
+import { ARMS, ArmNetwork, coastOverlays, smoothCoastline } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
-import { TERRAIN_PROFILES, terrainField } from './GeneratorTerrain.js';
+import { BIOME_TERRAIN, TERRAIN_PROFILES, terrainField } from './GeneratorTerrain.js';
 import { traceRivers } from './GeneratorRivers.js';
 import { bridgeAt } from './GeneratorRoads.js';
 import { connectSites, plantFarmland, planSites } from './GeneratorSites.js';
@@ -23,19 +23,36 @@ import { clamp } from '../util/num.js';
  */
 
 /**
- * Landmark markers and the terrain each one prefers as a neighbor. A mine
- * or a cave sits at the foot of the hills, and a camp at the edge of a
- * wood. An empty list means the landmark fits anywhere.
- * @type {Record<string, string[]>}
+ * @typedef {{ near?: string[], road?: boolean, on?: string, shore?: boolean }} LandmarkNeeds
+ * `near` lists the terrain the landmark prefers as a neighbor, and `road`
+ * makes it prefer a cell beside a road. `on` is the terrain class that its
+ * cell must have, and `shore` makes it need open water within two cells.
+ */
+
+/**
+ * Landmark markers and where each one belongs. A mine or a cave sits at the
+ * foot of the hills, a camp at the edge of a wood, and a watchtower beside
+ * a road. An oasis stands only in the desert, and a lighthouse only near
+ * open water. A landmark with no needs fits anywhere.
+ * @type {Record<string, LandmarkNeeds>}
  */
 const LANDMARK_AFFINITY = {
-  ruins: [],
-  camp: ['forest'],
-  'standing-stones': ['hills'],
-  mine: ['hills', 'mountain'],
-  'cave-entrance': ['mountain', 'hills'],
-  graveyard: [],
+  ruins: {},
+  camp: { near: ['forest'] },
+  'standing-stones': { near: ['hills'] },
+  mine: { near: ['hills', 'mountain'] },
+  'cave-entrance': { near: ['mountain', 'hills'] },
+  graveyard: {},
+  watchtower: { road: true },
+  oasis: { on: 'desert' },
+  lighthouse: { shore: true },
 };
+
+/** The fewest water cells within two cells that count as open water. */
+const OPEN_WATER = 4;
+
+/** A road crossing farther than this from every town is a ford. */
+const FORD_DISTANCE = 3;
 
 /**
  * @typedef {{
@@ -46,7 +63,7 @@ const LANDMARK_AFFINITY = {
  *   rivers: ArmNetwork,
  *   roads: ArmNetwork,
  * }} WildTerrain
- * `cells` is the drawn terrain type per cell and `biomes` the finer biome
+ * `cells` is the terrain class per cell and `biomes` the finer biome
  * per cell, both indexed `y * size + x`. `roads` starts empty.
  */
 
@@ -89,20 +106,24 @@ export function wildTerrain(size, archetype, rng) {
 
 /**
  * Turn classified terrain into tiles. Each cell gets a random variant of its
- * terrain type, plus its shoreline, river, and road overlays. The shoreline
- * draws under the channel, so a river drains through the beach into the
- * water, and the channel draws under the road. Where a road crosses a river,
- * the bridge piece draws in place of both. Cells in `bare` get no overlay,
- * because a marker covers them and an overlay would draw over its art.
+ * biome, or of its terrain class where a later step changed the class, plus
+ * its shoreline, river, and road overlays. The shoreline draws under the
+ * channel, so a river drains through the beach into the water, and the
+ * channel draws under the road. Where a road crosses a river, the bridge
+ * piece draws in place of both, or the ford piece for a crossing in
+ * `fords`. Cells in `bare` get no overlay, because a marker covers them and
+ * an overlay would draw over its art.
  * @param {TilePalette} palette
- * @param {Pick<WildTerrain, 'size' | 'cells' | 'rivers' | 'roads'>} terrain the town
- *   generator passes only these fields
+ * @param {Pick<WildTerrain, 'size' | 'cells' | 'rivers' | 'roads'> & {
+ *   biomes?: string[],
+ *   fords?: ReadonlySet<string>,
+ * }} terrain the town generator passes no biomes, so each cell draws its class
  * @param {() => number} rng
  * @param {ReadonlySet<string>} [bare] tile ids that take no overlay
  * @returns {Tile[]}
  */
 export function terrainTiles(palette, terrain, rng, bare = new Set()) {
-  const { size, cells, rivers, roads } = terrain;
+  const { size, cells, biomes, fords, rivers, roads } = terrain;
   const coast = coastOverlays(cells, size, size);
   const channel = rivers.pieces();
   const paths = roads.pieces();
@@ -111,12 +132,16 @@ export function terrainTiles(palette, terrain, rng, bare = new Set()) {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const id = tileIdAt(x, y);
-      const base = palette.pickVariant(cells[y * size + x], rng).imageRef;
+      const type = cells[y * size + x];
+      const biome = biomes?.[y * size + x];
+      const art = biome && BIOME_TERRAIN[biome] === type ? biome : type;
+      const base = palette.pickVariant(art, rng).imageRef;
       if (bare.has(id)) {
         tiles.push(createTile(id, base));
         continue;
       }
-      const bridge = paths.has(id) ? bridgeAt(rivers, x, y) : null;
+      const crossing = paths.has(id) ? bridgeAt(rivers, x, y) : null;
+      const bridge = crossing && fords?.has(id) ? crossing.replace('bridge', 'ford') : crossing;
       const shore = coast.get(id);
       const river = bridge ?? channel.get(id);
       const road = bridge ? undefined : paths.get(id);
@@ -138,9 +163,11 @@ export function terrainTiles(palette, terrain, rng, bare = new Set()) {
 /**
  * Scatter landmark markers over open ground away from the border. Marker art
  * sits on a grass background, so a landmark prefers a grass cell. Each
- * landmark then prefers a cell beside the terrain it belongs to. A map with
- * no free grass, such as a desert, still gets its landmarks on other open
- * ground, where the grass under the marker reads as a clearing or an oasis.
+ * landmark then prefers a cell beside the terrain or the road it belongs
+ * to. A map with no free grass, such as a desert, still gets its landmarks
+ * on other open ground, where the grass under the marker reads as a
+ * clearing. A landmark with a need that no free cell meets, or with no art
+ * in the palette, gives its turn to the next landmark in the order.
  * Landmarks keep at least three cells from each other and from every marker
  * already on the map, such as a settlement.
  * @param {TilePalette} palette
@@ -151,7 +178,7 @@ export function terrainTiles(palette, terrain, rng, bare = new Set()) {
  * @returns {string[]} the tile ids that got a landmark
  */
 export function placeLandmarks(palette, terrain, tiles, count, rng) {
-  const { size, cells } = terrain;
+  const { size, cells, roads } = terrain;
   const byId = tilesById(tiles);
   /** @param {number} x @param {number} y */
   const free = (x, y) => {
@@ -168,52 +195,89 @@ export function placeLandmarks(palette, terrain, tiles, count, rng) {
     .filter((t) => t.metadata.poiType)
     .map((t) => /** @type {[number, number]} */ (t.id.split(',').map(Number)));
   const before = placed.length;
-  const types = Object.keys(LANDMARK_AFFINITY);
-  const order = shuffle(types, rng);
-  for (let i = 0; i < count; i++) {
-    const type = order[i % order.length];
-    const likes = LANDMARK_AFFINITY[type];
+  /**
+   * Put one landmark of `type` on its best free cell.
+   * @param {string} type
+   * @returns {boolean} whether the landmark found a cell
+   */
+  const placeOne = (type) => {
+    const needs = LANDMARK_AFFINITY[type];
+    const ref = palette.get(type)?.imageRef;
+    if (!ref) return false;
     /** @type {{ x: number, y: number, score: number }[]} */
     const spots = [];
     for (let y = 1; y < size - 1; y++) {
       for (let x = 1; x < size - 1; x++) {
         if (!free(x, y)) continue;
         if (placed.some(([px, py]) => Math.max(Math.abs(px - x), Math.abs(py - y)) < 3)) continue;
+        if (needs.on && cells[y * size + x] !== needs.on) continue;
+        if (needs.shore && countNear(cells, size, x, y, 2, 'water') < OPEN_WATER) continue;
         let score = cells[y * size + x] === 'grass' ? 2 : 0;
-        if (likes.some((t) => nearType(cells, size, x, y, t))) score += 1;
+        if (needs.near?.some((t) => countNear(cells, size, x, y, 1, t))) score += 1;
+        if (needs.road && ARMS.some(([, dx, dy]) => roads.has(x + dx, y + dy))) score += 1;
         spots.push({ x, y, score });
       }
     }
-    if (!spots.length) break;
+    if (!spots.length) return false;
     const best = Math.max(...spots.map((s) => s.score));
     const top = spots.filter((s) => s.score === best);
     const { x, y } = top[randInt(rng, top.length)];
-    const tile = byId.get(tileIdAt(x, y));
-    const ref = palette.get(type)?.imageRef;
-    if (!tile || !ref) continue;
+    const tile = /** @type {Tile} */ (byId.get(tileIdAt(x, y)));
     tile.imageRef = ref;
     tile.metadata = { ...tile.metadata, poiType: 'landmark' };
     placed.push([x, y]);
+    return true;
+  };
+  const order = shuffle(Object.keys(LANDMARK_AFFINITY), rng);
+  let next = 0;
+  for (let i = 0; i < count; i++) {
+    let done = false;
+    for (let tries = 0; tries < order.length && !done; tries++) {
+      done = placeOne(order[next++ % order.length]);
+    }
+    if (!done) break;
   }
   return placed.slice(before).map(([x, y]) => tileIdAt(x, y));
 }
 
 /**
- * Whether any of the eight cells around (x, y) has terrain `type`.
+ * How many cells within `r` of (x, y), not counting (x, y), have terrain
+ * `type`.
  * @param {string[]} cells @param {number} size @param {number} x @param {number} y
- * @param {string} type
+ * @param {number} r @param {string} type
  */
-function nearType(cells, size, x, y, type) {
-  for (let dy = -1; dy <= 1; dy++) {
-    for (let dx = -1; dx <= 1; dx++) {
+function countNear(cells, size, x, y, r, type) {
+  let count = 0;
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
       const nx = x + dx;
       const ny = y + dy;
       if ((dx || dy) && nx >= 0 && ny >= 0 && nx < size && ny < size) {
-        if (cells[ny * size + nx] === type) return true;
+        if (cells[ny * size + nx] === type) count++;
       }
     }
   }
-  return false;
+  return count;
+}
+/**
+ * The road crossings that draw as fords: each crossing farther than
+ * FORD_DISTANCE from every town, where a track through the wild has no
+ * bridge.
+ * @param {WildTerrain} terrain @param {Site[]} sites
+ * @returns {Set<string>}
+ */
+export function fordCrossings(terrain, sites) {
+  const towns = sites.filter((s) => s.archetype === 'town');
+  /** @type {Set<string>} */
+  const fords = new Set();
+  for (const id of terrain.roads.arms.keys()) {
+    const [x, y] = id.split(',').map(Number);
+    if (!terrain.rivers.has(x, y)) continue;
+    if (towns.every((s) => Math.max(Math.abs(s.x - x), Math.abs(s.y - y)) > FORD_DISTANCE)) {
+      fords.add(id);
+    }
+  }
+  return fords;
 }
 
 /**
@@ -235,7 +299,13 @@ export function generateWilds(palette, size, rng, archetype = 'wilderness') {
   plantFarmland(terrain, sites, rng);
   const { roads, exits } = connectSites(terrain, sites);
   terrain.roads = roads;
-  const tiles = terrainTiles(palette, terrain, rng, new Set(sites.map((s) => s.tileId)));
+  const fords = fordCrossings(terrain, sites);
+  const tiles = terrainTiles(
+    palette,
+    { ...terrain, fords },
+    rng,
+    new Set(sites.map((s) => s.tileId)),
+  );
   const byId = tilesById(tiles);
   for (const site of sites) {
     const tile = /** @type {Tile} */ (byId.get(site.tileId));

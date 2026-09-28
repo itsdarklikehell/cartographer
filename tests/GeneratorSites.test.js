@@ -153,3 +153,15 @@ test('a site no road can reach is left unlinked, and no sites means no roads', (
   const lone = connectSites(sealed, /** @type {any} */ ([{ ...base, x: 3, y: 3, tileId: '3,3' }]));
   assert.deepEqual(lone.exits, []);
 });
+
+test('the first settlement of a large map is a city, and some later ones are villages', () => {
+  const markers = new Set();
+  for (const seed of [1, 2, 3, 4]) {
+    const towns = planSites(meadow(40), mulberry32(seed)).filter((s) => s.archetype === 'town');
+    assert.equal(towns[0].marker, 'city');
+    for (const t of towns.slice(1)) markers.add(t.marker);
+  }
+  assert.deepEqual([...markers].sort(), ['settlement', 'village']);
+  const [small] = planSites(meadow(20), mulberry32(1));
+  assert.equal(small.marker, 'settlement');
+});

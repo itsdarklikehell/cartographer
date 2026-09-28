@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { overlayList } from '../src/map/TileGrid.js';
+import { ArmNetwork } from '../src/map/Autotile.js';
 import {
+  fordCrossings,
   generateWilds,
   placeLandmarks,
   terrainTiles,
@@ -12,6 +14,17 @@ import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
 const WILDS = ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands', 'island'];
+const LANDMARKS = [
+  'ruins',
+  'camp',
+  'standing-stones',
+  'mine',
+  'cave-entrance',
+  'graveyard',
+  'watchtower',
+  'oasis',
+  'lighthouse',
+];
 
 test('every climate archetype fills the grid and marks landmarks on open ground', () => {
   const size = 22;
@@ -150,9 +163,7 @@ test('landmark placement stops when no free cell is left', () => {
 
 test('a landmark with no marker art in the palette is skipped', () => {
   const bare = new TilePalette();
-  for (const type of ['ruins', 'camp', 'standing-stones', 'mine', 'cave-entrance', 'graveyard']) {
-    bare.entries.delete(type);
-  }
+  for (const type of LANDMARKS) bare.entries.delete(type);
   const terrain = wildTerrain(14, 'wilderness', mulberry32(4));
   const tiles = terrainTiles(bare, terrain, mulberry32(4));
   assert.deepEqual(placeLandmarks(bare, terrain, tiles, 2, mulberry32(4)), []);
@@ -170,4 +181,86 @@ test('a site with no marker art keeps its terrain tile', () => {
       `${site.tileId} shows no ${site.marker}`,
     );
   }
+});
+
+/**
+ * A plain grass terrain of the given size with no rivers or roads.
+ * @param {number} size
+ * @returns {import('../src/map/GeneratorWilds.js').WildTerrain}
+ */
+function meadow(size) {
+  return {
+    size,
+    cells: new Array(size * size).fill('grass'),
+    biomes: new Array(size * size).fill('grass'),
+    elevation: new Float64Array(size * size),
+    rivers: new ArmNetwork(),
+    roads: new ArmNetwork(),
+  };
+}
+
+test('tiles draw each biome, or the class where a later step changed the cell', () => {
+  const terrain = meadow(6);
+  terrain.biomes.fill('savanna');
+  terrain.cells[0] = 'farmland';
+  const tiles = terrainTiles(palette, terrain, mulberry32(1));
+  assert.match(tiles[0].imageRef, /\/farmland\//);
+  assert.ok(tiles.slice(1).every((t) => t.imageRef.includes('/savanna/')));
+  const town = terrainTiles(palette, { ...terrain, biomes: undefined }, mulberry32(1));
+  assert.ok(
+    town.slice(1).every((t) => t.imageRef.includes('/grass/')),
+    'no biomes, no biome art',
+  );
+  const island = generateWilds(palette, 32, mulberry32(2), 'island');
+  assert.ok(island.tiles.some((t) => t.imageRef.includes('/deep-water/')));
+});
+
+test('a road crossing far from every town draws as a ford', () => {
+  const size = 16;
+  const terrain = meadow(size);
+  for (let y = 0; y < size - 1; y++) terrain.rivers.join(8, y, 's');
+  for (let x = 0; x < size - 1; x++) terrain.roads.join(x, 8, 'e');
+  const town = { x: 6, y: 8, tileId: '6,8', marker: 'settlement', poi: 'settlement' };
+  const near = [{ ...town, archetype: 'town' }];
+  assert.deepEqual([...fordCrossings(terrain, near)], []);
+  assert.deepEqual([...fordCrossings(terrain, [{ ...near[0], archetype: 'castle' }])], ['8,8']);
+  const fords = fordCrossings(terrain, []);
+  const tiles = terrainTiles(palette, { ...terrain, fords }, mulberry32(1));
+  const crossing = tiles.find((t) => t.id === '8,8');
+  assert.equal(crossing?.overlayRef, 'assets/tiles/river/river-ford-h.svg');
+  const bridged = terrainTiles(palette, terrain, mulberry32(1)).find((t) => t.id === '8,8');
+  assert.equal(bridged?.overlayRef, 'assets/tiles/river/river-bridge-h.svg');
+});
+
+test('an oasis needs desert, a lighthouse open water, and a watchtower likes a road', () => {
+  /** @param {string} keep */
+  const only = (keep) => {
+    const p = new TilePalette();
+    for (const type of LANDMARKS) if (type !== keep) p.entries.delete(type);
+    return p;
+  };
+  const size = 12;
+  /** @param {TilePalette} p @param {ReturnType<typeof meadow>} terrain */
+  const place = (p, terrain) => {
+    const tiles = terrainTiles(p, terrain, mulberry32(3));
+    return placeLandmarks(p, terrain, tiles, 1, mulberry32(3));
+  };
+  const oasis = only('oasis');
+  assert.deepEqual(place(oasis, meadow(size)), [], 'no oasis on grass');
+  const dunes = meadow(size);
+  dunes.cells[5 * size + 5] = 'desert';
+  assert.deepEqual(place(oasis, dunes), ['5,5']);
+
+  const lighthouse = only('lighthouse');
+  assert.deepEqual(place(lighthouse, meadow(size)), [], 'no lighthouse inland');
+  const bay = meadow(size);
+  for (let y = 0; y < size; y++) for (let x = 0; x < 3; x++) bay.cells[y * size + x] = 'water';
+  const [spot] = place(lighthouse, bay);
+  assert.equal(Number(spot.split(',')[0]), 4, 'two cells from the water, clear of the shore');
+
+  const tower = only('watchtower');
+  const road = meadow(size);
+  for (let x = 0; x < size - 1; x++) road.roads.join(x, 6, 'e');
+  const [at] = place(tower, road);
+  assert.equal(Math.abs(Number(at.split(',')[1]) - 6), 1, 'beside the road');
 });

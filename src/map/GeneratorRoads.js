@@ -47,7 +47,7 @@ const BRIDGE = 4;
  *   blocked?: (x: number, y: number) => boolean,
  *   turn?: number,
  * }} RoadGround
- * `cells` is the drawn terrain type per cell. `blocked` marks cells a road
+ * `cells` is the terrain class per cell. `blocked` marks cells a road
  * cannot pass through, such as marker tiles. A goal cell is never blocked.
  * `turn` is an extra cost for each change of direction. It defaults to 0.
  * A town street uses it, so that a street on open grass runs straight with

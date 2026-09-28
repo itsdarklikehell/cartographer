@@ -161,7 +161,7 @@ test('wilderness places a river, coastlines around water, and landmark POIs', ()
     // stacked under the river channel where the two meet.
     const n = gen.width;
     const isWater = new Set(
-      gen.tiles.filter((t) => t.imageRef.includes('/water/')).map((t) => t.id),
+      gen.tiles.filter((t) => /\/(deep-)?water\//.test(t.imageRef)).map((t) => t.id),
     );
     for (const t of gen.tiles) {
       if (isWater.has(t.id) || t.metadata.poiType) continue;

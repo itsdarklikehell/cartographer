@@ -45,7 +45,10 @@ export function siteCounts(size) {
  * Choose the sites of an open-terrain map. A settlement prefers grass near
  * a river or a lake, because marker art sits on a grass background and
  * towns grow beside water. A settlement with at least four water cells
- * within two cells of it becomes a port, so a pond does not make a harbor. The keep stands at the foot of the hills when it can, and
+ * within two cells of it becomes a port, so a pond does not make a harbor.
+ * The first settlement takes the best spot, and on a map of 32 cells or
+ * more it is a city. Each later settlement is a village with a chance of
+ * one in two. The keep stands at the foot of the hills when it can, and
  * the dungeon stands as far from every settlement as the map allows. No
  * site sits on a river, a shoreline, or within two cells of the border, so
  * its marker never hides an overlay and a road can reach it from every
@@ -131,7 +134,9 @@ export function planSites(terrain, rng) {
       spacing,
     );
     const port = at !== null && waterNear(at.x, at.y) >= 4;
-    add(at, port ? 'port' : 'settlement', 'settlement', 'town');
+    const first = size >= 32 ? 'city' : 'settlement';
+    const later = rng() < 0.5 ? 'village' : 'settlement';
+    add(at, port ? 'port' : i === 0 ? first : later, 'settlement', 'town');
   }
   if (counts.keep) {
     const hill = (/** @type {string} */ t) => t === 'hills' || t === 'mountain';

@@ -113,14 +113,14 @@ export const TERRAIN_PROFILES = {
 };
 
 /**
- * The terrain type that draws each biome. The palette has art for the
- * right-hand types only. A biome without art of its own draws as its
- * closest drawn type, for example jungle as forest. The placeholder art
- * listed in docs/tile-assets.md names the finished tile that each of these
- * biomes waits on.
+ * The terrain class of each biome. The generator rules read the class: a
+ * road avoids mountain, a river rises in the hills, and a landmark prefers
+ * grass. So jungle counts as forest and volcanic as mountain for these
+ * rules. A tile still draws its biome's own art, unless a later step
+ * changes the class of its cell, for example to farmland or to a pond.
  * @type {Record<string, string>}
  */
-export const BIOME_ART = {
+export const BIOME_TERRAIN = {
   'deep-water': 'water',
   water: 'water',
   grass: 'grass',
@@ -182,7 +182,7 @@ export function classifyBiome(e, m, t, lines) {
  *   cells: string[],
  *   lines: ElevationLines,
  * }} TerrainField
- * `biomes` is the biome per cell and `cells` is the drawn terrain type per
+ * `biomes` is the biome per cell and `cells` is the terrain class per
  * cell, both indexed `y * size + x`.
  */
 
@@ -256,5 +256,5 @@ export function terrainField(size, profile, rng) {
       warmth + (heat[i] - 0.5) * 0.3 + profile.latitude * ((y + 0.5) / size - 0.5) * 0.8 - cooling;
     biomes[i] = classifyBiome(e, m, t, lines);
   }
-  return { size, elevation, biomes, cells: biomes.map((b) => BIOME_ART[b]), lines };
+  return { size, elevation, biomes, cells: biomes.map((b) => BIOME_TERRAIN[b]), lines };
 }

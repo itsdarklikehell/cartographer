@@ -2,7 +2,7 @@ import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
-import { isOverlayType } from '../map/TilePalette.js';
+import { isOverlayType, isTerrainType } from '../map/TilePalette.js';
 import { buildDisclosure } from './Disclosure.js';
 import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 
@@ -184,21 +184,9 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   // rivers, coasts), buildings, and interior pieces do not mix in one grid.
   // Terrain starts open, because it is the most common brush. The rest start
   // collapsed.
-  const TERRAIN_TYPES = new Set([
-    'grass',
-    'forest',
-    'mountain',
-    'water',
-    'desert',
-    'swamp',
-    'snow',
-    'hills',
-    'farmland',
-    'custom',
-  ]);
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
-    TERRAIN_TYPES.has(entry.type)
+    isTerrainType(entry.type)
       ? 'Terrain'
       : isOverlayType(entry.type)
         ? 'Overlays'

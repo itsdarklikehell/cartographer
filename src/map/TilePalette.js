@@ -22,7 +22,26 @@ const VARIANT_COUNTS = {
   snow: 3,
   hills: 3,
   farmland: 3,
+  'deep-water': 3,
+  jungle: 3,
+  taiga: 4,
+  savanna: 3,
+  badlands: 5,
+  volcanic: 3,
+  glacier: 3,
+  'snow-hills': 3,
+  'snow-mountain': 5,
 };
+
+/**
+ * Whether a palette type is ground terrain: a type with variants, or a
+ * custom image, which a GM paints as terrain.
+ * @param {string} type
+ * @returns {boolean}
+ */
+export function isTerrainType(type) {
+  return type in VARIANT_COUNTS || type === 'custom';
+}
 
 /**
  * Road pieces are not random variants. Each piece is a distinct connector
@@ -51,12 +70,13 @@ const ROAD_KINDS = [
 /**
  * River pieces follow the road-connector pattern: distinct channel shapes,
  * picked by which edges must meet neighboring river tiles. The list also
- * adds two bridge pieces for where a road crosses the channel. `bridge-h`
- * carries an east-west road over a north-south river. `bridge-v` carries the
- * reverse.
+ * adds two bridge pieces and two ford pieces for where a road crosses the
+ * channel. `bridge-h` and `ford-h` take an east-west road across a
+ * north-south river, and `bridge-v` and `ford-v` take a north-south road
+ * across an east-west river.
  * @type {string[]}
  */
-const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
+const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v', 'ford-h', 'ford-v'];
 
 /**
  * Coast transition overlays. Water fills one half, the named edge, with a
@@ -121,6 +141,11 @@ const MARKER_TYPES = [
   'graveyard',
   'camp',
   'standing-stones',
+  'village',
+  'city',
+  'oasis',
+  'lighthouse',
+  'watchtower',
 ];
 
 /**
@@ -202,7 +227,7 @@ function buildBuiltins() {
       entries.push({
         id: `${type}-${i}`,
         type,
-        label: `${capitalize(type)} ${i}`,
+        label: `${titleCase(type)} ${i}`,
         imageRef: `${TILE_ROOT}/${type}/${type}-${i}.svg`,
         custom: false,
       });

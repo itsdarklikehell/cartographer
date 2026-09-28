@@ -206,13 +206,20 @@ mountains. Frontier is cold, with snow and snowy forest. Desert is hot and
 dry. Wetlands have lakes, swamp, and many rivers. An island has sea around
 the whole border. In each of them the north edge is colder than the south
 edge, rivers run down from the hills to water or to the map edge, and
-landmarks such as ruins, mines, and camps stand on open ground.
+landmarks such as ruins, mines, and camps stand on open ground. An oasis
+stands only in the desert, a lighthouse only near open water, and a
+watchtower usually beside a road. The climate also gives jungle, savanna,
+taiga, glacier, badlands, snowy hills and peaks, volcanic peaks, and deep
+sea, each with its own tiles.
 
 An outdoor map also gets settlements, with farmland around them. A
-settlement beside open water is a port. A large map adds a keep, and a
-medium map or larger adds a hidden dungeon far from the settlements. Roads
-join the settlements and the keep, cross rivers on bridges, and leave the
-map at one edge, or at two edges on a huge or vast map.
+settlement beside open water is a port. On a huge or vast map the first
+settlement is a city, and on any map some of the later settlements are
+villages. A large map adds a keep, and a medium map or larger adds a hidden
+dungeon far from the settlements. Roads join the settlements and the keep
+and leave the map at one edge, or at two edges on a huge or vast map. A
+road crosses a river on a bridge near a settlement and on a ford farther
+out.
 
 A town has a core of streets and buildings around a central crossroads.
 The inn, the tavern, the blacksmith, the general store, and the temple

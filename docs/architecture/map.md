@@ -283,11 +283,12 @@ mountain lines come from quantiles of the elevation field, so a profile that
 asks for 12% water gets about 12% on every seed. An island profile lowers
 the land toward the edges and puts the whole border under water.
 
-The model knows more biomes than the palette can draw. `BIOME_ART` maps
-each biome to the terrain type that draws it today, for example jungle to
-forest and glacier to snow. The placeholder art in `assets/placeholders/`
-names the tile that each of these biomes needs (see
-[Tile assets](../tile-assets.md#placeholder-art)).
+Each biome has its own tile art, and `BIOME_TERRAIN` gives each biome a
+terrain class, for example forest for jungle and mountain for volcanic. The
+generator rules read the class, so a road avoids a volcanic peak as it
+avoids any mountain. `terrainTiles` draws the biome art of a cell while the
+cell keeps the class of its biome. A cell that a later step changes, for
+example to farmland or to a pond, draws with the art of its new class.
 
 Noise features scale with the map, at about one feature per nine tiles. A
 large map then gets more lakes and ranges, not larger ones.
@@ -310,8 +311,10 @@ sets how many of each a map gets, from one settlement on a small map to
 five settlements, a keep, and a dungeon on a vast map.
 
 A settlement prefers grass near a river or a lake. A settlement with at
-least four water cells within two cells of it becomes a port. The keep
-prefers the foot of the hills, and the dungeon stands as far from the
+least four water cells within two cells of it becomes a port. The first
+settlement takes the best spot, and on a map of 32 cells or more it draws
+as a city. Each later settlement draws as a village with a chance of one
+in two. The keep prefers the foot of the hills, and the dungeon stands as far from the
 settlements as it can. No site stands on a river, on a shoreline, or within
 two cells of the border. The marker then hides no overlay, and a road can
 reach the site from every side. Grass around each settlement turns into
@@ -322,9 +325,11 @@ type has a step cost in `ROAD_COST`, and a type that is not in the table,
 such as water or mountain, takes no road. A step along an existing road is
 cheap, so a new road joins the old one instead of running beside it. A
 road crosses a river only over a straight channel, and it leaves the river
-cell in the direction it entered, because the art has only the `bridge-h`
-and `bridge-v` pieces. For this rule the search state is a cell plus the
-direction of entry.
+cell in the direction it entered, because the crossing pieces (`bridge-h`,
+`bridge-v`, `ford-h`, and `ford-v`) have only a straight channel. For this
+rule the search state is a cell plus the direction of entry.
+`fordCrossings` in `src/map/GeneratorWilds.js` picks the crossings that
+draw as a ford: each crossing more than three cells from every settlement.
 
 `connectSites` joins the settlements and the keep as a minimum spanning
 tree. Then it runs one road off the map edge, and a map of 32 cells or more
