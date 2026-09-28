@@ -244,6 +244,12 @@ wall pieces around the core and a gate where each street goes through it.
 | `town/town-wall-h.svg`, `town/town-wall-v.svg` | A straight run of the town wall |
 | `town/town-gate-h.svg`, `town/town-gate-v.svg` | A gate where a street crosses the wall |
 
+The four corner pieces, `town/town-wall-corner-ne.svg` to
+`town/town-wall-corner-sw.svg`, have finished art in `assets/tiles/town/`
+and no placeholder. Like the interior wall corners, each corner is named for
+its two open edges, so `town-wall-corner-se` connects south and east and caps
+the north-west corner of the ring.
+
 ### Interior pieces
 
 The cave, dungeon, castle, and building generators in `src/map/` draw with

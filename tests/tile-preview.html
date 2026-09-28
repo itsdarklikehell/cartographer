@@ -30,6 +30,13 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>Town streets (span-2 buildings over grass, beside the roads)</h2>
 <div id="town-scene" style="position: relative; width: max-content;"></div>
 
+<h2>Town walls (overlays: a gate where each street crosses the wall)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-h"></div>
+  <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="wall-v"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-ring"></div>
+</div>
+
 <h2>Shore landmarks (a lighthouse abuts a port on either side)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="shore"></div>
 
@@ -68,9 +75,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 
 <script>
   const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
-  // An overlay piece such as a road stacks over a base tile, and a plain
-  // cell is the base tile alone.
-  const cell = (base, over) => `<div class="cell">${img(base)}${over ? img(over) : ''}</div>`;
+  // Overlay pieces such as a road stack in order over a base tile, and a
+  // plain cell is the base tile alone.
+  const cell = (base, ...over) => `<div class="cell">${[base, ...over].filter(Boolean).map(img).join('')}</div>`;
 
   // 6x3 mixed-variant block per terrain: every ordered variant pair occurs
   // somewhere as a horizontal neighbor, and each column mixes variants vertically.
@@ -119,6 +126,34 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['town-hall', 0, 1], ['house', 2, 1], ['house', 5, 1], ['well', 7, 1], ['guildhall', 9, 1], ['bakery', 11, 1],
     ['cottage', 0, 5], ['market', 2, 4], ['fountain', 5, 4], ['cottage', 8, 5], ['warehouse', 10, 4], ['stables', 12, 4],
   ].map(([b, x, y]) => `<img src="../assets/tiles/town/${b}.svg" style="position: absolute; left: ${x * 64}px; top: ${y * 64}px; width: 128px; height: 128px;">`).join('');
+
+  // Wall and gate pieces stack over the ground, and each gate also stacks over
+  // the road that goes through it. The east-west run crosses grass and desert.
+  document.getElementById('wall-h').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2'], ['grass/grass-3', 'road/road-v'], ['desert/desert-1'], ['desert/desert-2'],
+    ['grass/grass-2', 'town/town-wall-h'], ['grass/grass-3', 'town/town-wall-h'], ['grass/grass-1', 'road/road-v', 'town/town-gate-h'],
+    ['desert/desert-3', 'town/town-wall-h'], ['desert/desert-1', 'town/town-wall-h'],
+    ['grass/grass-3'], ['grass/grass-1'], ['grass/grass-2', 'road/road-v'], ['desert/desert-2'], ['desert/desert-3'],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
+
+  document.getElementById('wall-v').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2', 'town/town-wall-v'], ['grass/grass-3'],
+    ['grass/grass-3'], ['grass/grass-1', 'town/town-wall-v'], ['grass/grass-2'],
+    ['grass/grass-2', 'road/road-h'], ['grass/grass-3', 'road/road-h', 'town/town-gate-v'], ['grass/grass-1', 'road/road-h'],
+    ['snow/snow-1'], ['snow/snow-2', 'town/town-wall-v'], ['snow/snow-3'],
+    ['snow/snow-2'], ['snow/snow-3', 'town/town-wall-v'], ['snow/snow-1'],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
+
+  // A closed ring: the corner pieces are named for their open edges, so
+  // corner-se caps the north-west corner. A street enters through the gate.
+  const W = (p) => `town/town-wall-${p}`;
+  document.getElementById('wall-ring').innerHTML = [
+    ['grass/grass-1'], ['grass/grass-2'], ['grass/grass-3', 'road/road-v'], ['grass/grass-1'], ['grass/grass-2'],
+    ['grass/grass-2', W('corner-se')], ['grass/grass-3', W('h')], ['grass/grass-1', 'road/road-v', 'town/town-gate-h'], ['grass/grass-2', W('h')], ['grass/grass-3', W('corner-sw')],
+    ['grass/grass-3', W('v')], ['grass/grass-1'], ['grass/grass-2', 'road/road-v'], ['grass/grass-3'], ['grass/grass-1', W('v')],
+    ['grass/grass-1', W('v')], ['grass/grass-2'], ['grass/grass-3', 'road/road-end-n'], ['grass/grass-1'], ['grass/grass-2', W('v')],
+    ['grass/grass-2', W('corner-ne')], ['grass/grass-3', W('h')], ['grass/grass-1', W('h')], ['grass/grass-2', W('h')], ['grass/grass-3', W('corner-nw')],
+  ].map(([base, ...over]) => cell(base, ...over)).join('');
 
   // The lighthouse shoreline mirrors the port shoreline, so the edge heights
   // match in both orders along the row.
