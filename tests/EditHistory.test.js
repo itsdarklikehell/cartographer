@@ -5,6 +5,7 @@ import {
   popEdit,
   nodeSnapshot,
   commitEdit,
+  addHandoutBindings,
   DEFAULT_EDIT_LIMIT,
 } from '../src/map/EditHistory.js';
 import { createMapNode } from '../src/map/TileGrid.js';
@@ -82,4 +83,22 @@ test('commitEdit keeps the before state of a node that no longer exists', () => 
   const a = createMapNode('a', 'A', null, 4, 4);
   const committed = commitEdit(pushEdit([], nodeSnapshot([a])), () => undefined);
   assert.deepEqual(committed[0].after, [a]);
+});
+
+test('addHandoutBindings adds to the most recent edit only', () => {
+  const a = nodeSnapshot([createMapNode('a', 'A', null, 2, 2)]);
+  const b = nodeSnapshot([createMapNode('b', 'B', null, 2, 2)]);
+  const binding = { handoutId: 'note', nodeId: 'b', tileId: '1,1' };
+  const history = addHandoutBindings([a, b], [binding]);
+  assert.equal(history[0], a);
+  assert.deepEqual(history[1].handouts, [binding]);
+  assert.deepEqual(b.handouts, [], 'the recorded snapshot stays as it was');
+});
+
+test('addHandoutBindings keeps the ring when there is nothing to add or no edit', () => {
+  const ring = [nodeSnapshot([createMapNode('a', 'A', null, 2, 2)])];
+  assert.equal(addHandoutBindings(ring, []), ring);
+  /** @type {import('../src/map/EditHistory.js').EditSnapshot[]} */
+  const empty = [];
+  assert.equal(addHandoutBindings(empty, [{ handoutId: 'x', nodeId: 'a', tileId: '0,0' }]), empty);
 });

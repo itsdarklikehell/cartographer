@@ -25,7 +25,7 @@
  * nodes in `created`, adds the nodes in `removed` back, moves the party to
  * `party`, puts the characters in `recalled` and the creatures in
  * `creatures` back where they stood, binds the handouts in `handouts` back
- * to their nodes, and restores `entryTiles`.
+ * to their nodes and tiles, and restores `entryTiles`.
  * @typedef {Object} EditSnapshot
  * @property {MapNode[]} nodes nodes the edit rewrote, as they were
  * @property {MapNode[] | null} after the same nodes as the edit left them,
@@ -39,7 +39,8 @@
  * @property {CreaturePlacement[]} creatures creatures the edit moved or
  *   unplaced, with the location each one had
  * @property {HandoutBinding[]} handouts handouts the edit made
- *   campaign-wide, with the node each one was bound to
+ *   campaign-wide or took off a tile, with the node and tile each one was
+ *   bound to
  * @property {EntryMemory | null} entryTiles the entry memory as it stood, or
  *   null when the edit left it alone. An edit that removes nodes drops their
  *   entries, and undo brings those nodes back.
@@ -91,6 +92,21 @@ export function pushEdit(history, snapshot, limit = DEFAULT_EDIT_LIMIT) {
 export function popEdit(history) {
   if (history.length === 0) return { history, snapshot: null };
   return { history: history.slice(0, -1), snapshot: history[history.length - 1] };
+}
+
+/**
+ * Add handout bindings to the most recent edit, for an edit that learns
+ * what it unbound only once it ends. An erase stroke is one: it knows which
+ * tiles it removed only after the last cell. This is a pure function: it
+ * returns a new array, or the same array when there is nothing to add.
+ * @param {EditSnapshot[]} history
+ * @param {HandoutBinding[]} bindings
+ * @returns {EditSnapshot[]}
+ */
+export function addHandoutBindings(history, bindings) {
+  const top = history[history.length - 1];
+  if (!top || bindings.length === 0) return history;
+  return [...history.slice(0, -1), { ...top, handouts: [...top.handouts, ...bindings] }];
 }
 
 /**

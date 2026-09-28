@@ -1,13 +1,15 @@
 /**
  * Pure helpers for lore and read-aloud handouts. List-level operations
  * (unique id derivation, replace or remove by id) come from the rosters
- * through entities/Roster.js. This module owns only the per-handout shape,
- * the node-scoped filter, the reveal toggle, and what a node edit does to a
- * binding. This keeps the module free of app state, so tests can run
- * against it directly.
+ * through entities/Roster.js. This module owns only the per-handout fields,
+ * the filters that decide who sees which handout where, the reveal toggle,
+ * and what a map edit does to a binding. This keeps the module free of app
+ * state, so tests can run against it directly.
  */
 
 /** @typedef {import('../types/handout.js').Handout} Handout */
+/** @typedef {import('../types/handout.js').HandoutBinding} HandoutBinding */
+/** @typedef {import('../types/handout.js').HandoutViewer} HandoutViewer */
 
 /**
  * @param {string} id
@@ -16,24 +18,61 @@
  * @param {string | null} [nodeId] Node the handout attaches to. Null means campaign-wide.
  * @param {boolean} [revealed]
  * @param {string | null} [image] Data URL of an attached image. Null means no image.
+ * @param {{ tileId?: string | null, audience?: string[] | null }} [extra]
+ *   The one tile of the node, and the characters who see it. Both default to null.
  * @returns {Handout}
  */
-export function createHandout(id, title, body = '', nodeId = null, revealed = false, image = null) {
-  return { id, title, body, nodeId, revealed, image };
+export function createHandout(
+  id,
+  title,
+  body = '',
+  nodeId = null,
+  revealed = false,
+  image = null,
+  { tileId = null, audience = null } = {},
+) {
+  return {
+    id,
+    title,
+    body,
+    nodeId,
+    tileId: nodeId === null ? null : tileId,
+    revealed,
+    image,
+    audience: cleanAudience(audience),
+  };
 }
 
 /**
- * Backfill fields a loaded handout can predate.
+ * An audience list as the handout keeps it: unique string ids, or null for
+ * every player. An empty list also becomes null. A form with no box checked
+ * then means every player, and a save cannot keep a handout that no player
+ * tab can ever show.
+ * @param {unknown} value
+ * @returns {string[] | null}
+ */
+export function cleanAudience(value) {
+  if (!Array.isArray(value)) return null;
+  const ids = [...new Set(value.filter((id) => typeof id === 'string' && id !== ''))];
+  return ids.length > 0 ? ids : null;
+}
+
+/**
+ * Backfill fields a loaded handout can predate. A handout from an older
+ * save has no tile and shows to every player.
  * @param {Handout} handout
  * @returns {Handout}
  */
 export function withDefaults(handout) {
+  const nodeId = handout.nodeId ?? null;
   return {
     ...handout,
     body: handout.body ?? '',
-    nodeId: handout.nodeId ?? null,
+    nodeId,
+    tileId: nodeId !== null && typeof handout.tileId === 'string' ? handout.tileId : null,
     revealed: handout.revealed ?? false,
     image: handout.image ?? null,
+    audience: cleanAudience(handout.audience),
   };
 }
 
@@ -46,8 +85,10 @@ export function toggleRevealed(handout) {
 }
 
 /**
- * Handouts to show while the party stands in a node: those bound to the
- * node, plus campaign-wide handouts (nodeId null). Keeps the input order.
+ * Handouts that belong to a node: those bound to the node or to one of its
+ * tiles, plus campaign-wide handouts (nodeId null). Keeps the input order.
+ * The GM's list is this one, so the GM can prepare a tile's handout before
+ * the party gets there.
  * @param {Handout[]} handouts
  * @param {string} nodeId
  * @returns {Handout[]}
@@ -57,11 +98,47 @@ export function handoutsAt(handouts, nodeId) {
 }
 
 /**
+ * Whether a player tab bound to `boundId` is in the handout's audience. A
+ * handout with no audience list shows to every tab. A chosen audience
+ * excludes a spectator tab (`boundId` null).
+ * @param {Handout} handout
+ * @param {string | null} boundId
+ * @returns {boolean}
+ */
+export function inAudience(handout, boundId) {
+  return handout.audience === null || (boundId !== null && handout.audience.includes(boundId));
+}
+
+/**
+ * The handouts one viewer gets while the party stands at `position`. The
+ * GM gets every handout of the node (see `handoutsAt`). A player tab gets
+ * only the revealed handouts that are campaign-wide, bound to the party's
+ * node, or bound to the tile the party stands on. Of those, it gets only
+ * the ones whose audience includes the tab's character. The player panel
+ * renders from this list alone, so the body and image of any other handout
+ * never reach that tab's DOM.
+ * @param {Handout[]} handouts
+ * @param {{ nodeId: string, tileId: string }} position
+ * @param {HandoutViewer} viewer
+ * @returns {Handout[]}
+ */
+export function handoutsFor(handouts, position, viewer) {
+  const here = handoutsAt(handouts, position.nodeId);
+  if (viewer.gm) return here;
+  return here.filter(
+    (h) =>
+      h.revealed &&
+      (h.tileId === null || h.tileId === position.tileId) &&
+      inAudience(h, viewer.boundCharacterId),
+  );
+}
+
+/**
  * Make the handouts bound to any of the given nodes campaign-wide. A node
  * edit that removes nodes calls this, so no handout stays bound to a node
- * that is gone, which would hide it from every panel. Handouts bound
- * elsewhere keep their node, and the array keeps its identity when nothing
- * changes.
+ * that is gone, which would hide it from every panel. The tile binding goes
+ * with the node. Handouts bound elsewhere keep their node, and the array
+ * keeps its identity when nothing changes.
  * @param {Handout[]} handouts
  * @param {Set<string>} nodeIds
  * @returns {Handout[]}
@@ -71,41 +148,72 @@ export function unbindFrom(handouts, nodeIds) {
   const next = handouts.map((h) => {
     if (h.nodeId === null || !nodeIds.has(h.nodeId)) return h;
     changed = true;
-    return { ...h, nodeId: null };
+    return { ...h, nodeId: null, tileId: null };
   });
   return changed ? next : handouts;
 }
 
 /**
- * Which node each handout bound to any of the given nodes was on, so a
- * caller that is about to unbind them can bind them back later. A
- * campaign-wide handout, and a handout bound elsewhere, are not in the
- * result.
+ * Where each handout bound to any of the given nodes was, so a caller that
+ * is about to unbind them can bind them back later. A campaign-wide
+ * handout, and a handout bound elsewhere, are not in the result.
  * @param {Handout[]} handouts
  * @param {Set<string>} nodeIds
- * @returns {import('../types/handout.js').HandoutBinding[]}
+ * @returns {HandoutBinding[]}
  */
 export function bindingsIn(handouts, nodeIds) {
-  /** @type {import('../types/handout.js').HandoutBinding[]} */
-  const bindings = [];
-  for (const h of handouts) {
-    if (h.nodeId !== null && nodeIds.has(h.nodeId)) {
-      bindings.push({ handoutId: h.id, nodeId: h.nodeId });
-    }
-  }
-  return bindings;
+  return handouts
+    .filter((h) => h.nodeId !== null && nodeIds.has(h.nodeId))
+    .map((h) => ({ handoutId: h.id, nodeId: h.nodeId, tileId: h.tileId }));
 }
 
 /**
- * Bind the recorded handouts back to their nodes. This is the undo of
- * `unbindFrom`. Only the `nodeId` field changes, so any other edit made to
- * a handout since stays. A binding for a handout that is gone is skipped.
+ * Where each handout bound to a tile of `nodeId` was, for every tile that
+ * `keep` rejects. A map edit that erases, cuts off, or regenerates tiles
+ * calls this before `unbindTiles`, so undo can bind them back.
  * @param {Handout[]} handouts
- * @param {import('../types/handout.js').HandoutBinding[]} bindings
+ * @param {string} nodeId
+ * @param {(tileId: string) => boolean} keep false for a tile the edit removes
+ * @returns {HandoutBinding[]}
+ */
+export function tileBindingsLost(handouts, nodeId, keep) {
+  /** @type {HandoutBinding[]} */
+  const lost = [];
+  for (const h of handouts) {
+    if (h.nodeId === nodeId && typeof h.tileId === 'string' && !keep(h.tileId)) {
+      lost.push({ handoutId: h.id, nodeId, tileId: h.tileId });
+    }
+  }
+  return lost;
+}
+
+/**
+ * Bind each recorded handout to its whole node instead of its tile. The
+ * array keeps its identity when there is nothing to unbind.
+ * @param {Handout[]} handouts
+ * @param {HandoutBinding[]} bindings from `tileBindingsLost`
+ * @returns {Handout[]}
+ */
+export function unbindTiles(handouts, bindings) {
+  if (bindings.length === 0) return handouts;
+  const ids = new Set(bindings.map((b) => b.handoutId));
+  return handouts.map((h) => (ids.has(h.id) ? { ...h, tileId: null } : h));
+}
+
+/**
+ * Bind the recorded handouts back to their nodes and tiles. This is the
+ * undo of `unbindFrom` and `unbindTiles`. Only the `nodeId` and `tileId`
+ * fields change, so any other edit made to a handout since stays. A
+ * binding for a handout that is gone is skipped.
+ * @param {Handout[]} handouts
+ * @param {HandoutBinding[]} bindings
  * @returns {Handout[]}
  */
 export function restoreBindings(handouts, bindings) {
   if (bindings.length === 0) return handouts;
-  const byId = new Map(bindings.map((b) => [b.handoutId, b.nodeId]));
-  return handouts.map((h) => (byId.has(h.id) ? { ...h, nodeId: byId.get(h.id) ?? null } : h));
+  const byId = new Map(bindings.map((b) => [b.handoutId, b]));
+  return handouts.map((h) => {
+    const b = byId.get(h.id);
+    return b ? { ...h, nodeId: b.nodeId, tileId: b.nodeId === null ? null : b.tileId } : h;
+  });
 }

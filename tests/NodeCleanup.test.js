@@ -146,6 +146,27 @@ test('locationsAfterShrink pulls every location in the node inside the new bound
   assert.equal(after.handouts, world.handouts);
 });
 
+test('locationsAfterShrink binds a handout on a cut-off tile to the whole node', () => {
+  const handouts = [
+    { ...handout('cut', 'n'), tileId: '8,1' },
+    { ...handout('inside', 'n'), tileId: '1,1' },
+    { ...handout('other', 'm'), tileId: '8,1' },
+  ];
+  const world = { party: { nodeId: 'n', tileId: '0,0' }, characters: [], creatures: [], handouts };
+  const after = locationsAfterShrink(world, 'n', 6, 6);
+  assert.equal(after.handouts[0].tileId, null);
+  assert.equal(after.handouts[0].nodeId, 'n');
+  assert.equal(after.handouts[1], handouts[1]);
+  assert.equal(after.handouts[2], handouts[2]);
+});
+
+test('locationsAfterDelete drops the tile of a handout on a doomed node', () => {
+  const handouts = [{ ...handout('x', 'child'), tileId: '1,1' }];
+  const world = { party: landing, characters: [], creatures: [], handouts };
+  const after = locationsAfterDelete(world, doomed, landing);
+  assert.equal(after.handouts[0].tileId, null);
+});
+
 test('locationsAfterShrink leaves locations inside the bounds and in other nodes alone', () => {
   const world = {
     party: { nodeId: 'n', tileId: '1,1' },

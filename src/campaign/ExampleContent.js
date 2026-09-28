@@ -595,6 +595,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'world',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'snagtooth-orders',
@@ -603,6 +605,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'northmarch',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'odos-warning',
@@ -611,6 +615,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'graypeak',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'barrow-inscription',
@@ -619,6 +625,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'barrow',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'legend-of-ostrand',
@@ -627,6 +635,8 @@ export function buildExampleContent(palette, world) {
         nodeId: null,
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'smugglers-chart',
@@ -635,6 +645,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'saltmere',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'crypt-ledger',
@@ -643,6 +655,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'thornhold',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
       {
         id: 'wardens-oath',
@@ -651,6 +665,8 @@ export function buildExampleContent(palette, world) {
         nodeId: 'world',
         revealed: false,
         image: null,
+        tileId: null,
+        audience: null,
       },
     ],
     bestiary: [

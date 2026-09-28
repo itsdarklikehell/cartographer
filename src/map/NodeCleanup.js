@@ -2,6 +2,7 @@ import { blockFor } from './MapExits.js';
 import { resolveReturnTile } from './EntryPoint.js';
 import { tileIdAt } from './MapGeometry.js';
 import { tileWithinBounds } from './NodeEdits.js';
+import { tileBindingsLost, unbindFrom, unbindTiles } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -21,8 +22,8 @@ import { tileWithinBounds } from './NodeEdits.js';
  */
 
 /**
- * The locations that a node edit can move. Handouts carry a node only, so a
- * shrink leaves them alone and a delete drops their node.
+ * The locations that a node edit can move. A delete drops a handout's node
+ * and tile. A shrink drops only a tile that falls outside the new bounds.
  * @typedef {{ party: PartyPosition, characters: Character[], creatures: Creature[], handouts: Handout[] }} WorldLocations
  */
 
@@ -85,25 +86,21 @@ function mapLocations(entities, move) {
 export function locationsAfterDelete(world, doomed, landing) {
   /** @param {EncounterLocation} location */
   const drop = (location) => (doomed.has(location.nodeId) ? null : location);
-  let handoutsChanged = false;
-  const handouts = world.handouts.map((h) => {
-    if (h.nodeId === null || !doomed.has(h.nodeId)) return h;
-    handoutsChanged = true;
-    return { ...h, nodeId: null };
-  });
   return {
     party: doomed.has(world.party.nodeId) ? landing : world.party,
     characters: mapLocations(world.characters, drop),
     creatures: mapLocations(world.creatures, drop),
-    handouts: handoutsChanged ? handouts : world.handouts,
+    handouts: unbindFrom(world.handouts, doomed),
   };
 }
 
 /**
  * Every location after the node `nodeId` shrinks to `width` by `height`.
  * Each location in that node outside the new bounds moves to the nearest
- * tile inside them, through `tileWithinBounds`. Locations in other nodes,
- * and locations already inside the bounds, keep their identity.
+ * tile inside them, through `tileWithinBounds`. A handout bound to a tile
+ * outside the bounds binds to the whole node instead. Its tile is gone, and
+ * a tile it never named is not a place the GM chose. Locations in other
+ * nodes, and locations already inside the bounds, keep their identity.
  * @param {WorldLocations} world
  * @param {string} nodeId
  * @param {number} width
@@ -125,6 +122,9 @@ export function locationsAfterShrink(world, nodeId, width, height) {
     party: pull(world.party),
     characters: mapLocations(world.characters, pull),
     creatures: mapLocations(world.creatures, pull),
-    handouts: world.handouts,
+    handouts: unbindTiles(
+      world.handouts,
+      tileBindingsLost(world.handouts, nodeId, (id) => !tileWithinBounds(id, width, height)),
+    ),
   };
 }
