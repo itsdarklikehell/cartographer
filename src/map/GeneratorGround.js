@@ -37,10 +37,52 @@ import { bridgeAt } from './GeneratorRoads.js';
 export const chebyshev = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
 
 /**
+ * The largest land mass of a map: the land cells that join the most other
+ * land cells by steps north, south, east, and west. The first mass in
+ * row-major order wins a tie.
+ * @param {string[]} cells terrain class per cell, indexed `y * size + x`
+ * @param {number} size
+ * @returns {Set<number>} the cell indexes of the mass, empty with no land
+ */
+export function largestLand(cells, size) {
+  const seen = new Uint8Array(cells.length);
+  /** @type {number[]} */
+  let best = [];
+  for (let i = 0; i < cells.length; i++) {
+    if (seen[i] || cells[i] === 'water') continue;
+    seen[i] = 1;
+    const mass = [i];
+    for (let q = 0; q < mass.length; q++) {
+      const x = mass[q] % size;
+      const y = Math.floor(mass[q] / size);
+      for (const [nx, ny] of [
+        [x, y - 1],
+        [x, y + 1],
+        [x - 1, y],
+        [x + 1, y],
+      ]) {
+        const j = ny * size + nx;
+        if (nx < 0 || ny < 0 || nx >= size || ny >= size || seen[j] || cells[j] === 'water') {
+          continue;
+        }
+        seen[j] = 1;
+        mass.push(j);
+      }
+    }
+    if (mass.length > best.length) best = mass;
+  }
+  return new Set(best);
+}
+
+/**
  * The land cell nearest the middle of the south border, where one row north
  * counts as two columns across. A map ringed by sea enters here, so a party
  * lands on the shore instead of in the sea. A map with land at the middle
- * of its south border enters on that border tile.
+ * of its south border enters on that border tile. The entry is on the
+ * largest land mass (see `largestLand`), because a party that lands on a
+ * small islet cannot walk to the sites of the main island. A mass whose
+ * every cell `skip` refuses gives the entry to the nearest land cell of any
+ * mass.
  * @param {string[]} cells terrain class per cell, indexed `y * size + x`
  * @param {number} size
  * @param {(i: number) => boolean} [skip] cells that cannot take the entry
@@ -49,18 +91,18 @@ export const chebyshev = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.ab
  */
 export function southLanding(cells, size, skip = () => false) {
   const mid = Math.floor(size / 2);
-  let entry = tileIdAt(mid, size - 1);
-  let best = Infinity;
-  cells.forEach((type, i) => {
-    const x = i % size;
-    const y = Math.floor(i / size);
-    const d = Math.abs(x - mid) + (size - 1 - y) * 2;
-    if (type !== 'water' && d < best && !skip(i)) {
-      best = d;
-      entry = tileIdAt(x, y);
+  const main = largestLand(cells, size);
+  /** @param {(i: number) => boolean} fits */
+  const nearest = (fits) => {
+    let at = -1;
+    let best = Infinity;
+    for (let i = 0; i < cells.length; i++) {
+      const d = Math.abs((i % size) - mid) + (size - 1 - Math.floor(i / size)) * 2;
+      if (cells[i] !== 'water' && d < best && !skip(i) && fits(i)) [at, best] = [i, d];
     }
-  });
-  return entry;
+    return at < 0 ? null : tileIdAt(at % size, Math.floor(at / size));
+  };
+  return nearest((i) => main.has(i)) ?? nearest(() => true) ?? tileIdAt(mid, size - 1);
 }
 
 /**

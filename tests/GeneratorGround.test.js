@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { overlayList } from '../src/map/TileGrid.js';
 import { ArmNetwork } from '../src/map/Autotile.js';
-import { chebyshev, southLanding, terrainTiles, wildTerrain } from '../src/map/GeneratorGround.js';
+import {
+  chebyshev,
+  largestLand,
+  southLanding,
+  terrainTiles,
+  wildTerrain,
+} from '../src/map/GeneratorGround.js';
+import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
@@ -133,9 +140,56 @@ test('southLanding picks the land nearest the middle of the south border', () =>
   assert.equal(southLanding(bay, size), '1,4', 'one column across beats one row up');
   assert.equal(
     southLanding(bay, size, (i) => i === 4 * size + 1),
-    '2,3',
-    'a skipped cell takes no entry',
+    '0,4',
+    'a skipped cell gives the entry to the next cell of the mass',
   );
+  assert.equal(
+    southLanding(bay, size, (i) => i >= 4 * size),
+    '2,3',
+    'a mass with every cell skipped gives the entry to another mass',
+  );
+});
+
+test('largestLand finds the land mass with the most cells', () => {
+  const size = 4;
+  const cells = ['grass', 'water', 'grass', 'grass', 'water', 'water', 'water', 'grass'];
+  cells.push(...new Array(8).fill('water'));
+  assert.deepEqual([...largestLand(cells, size)].sort(), [2, 3, 7]);
+  assert.equal(largestLand(new Array(16).fill('water'), size).size, 0);
+});
+
+test('an island enters on its main land mass, not on an islet by the south shore', () => {
+  // Island huge seed 758 has a small islet nearer the south border than the
+  // main island.
+  const size = 32;
+  const gen = generateNodeTiles(palette, { archetype: 'island', size: 'huge' }, mulberry32(758));
+  const { cells } = wildTerrain(size, 'island', mulberry32(758));
+  const [ex, ey] = gen.entry.split(',').map(Number);
+  const reach = new Set([ey * size + ex]);
+  const queue = [ey * size + ex];
+  while (queue.length) {
+    const i = /** @type {number} */ (queue.pop());
+    const [x, y] = [i % size, Math.floor(i / size)];
+    for (const [nx, ny] of [
+      [x + 1, y],
+      [x - 1, y],
+      [x, y + 1],
+      [x, y - 1],
+    ]) {
+      const j = ny * size + nx;
+      if (nx < 0 || ny < 0 || nx >= size || ny >= size || reach.has(j)) continue;
+      if (cells[j] === 'water') continue;
+      reach.add(j);
+      queue.push(j);
+    }
+  }
+  assert.ok(reach.size > 400, `the entry reaches ${reach.size} cells`);
+  const towns = gen.sites.filter((s) => s.archetype === 'town');
+  assert.equal(towns.length, 3);
+  for (const town of towns) {
+    const [x, y] = town.tileIds[0].split(',').map(Number);
+    assert.ok(reach.has(y * size + x), `${town.label} reached`);
+  }
 });
 
 test('chebyshev counts king moves between two cells', () => {

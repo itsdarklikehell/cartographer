@@ -367,8 +367,10 @@ the exit search, because each search would cover the whole area and fail.
 A map with no exit, such as an island with its whole border under water,
 enters where `southLanding` in `src/map/GeneratorGround.js` says. That is
 the land cell nearest the middle of the south border that has no marker,
-where one row north counts as two columns across. The world uses the same
-search for its entry.
+where one row north counts as two columns across. The cell is on the
+largest land mass (`largestLand`), because an islet near the south shore
+can be closer and a party there cannot walk to the sites. The world uses
+the same search for its entry.
 
 ### Town layout
 
