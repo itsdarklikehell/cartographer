@@ -590,15 +590,23 @@ breadth first. The top map draws from `mulberry32(seed)`. Each sub-map draws
 from `mulberry32(childSeed(parentSeed, siteIndex))`, and never from the RNG
 of its parent. The top map is then the same with or without its sub-maps,
 so the Generate preview builds the top map alone. `depth` limits the
-optional sites. `SUBMAP_BUDGET` stops the optional sub-maps at 300, because
-each sub-map adds to the save. A vast world with every level holds 226 to
-276 maps over seeds 1 to 5. Its packed save is about 0.5 MiB of text. The
-browser stores two bytes per character, so the world takes about 1 MiB of
-localStorage, and the save warns at 3 MiB. The forced sub-maps do not count
-against the budget. `MAX_LEVELS` in `MapGenerator.js` limits a stack of
-dungeon or cave levels to 10 instead, and the Levels field of the Generate
-dialog has the same limit. Without it, a vast dungeon of 500 levels builds
-500 nodes.
+optional sites. `SUBMAP_BUDGET` stops the tree at 300 sub-maps, because
+each sub-map adds to the save. A vast world with every level has 240 to
+271 sub-maps over seeds 1 to 5. Its packed save is about 0.5 MiB of text.
+The browser stores two bytes per character, so the world takes about 1 MiB
+of localStorage, and the save warns at 3 MiB.
+
+The forced sub-maps count against the budget, and they take it first, so
+that no stairs lead nowhere. `expandTree` generates each sub-map when it
+takes the site, so it knows the forced sites of the new map at once. An
+optional site costs its own map plus `forcedCost` of that map: one for each
+forced site, plus `levelsBelow` for the rest of its stack of levels. The
+tree takes the site only when the whole cost fits, and a site that does not
+fit gives its turn to the next one. The forced sub-maps of the top map
+always get their maps, even past the budget. `MAX_LEVELS` in
+`MapGenerator.js` limits a stack of dungeon or cave levels to 10, and the
+Levels field of the Generate dialog has the same limit. Without it, a vast
+dungeon of 500 levels builds 500 nodes.
 
 A regeneration of a node that its parent reaches by a staircase keeps that
 staircase. `stackPlace` in `src/map/RegenerateNode.js` reads the stairway

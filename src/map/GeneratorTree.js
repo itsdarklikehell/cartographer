@@ -1,4 +1,4 @@
-import { generateNodeTiles, STACKED_ARCHETYPES } from './MapGenerator.js';
+import { generateNodeTiles, levelsBelow, STACKED_ARCHETYPES } from './MapGenerator.js';
 import { placeName } from './GeneratorNames.js';
 import { randInt } from './GeneratorRandom.js';
 import { mulberry32 } from '../util/Rng.js';
@@ -6,6 +6,7 @@ import { mulberry32 } from '../util/Rng.js';
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
 /** @typedef {import('./MapGenerator.js').GenerateOptions} GenerateOptions */
+/** @typedef {import('./MapGenerator.js').GeneratedMap} GeneratedMap */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 
 /**
@@ -19,14 +20,13 @@ import { mulberry32 } from '../util/Rng.js';
  */
 
 /**
- * The most sub-maps that one generation creates past the forced ones. A
- * vast world opened all the way down holds 226 to 276 maps (seeds 1 to 5).
- * Its packed save is about 0.5 MiB of text, and localStorage stores two
- * bytes per character, so it adds about 1 MiB against the 3 MiB warning of
- * `SaveManager.QUOTA_WARN_BYTES`. The forced sub-maps do not count against
- * the budget, because their tiles already lead down.
- * `MapGenerator.MAX_LEVELS` limits each stack of dungeon or cave levels
- * instead.
+ * The most sub-maps that one generation creates, forced ones included. A
+ * vast world opened all the way down has 240 to 271 sub-maps (seeds 1 to
+ * 5), so it stays under the budget. Its packed save is about 0.5 MiB of
+ * text, and localStorage stores two bytes per character, so it adds about
+ * 1 MiB against the 3 MiB warning of `SaveManager.QUOTA_WARN_BYTES`.
+ * Only the forced sub-maps of the top map can go past the budget, and
+ * `MapGenerator.MAX_LEVELS` limits each stack of dungeon or cave levels.
  */
 export const SUBMAP_BUDGET = 300;
 
@@ -78,14 +78,32 @@ export function childSeed(seed, index) {
 }
 
 /**
+ * How many sub-maps the forced sites of a generated map lead to, with each
+ * stack of levels below them.
+ * @param {GeneratedMap} gen
+ * @returns {number}
+ */
+export function forcedCost(gen) {
+  return gen.sites.reduce((n, site) => (site.forced ? n + 1 + levelsBelow(site) : n), 0);
+}
+
+/**
  * Generate a map and its sub-maps, breadth first, so every place one level
  * down gets its map before any place two levels down. `depth` is how many
  * levels of sub-maps to build: 0 builds the map alone. A forced site, such
  * as the stairs down of a dungeon level or the trapdoor of a building,
  * always gets its sub-map at the same depth as its parent, because its tile
- * already leads down. Past the forced ones, the generation stops at
- * `budget` sub-maps, and `skipped` counts the places within the depth that
- * got no map. A place with no map keeps its marker and no link.
+ * already leads down.
+ *
+ * `budget` limits the sub-maps of the whole tree, forced ones included,
+ * and the forced ones take the budget first. Each sub-map is generated
+ * when its site is taken, so the tree knows its forced sites at once. An
+ * optional site then costs its own map, its forced sub-maps, and the
+ * levels below them, and the tree takes the site only when the budget has
+ * room for all of them. A site that does not fit gives its turn to the next
+ * site, which can cost less. The forced sub-maps of the top map always get
+ * their maps, even past the budget. `skipped` counts the places within the
+ * depth that got no map. A place with no map keeps its marker and no link.
  *
  * Each sub-map gets a name from `GeneratorNames.placeName`, and a dungeon
  * or a cave gets one to three levels, both drawn from its own RNG before
@@ -114,6 +132,15 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
     return id;
   };
   const rng = mulberry32(seed);
+  /** @type {GenerateOptions} */
+  const spec = {
+    archetype: root.archetype,
+    size: root.size,
+    levels: root.levels,
+    level: root.level,
+    environ: root.environ ?? undefined,
+  };
+  const top = generateNodeTiles(palette, spec, rng);
   const queue = [
     {
       id: root.id,
@@ -122,41 +149,57 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
       base: root.base ?? root.name,
       kind: root.kind,
       environ: root.environ,
-      /** @type {GenerateOptions} */
-      spec: {
-        archetype: root.archetype,
-        size: root.size,
-        levels: root.levels,
-        level: root.level,
-        environ: root.environ ?? undefined,
-      },
+      gen: top,
       seed,
       generation: 0,
-      rng,
     },
   ];
   /** @type {TreeNode[]} */
   const nodes = [];
-  let created = 0;
+  // The sub-maps made, plus the ones kept for forced sites that have no
+  // map yet.
+  let spent = forcedCost(top);
   let skipped = 0;
   for (let q = 0; q < queue.length; q++) {
     const item = queue[q];
-    const gen = generateNodeTiles(palette, item.spec, item.rng);
+    const { gen } = item;
     const tiles = [...gen.tiles];
     const index = new Map(tiles.map((t, i) => [t.id, i]));
-    gen.sites.forEach((site, i) => {
+    for (const [i, site] of gen.sites.entries()) {
       const generation = item.generation + (site.forced ? 0 : 1);
-      if (!site.forced && generation > depth) return;
-      if (!site.forced && created >= budget) {
+      if (!site.forced && generation > depth) continue;
+      if (!site.forced && spent >= budget) {
         skipped++;
-        return;
+        continue;
       }
-      const id = freshId();
-      created++;
       const childRng = mulberry32(childSeed(item.seed, i));
       const name = site.forced ? `${item.base} (${site.label})` : placeName(site, childRng);
       const stacked = STACKED_ARCHETYPES.includes(site.archetype);
       const levels = site.levels ?? (stacked ? 1 + randInt(childRng, 3) : 1);
+      const child = generateNodeTiles(
+        palette,
+        {
+          archetype: site.archetype,
+          size: site.size,
+          levels,
+          level: site.level,
+          environ: site.environ,
+        },
+        childRng,
+      );
+      if (site.forced) {
+        // The parent kept a slot for each level of the stack below this
+        // one. A level with no room for its stairs down gives back the rest.
+        spent += forcedCost(child) - levelsBelow(site);
+      } else {
+        const cost = 1 + forcedCost(child);
+        if (spent + cost > budget) {
+          skipped++;
+          continue;
+        }
+        spent += cost;
+      }
+      const id = freshId();
       for (const tileId of site.tileIds) {
         const at = /** @type {number} */ (index.get(tileId));
         tiles[at] = { ...tiles[at], childNodeId: id };
@@ -168,18 +211,11 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
         base: site.forced ? item.base : name,
         kind: site.kind,
         environ: site.environ,
-        spec: {
-          archetype: site.archetype,
-          size: site.size,
-          levels,
-          level: site.level,
-          environ: site.environ,
-        },
+        gen: child,
         seed: childSeed(item.seed, i),
         generation,
-        rng: childRng,
       });
-    });
+    }
     nodes.push({
       id: item.id,
       parentId: item.parentId,

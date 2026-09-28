@@ -8,6 +8,7 @@ import {
   ARCHETYPES,
   archetypesFor,
   generateNodeTiles,
+  levelsBelow,
   levelsLeft,
   MAX_LEVELS,
   NESTED_ARCHETYPES,
@@ -464,6 +465,14 @@ test('a stack of levels ends at MAX_LEVELS, however many levels are asked for', 
   assert.equal(levelsLeft(1), MAX_LEVELS);
   assert.equal(levelsLeft(MAX_LEVELS), 1);
   assert.equal(levelsLeft(MAX_LEVELS + 3), 1);
+});
+
+test('levelsBelow counts the levels under a level of a stack, within MAX_LEVELS', () => {
+  assert.equal(levelsBelow({ archetype: 'dungeon', size: 'small', levels: 3 }), 2);
+  assert.equal(levelsBelow({ archetype: 'cave', size: 'small', levels: 500 }), MAX_LEVELS - 1);
+  assert.equal(levelsBelow({ archetype: 'cave', size: 'small', levels: 4, level: MAX_LEVELS }), 0);
+  assert.equal(levelsBelow({ archetype: 'dungeon', size: 'small' }), 0);
+  assert.equal(levelsBelow({ archetype: 'castle', size: 'small', levels: 3 }), 0);
 });
 
 test('a node reached by a staircase takes only the archetypes that keep the staircase', () => {

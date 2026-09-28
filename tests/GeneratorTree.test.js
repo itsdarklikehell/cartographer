@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { childSeed, expandTree } from '../src/map/GeneratorTree.js';
+import { childSeed, expandTree, forcedCost } from '../src/map/GeneratorTree.js';
 import { generateNodeTiles, MAX_LEVELS } from '../src/map/MapGenerator.js';
 import { tileKind } from '../src/map/TileKinds.js';
 import { stairwayTo } from '../src/map/MapExits.js';
@@ -48,6 +48,28 @@ function assertLinked(nodes) {
     }
   }
   assert.equal(reached.size, nodes.length - 1, 'every node below the top has a way in');
+}
+
+/**
+ * Every staircase of the batch leads to a sub-map, or back to the parent of
+ * its node.
+ * @param {import('../src/map/GeneratorTree.js').TreeNode[]} nodes
+ * @param {string} label
+ */
+function assertStairsLead(nodes, label) {
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+  for (const node of nodes) {
+    const parent = node.parentId ? byId.get(node.parentId) : null;
+    const back = parent ? stairwayTo(/** @type {any} */ (parent), node.id)?.back : null;
+    for (const tile of node.tiles) {
+      const stairs = tileKind(tile);
+      if (stairs !== 'stairs-up' && stairs !== 'stairs-down') continue;
+      assert.ok(
+        tile.childNodeId || stairs === back,
+        `${label}: ${node.name} ${tile.id} ${stairs} leads somewhere`,
+      );
+    }
+  }
 }
 
 test('a child seed mixes the parent seed and the site index', () => {
@@ -220,6 +242,75 @@ test('the budget stops the optional sub-maps and counts the places left out', ()
   assertLinked(nodes);
 });
 
+test('the budget counts the forced sub-maps, and a forced site still gets its map', () => {
+  for (const budget of [1, 2, 3, 5, 8, 13, 21, 40]) {
+    for (const seed of [1, 2, 3]) {
+      const label = `budget ${budget} seed ${seed}`;
+      const { nodes, skipped } = expandTree(
+        palette,
+        root('wilderness', 'huge'),
+        { seed, depth: 9, budget },
+        counter(),
+      );
+      assert.ok(nodes.length - 1 <= budget, `${label}: ${nodes.length - 1} sub-maps`);
+      assert.ok(skipped > 0, label);
+      assertLinked(nodes);
+      assertStairsLead(nodes, label);
+    }
+  }
+});
+
+test('a site whose forced sub-maps overrun the budget gives its turn to a later site', () => {
+  // Wilderness large seed 1 lists two settlements, the keep, and then a
+  // site that fits the budget. The keep needs three maps with its upper
+  // floor and its dungeons, and the budget has two left.
+  const top = generateNodeTiles(palette, { archetype: 'wilderness', size: 'large' }, mulberry32(1));
+  const { nodes } = expandTree(
+    palette,
+    root('wilderness', 'large'),
+    { seed: 1, depth: 1, budget: 4 },
+    counter(),
+  );
+  const linked = top.sites.map((s) =>
+    Boolean(nodes[0].tiles.find((t) => t.id === s.tileIds[0])?.childNodeId),
+  );
+  assert.equal(top.sites[2].archetype, 'castle');
+  assert.deepEqual(linked.slice(0, 4), [true, true, false, true]);
+  assert.equal(nodes.length - 1, 4, 'the budget fills');
+});
+
+test('the forced sub-maps of the top map go past a budget that they fill', () => {
+  const { nodes, skipped } = expandTree(
+    palette,
+    root('castle', 'medium', { kind: 'interior' }),
+    { seed: 4, depth: 0, budget: 1 },
+    counter(),
+  );
+  assert.equal(nodes.length, 3);
+  assert.equal(skipped, 0);
+  const deep = expandTree(
+    palette,
+    root('dungeon', 'small', { kind: 'interior', levels: 4 }),
+    { seed: 1, depth: 0, budget: 0 },
+    counter(),
+  );
+  assert.equal(deep.nodes.length, 4);
+});
+
+test('forcedCost counts the forced sub-maps of a map with the stack below them', () => {
+  const rng = () => mulberry32(4);
+  const dungeon = generateNodeTiles(
+    palette,
+    { archetype: 'dungeon', size: 'small', levels: 3 },
+    rng(),
+  );
+  assert.equal(forcedCost(dungeon), 2);
+  const castle = generateNodeTiles(palette, { archetype: 'castle', size: 'medium' }, rng());
+  assert.equal(forcedCost(castle), 2);
+  const town = generateNodeTiles(palette, { archetype: 'town', size: 'medium' }, rng());
+  assert.equal(forcedCost(town), 0);
+});
+
 test('the ids of one batch never clash, even when the id source repeats', () => {
   const ids = ['a', 'a', 'root', 'b', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'];
   const { nodes } = expandTree(
@@ -270,19 +361,7 @@ test('no generated stairs or trapdoor leads nowhere', () => {
         { seed, depth: 1 },
         counter(),
       );
-      const byId = new Map(nodes.map((n) => [n.id, n]));
-      for (const node of nodes) {
-        const parent = node.parentId ? byId.get(node.parentId) : null;
-        const back = parent ? stairwayTo(/** @type {any} */ (parent), node.id)?.back : null;
-        for (const tile of node.tiles) {
-          const stairs = tileKind(tile);
-          if (stairs !== 'stairs-up' && stairs !== 'stairs-down') continue;
-          assert.ok(
-            tile.childNodeId || stairs === back,
-            `${archetype} seed ${seed}: ${node.name} ${tile.id} ${stairs} leads somewhere`,
-          );
-        }
-      }
+      assertStairsLead(nodes, `${archetype} seed ${seed}`);
     }
   }
 });

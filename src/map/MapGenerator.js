@@ -149,6 +149,30 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  */
 
 /**
+ * How many levels a stack of dungeon or cave levels has from the level of
+ * `options` down, with `MAX_LEVELS` applied. The result is at least 1.
+ * @param {GenerateOptions} options
+ * @returns {number}
+ */
+function stackLevels({ levels, level = 1 }) {
+  const asked = Math.floor(levels ?? 1) || 1;
+  return Math.max(1, Math.min(asked, levelsLeft(level)));
+}
+
+/**
+ * How many levels a dungeon or a cave level with `options` has below it in
+ * its stack, and 0 for any other archetype. Each of those levels is a
+ * forced sub-map, so `GeneratorTree.expandTree` keeps this many sub-maps of
+ * its budget for them before they exist. A level whose layout has no room
+ * for its stairs down ends the stack early and has fewer.
+ * @param {GenerateOptions} options
+ * @returns {number}
+ */
+export function levelsBelow(options) {
+  return STACKED_ARCHETYPES.includes(options.archetype) ? stackLevels(options) - 1 : 0;
+}
+
+/**
  * Generate a full tile grid for a node from an archetype and size preset.
  * This is a pure function with an injected RNG (pass `Math.random` in the
  * app, a seeded generator in tests). The returned width and height replace
@@ -184,8 +208,7 @@ export function generateNodeTiles(palette, options, rng) {
   const { archetype, size, environ = archetype } = options;
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
   const level = options.level ?? 1;
-  const asked = Math.floor(options.levels ?? 1) || 1;
-  const levels = Math.max(1, Math.min(asked, levelsLeft(level)));
+  const levels = stackLevels(options);
   /** @param {{ tiles: Tile[], entry: string }} gen @param {GeneratedSite[]} [sites] */
   const done = (gen, sites = []) => ({
     width: n,
