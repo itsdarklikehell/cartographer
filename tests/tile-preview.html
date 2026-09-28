@@ -66,14 +66,14 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   ];
   // A type with more than 3 variants gets a fixed pseudo-random block that
   // draws on all of them, so no variant is left out of the preview.
-  const VARIANTS = { mountain: 5, badlands: 5, taiga: 4 };
+  const VARIANTS = { mountain: 5, badlands: 5, taiga: 4, 'snow-mountain': 5, plaza: 5 };
   const mixed = (n) => {
     if (n === 3) return layout.flat();
     let seed = 11;
     return Array.from({ length: 18 }, () => ((seed = (seed * 16807) % 2147483647) % n) + 1);
   };
   document.getElementById('terrains').innerHTML = ['grass', 'forest', 'mountain', 'water', 'desert', 'swamp', 'snow', 'hills', 'farmland',
-    'jungle', 'taiga', 'savanna', 'badlands', 'volcanic']
+    'jungle', 'taiga', 'savanna', 'badlands', 'volcanic', 'glacier', 'deep-water', 'snow-mountain', 'snow-hills', 'plaza']
     .map((t) => `<div><h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
       ${mixed(VARIANTS[t] ?? 3).map((v) => img(`${t}/${t}-${v}`)).join('')}</div></div>`)
     .join('');
