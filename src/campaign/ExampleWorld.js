@@ -1,5 +1,5 @@
 import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
-import { generateNodeTiles } from '../map/MapGenerator.js';
+import { expandTree } from '../map/GeneratorTree.js';
 import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
 import { withNodeTiles } from '../map/TileIndex.js';
 import { tileKind } from '../map/TileKinds.js';
@@ -455,10 +455,23 @@ export function buildExampleWorld(palette, rng = Math.random) {
       archetype: 'castle',
     },
   ];
+  // Each map comes from the same tree the Generate action builds, with no
+  // optional sub-maps, so the keep gets its upper floor and its dungeon and
+  // every staircase leads to a real level.
   /** @type {Record<string, GeneratedNode>} */
   const gens = {};
-  for (const { id, archetype } of regions) {
-    gens[id] = generateNodeTiles(palette, { archetype, size: 'medium' }, rng);
+  /** @type {import('../map/GeneratorTree.js').TreeNode[]} */
+  const below = [];
+  for (const { id, name, kind, archetype } of regions) {
+    let n = 0;
+    const tree = expandTree(
+      palette,
+      { id, name, kind, environ: null, archetype, size: 'medium' },
+      { seed: Math.floor(rng() * 2 ** 32), depth: 0 },
+      () => `${id}-${++n}`,
+    );
+    gens[id] = tree.nodes[0];
+    below.push(...tree.nodes.slice(1));
   }
 
   // Northmarch: the raiders' camp, deep in the forest, with Snagtooth at it
@@ -511,6 +524,11 @@ export function buildExampleWorld(palette, rng = Math.random) {
     const gen = gens[id];
     const node = createMapNode(id, name, 'world', gen.width, gen.height, { kind });
     grid.addNode(withNodeTiles(node, gen.tiles));
+  }
+  for (const sub of below) {
+    const { id, name, parentId, width, height, kind, environ } = sub;
+    const node = createMapNode(id, name, parentId, width, height, { kind, environ });
+    grid.addNode(withNodeTiles(node, sub.tiles));
   }
 
   return {

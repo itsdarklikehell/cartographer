@@ -209,7 +209,7 @@ test('a wilderness river draining into a lake stacks its channel over the shorel
   );
 });
 
-test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => {
+test('dungeon floors are fully enclosed by placed tiles, with no stairs to nowhere', () => {
   const n = GENERATOR_SIZES.medium;
   const gen = generateNodeTiles(
     palette,
@@ -237,8 +237,9 @@ test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => 
       );
     }
   }
-  assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs-up')));
-  // A single-level dungeon has no level below, so no stairs-down leads nowhere.
+  // A single-level dungeon is entered by its door and has no level below,
+  // so it has no stairs at all.
+  assert.ok(!gen.tiles.some((t) => t.imageRef.includes('stairs-up')));
   assert.ok(!gen.tiles.some((t) => t.imageRef.includes('stairs-down')));
 });
 

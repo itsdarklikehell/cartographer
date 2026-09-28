@@ -2,7 +2,7 @@ import { generateWilds } from './GeneratorWilds.js';
 import { generateTown } from './GeneratorTown.js';
 import { generateDungeon } from './GeneratorInteriors.js';
 import { generateCave } from './GeneratorCave.js';
-import { generateBuilding, generateCastle } from './GeneratorHalls.js';
+import { generateBuilding, generateCastle, generateUpperFloor } from './GeneratorHalls.js';
 import { generateWorld } from './GeneratorWorld.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -115,7 +115,10 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  * of this level, and a level below the first is entered by its stairs up.
  * A building with a trapdoor has a forced site for its cellar, which is a
  * small dungeon level entered by its stairs up. The `cellar` archetype
- * generates that level.
+ * generates that level. A castle has forced sites for its upper floor,
+ * which the `upper-floor` archetype generates and the party enters by its
+ * stairs down, and for one dungeon level below it. No generated stairs
+ * lead nowhere.
  * @param {TilePalette} palette
  * @param {GenerateOptions} options
  * @param {() => number} rng
@@ -169,7 +172,32 @@ export function generateNodeTiles(palette, options, rng) {
     };
     return done(gen, [cellar]);
   }
-  if (archetype === 'castle') return done(generateCastle(palette, n, rng));
+  if (archetype === 'castle') {
+    const gen = generateCastle(palette, n, rng);
+    const interior = /** @type {NodeKind} */ ('interior');
+    const above = {
+      tileIds: [gen.stairsUp],
+      archetype: 'upper-floor',
+      kind: interior,
+      environ,
+      size,
+      label: 'upper floor',
+      forced: true,
+    };
+    const below = {
+      tileIds: [gen.stairsDown],
+      archetype: 'dungeon',
+      kind: interior,
+      environ: 'dungeon',
+      size,
+      label: 'dungeons',
+      forced: true,
+      levels: 1,
+      level: 2,
+    };
+    return done(gen, [above, below]);
+  }
+  if (archetype === 'upper-floor') return done(generateUpperFloor(palette, n, rng));
   let open;
   if (archetype === 'town') open = generateTown(palette, n, rng);
   else if (archetype === 'world') open = generateWorld(palette, n, rng);

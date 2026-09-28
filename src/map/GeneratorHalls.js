@@ -92,17 +92,20 @@ export function hallLayout(size, rng, style) {
 }
 
 /**
- * Put the furnishings on a finished hall. The entrance door is the way in
- * that every open cell stays joined to.
+ * Put the furnishings on a finished hall. Every open cell stays joined to
+ * the way in, which is the south door, or the given cell of a hall with no
+ * door. The room with the way in is the entrance room of a building.
  * @param {Tile[]} tiles @param {TilePalette} palette @param {number[]} cells
  * @param {number} size @param {() => number} rng @param {Room[]} rooms
  * @param {boolean} castle @param {number[]} reserved cell indexes of the stairs
+ * @param {[number, number]} [way] the way in of a hall with no door
  * @returns {Map<number, string>} the furnishing on each furnished cell
  */
-function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved) {
+function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved, way) {
   const doorX = Math.floor(size / 2);
-  const { place, placed } = furnisher(cells, size, [doorX, size - 1], new Set(reserved));
-  furnishHalls(place, rng, rooms, { castle, entrance: [doorX, size - 2] });
+  const start = way ?? [doorX, size - 1];
+  const { place, placed } = furnisher(cells, size, start, new Set(reserved));
+  furnishHalls(place, rng, rooms, { castle, entrance: way ?? [doorX, size - 2] });
   dress(tiles, palette, size, placed);
   return placed;
 }
@@ -112,9 +115,11 @@ function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved) 
  * side. The stairs up sit in the top-left corner of the first room and the
  * stairs down in the top-right corner of the last room. The south door is
  * the entry that connects the keep to the parent map. The largest room is
- * the great hall, with a throne and pillars.
+ * the great hall, with a throne and pillars. `stairsUp` and `stairsDown`
+ * name the stairs, so the caller can link them to the upper floor and to
+ * the dungeon below.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {{ tiles: Tile[], entry: string }}
+ * @returns {{ tiles: Tile[], entry: string, stairsUp: string, stairsDown: string }}
  */
 export function generateCastle(palette, size, rng) {
   const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 3, maxDepth: 6 });
@@ -122,10 +127,32 @@ export function generateCastle(palette, size, rng) {
   const stamp = tileStamper(tiles, palette);
   const first = rooms[0];
   const last = rooms[rooms.length - 1];
-  stamp(tileIdAt(first.x0, first.y0), 'stairs-up');
-  stamp(tileIdAt(last.x1, last.y0), 'stairs-down');
+  const stairsUp = tileIdAt(first.x0, first.y0);
+  const stairsDown = tileIdAt(last.x1, last.y0);
+  stamp(stairsUp, 'stairs-up');
+  stamp(stairsDown, 'stairs-down');
   const stairs = [first.y0 * size + first.x0, last.y0 * size + last.x1];
   furnishHall(tiles, palette, cells, size, rng, rooms, true, stairs);
+  return { tiles, entry, stairsUp, stairsDown };
+}
+
+/**
+ * Generate the upper floor of a castle keep: chambers of at least three
+ * cells a side inside a wall ring with no door. The stairs down sit in the
+ * top-left corner of the first room, above the stairs up of the floor
+ * below, and they are the entry. The room with the stairs has a hearth and
+ * a table, and each other room gets a role at random.
+ * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @returns {{ tiles: Tile[], entry: string }}
+ */
+export function generateUpperFloor(palette, size, rng) {
+  const { cells, rooms } = hallLayout(size, rng, { minRoom: 3, maxDepth: 6 });
+  cells[(size - 1) * size + Math.floor(size / 2)] = WALL;
+  const tiles = maskTiles(palette, cells, size, rng);
+  const { x0, y0 } = rooms[0];
+  const entry = tileIdAt(x0, y0);
+  tileStamper(tiles, palette)(entry, 'stairs-down');
+  furnishHall(tiles, palette, cells, size, rng, rooms, false, [y0 * size + x0], [x0, y0]);
   return { tiles, entry };
 }
 

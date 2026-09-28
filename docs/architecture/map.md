@@ -425,11 +425,13 @@ six tries it uses a room of three by three cells in the middle. A cave draws
 with `CAVE_ART` from `GeneratorInteriorMask.js`: cave floors, one rough wall
 piece for every wall cell, and a cave mouth in place of the border door.
 
-A dungeon level and a cave level finish the same way, in `finishLevel`. An
-edge level cuts a straight tunnel from its stairs up to the nearest border
-and sets a door there. `interiorExits` in `MapExits.js` accepts a door on
-the border as a way out, so the party can walk back to the parent map. The
-stairs down go on the cell farthest from the stairs up by walking distance.
+A dungeon level and a cave level finish the same way, in `finishLevel`. A
+stairs level puts its stairs up on the `up` cell of its layout. An edge
+level has no level above it, so it gets no stairs up. It cuts a straight
+tunnel from the `up` cell to the nearest border and sets a door there.
+`interiorExits` in `MapExits.js` accepts a door on the border as a way out,
+so the party can walk back to the parent map. The stairs down go on the
+cell farthest from the `up` cell by walking distance.
 The stairs down of a level lead to the level below through `childNodeId`.
 The level lists a forced site for that level, and `expandTree` builds it
 (see [Nested generation](#nested-generation)).
@@ -442,7 +444,10 @@ cuts the longer side, so rooms stay near square. A new wall never ends
 beside a door in the wall around its room, because that wall would block
 the door from one side. A castle keeps rooms of at least three cells a side
 and has stairs, and a building keeps rooms of at least two cells a side,
-with no stairs. A building has a cellar with a chance of `CELLAR_CHANCE`
+with no stairs. The stairs up of a castle lead to its upper floor, which
+`generateUpperFloor` lays out with the same splits and no door. Its stairs
+down sit in the corner above the stairs up of the keep and are its entry.
+The stairs down of a castle lead to one dungeon level. A building has a cellar with a chance of `CELLAR_CHANCE`
 (three in ten). Its trapdoor goes on the bare floor cell farthest from the
 door, after the furnishings. The `cellar` archetype in `MapGenerator.js`
 generates the cellar as a small dungeon level that the party enters by its
@@ -474,8 +479,11 @@ each building that has an inside, over all four cells of its art. A well, a
 fountain, a market, and a graveyard are open ground, so they are not sites.
 
 A dungeon or a cave level with stairs down lists a forced site for the level
-below it. A building with a trapdoor lists a forced site for its cellar. A
-forced site always gets its map, because its tile already leads down.
+below it. A building with a trapdoor lists a forced site for its cellar, and
+a castle lists forced sites for its upper floor and its dungeons. A forced
+site always gets its map, because its tile already leads up or down. A
+staircase with no map behind it gives the party a way that goes nowhere, so
+no generator places stairs or a trapdoor without a forced site.
 
 `src/map/GeneratorWorld.js` is the world archetype. Its terrain uses the
 `continent` profile, with rivers but no roads or settlements. `partitionLand`

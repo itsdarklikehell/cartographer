@@ -34,12 +34,12 @@ import { dress, furnishDungeon, furnisher } from './GeneratorFurnish.js';
  * }} LevelOptions
  * How one level of a dungeon or a cave connects to its neighbors. An `edge`
  * level, for example a dungeon entered from the overworld, gets a corridor
- * carved to the nearest map edge, with a door on the border cell. A
- * `stairs` level, for example a deeper floor reached by descending, has no
- * surface exit. Its stairs-up tile is the way back, and it becomes the
- * entry. `descend` controls whether the level gets a stairs-down tile. The
- * bottom level of a multi-level dungeon omits it, because no lower level
- * exists for it to lead to.
+ * carved to the nearest map edge, with a door on the border cell, and no
+ * stairs up. A `stairs` level, for example a deeper floor reached by
+ * descending, has no surface exit. Its stairs-up tile is the way back, and
+ * it becomes the entry. `descend` controls whether the level gets a
+ * stairs-down tile. The bottom level of a multi-level dungeon omits it,
+ * because no lower level exists for it to lead to.
  */
 
 /**
@@ -56,8 +56,9 @@ import { dress, furnishDungeon, furnisher } from './GeneratorFurnish.js';
  *   art?: MaskArt,
  *   furnish?: (place: Place, facts: LevelFacts) => void,
  * }} LevelLayout
- * Where the stairs and the way in go on a finished level. The stairs up go
- * on `up`, and the stairs down on the candidate farthest from them. `door`
+ * Where the stairs and the way in go on a finished level. The stairs up of a
+ * stairs level go on `up`, and so does the start of the tunnel of an edge
+ * level. The stairs down go on the candidate farthest from `up`. `door`
  * is the border door of an edge level, or null for a stairs level. `art` is
  * the set of pieces to draw with, and `furnish` places the furnishings.
  */
@@ -75,7 +76,10 @@ export function finishLevel(palette, cells, size, rng, layout, descend) {
   const tiles = maskTiles(palette, cells, size, rng, layout.art);
   const stamp = tileStamper(tiles, palette);
   const [ux, uy] = layout.up;
-  stamp(tileIdAt(ux, uy), 'stairs-up');
+  // An edge level is entered by its door, and no level above it exists, so
+  // stairs up there would lead nowhere. Its tunnel starts from a bare floor
+  // cell instead.
+  if (!layout.door) stamp(tileIdAt(ux, uy), 'stairs-up');
   const dist = walkDistances(cells, size, ux, uy);
   const reserved = new Set([uy * size + ux]);
   /** @type {string | null} */
@@ -107,8 +111,8 @@ export function finishLevel(palette, cells, size, rng, layout, descend) {
  * level has loops and more than one way through. Each corridor bends once,
  * and a coin toss picks whether it runs across first or down first. Rooms
  * grow with the map, so a vast dungeon has halls as well as cells. The
- * stairs up sit in the first room and the stairs down in the room farthest
- * from it. `furnishDungeon` then puts pillars, altars, barrels, rubble, and
+ * way in (the stairs up, or the start of the tunnel to the edge) sits in the
+ * first room, and the stairs down sit in the room farthest from it. `furnishDungeon` then puts pillars, altars, barrels, rubble, and
  * the treasure of the bottom level in the rooms.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {LevelOptions} [options]

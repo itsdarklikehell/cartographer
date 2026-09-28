@@ -238,7 +238,8 @@ The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave
 has winding caverns of uneven width, with rough rock walls, pools, and a
 cave mouth on the border. A castle splits into halls and chambers behind a
-wall ring, with stairs up and down. Its largest room is a great hall with a
+wall ring. Its stairs up lead to an upper floor of chambers, and its stairs
+down lead to a dungeon level beneath the keep. Its largest room is a great hall with a
 throne and pillars. A building splits into a few small rooms and has no
 stairs. About one building in three has a trapdoor down to a small cellar.
 The room behind its door has a hearth and a table. The other rooms
@@ -255,8 +256,9 @@ leads down like stairs down. A generated building links its trapdoor to
 its cellar. On a map that you paint, link the trapdoor to the level below,
 and that level returns through its stairs up.
 
-Each level of a multi-level dungeon or cave becomes a child node. The stairs
-down of one level lead to the stairs up of the level below. The stairs down
+Each level of a multi-level dungeon or cave becomes a child node. The first
+level has no stairs up, because its door is the way in. The stairs down of
+one level lead to the stairs up of the level below. The stairs down
 stand as far from the stairs up as the level allows. The bottom level has
 no stairs down.
 
@@ -288,9 +290,10 @@ sub-maps. A place past that limit keeps its marker with no link, and the
 message after the generation counts those places. One undo removes the new
 map and every new sub-map.
 
-Generation makes the levels of a dungeon or a cave, and the cellar under a
-trapdoor, with every Sub-maps choice, because their stairs and trapdoors
-already lead down.
+Generation makes the levels of a dungeon or a cave, the upper floor and
+the dungeons of a castle, and the cellar under a trapdoor with every
+Sub-maps choice. A generated staircase or trapdoor always leads to a real
+map.
 
 ### Link warnings
 

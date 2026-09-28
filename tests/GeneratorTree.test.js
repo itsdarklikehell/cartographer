@@ -4,6 +4,7 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { childSeed, expandTree } from '../src/map/GeneratorTree.js';
 import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { tileKind } from '../src/map/TileKinds.js';
+import { stairwayTo } from '../src/map/MapExits.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
@@ -97,7 +98,7 @@ test('one level down links every site of a wilderness to a named sub-map', () =>
   // No town opens into its buildings at depth 1, but each dungeon keeps
   // every level that its stairs lead to.
   const deeper = nodes.filter((n) => n.parentId && n.parentId !== 'root');
-  for (const level of deeper) assert.match(level.name, /\(level \d\)$/);
+  for (const level of deeper) assert.match(level.name, /\((level \d|upper floor|dungeons)\)$/);
 });
 
 test('the stairs of a multi-level dungeon lead down to each level, none from the bottom', () => {
@@ -215,4 +216,70 @@ test('a world opens into its regions, and the regions into their places', () => 
     nodes.some((n) => regions.some((r) => r.id === n.parentId)),
     'the regions have places',
   );
+});
+
+test('no generated stairs or trapdoor leads nowhere', () => {
+  const cases = [
+    ['dungeon', 'interior', 1],
+    ['dungeon', 'interior', 3],
+    ['cave', 'interior', 2],
+    ['castle', 'interior', 1],
+    ['building', 'interior', 1],
+    ['wilderness', 'region', 1],
+    ['town', 'region', 1],
+  ];
+  for (const [archetype, kind, levels] of cases) {
+    for (const seed of [1, 2, 3, 10]) {
+      const { nodes } = expandTree(
+        palette,
+        root(/** @type {string} */ (archetype), 'medium', {
+          kind: /** @type {any} */ (kind),
+          levels: /** @type {number} */ (levels),
+        }),
+        { seed, depth: 1 },
+        counter(),
+      );
+      const byId = new Map(nodes.map((n) => [n.id, n]));
+      for (const node of nodes) {
+        const parent = node.parentId ? byId.get(node.parentId) : null;
+        const back = parent ? stairwayTo(/** @type {any} */ (parent), node.id)?.back : null;
+        for (const tile of node.tiles) {
+          const stairs = tileKind(tile);
+          if (stairs !== 'stairs-up' && stairs !== 'stairs-down') continue;
+          assert.ok(
+            tile.childNodeId || stairs === back,
+            `${archetype} seed ${seed}: ${node.name} ${tile.id} ${stairs} leads somewhere`,
+          );
+        }
+      }
+    }
+  }
+});
+
+test('a castle opens up into its upper floor and down into its dungeons', () => {
+  const { nodes } = expandTree(
+    palette,
+    root('castle', 'medium', { kind: 'interior' }),
+    { seed: 4, depth: 0 },
+    counter(),
+  );
+  assert.deepEqual(
+    nodes.map((n) => n.name),
+    ['Top', 'Top (upper floor)', 'Top (dungeons)'],
+  );
+  const [keep, upper, dungeons] = nodes;
+  assert.equal(stairwayTo(/** @type {any} */ (keep), upper.id)?.back, 'stairs-down');
+  assert.equal(stairwayTo(/** @type {any} */ (keep), dungeons.id)?.back, 'stairs-up');
+  const entry = upper.tiles.find((t) => t.id === upper.entry);
+  assert.equal(entry && tileKind(entry), 'stairs-down');
+  const edge = (/** @type {string} */ id) => {
+    const [x, y] = id.split(',').map(Number);
+    return x === 0 || y === 0 || x === upper.width - 1 || y === upper.height - 1;
+  };
+  assert.ok(
+    !upper.tiles.some((t) => edge(t.id) && tileKind(t) === 'door'),
+    'the upper floor has no door out',
+  );
+  assert.ok(!upper.tiles.some((t) => tileKind(t) === 'stairs-up'));
+  assert.equal(dungeons.environ, 'dungeon');
 });

@@ -80,9 +80,9 @@ export function growCavern(size, rng) {
  * Generate one cave level. The automaton runs until it grows a cavern that
  * covers at least a fifth of the map. After a few failed tries, a small
  * room in the middle of the map stands in, so a level always has floor.
- * The stairs up sit on the cavern cell nearest the border, where an edge
- * level also cuts its tunnel and its door, and the stairs down sit on the
- * cavern cell farthest from them. The cave draws with the rough cave pieces,
+ * The way in sits on the cavern cell nearest the border. A stairs level puts
+ * its stairs up there, and an edge level cuts its tunnel and its door from
+ * there. The stairs down sit on the cavern cell farthest from the way in. The cave draws with the rough cave pieces,
  * and `furnishCave` adds pools and rubble.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {LevelOptions} [options]
