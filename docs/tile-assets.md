@@ -167,3 +167,34 @@ the app only when its family table names it.
 
 `addCustom` registers a tile that a GM loads at runtime. A runtime tile is
 not in these tables and cannot override a built-in one.
+
+## Placeholder art
+
+`assets/placeholders/` contains tiles that the generators can use but that
+have no finished art. Each placeholder is a flat fill in the intended base
+color, with a dashed frame and its name. `TilePalette` does not register
+these files, so no map draws them. The folder layout matches
+`assets/tiles/`. To finish a placeholder, draw the art, move the file to
+`assets/tiles/<type>/`, and register the type in `TilePalette.js`. Then
+change the mapping in the generator that the table names.
+
+### Terrain
+
+The climate model in `src/map/GeneratorTerrain.js` classifies each cell
+into a biome. `BIOME_ART` maps each biome to the terrain type that draws it
+until the biome has art of its own. A unit test makes sure that each biome
+without its own art has a placeholder here.
+
+| Placeholder | Intended use | Draws as |
+| --- | --- | --- |
+| `jungle/jungle-1.svg` | Hot, wet lowland | `forest` |
+| `taiga/taiga-1.svg` | Cold, wet lowland: snowy conifer forest | `forest` |
+| `savanna/savanna-1.svg` | Hot grassland between desert and jungle | `grass` |
+| `badlands/badlands-1.svg` | Hot, dry hills: eroded mesas | `desert` |
+| `volcanic/volcanic-1.svg` | Hot, dry mountain: ash and lava | `mountain` |
+| `glacier/glacier-1.svg` | The coldest lowland: ice sheet | `snow` |
+| `deep-water/deep-water-1.svg` | Open sea far from the shore | `water` |
+| `snow-mountain/snow-mountain-1.svg` | Cold mountain: snow-capped peaks | `mountain` |
+| `snow-hills/snow-hills-1.svg` | Cold hills: snow over rolling ground | `snow` |
+
+A finished terrain tile follows the rules in [Terrain variants](#terrain-variants).

@@ -1,6 +1,11 @@
 import { createMapNode } from '../map/TileGrid.js';
 import { withNodeTiles } from '../map/TileIndex.js';
-import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/MapGenerator.js';
+import {
+  generateNodeTiles,
+  generateDungeonLevels,
+  ARCHETYPES,
+  SIZE_OPTIONS,
+} from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
@@ -44,8 +49,8 @@ function replaceQuestion(node, removed) {
 
 /**
  * This is Build-mode procedural generation. It fills the current node with
- * an archetype layout (wilderness or town for regions, dungeon or castle for
- * interiors) at a size preset, as an alternative to painting a large map
+ * an archetype layout (a climate archetype or a town for regions, a dungeon
+ * or a castle for interiors) at a size preset, as an alternative to painting a large map
  * tile by tile. Archetypes are filtered to the node's kind, and overwriting
  * a non-empty node asks for confirmation. The sub-maps the old tiles led to
  * are removed with the tiles, because nothing reaches them once the tiles
@@ -104,6 +109,7 @@ export function wireGenerateAction(app, env) {
 
     const values = await generateDialog({
       archetypes,
+      sizes: SIZE_OPTIONS,
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,
       returnFocus: generateBtn,

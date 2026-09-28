@@ -2,7 +2,8 @@ import { maskAt, tileIdAt } from './MapGeometry.js';
 
 /**
  * This module gives pure helper functions. The functions select connector
- * overlay pieces for coast shorelines and river channels from a terrain grid.
+ * overlay pieces for coast shorelines, and for road and river networks, from a
+ * terrain grid.
  * A terrain grid is a flat array of strings, indexed as `y * width + x`. This
  * index method matches the generators in MapGenerator.js. Each function takes
  * RNG as an input and does not use the DOM, so each function passes unit
@@ -99,53 +100,116 @@ export function coastOverlays(cells, width, height) {
   return out;
 }
 
-/**
- * River piece that connects two named edges of one tile. For example, n+s
- * gives "v".
- * @type {Record<string, string>}
- */
-const RIVER_PIECES = {
-  'n,s': 'v',
-  'e,w': 'h',
-  'e,n': 'corner-ne',
-  'n,w': 'corner-nw',
-  'e,s': 'corner-se',
-  's,w': 'corner-sw',
-};
+/** @typedef {'n' | 'e' | 's' | 'w'} Arm */
 
 /**
- * This function creates a meandering river: a south-biased random walk from
- * the north edge to the south edge. The walk never doubles back on itself.
- * The function returns the channel piece for each visited tile id. If the
- * walk reaches existing water, it ends early and the river empties into a
- * lake.
- * @param {number} width @param {number} height
- * @param {() => number} rng
- * @param {(x: number, y: number) => boolean} [isWater]
- * @returns {Map<string, string>}
+ * The four arm directions as `[arm, dx, dy]`, in a fixed order. Walks that
+ * consume a seeded RNG iterate this list, so the order stays stated once.
+ * @type {ReadonlyArray<readonly [Arm, number, number]>}
  */
-export function riverCourse(width, height, rng, isWater = () => false) {
-  /** @type {Map<string, string>} */
-  const out = new Map();
-  let x = Math.floor(width / 4 + rng() * (width / 2));
-  let from = 'n';
-  for (let y = 0; y < height;) {
-    if (isWater(x, y)) break;
-    let to = rng() < 0.6 ? 's' : rng() < 0.5 ? 'e' : 'w';
-    if (to === from) to = 's'; // The walk cannot exit through the edge it entered from.
-    if (to === 'e' && (x + 1 >= width || isWater(x + 1, y))) to = 's';
-    if (to === 'w' && (x - 1 < 0 || isWater(x - 1, y))) to = 's';
-    out.set(tileIdAt(x, y), RIVER_PIECES[[from, to].sort().join(',')]);
-    if (to === 's') {
-      y++;
-      from = 'n';
-    } else if (to === 'e') {
-      x++;
-      from = 'w';
-    } else {
-      x--;
-      from = 'e';
-    }
+export const ARMS = [
+  ['n', 0, -1],
+  ['e', 1, 0],
+  ['s', 0, 1],
+  ['w', -1, 0],
+];
+
+/** @type {Record<Arm, Arm>} */
+export const OPPOSITE = { n: 's', e: 'w', s: 'n', w: 'e' };
+
+/**
+ * The connector piece for a road or river tile whose channel leaves through
+ * the given edges. Road and river art share these fifteen names. Four arms
+ * make a cross. Three arms make a tee named for the arm opposite the missing
+ * one, so `tee-n` runs east-west with a branch north. Two arms make a
+ * straight or a corner, and one arm makes a dead end named for its open
+ * edge. No arm gives null.
+ * @param {ReadonlySet<Arm>} arms
+ * @returns {string | null}
+ */
+export function connectorKind(arms) {
+  const n = arms.has('n');
+  const e = arms.has('e');
+  const s = arms.has('s');
+  const w = arms.has('w');
+  const count = arms.size;
+  if (count === 4) return 'cross';
+  if (count === 3) return !s ? 'tee-n' : !w ? 'tee-e' : !n ? 'tee-s' : 'tee-w';
+  if (count === 2) {
+    if (n && s) return 'v';
+    if (e && w) return 'h';
+    return `corner-${n ? 'n' : 's'}${e ? 'e' : 'w'}`;
   }
-  return out;
+  if (count === 1) return `end-${[...arms][0]}`;
+  return null;
+}
+
+/**
+ * Edge sets for a connector network, such as the rivers or the roads of one
+ * map, keyed by tile id. A network records the edges its paths cross, not
+ * which cells it covers. Two channels that run side by side without joining
+ * then stay two channels, where a piece picked from neighbor cells would
+ * join them.
+ */
+export class ArmNetwork {
+  constructor() {
+    /** @type {Map<string, Set<Arm>>} */
+    this.arms = new Map();
+  }
+
+  /**
+   * Add one arm to a cell.
+   * @param {number} x @param {number} y @param {Arm} arm
+   */
+  add(x, y, arm) {
+    const id = tileIdAt(x, y);
+    const set = this.arms.get(id) ?? new Set();
+    set.add(arm);
+    this.arms.set(id, set);
+  }
+
+  /**
+   * Join a cell to its neighbor across one edge: an arm on each side.
+   * @param {number} x @param {number} y @param {Arm} arm
+   */
+  join(x, y, arm) {
+    const [, dx, dy] = /** @type {readonly [Arm, number, number]} */ (
+      ARMS.find(([a]) => a === arm)
+    );
+    this.add(x, y, arm);
+    this.add(x + dx, y + dy, OPPOSITE[arm]);
+  }
+
+  /** @param {number} x @param {number} y @returns {ReadonlySet<Arm>} */
+  at(x, y) {
+    return this.arms.get(tileIdAt(x, y)) ?? new Set();
+  }
+
+  /** @param {number} x @param {number} y */
+  has(x, y) {
+    return this.arms.has(tileIdAt(x, y));
+  }
+
+  /**
+   * Drop a cell from the network. Arms that neighbors point at it stay, so a
+   * channel whose cell turned to water still drains into that water.
+   * @param {number} x @param {number} y
+   */
+  drop(x, y) {
+    this.arms.delete(tileIdAt(x, y));
+  }
+
+  /**
+   * The connector piece name for every cell in the network.
+   * @returns {Map<string, string>}
+   */
+  pieces() {
+    /** @type {Map<string, string>} */
+    const out = new Map();
+    for (const [id, set] of this.arms) {
+      const kind = connectorKind(set);
+      if (kind) out.set(id, kind);
+    }
+    return out;
+  }
 }

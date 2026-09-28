@@ -31,6 +31,7 @@ import { openDialog } from './Modal.js';
  * click, which is the map canvas during painting.
  * @param {{
  *   archetypes: { value: string, label: string }[],
+ *   sizes: { value: string, label: string }[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
  *   imageCache?: Map<string, HTMLImageElement>,
  *   returnFocus?: HTMLElement | null,
@@ -64,17 +65,7 @@ export function generateDialog(options) {
         select(options.archetypes, options.archetypes[0]?.value ?? ''),
       );
 
-      const sizeSelect = field(
-        'Size',
-        select(
-          [
-            { value: 'small', label: 'Small' },
-            { value: 'medium', label: 'Medium' },
-            { value: 'large', label: 'Large' },
-          ],
-          'medium',
-        ),
-      );
+      const sizeSelect = field('Size', select(options.sizes, 'medium'));
 
       // Only a dungeon stacks levels, so the field shows for that archetype
       // alone. A region lists no dungeon, so there it never shows.

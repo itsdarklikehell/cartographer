@@ -253,20 +253,58 @@ walk. Everything outside the interior set (terrain, markers, custom images)
 is `plain`.
 
 `Autotile.js` (`src/map/Autotile.js`) handles the detailed part of generated
-terrain: it picks connector overlay pieces so that coastlines and rivers
-join up visually. It is pure and RNG-injected, like the palette:
+terrain. It picks connector overlay pieces, so that coastlines and rivers join
+up visually. It is pure and RNG-injected, like the palette:
 
 - `smoothCoastline` widens water until every shore outline matches a coast
   piece in the art set.
 - `coastOverlays` and `coastKind` name the shoreline overlay for each land
   cell along the water.
-- `riverCourse` walks a meandering channel from the north edge south, and
-  returns the matching river piece for each tile along the way.
+- `ArmNetwork` records which edges of each cell a river crosses, and
+  `connectorKind` names the piece for a set of edges. A network stores edges,
+  not covered cells. Two rivers that run side by side then stay two rivers,
+  because a piece picked from the neighbor cells would join them.
 
-The generator archetypes build on these helpers: wilderness and town in
-`src/map/GeneratorRegions.js`, dispatched from `MapGenerator`, and dungeon
-and castle in `src/map/GeneratorInteriors.js`. So does the example world in
-`campaign/ExampleWorld.js`.
+### Climate model
+
+The open-terrain archetypes (wilderness, highlands, frontier, desert,
+wetlands, and island) share one climate model in
+`src/map/GeneratorTerrain.js`. Seeded value noise from
+`src/map/GeneratorNoise.js` gives three fields over the map: elevation,
+moisture, and temperature. `classifyBiome` turns the three values of a cell
+into a biome. Elevation decides water, hills, and mountain first. Then
+temperature decides cold biomes, and moisture decides between desert, grass,
+forest, swamp, and jungle.
+
+Each archetype is a profile in `TERRAIN_PROFILES`. A profile gives the share
+of the map that is water, hills, and mountain, a warmth and a wetness, and
+how much colder the north edge is than the south edge. The water, hill, and
+mountain lines come from quantiles of the elevation field, so a profile that
+asks for 12% water gets about 12% on every seed. An island profile lowers
+the land toward the edges and puts the whole border under water.
+
+The model knows more biomes than the palette can draw. `BIOME_ART` maps
+each biome to the terrain type that draws it today, for example jungle to
+forest and glacier to snow. The placeholder art in `assets/placeholders/`
+names the tile that each of these biomes needs (see
+[Tile assets](../tile-assets.md#placeholder-art)).
+
+Noise features scale with the map, at about one feature per nine tiles. A
+large map then gets more lakes and ranges, not larger ones.
+
+`src/map/GeneratorRivers.js` traces rivers after the coastline is smoothed.
+A river starts on the hills or at the foot of a range, and each step goes to
+the lowest free neighbor. A step can climb 0.02 of the elevation range, so a
+river crosses small ripples in the noise. A river ends where it meets water,
+leaves the map, or reaches another river. A river that meets another river
+joins it as a tee. A river with no lower ground left ends in a pond, and the
+pond cell becomes water.
+
+The generator archetypes build on these helpers. The climate archetypes are
+in `src/map/GeneratorWilds.js` and the town in `src/map/GeneratorTown.js`,
+both dispatched from `MapGenerator`. The dungeon and the castle are in
+`src/map/GeneratorInteriors.js`. The example world in
+`campaign/ExampleWorld.js` uses them too.
 
 A tile's `overlayRef` can be either a single reference or a draw-ordered
 stack of them (`TileGrid.overlayList` normalizes the two forms). The stack

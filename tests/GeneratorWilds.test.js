@@ -1,0 +1,148 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { TilePalette } from '../src/map/TilePalette.js';
+import { overlayList } from '../src/map/TileGrid.js';
+import {
+  generateWilds,
+  placeLandmarks,
+  terrainTiles,
+  wildTerrain,
+} from '../src/map/GeneratorWilds.js';
+import { mulberry32 } from '../src/util/Rng.js';
+
+const palette = new TilePalette();
+const WILDS = ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands', 'island'];
+
+test('every climate archetype fills the grid and marks landmarks on open ground', () => {
+  const size = 22;
+  for (const archetype of WILDS) {
+    for (const seed of [1, 2]) {
+      const gen = generateWilds(palette, size, mulberry32(seed), archetype);
+      const label = `${archetype} ${seed}`;
+      assert.equal(gen.tiles.length, size * size, `${label}: fully tiled`);
+      assert.equal(gen.entry, `${size / 2},${size - 1}`, `${label}: bottom-center entry`);
+      const landmarks = gen.tiles.filter((t) => t.metadata.poiType === 'landmark');
+      assert.ok(landmarks.length >= 1, `${label}: has landmarks`);
+      const spots = landmarks.map((t) => t.id.split(',').map(Number));
+      for (const [i, [x, y]] of spots.entries()) {
+        assert.ok(x > 0 && y > 0 && x < size - 1 && y < size - 1, `${label}: inner landmark`);
+        assert.equal(landmarks[i].overlayRef, null, `${label}: no landmark on a river or shore`);
+        for (const [ox, oy] of spots.slice(i + 1)) {
+          assert.ok(Math.max(Math.abs(ox - x), Math.abs(oy - y)) >= 3, `${label}: spaced`);
+        }
+      }
+    }
+  }
+});
+
+test('an unknown archetype falls back to the wilderness profile', () => {
+  const a = generateWilds(palette, 8, mulberry32(3), 'nowhere');
+  const b = generateWilds(palette, 8, mulberry32(3));
+  assert.deepEqual(
+    a.tiles.map((t) => t.imageRef),
+    b.tiles.map((t) => t.imageRef),
+  );
+});
+
+test('river overlays connect: every open edge meets river, water, or the map edge', () => {
+  const size = 32;
+  const edges = {
+    v: 'ns',
+    h: 'ew',
+    cross: 'nesw',
+    'tee-n': 'new',
+    'tee-e': 'nse',
+    'tee-s': 'sew',
+    'tee-w': 'nsw',
+  };
+  const step = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
+  const back = { n: 's', e: 'w', s: 'n', w: 'e' };
+  /** @param {string} kind */
+  const opens = (kind) =>
+    kind.startsWith('corner-')
+      ? kind.slice(7).split('')
+      : kind.startsWith('end-')
+        ? [kind[4]]
+        : edges[kind].split('');
+  for (const seed of [1, 5, 9]) {
+    const terrain = wildTerrain(size, 'wetlands', mulberry32(seed));
+    const pieces = terrain.rivers.pieces();
+    assert.ok(pieces.size > 0, `seed ${seed}: wetlands have rivers`);
+    for (const [id, kind] of pieces) {
+      const [x, y] = id.split(',').map(Number);
+      for (const arm of opens(kind)) {
+        const [dx, dy] = step[/** @type {'n'} */ (arm)];
+        const nx = x + dx;
+        const ny = y + dy;
+        const off = nx < 0 || ny < 0 || nx >= size || ny >= size;
+        const wet = !off && terrain.cells[ny * size + nx] === 'water';
+        const other = pieces.get(`${nx},${ny}`);
+        const joined = other !== undefined && opens(other).includes(back[/** @type {'n'} */ (arm)]);
+        assert.ok(off || wet || joined, `seed ${seed}: ${id} ${kind} arm ${arm}`);
+      }
+    }
+  }
+});
+
+test('the coastline keeps to the shapes the coast pieces draw', () => {
+  const size = 24;
+  for (const archetype of ['island', 'wetlands']) {
+    const { cells } = wildTerrain(size, archetype, mulberry32(8));
+    /** @param {number} x @param {number} y */
+    const wet = (x, y) =>
+      x >= 0 && y >= 0 && x < size && y < size && cells[y * size + x] === 'water';
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        if (wet(x, y)) continue;
+        const n = wet(x, y - 1);
+        const s = wet(x, y + 1);
+        const e = wet(x + 1, y);
+        const w = wet(x - 1, y);
+        assert.ok(!(n && s) && !(e && w), `${archetype}: no isthmus at ${x},${y}`);
+      }
+    }
+  }
+});
+
+test('terrain tiles stack the shoreline under the river channel', () => {
+  const size = 32;
+  let stacked = 0;
+  for (const seed of [1, 2, 3, 4, 5, 6]) {
+    const terrain = wildTerrain(size, 'wetlands', mulberry32(seed));
+    for (const tile of terrainTiles(palette, terrain, mulberry32(seed))) {
+      const refs = overlayList(tile);
+      if (refs.length < 2) continue;
+      stacked++;
+      assert.match(refs[0], /\/coast\//);
+      assert.match(refs[1], /\/river\//);
+    }
+  }
+  assert.ok(stacked > 0, 'some river mouth drains through a shoreline');
+});
+
+test('a landmark falls back to non-grass open ground when no grass is free', () => {
+  const size = 8;
+  const terrain = wildTerrain(size, 'desert', mulberry32(2));
+  terrain.cells.fill('desert');
+  const tiles = terrainTiles(palette, terrain, mulberry32(2));
+  const placed = placeLandmarks(palette, terrain, tiles, 1, mulberry32(2));
+  assert.equal(placed.length, 1);
+});
+
+test('landmark placement stops when no free cell is left', () => {
+  const size = 5;
+  const terrain = wildTerrain(size, 'wilderness', mulberry32(2));
+  terrain.cells.fill('water');
+  const tiles = terrainTiles(palette, terrain, mulberry32(2));
+  assert.deepEqual(placeLandmarks(palette, terrain, tiles, 3, mulberry32(2)), []);
+});
+
+test('a landmark with no marker art in the palette is skipped', () => {
+  const bare = new TilePalette();
+  for (const type of ['ruins', 'camp', 'standing-stones', 'mine', 'cave-entrance', 'graveyard']) {
+    bare.entries.delete(type);
+  }
+  const terrain = wildTerrain(14, 'wilderness', mulberry32(4));
+  const tiles = terrainTiles(bare, terrain, mulberry32(4));
+  assert.deepEqual(placeLandmarks(bare, terrain, tiles, 2, mulberry32(4)), []);
+});

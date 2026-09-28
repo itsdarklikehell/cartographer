@@ -10,7 +10,7 @@ import { maskAt, NEIGHBORS4, NEIGHBORS8, tileIdAt } from './MapGeometry.js';
  * dungeon and castle. It also holds the wall-piece picker that both
  * generators share. This file is split out of MapGenerator.js, which keeps
  * the size presets and the archetype dispatch. The open-terrain archetypes
- * live in GeneratorRegions.js.
+ * live in GeneratorWilds.js and GeneratorTown.js.
  */
 
 const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];

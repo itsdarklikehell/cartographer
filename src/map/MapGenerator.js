@@ -1,4 +1,5 @@
-import { generateWilderness, generateTown } from './GeneratorRegions.js';
+import { generateWilds } from './GeneratorWilds.js';
+import { generateTown } from './GeneratorTown.js';
 import { generateDungeon, generateCastle } from './GeneratorInteriors.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -9,18 +10,29 @@ import { generateDungeon, generateCastle } from './GeneratorInteriors.js';
  * The map-generation front door: size presets, the archetype catalog the
  * Build UI offers, and the dispatchers that run a generator and hand the
  * caller a stampable tile grid. The archetype generators themselves live in
- * GeneratorRegions.js (wilderness, town) and GeneratorInteriors.js (dungeon,
- * castle).
+ * GeneratorWilds.js (wilderness and its climate variants), GeneratorTown.js
+ * (town), and GeneratorInteriors.js (dungeon, castle).
  */
 
 /**
  * Grid side length per size preset. Square grids keep the archetype
  * generators simple and give the same result at any size. The "large"
  * preset is big enough to be a real procedurally generated area, not a
- * handful of tiles a GM can place by hand.
+ * handful of tiles a GM can place by hand. "Huge" and "vast" suit a whole
+ * realm: the climate model scales its features with the map, so a vast map
+ * gets more lakes, ranges, and rivers instead of larger ones.
  * @type {Record<string, number>}
  */
-export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22 };
+export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22, huge: 32, vast: 48 };
+
+/**
+ * The size presets as the Generate dialog lists them, smallest first.
+ * @type {{ value: string, label: string }[]}
+ */
+export const SIZE_OPTIONS = Object.entries(GENERATOR_SIZES).map(([value, n]) => ({
+  value,
+  label: `${value[0].toUpperCase()}${value.slice(1)} (${n} x ${n})`,
+}));
 
 /**
  * Which archetypes make sense for each node kind. Region archetypes lay out
@@ -30,7 +42,12 @@ export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22 };
  */
 export const ARCHETYPES = {
   region: [
-    { value: 'wilderness', label: 'Wilderness (procedural terrain)' },
+    { value: 'wilderness', label: 'Wilderness (temperate terrain)' },
+    { value: 'highlands', label: 'Highlands (hills + mountain ranges)' },
+    { value: 'frontier', label: 'Frontier (cold north: snow + taiga)' },
+    { value: 'desert', label: 'Desert (hot + dry)' },
+    { value: 'wetlands', label: 'Wetlands (lakes, swamp, many rivers)' },
+    { value: 'island', label: 'Island (land ringed by sea)' },
     { value: 'town', label: 'Town (roads + buildings)' },
   ],
   interior: [
@@ -58,7 +75,7 @@ export function generateNodeTiles(palette, { archetype, size }, rng) {
   if (archetype === 'town') gen = generateTown(palette, n, rng);
   else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng, { descend: false });
   else if (archetype === 'castle') gen = generateCastle(palette, n, rng);
-  else gen = generateWilderness(palette, n, rng);
+  else gen = generateWilds(palette, n, rng, archetype);
   return { width: n, height: n, tiles: gen.tiles, entry: gen.entry };
 }
 

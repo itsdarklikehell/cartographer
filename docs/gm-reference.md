@@ -187,8 +187,8 @@ The Generate card fills the current node with a generated layout.
 
 | Field | Values |
 | --- | --- |
-| Archetype | wilderness or town for a region, dungeon or castle for an interior |
-| Size | small, medium, or large |
+| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, or town. For an interior: dungeon or castle |
+| Size | small (8 x 8), medium (14 x 14), large (22 x 22), huge (32 x 32), or vast (48 x 48) |
 | Seed | The number that reproduces the layout |
 | Levels | For a dungeon, how many levels to create |
 
@@ -198,6 +198,14 @@ corridor with a door on the map edge. A castle gets a gate in the south
 wall. A town gets roads that run edge to edge. When nothing on the parent
 map links to the node, generation places an entrance tile near the center
 of the parent and reports where.
+
+The six outdoor archetypes differ in climate. Wilderness is temperate, with
+grass, forest, lakes, and some hills. Highlands have ranges of hills and
+mountains. Frontier is cold, with snow and snowy forest. Desert is hot and
+dry. Wetlands have lakes, swamp, and many rivers. An island has sea around
+the whole border. In each of them the north edge is colder than the south
+edge, rivers run down from the hills to water or to the map edge, and
+landmarks such as ruins, mines, and camps stand on open ground.
 
 Each level of a multi-level dungeon becomes a child node. The stairs down
 of one level lead to the stairs up of the level below. The bottom level has

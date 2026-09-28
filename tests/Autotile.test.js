@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { smoothCoastline, coastKind, coastOverlays, riverCourse } from '../src/map/Autotile.js';
-import { mulberry32 } from '../src/util/Rng.js';
+import {
+  smoothCoastline,
+  coastKind,
+  coastOverlays,
+  connectorKind,
+  ArmNetwork,
+} from '../src/map/Autotile.js';
 
 /** Build a cells array from rows of single-char codes: ~ water, . grass. */
 function cellsFrom(rows) {
@@ -44,49 +49,39 @@ test('coastOverlays rings a lake with matching shoreline pieces', () => {
   assert.equal(coast.get('1,1'), undefined, 'water cells get no overlay');
 });
 
-test('riverCourse runs edge to edge as a connected channel', () => {
-  for (const seed of [1, 8, 23]) {
-    const size = 12;
-    const river = riverCourse(size, size, mulberry32(seed));
-    // Touches the top and bottom rows.
-    const ys = [...river.keys()].map((id) => Number(id.split(',')[1]));
-    assert.equal(Math.min(...ys), 0, `seed ${seed}: starts at the north edge`);
-    assert.equal(Math.max(...ys), size - 1, `seed ${seed}: reaches the south edge`);
-    // Every piece's open edges point at another river cell or off the map, so
-    // the channel never breaks: check each cell connects onward as named.
-    const opens = {
-      v: ['n', 's'],
-      h: ['e', 'w'],
-      'corner-ne': ['n', 'e'],
-      'corner-nw': ['n', 'w'],
-      'corner-se': ['s', 'e'],
-      'corner-sw': ['s', 'w'],
-    };
-    const step = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
-    for (const [id, kind] of river) {
-      const [x, y] = id.split(',').map(Number);
-      for (const edge of opens[kind]) {
-        const [dx, dy] = step[edge];
-        const nx = x + dx;
-        const ny = y + dy;
-        const offMap = nx < 0 || ny < 0 || nx >= size || ny >= size;
-        assert.ok(
-          offMap || river.has(`${nx},${ny}`),
-          `seed ${seed}: ${id} (${kind}) opens ${edge} onto river`,
-        );
-      }
-    }
-  }
+test('connectorKind names every arm set with the shared road and river pieces', () => {
+  const kind = (/** @type {string} */ arms) => connectorKind(new Set(arms.split('')));
+  assert.equal(kind('nesw'), 'cross');
+  assert.equal(kind('new'), 'tee-n');
+  assert.equal(kind('nse'), 'tee-e');
+  assert.equal(kind('sew'), 'tee-s');
+  assert.equal(kind('nsw'), 'tee-w');
+  assert.equal(kind('ns'), 'v');
+  assert.equal(kind('ew'), 'h');
+  assert.equal(kind('ne'), 'corner-ne');
+  assert.equal(kind('nw'), 'corner-nw');
+  assert.equal(kind('se'), 'corner-se');
+  assert.equal(kind('sw'), 'corner-sw');
+  assert.equal(kind('e'), 'end-e');
+  assert.equal(connectorKind(new Set()), null);
 });
 
-test('riverCourse empties into existing water instead of crossing it', () => {
-  const size = 10;
-  // Water fills the bottom half; the river must stop at its shore.
-  const isWater = (x, y) => y >= 5;
-  const river = riverCourse(size, size, mulberry32(4), isWater);
-  assert.ok(river.size > 0, 'carved some channel');
-  for (const id of river.keys()) {
-    const y = Number(id.split(',')[1]);
-    assert.ok(y < 5, `river cell ${id} stays out of the lake`);
-  }
+test('ArmNetwork joins cells across an edge and keeps side-by-side channels apart', () => {
+  const net = new ArmNetwork();
+  // Two parallel north-south channels in columns 0 and 1 never join, even
+  // though their cells touch.
+  net.join(0, 0, 's');
+  net.join(1, 0, 's');
+  assert.equal(net.pieces().get('0,0'), 'end-s');
+  assert.equal(net.pieces().get('0,1'), 'end-n');
+  assert.equal(net.pieces().get('1,1'), 'end-n');
+  net.add(0, 1, 's');
+  assert.equal(net.pieces().get('0,1'), 'v');
+  assert.deepEqual([...net.at(5, 5)], [], 'an empty cell has no arms');
+  assert.ok(net.has(1, 1));
+  // Dropping a cell leaves the arm that points at it, so a channel still
+  // drains into whatever took the cell's place.
+  net.drop(1, 1);
+  assert.equal(net.has(1, 1), false);
+  assert.equal(net.pieces().get('1,0'), 'end-s');
 });

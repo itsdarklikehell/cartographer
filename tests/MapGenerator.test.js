@@ -4,6 +4,7 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { overlayList } from '../src/map/TileGrid.js';
 import {
   GENERATOR_SIZES,
+  SIZE_OPTIONS,
   ARCHETYPES,
   generateNodeTiles,
   generateDungeonLevels,
@@ -44,7 +45,12 @@ test('generateDungeon defaults entrance to edge and descend to true', () => {
 });
 
 test('ARCHETYPES lists region and interior options', () => {
-  assert.ok(ARCHETYPES.region.some((a) => a.value === 'wilderness'));
+  for (const value of ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands', 'island']) {
+    assert.ok(
+      ARCHETYPES.region.some((a) => a.value === value),
+      value,
+    );
+  }
   assert.ok(ARCHETYPES.region.some((a) => a.value === 'town'));
   assert.ok(ARCHETYPES.interior.some((a) => a.value === 'dungeon'));
   assert.ok(ARCHETYPES.interior.some((a) => a.value === 'castle'));
@@ -434,4 +440,27 @@ test('dungeon entry connects to the whole floor network', () => {
     );
     assert.ok(n * n > walkable.size, 'sanity: dungeon is sparse');
   }
+});
+
+test('SIZE_OPTIONS lists every preset, smallest first, with its dimensions', () => {
+  assert.deepEqual(
+    SIZE_OPTIONS.map((o) => o.value),
+    Object.keys(GENERATOR_SIZES),
+  );
+  assert.equal(SIZE_OPTIONS.at(-1)?.label, 'Vast (48 x 48)');
+  const sides = Object.values(GENERATOR_SIZES);
+  assert.deepEqual(
+    sides,
+    [...sides].sort((a, b) => a - b),
+  );
+});
+
+test('each climate archetype dispatches to its own profile', () => {
+  const desert = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'desert', size: 'medium' },
+    mulberry32(2),
+  );
+  const sandy = desert.tiles.filter((t) => t.imageRef.includes('/desert/')).length;
+  assert.ok(sandy > desert.tiles.length / 3, `desert tiles: ${sandy}`);
 });

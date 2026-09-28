@@ -428,7 +428,7 @@ export function buildExampleWorld(palette, rng = Math.random) {
       id: 'graypeak',
       name: 'Graypeak Highlands',
       kind: /** @type {const} */ ('region'),
-      archetype: 'wilderness',
+      archetype: 'highlands',
     },
     {
       id: 'briarwick',
