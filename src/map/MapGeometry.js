@@ -249,20 +249,22 @@ export function readableScale(tileSize) {
 }
 
 /**
- * The pan offset along one axis. The extent is centered when it fits the
- * buffer. Otherwise the view centers on `focus` when one is given, or
- * starts at the top or left edge of the map. The offset stays between the
- * two edges, so the map never pulls away from the padding on either side.
+ * The pan offset along one axis. The extent is centered between the two
+ * paddings when it fits the buffer. Otherwise the view centers on `focus`
+ * when one is given, or starts at the top or left edge of the map. The
+ * offset stays between the two edges, so the map never pulls away from the
+ * padding on either side.
  * @param {number} extent the scaled extent along this axis
  * @param {number} buffer the canvas size along this axis
- * @param {number} padding
+ * @param {number} lead the padding before the map, at the top or left
+ * @param {number} trail the padding after the map, at the bottom or right
  * @param {number | undefined} focus the scaled position to center on
  * @returns {number}
  */
-function fitOffset(extent, buffer, padding, focus) {
-  if (extent + padding * 2 <= buffer) return (buffer - extent) / 2;
-  if (focus === undefined) return padding;
-  return Math.min(padding, Math.max(buffer - padding - extent, buffer / 2 - focus));
+function fitOffset(extent, buffer, lead, trail, focus) {
+  if (extent + lead + trail <= buffer) return lead + (buffer - lead - trail - extent) / 2;
+  if (focus === undefined) return lead;
+  return Math.min(lead, Math.max(buffer - trail - extent, buffer / 2 - focus));
 }
 
 /**
@@ -277,20 +279,25 @@ function fitOffset(extent, buffer, padding, focus) {
  * part of a large region instead of the whole region at a quarter size.
  * On the axis that overflows, the view centers on `focus` (world pixels at
  * scale 1), such as the party's tile, and otherwise starts at the padding.
+ *
+ * `padding` applies to all four sides. `leadPadding` replaces it on the top
+ * and left sides only, where the coordinate labels hang off the grid. The
+ * bottom and right sides then need less space, and the fit zooms closer.
  * @param {number} extentW
  * @param {number} extentH
  * @param {number} bufferW
  * @param {number} bufferH
- * @param {{ padding?: number, minScale?: number, maxScale?: number, readableScale?: number, focus?: { x: number, y: number } | null }} [options]
+ * @param {{ padding?: number, leadPadding?: number, minScale?: number, maxScale?: number, readableScale?: number, focus?: { x: number, y: number } | null }} [options]
  * @returns {{ scale: number, offsetX: number, offsetY: number }}
  */
 export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
-  const padding = options.padding ?? 24;
+  const trail = options.padding ?? 24;
+  const lead = options.leadPadding ?? trail;
   if (extentW <= 0 || extentH <= 0 || bufferW <= 0 || bufferH <= 0) {
     return { scale: 1, offsetX: 0, offsetY: 0 };
   }
-  const availW = Math.max(1, bufferW - padding * 2);
-  const availH = Math.max(1, bufferH - padding * 2);
+  const availW = Math.max(1, bufferW - lead - trail);
+  const availH = Math.max(1, bufferH - lead - trail);
   const whole = Math.min(availW / extentW, availH / extentH);
   const scale = clampZoom(
     Math.max(whole, options.readableScale ?? 0),
@@ -300,7 +307,7 @@ export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
   const focus = options.focus;
   return {
     scale,
-    offsetX: fitOffset(extentW * scale, bufferW, padding, focus ? focus.x * scale : undefined),
-    offsetY: fitOffset(extentH * scale, bufferH, padding, focus ? focus.y * scale : undefined),
+    offsetX: fitOffset(extentW * scale, bufferW, lead, trail, focus ? focus.x * scale : undefined),
+    offsetY: fitOffset(extentH * scale, bufferH, lead, trail, focus ? focus.y * scale : undefined),
   };
 }

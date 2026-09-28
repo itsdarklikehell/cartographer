@@ -209,6 +209,21 @@ test('fitToExtent centers a wide extent, limited by the width axis', () => {
   assert.equal(fitted.offsetY, (576 - 288 * fitted.scale) / 2);
 });
 
+test('fitToExtent uses leadPadding on the top and left, and padding on the bottom and right', () => {
+  // 1056x1056 extent in a 944x864 buffer: height is the tighter axis,
+  // (864 - 64 - 16) / 1056. The width centers between the two paddings.
+  const fitted = fitToExtent(1056, 1056, 944, 864, { padding: 16, leadPadding: 64 });
+  assert.equal(fitted.scale, 784 / 1056);
+  assert.equal(fitted.offsetY, 64);
+  assert.equal(fitted.offsetX, 64 + (944 - 80 - 784) / 2);
+  // An overflowing axis anchors at the lead and stops at the trailing padding.
+  const opts = { padding: 16, leadPadding: 64, readableScale: 0.5 };
+  const near = fitToExtent(1408, 1408, 600, 600, opts);
+  assert.deepEqual({ x: near.offsetX, y: near.offsetY }, { x: 64, y: 64 });
+  const far = fitToExtent(1408, 1408, 600, 600, { ...opts, focus: { x: 1400, y: 1400 } });
+  assert.deepEqual({ x: far.offsetX, y: far.offsetY }, { x: 600 - 16 - 704, y: 600 - 16 - 704 });
+});
+
 test('fitToExtent clamps the scale to the allowed zoom range', () => {
   const tiny = fitToExtent(4800, 4800, 480, 480, { padding: 0, minScale: 0.25, maxScale: 4 });
   assert.equal(tiny.scale, 0.25);

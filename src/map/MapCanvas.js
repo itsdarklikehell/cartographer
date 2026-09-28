@@ -155,9 +155,10 @@ export class MapCanvas {
     const { node, canvas } = this;
     if (!node) return;
     this._userView = false;
-    // Pad enough for the coordinate labels. These labels hang off the grid's
-    // top and left edges, up to about 60 buffer pixels at the label font cap.
-    // The default 24px clips them whenever the fit is not slack from the zoom clamp.
+    // Pad the top and left enough for the coordinate labels. These labels
+    // hang off those two edges, up to about 60 buffer pixels at the label
+    // font cap. The bottom and right have no labels, so a small margin there
+    // lets the fit zoom closer.
     const fitted = fitToExtent(
       node.width * this.tileSize,
       node.height * this.tileSize,
@@ -166,7 +167,8 @@ export class MapCanvas {
       {
         minScale: this.minZoom,
         maxScale: this.maxZoom,
-        padding: 64,
+        padding: 16,
+        leadPadding: 64,
         readableScale: readableScale(this.tileSize),
         focus: this._focusPoint(),
       },

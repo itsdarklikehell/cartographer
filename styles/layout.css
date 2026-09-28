@@ -102,6 +102,13 @@ body.mode-build .app-belowmap {
 /* A held fog brush takes over the left button, so the pointer has to say so:
    without this the only sign is a pressed icon, and clicks that no longer move
    the party read as a dead map. */
+/* Build mode has no panels under the map, so the map takes the rest of the
+   viewport below the header and breadcrumb (about 7.5rem). A fit stops at
+   readable tiles, so at 70vh the lower rows of a large node are cut off. */
+body.mode-build #map-canvas {
+  height: max(32rem, calc(100dvh - 8.5rem));
+}
+
 #map-canvas.is-fog-brush {
   cursor: crosshair;
 }

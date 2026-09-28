@@ -22,7 +22,8 @@
     width: 100%;
   }
 
-  #map-canvas {
+  #map-canvas,
+  body.mode-build #map-canvas {
     height: min(55vh, 32rem);
   }
 
