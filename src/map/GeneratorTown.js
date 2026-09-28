@@ -1,13 +1,12 @@
 import { ArmNetwork, ARMS, OPPOSITE } from './Autotile.js';
 import { terrainTiles } from './GeneratorWilds.js';
 import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
-import { fbm, valueNoise } from './GeneratorNoise.js';
+import { placeBuildings } from './GeneratorTownBuildings.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 import { tileIdAt } from './MapGeometry.js';
 import { planWall, wallRadii } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
-/** @typedef {import('../types/map.js').POIType} POIType */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./Autotile.js').Arm} Arm */
 /** @typedef {import('./GeneratorRoads.js').RoadGround} RoadGround */
@@ -20,34 +19,6 @@ import { planWall, wallRadii } from './GeneratorTownWall.js';
  * towns have a river, which the streets cross on bridges. MapGenerator.js
  * keeps the size presets and the archetype dispatch.
  */
-
-/**
- * The buildings that a town places first, nearest the crossroads. The
- * example campaign puts its innkeeper, smith, and priest in these.
- */
-const CORE_BUILDINGS = ['inn', 'tavern', 'blacksmith', 'general-store', 'temple'];
-
-/**
- * The buildings a larger town adds after the core and civic sets, in random
- * order. They take half of the blocks that remain, and homes take the rest.
- */
-const EXTRA_BUILDINGS = [
-  'alchemist',
-  'shrine',
-  'wizard-tower',
-  'academy',
-  'barracks',
-  'guildhall',
-  'bakery',
-  'warehouse',
-  'stables',
-];
-
-/**
- * The stand-in art for a home. `place` swaps it for a house near the
- * crossroads or a cottage at the edge of the core.
- */
-const HOME = 'home';
 
 /**
  * The interior environ of each building that opens into a sub-map of its
@@ -84,10 +55,7 @@ const TURN = 0.6;
 /** @type {Record<Arm, Arm>} the arm that a transposed grid gives each arm */
 const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
 
-/**
- * @typedef {{ id: string, art: string, poi: POIType }} TownBuilding
- * `id` is the top-left cell of a 2x2 block, and `art` a palette marker id.
- */
+/** @typedef {import('./GeneratorTownBuildings.js').TownBuilding} TownBuilding */
 
 /**
  * @typedef {{
@@ -158,8 +126,9 @@ export function townRiver(size, rng, center, ring = 0) {
  * Lay the streets. The first street runs from the south edge to the
  * crossroads. Each later street runs from another edge to the nearest
  * street. A town of 14 cells or more has three ways out, and one of 22 or
- * more has four. Then short lanes run from open ground in the core to the
- * nearest street, so the core fills with blocks. A street always finds a
+ * more has four. In a town of 14 cells or more, short lanes then run from
+ * open ground in the core to the nearest street, so the core fills with
+ * blocks. A street always finds a
  * way, because the river never bends on two rows in a row and so always
  * has a straight channel to bridge.
  * @param {RoadGround} ground @param {number} c the center index
@@ -208,7 +177,9 @@ function layStreets(ground, c, core, rng) {
   for (let y = c - core; y <= c + core; y++) {
     for (let x = c - core; x <= c + core; x++) seeds.push([x, y]);
   }
-  let lanes = Math.floor(size / 5);
+  // A lane in a town under 14 cells takes the ground that its three
+  // buildings need, so a small town gets none.
+  let lanes = size >= 14 ? Math.floor(size / 5) : 0;
   for (const [x, y] of shuffle(seeds, rng)) {
     if (!lanes) break;
     if (rivers.has(x, y) || nearRoad(x, y)) continue;
@@ -222,19 +193,9 @@ function layStreets(ground, c, core, rng) {
  * Plan a town: its river, streets, plaza, wall, buildings, and fields, with
  * no tiles. The core is the square of cells within `core` of the
  * crossroads. The plaza paves the cells within one cell of the crossroads,
- * or within two on a map of 32 cells or more. Each building fills a 2x2
- * block of open ground beside a street or the plaza. The core set comes first and
- * nearest the center. The civic set follows: a well or a fountain, and on a
- * map of 22 cells or more a market and a town hall. Extra buildings then
- * take half of the remaining blocks and homes take the rest, until the town
- * has as many buildings as a thirtieth of the map area. A home is a house
- * near the crossroads and a cottage near the edge of the core.
- *
- * A town of 14 cells or more gets a watermill on a block beside its river.
- * It also gets a graveyard at the edge of the core, with a chance of three
- * in five. Past the edge of the core, one farm for each ten cells of map
- * side takes a block, and fields cover patches of the open ground. Then a
- * windmill takes the outlying block with the most fields around it.
+ * or within two on a map of 32 cells or more. `placeBuildings` in
+ * GeneratorTownBuildings.js then puts each building on a 2x2 block of open
+ * ground and plants the fields.
  * @param {number} size @param {() => number} rng
  * @returns {TownPlan}
  */
@@ -253,123 +214,8 @@ export function planTown(size, rng) {
   for (let y = c - square; y <= c + square; y++) {
     for (let x = c - square; x <= c + square; x++) if (paved(x, y)) cells[y * size + x] = 'plaza';
   }
-
-  /** @type {Set<number>} cells that a building covers */
-  const taken = new Set();
-  /** @param {number} x @param {number} y */
-  const open = (x, y) =>
-    !roads.has(x, y) &&
-    !rivers.has(x, y) &&
-    !walls.has(tileIdAt(x, y)) &&
-    !taken.has(y * size + x) &&
-    !paved(x, y);
-  /** @param {number} x @param {number} y */
-  const openBlock = (x, y) => open(x, y) && open(x + 1, y) && open(x, y + 1) && open(x + 1, y + 1);
-  /** @type {{ x: number, y: number, d: number, river: boolean }[]} */
-  const blocks = [];
-  for (let y = 0; y < size - 1; y++) {
-    for (let x = 0; x < size - 1; x++) {
-      if (!openBlock(x, y)) continue;
-      const edge = [
-        [x, y - 1],
-        [x + 1, y - 1],
-        [x + 2, y],
-        [x + 2, y + 1],
-        [x, y + 2],
-        [x + 1, y + 2],
-        [x - 1, y],
-        [x - 1, y + 1],
-      ];
-      if (!edge.some(([ex, ey]) => roads.has(ex, ey) || paved(ex, ey))) continue;
-      const d = Math.max(Math.abs(x + 0.5 - c), Math.abs(y + 0.5 - c));
-      blocks.push({ x, y, d, river: edge.some(([ex, ey]) => rivers.has(ex, ey)) });
-    }
-  }
-  /** @type {TownBuilding[]} */
-  const buildings = [];
-  /**
-   * Put buildings on the first free blocks of `list`, one for each art. A
-   * covered cell goes back to grass, which the scaled art hides.
-   * @param {{ x: number, y: number }[]} list @param {string[]} arts
-   * @param {POIType} poi
-   */
-  const place = (list, arts, poi) => {
-    let i = 0;
-    for (const { x, y } of list) {
-      if (i >= arts.length) return;
-      if (!openBlock(x, y)) continue;
-      for (const [bx, by] of [
-        [x, y],
-        [x + 1, y],
-        [x, y + 1],
-        [x + 1, y + 1],
-      ]) {
-        taken.add(by * size + bx);
-        cells[by * size + bx] = 'grass';
-      }
-      const edgeward = Math.max(Math.abs(x + 0.5 - c), Math.abs(y + 0.5 - c)) >= core - 0.5;
-      const art = arts[i++];
-      buildings.push({
-        id: tileIdAt(x, y),
-        art: art !== HOME ? art : edgeward ? 'cottage' : 'house',
-        poi,
-      });
-    }
-  };
-
-  // Nearest first, with some jitter, so the buildings crowd around the
-  // crossroads and reach past the core only when it runs out of blocks.
-  const nearest = blocks.map((b) => ({ ...b, d: b.d + rng() * 3 })).sort((a, b) => a.d - b.d);
-  const wanted = Math.max(3, Math.round((size * size) / 30));
-  const civic = [rng() < 0.5 ? 'well' : 'fountain', ...(size >= 22 ? ['market', 'town-hall'] : [])];
-  const arts = [...shuffle(CORE_BUILDINGS, rng), ...civic];
-  const extras = Math.max(0, Math.floor((wanted - arts.length) / 2));
-  arts.push(...shuffle(EXTRA_BUILDINGS, rng).slice(0, extras));
-  while (arts.length < wanted) arts.push(HOME);
-  place(nearest, arts.slice(0, wanted), 'settlement');
-  if (size >= 14) {
-    place(
-      shuffle(
-        blocks.filter((b) => b.river),
-        rng,
-      ),
-      ['watermill'],
-      'settlement',
-    );
-    if (rng() < 0.6) {
-      const rim = blocks.filter((b) => b.d > core - 1 && b.d <= core + 2);
-      place(shuffle(rim, rng), ['graveyard'], 'landmark');
-    }
-  }
-  const outskirts = blocks.filter((b) => b.d > core + 1);
-  place(shuffle(outskirts, rng), new Array(Math.floor(size / 10)).fill('farm'), 'settlement');
-
-  const noise = valueNoise(rng);
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      const far = Math.max(Math.abs(x - c), Math.abs(y - c)) > core + 1;
-      if (far && open(x, y) && fbm(noise, x / 4, y / 4, 3) > 0.45) cells[y * size + x] = 'farmland';
-    }
-  }
-  if (size >= 14) {
-    /** @param {number} x @param {number} y */
-    const fields = (x, y) => {
-      let n = 0;
-      for (let yy = Math.max(0, y - 1); yy <= Math.min(size - 1, y + 2); yy++) {
-        for (let xx = Math.max(0, x - 1); xx <= Math.min(size - 1, x + 2); xx++) {
-          const inside = xx - x >= 0 && xx - x <= 1 && yy - y >= 0 && yy - y <= 1;
-          if (!inside && cells[yy * size + xx] === 'farmland') n++;
-        }
-      }
-      return n;
-    };
-    const farmed = outskirts
-      .filter((b) => openBlock(b.x, b.y))
-      .map((b) => ({ ...b, n: fields(b.x, b.y) + rng() }))
-      .filter((b) => b.n >= 4)
-      .sort((a, b) => b.n - a.n);
-    place(farmed, ['windmill'], 'settlement');
-  }
+  const lot = { size, c, core, cells, roads, rivers, walls, paved };
+  const buildings = placeBuildings(lot, rng);
   return { size, cells, rivers, roads, entry, buildings, walls };
 }
 

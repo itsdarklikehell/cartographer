@@ -151,7 +151,10 @@ test('town buildings take free blocks beside streets, core set first', () => {
       const beside = block.some(([bx, by]) =>
         ARMS.some(
           ([, dx, dy]) =>
-            plan.roads.has(bx + dx, by + dy) || plan.cells[(by + dy) * size + bx + dx] === 'plaza',
+            plan.roads.has(bx + dx, by + dy) ||
+            plan.cells[(by + dy) * size + bx + dx] === 'plaza' ||
+            // A watermill falls back to a block beside the river alone.
+            (art === 'watermill' && plan.rivers.has(bx + dx, by + dy)),
         ),
       );
       assert.ok(beside, `seed ${seed}: ${id} is beside a street`);
@@ -176,6 +179,29 @@ test('town fields lie outside the core only', () => {
   const small = planTown(8, mulberry32(4));
   assert.equal(small.buildings.length, 3, 'a small town has three buildings');
   assert.ok(!small.cells.includes('farmland'), 'and no room for fields');
+});
+
+test('a small town always has room for three buildings beside its streets', () => {
+  for (const seed of [21, 26, 50]) {
+    assert.equal(planTown(8, mulberry32(seed)).buildings.length, 3, `seed ${seed}`);
+  }
+  for (let seed = 1; seed <= 200; seed++) {
+    const plan = planTown(8, mulberry32(seed));
+    assert.equal(plan.buildings.length, 3, `seed ${seed}`);
+    for (const { id } of plan.buildings) {
+      const [x, y] = xy(id);
+      const ring = [0, 1].flatMap((i) => [
+        [x + i, y - 1],
+        [x + i, y + 2],
+        [x - 1, y + i],
+        [x + 2, y + i],
+      ]);
+      const beside = ring.some(
+        ([rx, ry]) => plan.roads.has(rx, ry) || plan.cells[ry * 8 + rx] === 'plaza',
+      );
+      assert.ok(beside, `seed ${seed}: ${id} is beside a street`);
+    }
+  }
 });
 
 test('a generated town draws bridges, scaled buildings, and fields', () => {

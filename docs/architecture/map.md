@@ -365,30 +365,40 @@ step too, so a street that starts on the map edge goes straight into the
 map. The first street runs from the south edge to the crossroads, and its
 border cell is the entry. Each later street runs from another edge to the
 nearest street. A town of 14 cells or more has three ways out, and one of
-22 cells or more has four. Then about one lane for each five cells of map
-side runs from open ground in the core to the nearest street.
+22 cells or more has four. In a town of 14 cells or more, about one lane
+for each five cells of map side then runs from open ground in the core to
+the nearest street. A town of 8 cells gets no lane, because a lane there
+can take the ground that the three core buildings need.
 
 The plaza paves the cells within one cell of the crossroads, or within two
 on a map of 32 cells or more. The plaza cells get no street overlay, so the
 streets open onto the cobbles.
 
-Each building fills a 2x2 block of open ground beside a street or the
-plaza, and draws with span 2. The core set (inn, tavern, blacksmith,
-general store, and temple) takes the blocks nearest the crossroads, so the
-example campaign finds its innkeeper, smith, and priest in each medium
-town. The civic set comes next: a well or a fountain, and on a map of 22
-cells or more a market and a town hall. Extra buildings from
-`EXTRA_BUILDINGS` then take half of the remaining blocks, and homes take
-the rest, until the town has one building for each thirty cells of map
-area. A home is a house near the crossroads and a cottage near the edge of
-the core.
+`placeBuildings` in `src/map/GeneratorTownBuildings.js` puts the buildings
+on the plan. Each building fills a 2x2 block of open ground beside a street
+or the plaza, and draws with span 2. When no such block is free, a building
+takes the nearest free block off the streets. `buildingList` gives the
+main set, which has one building for each thirty cells of map area and
+never fewer than three. The core set (inn, tavern, blacksmith, general
+store, and temple) takes the blocks nearest the crossroads, so the example
+campaign finds its innkeeper, smith, and priest in each medium town. The
+civic set comes next: a well or a fountain, and on a map of 22 cells or
+more a market and a town hall.
 
-A town of 14 cells or more gets a watermill on a block beside its river,
-and a graveyard at the edge of the core with a chance of three in five.
-Outside the core, one farm for each ten cells of map side takes a block,
-and noise turns patches of the open ground into farmland. Then a windmill
-takes the outlying block with the most farmland in the ring of cells
-around it.
+A town of 14 cells or more then gets a watermill on a block beside its
+river, beside a street when one is free. It also gets a graveyard at the
+edge of the core with a chance of three in five. Both go before the rest
+of the main set, because the extras and the homes of a large town take
+every block beside the river and at the edge of the core.
+
+Extra buildings from `EXTRA_BUILDINGS` then take half of the remaining
+slots of the main set, and homes take the rest. A town that wants more
+extras than there are kinds repeats the list in a new random order, so
+each kind appears once before any kind appears twice. A home is a house
+near the crossroads and a cottage near the edge of the core. Outside the
+core, one farm for each ten cells of map side takes a block, and noise
+turns patches of the open ground into farmland. Then a windmill takes the
+outlying block with the most farmland in the ring of cells around it.
 
 A town of 22 cells or more gets a wall with a chance of one in two.
 `planWall` in `src/map/GeneratorTownWall.js` tries the rings from
@@ -561,7 +571,9 @@ The generator archetypes build on these helpers, and `MapGenerator`
 dispatches to them. The climate archetypes are in
 `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
-`src/map/GeneratorTown.js`, with its wall in `src/map/GeneratorTownWall.js`.
+`src/map/GeneratorTown.js`, with its buildings in
+`src/map/GeneratorTownBuildings.js` and its wall in
+`src/map/GeneratorTownWall.js`.
 The dungeon is in `src/map/GeneratorInteriors.js`, the cave in
 `src/map/GeneratorCave.js`, and the castle and the building in
 `src/map/GeneratorHalls.js`. They all draw furnishings with
