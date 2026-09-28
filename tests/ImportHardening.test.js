@@ -147,16 +147,63 @@ test('quests coerce their text fields, status, and reveal flag, and keep unknown
       { title: 'no id' },
     ],
   });
+  const none = { objectives: [], links: [] };
   assert.deepEqual(state.quests, [
-    { id: 'q1', title: '', notes: '', status: 'active', revealed: false, extra: true },
+    { id: 'q1', title: '', notes: '', status: 'active', revealed: false, extra: true, ...none },
     {
       id: 'q2',
       title: 'Find the key',
       notes: 'Under the mat.',
       status: 'completed',
       revealed: true,
+      ...none,
     },
-    { id: 'q3', title: 'Rumor', notes: '', status: 'active', revealed: false },
+    { id: 'q3', title: 'Rumor', notes: '', status: 'active', revealed: false, ...none },
+  ]);
+});
+
+test('quest objectives coerce their fields and get unique ids', () => {
+  const state = loadFile({
+    quests: [
+      {
+        id: 'q1',
+        objectives: [
+          { id: 'o1', text: 'Find the key', done: true, hidden: true },
+          { id: 'o1', text: 7, done: 'yes', hidden: 1 },
+          { text: 'No id' },
+          'not a record',
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(state.quests[0].objectives, [
+    { id: 'o1', text: 'Find the key', done: true, hidden: true },
+    { id: 'o4', text: '', done: false, hidden: false },
+    { id: 'o5', text: 'No id', done: false, hidden: false },
+  ]);
+});
+
+test('quest links keep a readable place or creature and drop the rest', () => {
+  const state = loadFile({
+    quests: [
+      {
+        id: 'q1',
+        links: [
+          { kind: 'place', nodeId: 'world', tileId: '2,3' },
+          { kind: 'place', nodeId: 'town', tileId: 5 },
+          { kind: 'creature', creatureId: 'bram', extra: true },
+          { kind: 'place', nodeId: '' },
+          { kind: 'creature' },
+          { kind: 'npc', creatureId: 'bram' },
+          null,
+        ],
+      },
+    ],
+  });
+  assert.deepEqual(state.quests[0].links, [
+    { kind: 'place', nodeId: 'world', tileId: '2,3' },
+    { kind: 'place', nodeId: 'town', tileId: null },
+    { kind: 'creature', creatureId: 'bram' },
   ]);
 });
 

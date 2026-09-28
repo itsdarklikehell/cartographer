@@ -2,8 +2,10 @@
  * Pure helpers for the quest and session log. List-level operations (unique
  * id derivation, replace or remove by id) come from the rosters through
  * entities/Roster.js. This module owns only the per-quest fields, the status
- * transitions, and the reveal toggle. This keeps the module free of app
- * state, so tests can run against it directly.
+ * transitions, the reveal toggle, and the copy of a quest that a player
+ * sees. Objectives live in `Objectives.js` and links in `QuestLinks.js`.
+ * This keeps the module free of app state, so tests can run against it
+ * directly.
  */
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
@@ -18,7 +20,7 @@
  * @returns {Quest}
  */
 export function createQuest(id, title, notes = '', status = 'active', revealed = false) {
-  return { id, title, notes, status, revealed };
+  return { id, title, notes, status, revealed, objectives: [], links: [] };
 }
 
 /**
@@ -49,15 +51,54 @@ export function toggleQuestRevealed(quest) {
 }
 
 /**
- * The quests one role can see. A GM sees every quest. A player sees only
- * the revealed ones, so a quest that the party has not heard of yet does
- * not spoil the story on a player screen.
+ * The player copies already made, keyed on the quest object. A quest is
+ * never changed in place, so a cached copy stays current. The cache also
+ * keeps the list panel's repaint guard working on a player tab. The guard
+ * compares row objects, and a fresh copy on every refresh would repaint the
+ * log on every party step.
+ * @type {WeakMap<Quest, Quest>}
+ */
+const playerCopies = new WeakMap();
+
+/**
+ * The quest as a player tab draws it. The GM notes are empty, the hidden
+ * objectives are gone, and the links are gone, because a link names a place
+ * or a creature that the party may not know yet. The player panel builds
+ * its rows from this copy only, so no GM-only text gets into the player
+ * screen. The live state keeps the whole quest. A player tab sends its
+ * edits as a diff against that state, so a stripped quest in the state
+ * would send the removal of every hidden objective to the GM tab.
+ * @param {Quest} quest
+ * @returns {Quest}
+ */
+export function playerQuestView(quest) {
+  const cached = playerCopies.get(quest);
+  if (cached) return cached;
+  /** @type {Quest} */
+  const copy = {
+    id: quest.id,
+    title: quest.title,
+    notes: '',
+    status: quest.status,
+    revealed: quest.revealed,
+    objectives: quest.objectives.filter((o) => !o.hidden),
+    links: [],
+  };
+  playerCopies.set(quest, copy);
+  return copy;
+}
+
+/**
+ * The quests one role can see. A GM sees every quest as it is. A player
+ * sees only the revealed ones, each as `playerQuestView` gives it, so a
+ * quest that the party has not found yet does not spoil the story on a
+ * player screen.
  * @param {Quest[]} quests
  * @param {boolean} gm
  * @returns {Quest[]}
  */
 export function visibleQuests(quests, gm) {
-  return gm ? quests : quests.filter((q) => q.revealed);
+  return gm ? quests : quests.filter((q) => q.revealed).map(playerQuestView);
 }
 
 /**

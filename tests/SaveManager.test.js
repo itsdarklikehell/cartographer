@@ -723,8 +723,24 @@ test('serialize/deserialize round-trips the quest log', () => {
       notes: 'It lies in the Keep.',
       status: 'active',
       revealed: true,
+      objectives: [
+        { id: 'o1', text: 'Reach the Keep', done: true, hidden: false },
+        { id: 'o2', text: 'Meet the traitor', done: false, hidden: true },
+      ],
+      links: [
+        { kind: 'place', nodeId: 'world', tileId: '1,1' },
+        { kind: 'creature', creatureId: 'goblin' },
+      ],
     },
-    { id: 'q2', title: 'Slay the dragon', notes: '', status: 'completed', revealed: false },
+    {
+      id: 'q2',
+      title: 'Slay the dragon',
+      notes: '',
+      status: 'completed',
+      revealed: false,
+      objectives: [],
+      links: [],
+    },
   ];
   const state = buildState({ grid, quests });
   const restored = deserialize(serialize(state));

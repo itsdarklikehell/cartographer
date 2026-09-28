@@ -200,7 +200,8 @@ export function logEntries(value) {
  * The quest log as quests the panel can render. A status other than
  * completed reads as active, a title or notes of the wrong type read as
  * empty text, and a quest reads as hidden from players unless its
- * `revealed` flag is exactly true.
+ * `revealed` flag is exactly true. A save with no objectives or links
+ * reads as empty lists.
  * @param {unknown} value
  * @returns {Quest[]}
  */
@@ -216,9 +217,55 @@ export function quests(value) {
         notes: string(quest.notes, ''),
         status: quest.status === 'completed' ? 'completed' : 'active',
         revealed: quest.revealed === true,
+        objectives: questObjectives(quest.objectives),
+        links: questLinks(quest.links),
       },
     ];
   });
+}
+
+/**
+ * A quest's objectives. An objective reads as visible to players unless its
+ * `hidden` flag is exactly true, and as not done unless `done` is exactly
+ * true. The panel keys each row and each edit by id, so an objective with
+ * no id, or with an id that an earlier objective uses, gets a fresh one.
+ * @param {unknown} value
+ * @returns {import('../types/quest.js').QuestObjective[]}
+ */
+function questObjectives(value) {
+  const taken = new Set();
+  const list = records(value);
+  let fresh = list.length;
+  return list.map((objective) => {
+    let objectiveId = id(objective.id);
+    while (objectiveId === null || taken.has(objectiveId)) objectiveId = `o${(fresh += 1)}`;
+    taken.add(objectiveId);
+    return {
+      id: objectiveId,
+      text: string(objective.text, ''),
+      done: objective.done === true,
+      hidden: objective.hidden === true,
+    };
+  });
+}
+
+/**
+ * A quest's links. A place link keeps its tile only when the tile is a
+ * string, and a link with no target id, or of an unknown kind, is dropped.
+ * @param {unknown} value
+ * @returns {import('../types/quest.js').QuestLink[]}
+ */
+function questLinks(value) {
+  /** @type {import('../types/quest.js').QuestLink[]} */
+  const links = [];
+  for (const link of records(value)) {
+    if (link.kind === 'place' && id(link.nodeId) !== null) {
+      links.push({ kind: 'place', nodeId: link.nodeId, tileId: id(link.tileId) });
+    } else if (link.kind === 'creature' && id(link.creatureId) !== null) {
+      links.push({ kind: 'creature', creatureId: link.creatureId });
+    }
+  }
+  return links;
 }
 
 /**

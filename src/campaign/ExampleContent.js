@@ -504,6 +504,16 @@ export function buildExampleContent(palette, world) {
           "Dorn's caravan is stuck at the crossroads until the roads are safe. Ask Bram at the Waystation inn in Briarwick what has the north country spooked.",
         status: 'active',
         revealed: true,
+        objectives: [
+          { id: 'o1', text: 'Find Bram at the Waystation inn', done: false, hidden: false },
+          { id: 'o2', text: 'Learn what has the north spooked', done: false, hidden: false },
+          { id: 'o3', text: 'Bram names the hermit Odo', done: false, hidden: true },
+        ],
+        links: [
+          { kind: 'place', nodeId: 'briarwick', tileId: null },
+          { kind: 'creature', creatureId: 'innkeeper-bram' },
+          { kind: 'creature', creatureId: 'caravan-master-dorn' },
+        ],
       },
       {
         id: 'wolves-on-the-highway',
@@ -512,6 +522,12 @@ export function buildExampleContent(palette, world) {
           'A wolf pack has been running down travelers on the east highway below the Graypeak foothills. Drive it off so the caravans can move again.',
         status: 'active',
         revealed: true,
+        objectives: [
+          { id: 'o1', text: 'Find the pack on the east highway', done: false, hidden: false },
+          { id: 'o2', text: 'Drive the wolves off', done: false, hidden: false },
+          { id: 'o3', text: 'Dorn pays and moves his caravan', done: false, hidden: true },
+        ],
+        links: [{ kind: 'creature', creatureId: 'caravan-master-dorn' }],
       },
       {
         id: 'the-goblin-raids',
@@ -520,6 +536,12 @@ export function buildExampleContent(palette, world) {
           'Goblins out of the Northmarch have burned two farms. Find their camp in the deep forest and deal with Chieftain Snagtooth — then search the camp. The raids are far too organized for goblins.',
         status: 'active',
         revealed: false,
+        objectives: [
+          { id: 'o1', text: 'Find the goblin camp', done: false, hidden: false },
+          { id: 'o2', text: 'Deal with Chieftain Snagtooth', done: false, hidden: false },
+          { id: 'o3', text: 'Search the camp for his orders', done: false, hidden: true },
+        ],
+        links: [{ kind: 'place', nodeId: 'northmarch', tileId: null }],
       },
       {
         id: 'the-pale-seal',
@@ -528,6 +550,8 @@ export function buildExampleContent(palette, world) {
           "Snagtooth's orders bear a pale crown pressed into gray wax. Bring them to Reeve Maera in Briarwick; she keeps the shire records of the barrow and the king inside it.",
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-hermit-of-graypeak',
@@ -536,6 +560,8 @@ export function buildExampleContent(palette, world) {
           "Odo the hermit keeps the warding key that seals the barrow's door. He hasn't come down for supplies since the wyvern Skalvyr nested above his hermitage.",
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-mire-hags-bargain',
@@ -544,6 +570,8 @@ export function buildExampleContent(palette, world) {
           "Grelka the mire hag brews a grave-ward that turns a wight's chill. She trades fair, but never for coin — she names her price when asked, and it is always strange.",
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'dead-water',
@@ -552,6 +580,8 @@ export function buildExampleContent(palette, world) {
           "Drowned sailors are walking the shallows of Saltmere's bay, and the fishing fleet won't put out. Harbormaster Petra pays by the head — and wants to know why the dead are coming up-current, from the river's mouth.",
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-lord-of-thornhold',
@@ -560,6 +590,8 @@ export function buildExampleContent(palette, world) {
           "House Vane swore the ward that sealed the barrow, and Lord Aldemar calls the raids peasant panic. Bring him Snagtooth's sealed orders as proof; the crypt ledger of Thornhold records how the sealing was done, and something in his own hall does not want it read.",
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-hollowvein-knocking',
@@ -568,6 +600,8 @@ export function buildExampleContent(palette, world) {
           'The Hollowvein — the mine whose silver crowned Ostrand — was abandoned mid-shift when something in the dark began knocking back. Sella needs Hollowvein silver if the warding key is ever to be reforged.',
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-wardstone-circle',
@@ -576,6 +610,8 @@ export function buildExampleContent(palette, world) {
           'One of the five wardstones in the northern forest lies toppled, and the ward on the barrow fails with it. Raising the fallen stone will not hold Ostrand — but it will thin his court, and his reach past the barrow door with it.',
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
       {
         id: 'the-barrow-king',
@@ -584,6 +620,8 @@ export function buildExampleContent(palette, world) {
           'King Ostrand has risen and his reach is spreading. Take the warding key into the barrow, put down his risen court, and end him at his tomb.',
         status: 'active',
         revealed: false,
+        objectives: [],
+        links: [],
       },
     ],
     clock: createClock(),
