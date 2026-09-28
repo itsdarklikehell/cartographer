@@ -104,7 +104,8 @@
 }
 
 .character-roster__add,
-.character-roster__award {
+.character-roster__award,
+.character-roster__spectator {
   font-size: var(--text-label);
 }
 

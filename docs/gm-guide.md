@@ -49,9 +49,9 @@ and Redo ask first, because the step discards those changes.
 ## Drive a player-facing display
 
 1. Save in your GM tab. The save reaches the other tabs.
-2. In the Party panel, click **a spectator** at the end of the line "Open a
-   player tab for ...". The link opens a Player tab in a new browser tab. You
-   can also add `?role=player` to the URL of a tab yourself.
+2. In the Party panel, click **Spectator tab** below the roster. The link
+   opens a Player tab in a new browser tab. You can also add `?role=player`
+   to the URL of a tab yourself.
 3. Put that tab on the display that faces the table.
 4. To lock the tab without the URL parameter, click the padlock beside the
    role switch and confirm.
@@ -70,17 +70,17 @@ in the reference for the full list.
 
 ### Let one player run their own character
 
-A Player tab can bind to one character. The Party panel in your GM tab has a
-link for each character, in the line "Open a player tab for ...". A link
-opens a tab with `?role=player&character=<id>` on the URL. The id is the
-name of the character in lower case, with hyphens in place of spaces. For
-example, a character named Mirelle has the id `mirelle`. If two characters
-have the same name, the second one gets a `-2` suffix. The exported campaign
-file lists the id of each character.
+A Player tab can bind to one character. In your GM tab, each row of the
+Party roster has an open-tab icon, an arrow that leaves a box. The icon is
+a link that opens a new browser tab with `?role=player&character=<id>` on
+the URL. The id is the name of the character in lower case, with hyphens in
+place of spaces. For example, a character named Mirelle has the id
+`mirelle`. If two characters have the same name, the second one gets a `-2`
+suffix. The exported campaign file lists the id of each character.
 
-1. In the Party panel, click the name of the character. You can also pick
-   the character from the "Playing as" dropdown in the Party panel of a
-   Player tab.
+1. In the Party panel, click the open-tab icon on the row of the character.
+   A middle-click also works. You can also pick the character from the
+   "Playing as" dropdown in the Party panel of a Player tab.
 2. Tell the player what they can do: spend slots and other resources, set
    conditions, and use, give away, or discard carried items.
 3. Recover their resources yourself. A player can spend a slot but cannot

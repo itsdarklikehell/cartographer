@@ -27,6 +27,14 @@ test('playerTabHref builds a bound or spectator player URL that the readers pars
   assert.equal(roleParam(odd), 'player');
 });
 
+// The roster puts this href on a real link. An unencoded "#" would start a
+// fragment and cut the id short, so the tab would bind to no one.
+test('playerTabHref encodes a fragment or query mark inside the id', () => {
+  const href = playerTabHref('mira#2?x');
+  assert.equal(new URL(href, 'https://example.test/').hash, '');
+  assert.equal(characterParam(new URL(href, 'https://example.test/').search), 'mira#2?x');
+});
+
 test('initialBinding prefers the URL over the session value', () => {
   assert.equal(initialBinding('?character=sage', 'hero', party), 'sage');
   assert.equal(initialBinding('', 'hero', party), 'hero');

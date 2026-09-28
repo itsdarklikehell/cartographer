@@ -1,4 +1,4 @@
-import { bareButton, iconButton, textButton, emptyState } from './buttons.js';
+import { bareButton, iconButton, iconLink, textButton, textLink, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
@@ -65,6 +65,7 @@ function hpMeter(character) {
  *   onEditVitals?: (id: string) => void,
  *   onGrantXP?: (id: string) => void,
  *   onPlace?: (id: string) => void,
+ *   playerTabHref?: (id: string | null) => string,
  *   canManage?: () => boolean,
  *   canPlace?: () => boolean,
  * }} options
@@ -73,6 +74,10 @@ function hpMeter(character) {
  * party, without changing the rest of the party. canPlace, checked per
  * paint like canManage, hides that action while splitting the party is
  * not allowed.
+ * If playerTabHref is set, each managed row also offers a link that opens a
+ * player tab bound to that character, and the actions below the list offer
+ * a link to a spectator tab. Both are real links that open a new browser
+ * tab, so the GM can also middle-click them or copy the URL.
  *
  * `update` carries the same guard the list panels carry, through
  * `repaintNeeded` from `listPanel.js`: it repaints when the manage gate
@@ -144,6 +149,16 @@ export function mountCharacterRoster(container, options) {
           ),
         );
       }
+      if (manage && options.playerTabHref) {
+        row.appendChild(
+          iconLink(
+            'external',
+            `Open a player tab for ${character.name}`,
+            options.playerTabHref(character.id),
+            { className: 'character-roster__tab', title: 'Open player tab', newTab: true },
+          ),
+        );
+      }
       if (manage && placeShown()) {
         row.appendChild(
           iconButton(
@@ -179,6 +194,14 @@ export function mountCharacterRoster(container, options) {
             textButton('Award Party XP', () => options.onAwardXP?.(), {
               icon: 'sparkles',
               className: 'character-roster__award',
+            }),
+          options.playerTabHref &&
+            textLink('Spectator tab', options.playerTabHref(null), {
+              icon: 'eye',
+              ariaLabel: 'Open a spectator tab',
+              title: 'Open a player tab that plays no character',
+              className: 'character-roster__spectator',
+              newTab: true,
             }),
         ),
       );

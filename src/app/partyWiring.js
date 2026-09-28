@@ -31,7 +31,7 @@ import { mountTimePanel } from '../ui/TimePanel.js';
 import { advanceWatches, advanceToDawn, formatClock, watchesBetween } from '../time/GameClock.js';
 import { passTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
-import { partyPermissions } from '../view/CharacterBinding.js';
+import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
 import { characterPosition, moveCharacter } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
@@ -147,6 +147,7 @@ export function wireParty(app) {
     canManage: () => isGM(state.role),
     // The place action only exists while the GM allows splitting the party.
     canPlace: () => state.splitParty,
+    playerTabHref,
     onSelect: (id) => {
       selectCharacter(id);
       followCharacter(id);

@@ -47,7 +47,7 @@ position, its open panel, and its map zoom and pan.
 | --- | --- |
 | `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. It shows the GM view again only after the parameter is removed from the URL |
 | The padlock beside the role switch | Same lock, set from inside the tab. To undo it, close the tab or drop the URL parameter |
-| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. The Party panel of a GM tab links a player tab for each character and one spectator tab |
+| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. In a GM tab, the open-tab icon on each row of the Party roster opens a player tab for that character, and the Spectator tab button below the roster opens one for no character |
 | The "Playing as" dropdown in the Party panel | Same binding, set from inside the tab |
 
 A bound tab can spend spell slots and other resources, add and clear
@@ -747,6 +747,12 @@ authoring and shows none.
 
 The Party roster creates, selects, and deletes characters. The selected
 character scopes the Character sheet and the Inventory panel.
+
+In a GM tab, each roster row has an open-tab icon, an arrow that leaves a
+box. It opens a Player tab bound to that character in a new browser tab.
+The **Spectator tab** button below the roster opens a Player tab bound to no
+character. Both are ordinary links, so a middle-click or the browser's
+"Open in new tab" menu works on them too.
 
 ### Sheet contents
 
