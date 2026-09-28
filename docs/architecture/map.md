@@ -401,6 +401,23 @@ river, because the sea and a river together leave too little ground for
 its three buildings. Streets keep off the sea. Walls and buildings also
 keep off the shore cells, because their art would hide the shoreline.
 
+`planDocks` in `src/map/GeneratorTownDocks.js` gives a port one pier, or
+two on a map of 22 cells or more. It runs after `planWall` and before
+`placeBuildings`. `dockSpots` lists each shore cell that has the straight
+coast piece of the sea side, with no street, river, or wall on it or
+beside it. The pier runs straight out from that quay, with water on both
+sides of each pier cell, for one cell per ten cells of map side, from one
+to four.
+Where the sea is deep enough, the pier stops one cell short of the open
+sea. `planDocks` then routes a street inland from each spot with
+`routeRoad`, and the spot with the shortest street wins. A dock street
+keeps off the shore cells and the wall, and it never joins a gate, so a
+wall that `planWall` accepted stays valid. `generateTown` draws the quay
+over its coast piece in place of the street piece, because the quay art
+draws its own street, and it draws the pier as dock overlays on the water
+tiles. The dock pieces have no rule meaning, so the party can walk from
+the streets out to each pier head.
+
 The streets use `routeRoad` with a `turn` cost of 0.6 for each bend, so a
 street on open grass runs straight. The `heading` argument counts the first
 step too, so a street that starts on the map edge goes straight into the
@@ -633,8 +650,9 @@ wilderness, the town, and the world all draw with it. The climate
 archetypes are in `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
 `src/map/GeneratorTown.js`, with its buildings in
-`src/map/GeneratorTownBuildings.js` and its wall in
-`src/map/GeneratorTownWall.js`.
+`src/map/GeneratorTownBuildings.js`, its wall in
+`src/map/GeneratorTownWall.js`, and the piers of a port in
+`src/map/GeneratorTownDocks.js`.
 The dungeon is in `src/map/GeneratorInteriors.js`, the cave in
 `src/map/GeneratorCave.js`, and the castle and the building in
 `src/map/GeneratorHalls.js`. They all draw furnishings with

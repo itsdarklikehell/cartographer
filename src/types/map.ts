@@ -103,3 +103,14 @@ export interface GeneratedSite {
   levels?: number;
   level?: number;
 }
+
+/** A pier of a port town, from GeneratorTownDocks.planDocks. `side` is the
+ *  border side of the sea, which the pier runs out toward. `quay` is the
+ *  tile id of the shore cell where the pier meets the street, and `pier`
+ *  lists the tile ids of the water cells under the pier, from the shore
+ *  out to its head. */
+export interface TownDock {
+  side: 'n' | 'e' | 's' | 'w';
+  quay: string;
+  pier: string[];
+}

@@ -270,7 +270,10 @@ edge. No street leaves into the sea, so a large port has three ways out. A
 river in a port flows into the sea. A small port has no river. A large
 port gets a wall as often as an inland town. The wall of a port is open
 on the sea side, and its two ends stop at the shore.
-A port has no docks or piers.
+A port has one pier, or two on a large, huge, or vast map. Each pier
+starts at a timber quay on a straight part of the shore and runs straight
+out over the sea to a pier head. A street links each quay to the other
+streets of the town. The party can walk out along a pier to its head.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave

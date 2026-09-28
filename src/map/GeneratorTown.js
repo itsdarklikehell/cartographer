@@ -2,12 +2,14 @@ import { ArmNetwork, ARMS, OPPOSITE, smoothCoastline } from './Autotile.js';
 import { terrainTiles } from './GeneratorGround.js';
 import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
 import { placeBuildings } from './GeneratorTownBuildings.js';
+import { planDocks } from './GeneratorTownDocks.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 import { maskAt, tileIdAt } from './MapGeometry.js';
 import { planWall, wallRadii } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
+/** @typedef {import('../types/map.js').TownDock} TownDock */
 /** @typedef {import('./Autotile.js').Arm} Arm */
 /** @typedef {import('./GeneratorRoads.js').RoadGround} RoadGround */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -67,12 +69,14 @@ const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
  *   buildings: TownBuilding[],
  *   walls: Map<string, string>,
  *   sea: Arm | null,
+ *   docks: TownDock[],
  * }} TownPlan
  * `cells` is the terrain type per cell, indexed `y * size + x`. `entry` is
  * the border cell of the first street out of town. `walls` maps each tile id
  * of the town wall to its piece, for example `wall-h` or `gate-v`, and is
  * empty for a town with no wall. `sea` is the border side of the sea of a
- * port, or null for an inland town.
+ * port, or null for an inland town. `docks` lists the piers of a port,
+ * and is empty for an inland town.
  */
 
 /**
@@ -243,8 +247,11 @@ function layStreets(ground, c, core, rng, sea) {
  * The river of a port runs across the town into the sea, and the river
  * cells under the sea drop out of the network, so the channel drains into
  * the water. Streets keep off the sea, and walls and buildings also keep
- * off its shore. A port under 14 cells has no river, because the sea and a
- * river leave too little ground for its three buildings. A town with any
+ * off its shore. `planDocks` then puts one pier, or two in a port of 22
+ * cells or more, on the shore, with a street from each quay to the town.
+ * It runs after the wall, so a dock street never crosses the wall. A port
+ * under 14 cells has no river, because the sea and a river leave too
+ * little ground for its three buildings. A town with any
  * other environ has no sea.
  * @param {number} size @param {() => number} rng
  * @param {string} [environ] the environ of the town node
@@ -275,6 +282,7 @@ export function planTown(size, rng, environ) {
   const roads = new ArmNetwork();
   const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng, sea);
   const walls = planWall({ size, roads, rivers, sea: shore, side: sea ?? undefined }, c, core, rng);
+  const docks = sea ? planDocks({ size, cells, rivers, roads, turn: TURN }, sea, rng, walls) : [];
   const square = size >= 32 ? 2 : 1;
   /** @param {number} x @param {number} y */
   const paved = (x, y) => Math.max(Math.abs(x - c), Math.abs(y - c)) <= square && !rivers.has(x, y);
@@ -283,7 +291,7 @@ export function planTown(size, rng, environ) {
   }
   const lot = { size, c, core, cells, roads, rivers, walls, paved, sea: shore };
   const buildings = placeBuildings(lot, rng);
-  return { size, cells, rivers, roads, entry, buildings, walls, sea };
+  return { size, cells, rivers, roads, entry, buildings, walls, sea, docks };
 }
 
 /**
@@ -295,7 +303,9 @@ export function planTown(size, rng, environ) {
  * grass under the scaled art. Each building with an inside is a site whose
  * four cells all link to its interior, so the party can enter from any cell
  * under the art. The sea of a port draws as water tiles, and its shore
- * takes the coast overlays.
+ * takes the coast overlays. Each quay draws over its coast piece in place
+ * of the street piece, because the quay art draws its own street, and each
+ * pier draws as dock overlays on the water tiles.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {string} [environ] the environ of the town node; `coast` makes a port
  * @returns {{ tiles: Tile[], entry: string, sites: GeneratedSite[] }}
@@ -317,6 +327,17 @@ export function generateTown(palette, size, rng, environ) {
   for (const [id, piece] of plan.walls) {
     const tile = /** @type {Tile} */ (byId.get(id));
     tile.overlayRef = /** @type {PaletteEntry} */ (palette.getTownWallPiece(piece)).imageRef;
+  }
+  /** @param {string} kind */
+  const dock = (kind) => /** @type {PaletteEntry} */ (palette.getDockPiece(kind)).imageRef;
+  for (const { side, quay, pier } of plan.docks) {
+    const shore = /** @type {PaletteEntry} */ (palette.getCoastPiece(side)).imageRef;
+    /** @type {Tile} */ (byId.get(quay)).overlayRef = [shore, dock(`quay-${side}`)];
+    const run = side === 'n' || side === 's' ? 'pier-v' : 'pier-h';
+    pier.forEach((id, i) => {
+      const kind = i === pier.length - 1 ? `pier-head-${side}` : run;
+      /** @type {Tile} */ (byId.get(id)).overlayRef = dock(kind);
+    });
   }
   /** @type {GeneratedSite[]} */
   const sites = [];

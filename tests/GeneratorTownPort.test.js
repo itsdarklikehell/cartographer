@@ -193,8 +193,8 @@ test('a generated port draws its sea as water tiles with a shoreline', () => {
   const water = gen.tiles.filter((t) => t.imageRef.includes('/water/'));
   assert.ok(water.length >= 22, `water tiles: ${water.length}`);
   assert.ok(
-    water.every((t) => !t.overlayRef),
-    'no street or river on the sea',
+    water.every((t) => !t.overlayRef || String(t.overlayRef).includes('/dock/dock-pier-')),
+    'no street or river on the sea, only a pier',
   );
   const shore = gen.tiles.filter((t) =>
     [t.overlayRef ?? []].flat().some((r) => r.includes('/coast/')),
