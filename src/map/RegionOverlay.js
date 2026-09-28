@@ -1,10 +1,12 @@
 import { blockRect, cellEdge, newBlockRect } from './MapGeometry.js';
 import { groupOutline, regionSlots } from './RegionOutline.js';
 import { INK } from './CanvasInk.js';
-import { drawPlatedLabel } from './CanvasText.js';
+import { drawPlatedLabel, labelFont } from './CanvasText.js';
+import { labelSpots, placeLabels } from './RegionLabels.js';
 
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
+/** @typedef {import('./RegionLabels.js').LabelSpot} LabelSpot */
 
 /** The font size of a region name, in CSS pixels. */
 const REGION_LABEL_PX = 12;
@@ -36,8 +38,7 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
     blockRect(rect, group, view, size);
     if (!rect.visible) continue;
     const clip = new Path2D();
-    /** @type {{ x: number, y: number } | null} */
-    let first = null;
+    let any = false;
     for (let i = 0; i < group.tileIds.length; i++) {
       if (revealedIds && !revealedIds.has(group.tileIds[i])) continue;
       const cell = group.cells[i];
@@ -49,9 +50,9 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
         cellEdge(cell.x + 1, size, view.offsetX) - cx,
         cellEdge(cell.y + 1, size, view.offsetY) - cy,
       );
-      if (!first || cell.y < first.y || (cell.y === first.y && cell.x < first.x)) first = cell;
+      any = true;
     }
-    if (!first) continue;
+    if (!any) continue;
     const hue = INK.regionHues[(slots.get(group.childNodeId) ?? 0) % INK.regionHues.length];
 
     ctx.save();
@@ -72,30 +73,79 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
     ctx.lineWidth = width * 2;
     ctx.stroke(outline);
     ctx.restore();
-
-    // The name draws outside the clip, from the region's first cell in
-    // reading order, so a long name on a small region reads in full. In Play
-    // mode that is the first revealed cell, so the plate never sits in fog.
-    const name = getNodeName?.(group.childNodeId);
-    if (!name) continue;
-    const padX = 4 * px;
-    const padY = 2 * px;
-    drawPlatedLabel(
-      ctx,
-      name,
-      cellEdge(first.x, size, view.offsetX) + padX,
-      cellEdge(first.y, size, view.offsetY) + padY,
-      {
-        fontSize: Math.round(REGION_LABEL_PX * px),
-        weight: '400',
-        align: 'left',
-        baseline: 'top',
-        plate: 'rect',
-        plateColor: INK.regionLabelPlate,
-        color: INK.regionLabelText,
-        padX,
-        padY,
-      },
-    );
   }
+  renderRegionNames(ctx, view, revealedIds, size, getNodeName);
+}
+
+/**
+ * Draw the name of each region, after every tint, so a later region's tint
+ * never covers an earlier region's name. A name draws outside the region's
+ * clip, so a long name on a small region reads in full. Its default spot is
+ * the region's first cell in reading order. In Play mode that is the first
+ * revealed cell, so the plate never sits in fog. `placeLabels` moves a name
+ * that would overlap an earlier one to a later spot, or leaves it out until
+ * a zoom makes room. The layout covers the regions out of view too, so a
+ * name does not change spot when a pan moves another region off the canvas.
+ * @param {CanvasRenderingContext2D} ctx
+ * @param {MapView} view
+ * @param {Set<string> | null} revealedIds
+ * @param {number} size the on-screen tile size in buffer px
+ * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
+ */
+function renderRegionNames(ctx, view, revealedIds, size, getNodeName) {
+  const node = view.node;
+  if (!node || !getNodeName) return;
+  const px = view.pixelRatio ?? 1;
+  const fontSize = Math.round(REGION_LABEL_PX * px);
+  const padX = 4 * px;
+  const padY = 2 * px;
+  const h = fontSize + padY * 2;
+  /** @type {string[]} */
+  const names = [];
+  /** @type {number[]} */
+  const widths = [];
+  /** @type {LabelSpot[][]} */
+  const spots = [];
+  ctx.save();
+  ctx.font = labelFont(fontSize, '400');
+  for (const group of view.regionGroups) {
+    const name = getNodeName(group.childNodeId);
+    if (!name) continue;
+    const cells = revealedIds
+      ? group.cells.filter((_, i) => revealedIds.has(group.tileIds[i]))
+      : group.cells;
+    if (cells.length === 0) continue;
+    names.push(name);
+    widths.push(ctx.measureText(name).width + padX * 2);
+    spots.push(labelSpots(cells, node.height));
+  }
+  ctx.restore();
+  const boxes = placeLabels(
+    spots,
+    (i, spot) => {
+      const y = cellEdge(spot.y, size, view.offsetY);
+      return {
+        x: cellEdge(spot.x, size, view.offsetX),
+        y: spot.above ? y - h : y,
+        w: widths[i],
+        h,
+      };
+    },
+    px,
+  );
+  boxes.forEach((box, i) => {
+    if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;
+    if (box.x + box.w < 0 || box.y + box.h < 0) return;
+    drawPlatedLabel(ctx, names[i], box.x + padX, box.y + padY, {
+      fontSize,
+      weight: '400',
+      align: 'left',
+      baseline: 'top',
+      plate: 'rect',
+      plateColor: INK.regionLabelPlate,
+      color: INK.regionLabelText,
+      padX,
+      padY,
+    });
+  });
 }
