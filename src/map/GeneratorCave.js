@@ -1,10 +1,13 @@
 import { NEIGHBORS4, NEIGHBORS8 } from './MapGeometry.js';
-import { FLOOR, floorCells, tunnelToEdge, VOID } from './GeneratorInteriorMask.js';
+import { CAVE_ART, FLOOR, floorCells, tunnelToEdge, VOID } from './GeneratorInteriorMask.js';
+import { furnishCave } from './GeneratorFurnish.js';
 import { finishLevel } from './GeneratorInteriors.js';
 
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('./GeneratorInteriors.js').LevelOptions} LevelOptions */
 /** @typedef {import('./GeneratorInteriors.js').Level} Level */
+/** @typedef {import('./GeneratorFurnish.js').Place} Place */
+/** @typedef {import('./GeneratorFurnish.js').LevelFacts} LevelFacts */
 
 /**
  * The cave archetype: winding natural passages grown with a cellular
@@ -79,7 +82,8 @@ export function growCavern(size, rng) {
  * room in the middle of the map stands in, so a level always has floor.
  * The stairs up sit on the cavern cell nearest the border, where an edge
  * level also cuts its tunnel and its door, and the stairs down sit on the
- * cavern cell farthest from them.
+ * cavern cell farthest from them. The cave draws with the rough cave pieces,
+ * and `furnishCave` adds pools and rubble.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {LevelOptions} [options]
  * @returns {Level}
@@ -103,5 +107,18 @@ export function generateCave(palette, size, rng, options = {}) {
     Math.min(x, y, size - 1 - x, size - 1 - y);
   const up = floor.reduce((a, b) => (gap(b) < gap(a) ? b : a));
   const door = entrance === 'edge' ? tunnelToEdge(cells, size, up[0], up[1]) : null;
-  return finishLevel(palette, cells, size, rng, { up, candidates: floor, door }, descend);
+  return finishLevel(
+    palette,
+    cells,
+    size,
+    rng,
+    {
+      up,
+      candidates: floor,
+      door,
+      art: CAVE_ART,
+      furnish: (place, facts) => furnishCave(place, rng, facts),
+    },
+    descend,
+  );
 }

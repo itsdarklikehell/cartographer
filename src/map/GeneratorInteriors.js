@@ -11,9 +11,14 @@ import {
   walkDistances,
   wrapWalls,
 } from './GeneratorInteriorMask.js';
+import { dress, furnishDungeon, furnisher } from './GeneratorFurnish.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('./GeneratorInteriorMask.js').MaskArt} MaskArt */
+/** @typedef {import('./GeneratorFurnish.js').Place} Place */
+/** @typedef {import('./GeneratorFurnish.js').LevelFacts} LevelFacts */
+/** @typedef {import('./GeneratorFurnish.js').Room} Room */
 
 /**
  * The dungeon archetype: rooms joined by corridors, one level at a time.
@@ -44,26 +49,38 @@ import {
  */
 
 /**
- * Put the stairs and the entry on a finished level. The stairs up go on
- * `up`. The stairs down go on the candidate farthest from them by walking
+ * @typedef {{
+ *   up: [number, number],
+ *   candidates: [number, number][],
+ *   door: string | null,
+ *   art?: MaskArt,
+ *   furnish?: (place: Place, facts: LevelFacts) => void,
+ * }} LevelLayout
+ * Where the stairs and the way in go on a finished level. The stairs up go
+ * on `up`, and the stairs down on the candidate farthest from them. `door`
+ * is the border door of an edge level, or null for a stairs level. `art` is
+ * the set of pieces to draw with, and `furnish` places the furnishings.
+ */
+
+/**
+ * Put the stairs, the entry, and the furnishings on a finished level. The
+ * stairs down go on the candidate farthest from the stairs up by walking
  * distance, so a descent makes the party cross the level.
  * @param {TilePalette} palette @param {number[]} cells @param {number} size
- * @param {() => number} rng
- * @param {{ up: [number, number], candidates: [number, number][], door: string | null }} layout
- *   `door` is the border door of an edge level, or null for a stairs level
- * @param {boolean} descend
+ * @param {() => number} rng @param {LevelLayout} layout @param {boolean} descend
  * @returns {Level}
  */
 export function finishLevel(palette, cells, size, rng, layout, descend) {
   wrapWalls(cells, size);
-  const tiles = maskTiles(palette, cells, size, rng);
+  const tiles = maskTiles(palette, cells, size, rng, layout.art);
   const stamp = tileStamper(tiles, palette);
   const [ux, uy] = layout.up;
   stamp(tileIdAt(ux, uy), 'stairs-up');
+  const dist = walkDistances(cells, size, ux, uy);
+  const reserved = new Set([uy * size + ux]);
   /** @type {string | null} */
   let stairsDown = null;
   if (descend) {
-    const dist = walkDistances(cells, size, ux, uy);
     // A level with one room has no other candidate, so the stairs down go
     // on the far side of that room.
     const down =
@@ -71,7 +88,13 @@ export function finishLevel(palette, cells, size, rng, layout, descend) {
     if (down) {
       stairsDown = tileIdAt(down[0], down[1]);
       stamp(stairsDown, 'stairs-down');
+      reserved.add(down[1] * size + down[0]);
     }
+  }
+  if (layout.furnish) {
+    const { place, placed } = furnisher(cells, size, layout.up, reserved);
+    layout.furnish(place, { floor: floorCells(cells, size), dist, size, descend });
+    dress(tiles, palette, size, placed);
   }
   return { tiles, entry: layout.door ?? tileIdAt(ux, uy), stairsDown };
 }
@@ -85,7 +108,8 @@ export function finishLevel(palette, cells, size, rng, layout, descend) {
  * and a coin toss picks whether it runs across first or down first. Rooms
  * grow with the map, so a vast dungeon has halls as well as cells. The
  * stairs up sit in the first room and the stairs down in the room farthest
- * from it.
+ * from it. `furnishDungeon` then puts pillars, altars, barrels, rubble, and
+ * the treasure of the bottom level in the rooms.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {LevelOptions} [options]
  * @returns {Level}
@@ -102,6 +126,8 @@ export function generateDungeon(palette, size, rng, options = {}) {
 
   /** @type {[number, number][]} room centers */
   const centers = [];
+  /** @type {Room[]} */
+  const rooms = [];
   const target = Math.max(3, Math.round(size / 3 + (size * size) / 400));
   const spread = 3 + Math.floor(size / 16);
   for (let attempt = 0; attempt < target * 4 && centers.length < target; attempt++) {
@@ -129,6 +155,7 @@ export function generateDungeon(palette, size, rng, options = {}) {
       }
     }
     centers.push([x0 + (w >> 1), y0 + (h >> 1)]);
+    rooms.push({ x0, y0, x1: x0 + w - 1, y1: y0 + h - 1, round: cut > 0 });
   }
 
   for (const [a, b] of roomLinks(centers, rng)) {
@@ -147,7 +174,12 @@ export function generateDungeon(palette, size, rng, options = {}) {
     cells,
     size,
     rng,
-    { up, candidates: centers.slice(1), door },
+    {
+      up,
+      candidates: centers.slice(1),
+      door,
+      furnish: (place, facts) => furnishDungeon(place, rng, rooms, facts),
+    },
     descend,
   );
 }

@@ -1,7 +1,7 @@
 import { NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { getTile } from './TileGrid.js';
-import { kindOf } from './TilePalette.js';
+import { tileKind } from './TileKinds.js';
 import { clamp } from '../util/num.js';
 import { describeTile } from './TileCoords.js';
 import { labelSize } from './CanvasText.js';
@@ -140,7 +140,7 @@ function interiorExits(node, parent, target) {
   const exits = [];
   for (const tile of node.tiles) {
     if (tile.childNodeId) continue;
-    const kind = kindOf(tile.imageRef);
+    const kind = tileKind(tile);
     if (back && kind === back) {
       exits.push({ kind: 'tile', tileId: tile.id, via: back, ...target });
     } else if (kind === 'door' && opensOutward(node, tile)) {
@@ -212,7 +212,7 @@ export function stairwayTo(parent, childNodeId) {
   let found = null;
   for (const tile of parent.tiles) {
     if (tile.childNodeId !== childNodeId) continue;
-    const back = stairwayBack(kindOf(tile.imageRef));
+    const back = stairwayBack(tileKind(tile));
     if (!back) continue;
     // A child that returns through its stairs up is one the parent descends
     // into. This is the descent case given precedence above.

@@ -9,11 +9,12 @@ own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`,
 climate model, for example `jungle/` and `deep-water/`, `road/`, `river/`,
 `coast/`, `plaza/`, `interior/`, `town/` for the town buildings and the
 town wall, and one folder for each POI marker, for example `settlement/`,
-`castle/`, and `tavern/`. `TilePalette` (`src/map/TilePalette.js`) defines
-the catalog and the paths that it expects, so anyone who adds or renames
-files reads `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
-`MARKER_TYPES`, `TOWN_BUILDINGS`, `TOWN_WALL_KINDS`, and `INTERIOR_KINDS`
-in that file first.
+`castle/`, and `tavern/`. `src/map/TileCatalog.js` defines the catalog and
+the paths that it expects, so anyone who adds or renames files reads
+`VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
+`MARKER_TYPES`, `TOWN_BUILDINGS`, and `TOWN_WALL_KINDS` in that file first.
+The interior pieces and the furnishings are in `INTERIOR_KINDS` and
+`FURNISHING_KINDS` in `src/map/TileKinds.js`.
 
 ## Terrain variants
 
@@ -22,7 +23,7 @@ and `grass-3.svg`. Mountain, snow-mountain, and badlands have 5, and taiga
 has 4, because their landforms and trees are large and a range of 3
 repeated layouts shows as rows. Plaza also has 5, and its variants differ
 only in the worn stones on one shared cobble layout. `VARIANT_COUNTS` in
-`TilePalette.js` sets the count per type. `palette.pickVariant(type, rng)`
+`TileCatalog.js` sets the count per type. `palette.pickVariant(type, rng)`
 selects one so that adjacent tiles of the same type do not look identical.
 The variants abut
 cleanly in the grid under these rules:
@@ -132,8 +133,8 @@ other marker sits on grass, and a new marker does too.
 
 A marker on desert or snow shows a square of grass, which reads as an oasis
 in the desert but not in the snow. A set of markers with transparent
-backgrounds, drawn as overlays over the terrain, removes this limit. No
-placeholder stands for this set, because it replaces every marker.
+backgrounds, drawn as overlays over the terrain, would remove this limit.
+The catalog has no such set.
 
 ## Town pieces
 
@@ -160,8 +161,8 @@ corner of a ring.
 
 `interior/` contains building-interior tiles, for example castle halls and
 shops, and `palette.getInteriorPiece(kind)` selects one by kind in the same
-pattern as road pieces. Every piece shares an identical flagstone floor base:
-fill `#a89f8d` with a `#8f8776` grout grid on a 16-pixel pitch. This base
+pattern as road pieces. Every piece except the cave pieces shares one
+flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16-pixel pitch. This base
 includes half-width grout strokes centered on the tile edges, so the grid
 continues across any shared edge. The kinds are:
 
@@ -181,19 +182,55 @@ continues across any shared edge. The kinds are:
 - `door-h` and `door-v`: a wall with a framed wooden door leaf in the gap.
 - `stairs-up` and `stairs-down`: treads that lighten toward the top and
   darken toward the bottom, with a direction chevron.
+- `cave-floor-1` and `cave-floor-2`: rough rock floor variants for a cave.
+- `cave-wall`: one rough rock piece for every wall cell of a cave. It has
+  no connector kinds, because a cave wall has no straight runs to join.
+- `cave-mouth-h` and `cave-mouth-v`: the way into a cave from the map
+  border, with rock on both sides of an open passage. `cave-mouth-h` takes
+  a passage north-south, like `door-h`.
 
-Interior pieces are the only art that the game rules read. `INTERIOR_KINDS`
-in `TilePalette.js` lists each piece with its meaning (`wall`, `door`,
-`stairs-up`, `stairs-down`, or `floor`), and the rest of the app asks for
-this meaning through `kindOf(imageRef)`. A new interior piece needs a
-meaning in `INTERIOR_KINDS`, because a piece without one reads as `plain`
-scenery that the party can walk across. Every non-interior piece has the
-meaning `plain`.
+## Furnishings
+
+The furnishings are also in `interior/`, and `palette.getInteriorPiece(kind)`
+selects them too, but their palette type is `furnishing`. Each one has a
+transparent ground and draws as an overlay on a floor tile.
+
+| Kind | Meaning | Where the generators put it |
+| --- | --- | --- |
+| `altar` | `plain` | A castle chapel, and some dungeon rooms |
+| `chest` | `plain` | The farthest cell of the bottom level of a dungeon or a cave, and some storerooms |
+| `pillar` | `obstacle` | Two rows in some large dungeon rooms and in the great hall of a castle |
+| `throne` | `plain` | The north wall of the great hall of a castle |
+| `bed` | `obstacle` | A bedroom |
+| `table` | `obstacle` | A dining room, and the room behind the door of a building |
+| `hearth` | `plain` | The north wall of the room behind the door of a building |
+| `bookshelf` | `obstacle` | The north wall of a library |
+| `barrel` | `plain` | The corners of a storeroom |
+| `rubble` | `plain` | Random floor cells of a dungeon or a cave |
+| `pool` | `plain` | Small groups of cells in a cave |
+| `trapdoor` | `stairs-down` | No generator puts it. A GM paints it over a floor. |
+
+## Rule meanings
+
+Interior pieces and furnishings are the only art that the game rules read.
+`INTERIOR_KINDS` and `FURNISHING_KINDS` in `src/map/TileKinds.js` list each
+piece with its meaning, and the rest of the app asks for this meaning
+through `tileKind(tile)`. The party cannot land on a `wall` or an
+`obstacle`, and a new link does not go on one. A `door` is the authored way
+into a space, and the stairs connect one level to the next. A piece without
+a meaning reads as `plain` scenery that the party can walk across.
+
+`tileKind` reads the overlays of a tile before its base image. The topmost
+overlay with a meaning other than `plain` decides, so a pillar on a floor
+is an obstacle and a trapdoor on a floor leads down like `stairs-down`. A
+`plain` furnishing, such as a chest, leaves the meaning of the floor under
+it. `kindOf(imageRef)` gives the meaning of one image.
 
 ## Registry tables
 
-`TilePalette.js` defines one table per tile family, and a tile exists for
-the app only when its family table names it.
+`src/map/TileCatalog.js` defines one table per tile family, and a tile
+exists for the app only when its family table names it. The two interior
+tables are in `src/map/TileKinds.js`, beside the rule meanings.
 
 | Table | What it registers |
 | --- | --- |
@@ -205,49 +242,7 @@ the app only when its family table names it.
 | `TOWN_BUILDINGS` | The span-2 town buildings |
 | `TOWN_WALL_KINDS` | The ten town wall, gate, and water gate pieces |
 | `INTERIOR_KINDS` | Each interior piece with its rule meaning |
+| `FURNISHING_KINDS` | Each furnishing with its rule meaning |
 
 `addCustom` registers a tile that a GM loads at runtime. A runtime tile is
 not in these tables and cannot override a built-in one.
-
-## Placeholder art
-
-`assets/placeholders/` contains tiles that the generators can use but that
-have no finished art. Each placeholder is a flat fill in the intended base
-color, with a dashed frame and its name. `TilePalette` does not register
-these files, so no map draws them. The folder layout matches
-`assets/tiles/`. To finish a placeholder, draw the art, move the file to
-`assets/tiles/<type>/`, and register the type in `TilePalette.js`. Then
-change the mapping in the generator that the table names.
-
-### Interior pieces
-
-The cave, dungeon, castle, and building generators in `src/map/` draw with
-the pieces in `interior/`. The cave pieces replace the stone floor, wall,
-and door pieces on a cave level. A cave wall is one rough rock piece with
-no connector kinds, because a cave wall has no straight runs to join.
-
-| Placeholder | Intended use | Drawn with today |
-| --- | --- | --- |
-| `interior/interior-cave-floor-1.svg`, `interior/interior-cave-floor-2.svg` | Cave floor variants | `floor-1` to `floor-3` |
-| `interior/interior-cave-wall.svg` | Cave wall | the stone wall pieces |
-| `interior/interior-cave-mouth-h.svg`, `interior/interior-cave-mouth-v.svg` | The cave entrance on the map border | `door-h`, `door-v` |
-
-The furnishing placeholders have transparent backgrounds, because each one
-draws as an overlay on a floor tile. A furnishing needs a meaning in
-`INTERIOR_KINDS`. A pillar, a table, and a bookshelf block movement, and a
-trapdoor leads down like `stairs-down`.
-
-| Placeholder | Intended use |
-| --- | --- |
-| `interior/interior-altar.svg` | A temple or a shrine room |
-| `interior/interior-chest.svg` | Treasure at the end of a dungeon |
-| `interior/interior-pillar.svg` | Rows of columns in a large hall |
-| `interior/interior-throne.svg` | The great hall of a castle |
-| `interior/interior-bed.svg` | A bedroom in a building or a castle |
-| `interior/interior-table.svg` | A tavern or a dining hall |
-| `interior/interior-hearth.svg` | The main room of a house |
-| `interior/interior-bookshelf.svg` | A library or a wizard tower |
-| `interior/interior-barrel.svg` | A cellar or a storeroom |
-| `interior/interior-rubble.svg` | A collapsed part of a dungeon or a cave |
-| `interior/interior-pool.svg` | Water in a cave |
-| `interior/interior-trapdoor.svg` | A hidden way down from a building |

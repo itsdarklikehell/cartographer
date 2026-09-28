@@ -2,7 +2,7 @@ import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
-import { kindOf } from './TilePalette.js';
+import { isBlocked } from './TileKinds.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
 
@@ -297,9 +297,7 @@ export function stampRegionLink(node, tileId, childNodeId) {
     node,
     node.tiles.map((t) =>
       t.id === tileId ||
-      (block.has(t.id) &&
-        (!t.childNodeId || t.childNodeId === childNodeId) &&
-        kindOf(t.imageRef) !== 'wall')
+      (block.has(t.id) && (!t.childNodeId || t.childNodeId === childNodeId) && !isBlocked(t))
         ? { ...t, childNodeId }
         : t,
     ),
@@ -311,13 +309,13 @@ export function stampRegionLink(node, tileId, childNodeId) {
  * that a generated child map is always reachable from its parent, instead of
  * floating in the world tree with no way in. The function does nothing if a
  * link already exists. Otherwise it stamps the link onto the plain tile
- * nearest the grid centre, that is, a tile with no existing link and not a
- * wall piece. When given, it also applies `markerRef` art and a `poiType`, so
- * the way in reads as a place on the parent map. If the parent has no
- * eligible tile, the function creates a new tile at the empty cell nearest
- * the centre, using `createRef` art. It returns the updated node plus which
- * tile now links. The tileId is null if a link already existed, or if the
- * grid is full with no eligible tile.
+ * nearest the grid centre, that is, a tile with no existing link that is
+ * not a wall or an obstacle. When given, it also applies `markerRef` art and
+ * a `poiType`, so the way in reads as a place on the parent map. If the
+ * parent has no eligible tile, the function creates a new tile at the empty
+ * cell nearest the centre, using `createRef` art. It returns the updated
+ * node plus which tile now links. The tileId is null if a link already
+ * existed, or if the grid is full with no eligible tile.
  * @param {MapNode} node parent node to link from
  * @param {string} childId node the link zooms into
  * @param {{ markerRef?: string | null, createRef: string, poiType?: import('../types/map.js').POIType | null }} art
@@ -334,7 +332,7 @@ export function ensureChildLink(node, childId, art) {
   };
 
   const candidates = node.tiles.filter(
-    (t) => !t.childNodeId && kindOf(t.imageRef) !== 'wall' && !t.metadata.poiType,
+    (t) => !t.childNodeId && !isBlocked(t) && !t.metadata.poiType,
   );
   if (candidates.length) {
     const target = candidates.reduce((a, b) => (distToCentre(b.id) < distToCentre(a.id) ? b : a));

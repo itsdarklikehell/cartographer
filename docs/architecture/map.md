@@ -228,8 +228,9 @@ all of the zoom and breadcrumb behavior.
 
 ## The tile catalog and generation
 
-`TilePalette` (`src/map/TilePalette.js`) is the built-in tile catalog. It
-distinguishes terrain variants from connector pieces:
+`TilePalette` (`src/map/TilePalette.js`) is the built-in tile catalog, built
+from the family tables in `src/map/TileCatalog.js`. It distinguishes terrain
+variants from connector pieces:
 
 - Terrain types (grass, water, mountains, and other kinds) have multiple
   interchangeable variants, so a painted field does not look like a
@@ -243,14 +244,17 @@ Callers can register custom tiles with `addCustom`/`removeCustom`. Custom
 tiles cannot override built-in tiles, so they only extend the catalog.
 
 A few pieces of art mean something to the rules, not only to the eye: the
-party cannot stand on a wall, a door is the authored way into a space, and
-stairs connect one dungeon level to the next. `kindOf(imageRef)` says what a
-given image means, and it is the only place in the code that knows this. It
-matches whole references against the catalog instead of looking for a word in
-a file name, so a GM's own art called `interior-wall-h.svg` stays plain art
-and renaming a built-in asset cannot quietly change where the party can
-walk. Everything outside the interior set (terrain, markers, custom images)
-is `plain`.
+party cannot stand on a wall or on an obstacle such as a pillar, a door is
+the authored way into a space, and stairs and trapdoors connect one level to
+the next. `src/map/TileKinds.js` is the only place in the code that knows
+this. `kindOf(imageRef)` says what one image means, and `tileKind(tile)` says
+what a whole tile means: the topmost overlay with a meaning decides, and the
+base image decides when no overlay has one. `kindOf` matches whole
+references against the catalog instead of looking for a word in a file
+name, so a GM's own art called `interior-wall-h.svg` stays plain art and
+renaming a built-in asset cannot quietly change where the party can walk.
+Everything outside the interior and furnishing sets (terrain, markers,
+custom images) is `plain`.
 
 `Autotile.js` (`src/map/Autotile.js`) handles the detailed part of generated
 terrain. It picks connector overlay pieces, so that coastlines, rivers, and
@@ -417,7 +421,9 @@ Each cell starts as rock with a chance of 0.45. In each of four rounds, a
 cell with five or more rock neighbors turns to rock, and a cell with three
 or fewer opens. Only the largest connected cavern stays. The generator
 tries again when the cavern covers less than a fifth of the map, and after
-six tries it uses a room of three by three cells in the middle.
+six tries it uses a room of three by three cells in the middle. A cave draws
+with `CAVE_ART` from `GeneratorInteriorMask.js`: cave floors, one rough wall
+piece for every wall cell, and a cave mouth in place of the border door.
 
 A dungeon level and a cave level finish the same way, in `finishLevel`. An
 edge level cuts a straight tunnel from its stairs up to the nearest border
@@ -437,16 +443,32 @@ the door from one side. A castle keeps rooms of at least three cells a side
 and has stairs, and a building keeps rooms of at least two cells a side,
 with no stairs.
 
+Each interior generator then furnishes its map through `src/map/GeneratorFurnish.js`.
+A furnishing is an overlay on a floor tile, and `furnisher` refuses a cell
+where it does not fit. An obstacle, such as a pillar, a table, a bed, or a
+bookshelf, never goes beside a door or a staircase. The furnisher also walks
+the level from the way in after each obstacle and takes the obstacle back
+when a floor cell becomes unreachable. A castle puts a throne and two rows
+of pillars in its largest room, and a building puts a hearth and a table in
+the room behind its door. The other rooms of a castle or a building each get
+a role at random: a bedroom, a dining room, a library, a storeroom, a chapel
+in a castle, or an empty room. A dungeon level lines some large square rooms
+with pillars, and a cave level gets small pools. Both scatter rubble, and
+the bottom level of each puts a chest on the floor cell farthest from the
+way in.
+
 ### Generator modules
 
 The generator archetypes build on these helpers, and `MapGenerator`
 dispatches to them. The climate archetypes are in
 `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
-`src/map/GeneratorTown.js`, with its wall in `src/map/GeneratorTownWall.js`. The dungeon is in
-`src/map/GeneratorInteriors.js`, the cave in `src/map/GeneratorCave.js`,
-and the castle and the building in `src/map/GeneratorHalls.js`. The example
-world in `campaign/ExampleWorld.js` uses them too.
+`src/map/GeneratorTown.js`, with its wall in `src/map/GeneratorTownWall.js`.
+The dungeon is in `src/map/GeneratorInteriors.js`, the cave in
+`src/map/GeneratorCave.js`, and the castle and the building in
+`src/map/GeneratorHalls.js`. They all draw furnishings with
+`src/map/GeneratorFurnish.js`. The example world in
+`campaign/ExampleWorld.js` uses them too.
 
 A tile's `overlayRef` can be either a single reference or a draw-ordered
 stack of them (`TileGrid.overlayList` normalizes the two forms). The stack

@@ -280,6 +280,29 @@ test('an interior exits up its stairs, and skips ones that lead further in', () 
   );
 });
 
+test('a cellar under a trapdoor exits up its stairs', () => {
+  const house = levelAbove();
+  house.tiles = house.tiles.map((t) =>
+    t.id === '2,2'
+      ? {
+          ...createTile(t.id, `${INTERIOR}-floor-1.svg`, { childNodeId: 'child' }),
+          overlayRef: `${INTERIOR}-trapdoor.svg`,
+        }
+      : t,
+  );
+  const cellar = node({
+    id: 'child',
+    name: 'Cellar',
+    kind: 'interior',
+    tiles: [createTile('2,3', `${INTERIOR}-stairs-up.svg`)],
+  });
+  assert.equal(stairwayTo(house, 'child')?.back, 'stairs-up');
+  assert.deepEqual(
+    findExits(cellar, house).map((e) => (e.kind === 'tile' ? `${e.via}@${e.tileId}` : e.kind)),
+    ['stairs-up@2,3'],
+  );
+});
+
 test('an upper storey exits down its stairs, and its stairs up lead further up', () => {
   // A castle's upper floor: the way back is the staircase it came up, so the one
   // that keeps climbing is no more a way out than a locked door would be.

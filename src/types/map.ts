@@ -37,10 +37,12 @@ export type NodeKind = 'region' | 'interior';
 
 /** What a tile's art means to the rules: whether the party can stand on it,
  * whether it is the authored way into a space, and whether it connects to
- * the level above or below. `plain` covers everything with no such meaning:
- * outdoor terrain, markers, and any custom image a GM supplies.
- * See TilePalette.kindOf. */
-export type TileKind = 'plain' | 'floor' | 'wall' | 'door' | 'stairs-up' | 'stairs-down';
+ * the level above or below. A wall and an obstacle, such as a pillar or a
+ * table, are the kinds that the party cannot stand on. `plain` covers
+ * everything with no such meaning: outdoor terrain, markers, and any custom
+ * image a GM supplies. See TileKinds.tileKind. */
+export type TileKind =
+  'plain' | 'floor' | 'wall' | 'obstacle' | 'door' | 'stairs-up' | 'stairs-down';
 
 export interface MapNode {
   id: string;

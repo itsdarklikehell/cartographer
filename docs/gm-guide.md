@@ -109,7 +109,7 @@ in the center, and the palette and tile inspector on the right.
 ### Paint tiles
 
 1. Pick a brush in the **Palette**. Click a section heading to expand
-   Terrain, Roads, Buildings, or Interior.
+   Terrain, Overlays, Buildings, Interior, or Furnishings.
 2. Left-drag across the map. Every cell the pointer crosses takes the
    brush. A single click paints one cell.
 3. To make a landmark dominate its surroundings, set **Size** to 2x or 3x

@@ -199,6 +199,37 @@ test('computeRegionEntryTile lands a stairs descent on the child level stairs-up
   assert.equal(landed, '2,3');
 });
 
+test('a trapdoor leads down like stairs, and the party never lands on a pillar', async () => {
+  const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
+  const art = (/** @type {string} */ kind) => `assets/tiles/interior/interior-${kind}.svg`;
+  const trapdoor = createTile('4,4', art('floor-1'), { childNodeId: 'cellar' });
+  const parent = {
+    id: 'house',
+    name: 'House',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('interior'),
+    environ: null,
+    tiles: [{ ...trapdoor, overlayRef: art('trapdoor') }, createTile('1,1', art('floor-1'))],
+  };
+  const child = {
+    id: 'cellar',
+    name: 'Cellar',
+    parentId: 'house',
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('interior'),
+    environ: null,
+    tiles: [createTile('2,3', art('stairs-up')), createTile('0,0', art('floor-2'))],
+  };
+  const party = { nodeId: 'house', tileId: '1,1' };
+  assert.equal(computeRegionEntryTile(parent, child, 'cellar', party), '2,3');
+  const pillar = { ...createTile('1,1', art('floor-1')), overlayRef: art('pillar') };
+  const hall = { ...child, tiles: [pillar, createTile('3,1', art('floor-1'))] };
+  assert.equal(resolveEntryTile(hall, '1,1'), '3,1');
+});
+
 test('computeRegionEntryTile reads the approach geometry when no stairs connect the nodes', async () => {
   const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
   // A 2x2 region block at parent coords x 2..3, y 2..3.

@@ -9,7 +9,7 @@ import {
   linkTilesInRect,
   stampRegionLink,
 } from '../map/TilePaint.js';
-import { isOverlayType } from '../map/TilePalette.js';
+import { isOverlayType } from '../map/TileCatalog.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
 import { restoreCreaturePlacements } from '../entities/CreatureMap.js';

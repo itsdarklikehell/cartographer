@@ -25,7 +25,12 @@ export const DOOR_H = 3;
 /** A door set in a vertical wall run, which a party passes east-west. */
 export const DOOR_V = 4;
 
-const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
+/**
+ * @typedef {{ floors: string[], wall: (n: boolean, e: boolean, s: boolean, w: boolean) => string, doorH: string, doorV: string }} MaskArt
+ * The interior pieces that `maskTiles` draws a mask with. `floors` are the
+ * floor variants, `wall` picks the wall piece from the arms that join it, and
+ * `doorH` and `doorV` are the doors in a horizontal and a vertical wall run.
+ */
 
 /** @param {TilePalette} palette @param {string} kind */
 export function interiorRef(palette, kind) {
@@ -58,6 +63,30 @@ export function wallKind(n, e, s, w) {
   if (n || s) return 'wall-v';
   return 'wall-h';
 }
+
+/**
+ * Dressed stone: the flagstone floors, the jointed walls, and wooden doors.
+ * @type {MaskArt}
+ */
+export const STONE_ART = {
+  floors: ['floor-1', 'floor-2', 'floor-3'],
+  wall: wallKind,
+  doorH: 'door-h',
+  doorV: 'door-v',
+};
+
+/**
+ * Natural rock: the cave floors, one rough wall piece with no connector
+ * kinds, and a cave mouth for the way in. A cave wall has no straight runs
+ * to join, so every wall cell draws the same piece.
+ * @type {MaskArt}
+ */
+export const CAVE_ART = {
+  floors: ['cave-floor-1', 'cave-floor-2'],
+  wall: () => 'cave-wall',
+  doorH: 'cave-mouth-h',
+  doorV: 'cave-mouth-v',
+};
 
 /**
  * Turn every void cell that touches a floor or door cell, in any of eight
@@ -108,11 +137,13 @@ export function tunnelToEdge(cells, size, x, y) {
 
 /**
  * Walking distance in steps from (x, y) to every floor and door cell, or -1
- * for a cell that the walk cannot reach.
+ * for a cell that the walk cannot reach. The walk also stays off the cells in
+ * `blocked`, for example the cells under a pillar or a table.
  * @param {number[]} cells @param {number} size @param {number} x @param {number} y
+ * @param {Set<number>} [blocked] cell indexes that the walk cannot enter
  * @returns {Int32Array}
  */
-export function walkDistances(cells, size, x, y) {
+export function walkDistances(cells, size, x, y, blocked) {
   const dist = new Int32Array(size * size).fill(-1);
   dist[y * size + x] = 0;
   const queue = [y * size + x];
@@ -126,6 +157,7 @@ export function walkDistances(cells, size, x, y) {
       const j = ny * size + nx;
       if (nx < 0 || ny < 0 || nx >= size || ny >= size || dist[j] !== -1) continue;
       if (cells[j] !== FLOOR && !isDoor(cells[j])) continue;
+      if (blocked?.has(j)) continue;
       dist[j] = dist[i] + 1;
       queue.push(j);
     }
@@ -139,9 +171,10 @@ export function walkDistances(cells, size, x, y) {
  * cells beside it, because a door is a wall segment with a leaf in it.
  * @param {TilePalette} palette @param {number[]} cells @param {number} size
  * @param {() => number} rng
+ * @param {MaskArt} [art] the pieces to draw with, dressed stone by default
  * @returns {Tile[]}
  */
-export function maskTiles(palette, cells, size, rng) {
+export function maskTiles(palette, cells, size, rng, art = STONE_ART) {
   const joins = (/** @type {number} */ x, /** @type {number} */ y) =>
     x >= 0 &&
     y >= 0 &&
@@ -155,11 +188,11 @@ export function maskTiles(palette, cells, size, rng) {
       const code = cells[y * size + x];
       /** @type {string} */
       let kind;
-      if (code === FLOOR) kind = FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)];
+      if (code === FLOOR) kind = art.floors[randInt(rng, art.floors.length)];
       else if (code === WALL) {
-        kind = wallKind(joins(x, y - 1), joins(x + 1, y), joins(x, y + 1), joins(x - 1, y));
-      } else if (code === DOOR_H) kind = 'door-h';
-      else if (code === DOOR_V) kind = 'door-v';
+        kind = art.wall(joins(x, y - 1), joins(x + 1, y), joins(x, y + 1), joins(x - 1, y));
+      } else if (code === DOOR_H) kind = art.doorH;
+      else if (code === DOOR_V) kind = art.doorV;
       else continue;
       tiles.push(createTile(tileIdAt(x, y), interiorRef(palette, kind)));
     }

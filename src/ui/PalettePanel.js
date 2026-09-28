@@ -2,7 +2,7 @@ import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
-import { isOverlayType, isTerrainType } from '../map/TilePalette.js';
+import { isOverlayType, isTerrainType } from '../map/TileCatalog.js';
 import { buildDisclosure } from './Disclosure.js';
 import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 
@@ -181,23 +181,25 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   root.appendChild(scaleRow);
 
   // Swatches group into collapsible sections, so terrain, overlays (roads,
-  // rivers, coasts), buildings, and interior pieces do not mix in one grid.
-  // Terrain starts open, because it is the most common brush. The rest start
-  // collapsed.
+  // rivers, coasts), buildings, interior pieces, and furnishings do not mix
+  // in one grid. Terrain starts open, because it is the most common brush.
+  // The rest start collapsed.
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
     isTerrainType(entry.type)
       ? 'Terrain'
-      : isOverlayType(entry.type)
-        ? 'Overlays'
-        : entry.type === 'interior'
-          ? 'Interior'
-          : 'Buildings';
+      : entry.type === 'furnishing'
+        ? 'Furnishings'
+        : isOverlayType(entry.type)
+          ? 'Overlays'
+          : entry.type === 'interior'
+            ? 'Interior'
+            : 'Buildings';
 
   const sectionsEl = el('div', 'palette__sections');
   /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
   const sections = new Map();
-  for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior']) {
+  for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior', 'Furnishings']) {
     const grid = el('div', 'palette__grid');
     const { head } = buildDisclosure({ label, body: grid, expanded: label === 'Terrain' });
     const wrap = el('div', 'palette__section', head, grid);

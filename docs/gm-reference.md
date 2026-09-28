@@ -137,7 +137,7 @@ interiors hang beneath it.
 | Kind | Palette it gets |
 | --- | --- |
 | Region | The full terrain, road, river, coast, and building palette |
-| Interior | Interior pieces only: floors, walls, doors, stairs |
+| Interior | Interior pieces and furnishings only: floors, walls, doors, stairs, and furniture |
 
 A node also has a free-text environment tag, for example grassland,
 forest, shop, or temple. The tag is description only.
@@ -235,9 +235,22 @@ street. The river goes under the wall through a water gate.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave
-has winding caverns of uneven width. A castle splits into halls and
-chambers behind a wall ring, with stairs up and down. A building splits
-into a few small rooms and has no stairs.
+has winding caverns of uneven width, with rough rock walls, pools, and a
+cave mouth on the border. A castle splits into halls and chambers behind a
+wall ring, with stairs up and down. Its largest room is a great hall with a
+throne and pillars. A building splits into a few small rooms and has no
+stairs. The room behind its door has a hearth and a table. The other rooms
+of a castle or a building are bedrooms, dining rooms, libraries,
+storerooms, chapels in a castle, or empty rooms. A dungeon has pillars in
+some large rooms, and a dungeon or a cave has rubble. The bottom level
+keeps a chest on the floor cell farthest from the way in.
+
+A pillar, a table, a bed, and a bookshelf are obstacles. Like a wall, an
+obstacle is never where the party lands when it enters a map, and a new
+link never goes on one. A generated map never puts an obstacle beside a
+door or a staircase, or where it cuts off part of the floor. A trapdoor
+leads down like stairs down. Link it to the level below, and that level
+returns through its stairs up.
 
 Each level of a multi-level dungeon or cave becomes a child node. The stairs
 down of one level lead to the stairs up of the level below. The stairs down

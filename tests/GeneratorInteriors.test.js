@@ -90,7 +90,7 @@ test('a cave enters through a border door and descends by default', () => {
   const gen = generateCave(palette, size, mulberry32(2));
   const [x, y] = gen.entry.split(',').map(Number);
   assert.ok(x === 0 || y === 0 || x === size - 1 || y === size - 1);
-  assert.match(gen.tiles.find((t) => t.id === gen.entry)?.imageRef ?? '', /door/);
+  assert.match(gen.tiles.find((t) => t.id === gen.entry)?.imageRef ?? '', /cave-mouth/);
   assert.ok(gen.stairsDown);
 });
 

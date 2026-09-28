@@ -63,14 +63,16 @@ export function coerceNodeKind(raw, fallback) {
 
 /**
  * Whether a palette entry of the given type belongs on a node of this kind.
- * Interiors get only interior pieces plus custom art. Regions get everything
- * except interior pieces. This filters the Build-mode palette, so a GM paints
- * an interior with walls and floors, and a region with grass and mountains.
+ * Interiors get only interior pieces, furnishings, and custom art. Regions
+ * get everything except interior pieces and furnishings. This filters the
+ * Build-mode palette, so a GM paints an interior with walls and floors, and
+ * a region with grass and mountains.
  * @param {string} kind
  * @param {string} entryType palette entry's `type`
  * @returns {boolean}
  */
 export function allowsPaletteType(kind, entryType) {
   if (entryType === 'custom') return true;
-  return kind === 'interior' ? entryType === 'interior' : entryType !== 'interior';
+  const indoor = entryType === 'interior' || entryType === 'furnishing';
+  return kind === 'interior' ? indoor : !indoor;
 }

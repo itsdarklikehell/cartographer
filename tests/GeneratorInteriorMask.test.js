@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import {
+  CAVE_ART,
   DOOR_H,
   DOOR_V,
   farthest,
@@ -61,6 +62,8 @@ test('walkDistances walks floor and doors and farthest picks the far reachable c
   assert.equal(dist[1 * 5 + 0], -1, 'walls stay unreached');
   assert.deepEqual(farthest(dist, 5, floorCells(cells, 5)), [4, 0]);
   assert.equal(farthest(dist, 5, [[0, 0]]), null, 'the start cell is never picked');
+  const around = walkDistances(cells, 5, 0, 0, new Set([1 * 5 + 1]));
+  assert.equal(around[2 * 5 + 1], -1, 'a blocked cell cuts the walk');
 });
 
 test('maskTiles skips void, joins walls to doors, and the stamper ignores missing ids', () => {
@@ -79,4 +82,16 @@ test('maskTiles skips void, joins walls to doors, and the stamper ignores missin
   stamp('0,2', 'no-such-piece');
   assert.equal(tiles.find((t) => t.id === '0,2')?.imageRef, '', 'a missing piece draws nothing');
   assert.match(tiles.find((t) => t.id === '1,1')?.imageRef ?? '', /stairs-up/);
+});
+
+test('maskTiles draws a cave with one rough wall piece and cave mouths', () => {
+  const cells = maskFrom(['#-#', '|..', '###']);
+  const byId = new Map(
+    maskTiles(palette, cells, 3, () => 0.6, CAVE_ART).map((t) => [t.id, t.imageRef]),
+  );
+  assert.match(byId.get('0,0') ?? '', /cave-wall/);
+  assert.match(byId.get('2,2') ?? '', /cave-wall/);
+  assert.match(byId.get('1,0') ?? '', /cave-mouth-h/);
+  assert.match(byId.get('0,1') ?? '', /cave-mouth-v/);
+  assert.match(byId.get('1,1') ?? '', /cave-floor-2/);
 });

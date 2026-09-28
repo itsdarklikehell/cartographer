@@ -29,7 +29,8 @@ neighbors on the map.
 
 ## 3. Register the tile
 
-Open `src/map/TilePalette.js` and add the tile to the table for its family:
+Open `src/map/TileCatalog.js` and add the tile to the table for its family.
+The interior and furnishing tables are in `src/map/TileKinds.js`.
 
 | Family | Table | What to add |
 | --- | --- | --- |
@@ -39,11 +40,13 @@ Open `src/map/TilePalette.js` and add the tile to the table for its family:
 | Coast | `COAST_KINDS` | The kind name |
 | POI marker | `MARKER_TYPES` | The marker name |
 | Interior | `INTERIOR_KINDS` | The kind name and its rule meaning |
+| Furnishing | `FURNISHING_KINDS` | The kind name and its rule meaning |
 
-An interior piece needs a rule meaning: `wall`, `door`, `stairs-up`,
-`stairs-down`, or `floor`. Every other piece takes the meaning `plain`. The
-rest of the app reads this meaning through `kindOf(imageRef)`, so a piece
-without one is scenery that the party can walk across.
+An interior piece or a furnishing needs a rule meaning: `wall`, `obstacle`,
+`door`, `stairs-up`, `stairs-down`, `floor`, or `plain`. Every other piece
+takes the meaning `plain`. The rest of the app reads this meaning through
+`tileKind(tile)`, so a piece without one is scenery that the party can walk
+across.
 
 ## 4. Update the palette test
 

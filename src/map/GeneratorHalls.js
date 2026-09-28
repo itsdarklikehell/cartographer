@@ -1,9 +1,11 @@
 import { randInt } from './GeneratorRandom.js';
 import { tileIdAt } from './MapGeometry.js';
 import { DOOR_H, DOOR_V, FLOOR, maskTiles, tileStamper, WALL } from './GeneratorInteriorMask.js';
+import { dress, furnishHalls, furnisher } from './GeneratorFurnish.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('./GeneratorFurnish.js').Room} Room */
 
 /**
  * The walled archetypes: castle and building. Both fill the whole grid with
@@ -12,11 +14,6 @@ import { DOOR_H, DOOR_V, FLOOR, maskTiles, tileStamper, WALL } from './Generator
  * partition: a wall cuts a room in two, with one door in it, and each half
  * can split again. Every room then connects to the entrance through the
  * doors of the walls that made it.
- */
-
-/**
- * @typedef {{ x0: number, y0: number, x1: number, y1: number }} Room
- * The floor cells of a room, corners inclusive.
  */
 
 /**
@@ -86,10 +83,25 @@ export function hallLayout(size, rng, style) {
 }
 
 /**
+ * Put the furnishings on a finished hall. The entrance door is the way in
+ * that every open cell stays joined to.
+ * @param {Tile[]} tiles @param {TilePalette} palette @param {number[]} cells
+ * @param {number} size @param {() => number} rng @param {Room[]} rooms
+ * @param {boolean} castle @param {number[]} reserved cell indexes of the stairs
+ */
+function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved) {
+  const doorX = Math.floor(size / 2);
+  const { place, placed } = furnisher(cells, size, [doorX, size - 1], new Set(reserved));
+  furnishHalls(place, rng, rooms, { castle, entrance: [doorX, size - 2] });
+  dress(tiles, palette, size, placed);
+}
+
+/**
  * Generate a castle keep: halls and chambers of at least three cells a
  * side. The stairs up sit in the top-left corner of the first room and the
  * stairs down in the top-right corner of the last room. The south door is
- * the entry that connects the keep to the parent map.
+ * the entry that connects the keep to the parent map. The largest room is
+ * the great hall, with a throne and pillars.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
@@ -101,16 +113,21 @@ export function generateCastle(palette, size, rng) {
   const last = rooms[rooms.length - 1];
   stamp(tileIdAt(first.x0, first.y0), 'stairs-up');
   stamp(tileIdAt(last.x1, last.y0), 'stairs-down');
+  const stairs = [first.y0 * size + first.x0, last.y0 * size + last.x1];
+  furnishHall(tiles, palette, cells, size, rng, rooms, true, stairs);
   return { tiles, entry };
 }
 
 /**
  * Generate the inside of one building, such as a house, a shop, or a
  * temple: a few small rooms of at least two cells a side, and no stairs.
+ * The room behind the entrance has a hearth and a table.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
 export function generateBuilding(palette, size, rng) {
-  const { cells, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth: 3 });
-  return { tiles: maskTiles(palette, cells, size, rng), entry };
+  const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth: 3 });
+  const tiles = maskTiles(palette, cells, size, rng);
+  furnishHall(tiles, palette, cells, size, rng, rooms, false, []);
+  return { tiles, entry };
 }

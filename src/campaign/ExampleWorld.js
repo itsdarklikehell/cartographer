@@ -2,7 +2,7 @@ import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js
 import { generateNodeTiles } from '../map/MapGenerator.js';
 import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
 import { withNodeTiles } from '../map/TileIndex.js';
-import { kindOf } from '../map/TilePalette.js';
+import { tileKind } from '../map/TileKinds.js';
 import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
@@ -155,7 +155,7 @@ function isOpenGround(t) {
  * @returns {boolean}
  */
 function isBareFloor(t) {
-  return kindOf(t.imageRef) === 'floor';
+  return tileKind(t) === 'floor';
 }
 
 /**

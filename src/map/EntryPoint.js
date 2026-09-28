@@ -1,6 +1,6 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { blockFor, nearestSide, sideAxis, stairwayTo } from './MapExits.js';
-import { kindOf } from './TilePalette.js';
+import { isBlocked, tileKind } from './TileKinds.js';
 import { clamp } from '../util/num.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
@@ -87,30 +87,23 @@ function projectBack(p, size, min, max) {
   return Math.round(min + f * (max - min));
 }
 
-/** @param {import('../types/map.js').Tile} tile */
-function isWall(tile) {
-  // Wall segments and corners are the only interior tiles where the party
-  // must not stand. Doors, stairs, and floors are valid landing spots.
-  return kindOf(tile.imageRef) === 'wall';
-}
-
 /**
  * Snap a computed entry tile to a tile that exists and can hold the party.
  * A sparse layout, for example a generated dungeon void or a castle wall
- * ring, can leave the geometric entry pointing at nothing or at a wall.
- * Landing there strands the party outside the walkable area. The
- * function keeps the preferred tile when the tile is real and walkable.
- * Otherwise the function picks the nearest walkable tile and prefers a door
- * on a tie. This makes entering an interior read as walking through it. The
- * function returns the preferred id when the node is empty.
+ * ring, can leave the geometric entry pointing at nothing, at a wall, or at
+ * an obstacle such as a pillar. Landing there strands the party outside the
+ * walkable area. The function keeps the preferred tile when the tile is real
+ * and walkable. Otherwise the function picks the nearest walkable tile and
+ * prefers a door on a tie. This makes entering an interior read as walking
+ * through it. The function returns the preferred id when the node is empty.
  * @param {import('../types/map.js').MapNode} node node being entered
  * @param {string} preferredId tile id ("x,y") the approach geometry chose
  * @returns {string} tile id to land the party on
  */
 export function resolveEntryTile(node, preferredId) {
   const preferred = node.tiles.find((t) => t.id === preferredId);
-  if (preferred && !isWall(preferred)) return preferredId;
-  const candidates = node.tiles.filter((t) => !isWall(t));
+  if (preferred && !isBlocked(preferred)) return preferredId;
+  const candidates = node.tiles.filter((t) => !isBlocked(t));
   const pool = candidates.length ? candidates : node.tiles;
   if (!pool.length) return preferredId;
   const target = parseCoords(preferredId);
@@ -122,7 +115,7 @@ export function resolveEntryTile(node, preferredId) {
     if (!coords) continue;
     const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
     // A door wins at equal distance because it is the intended way in.
-    const score = d - (kindOf(tile.imageRef) === 'door' ? 0.5 : 0);
+    const score = d - (tileKind(tile) === 'door' ? 0.5 : 0);
     if (score < bestScore) {
       best = tile;
       bestScore = score;
@@ -157,9 +150,7 @@ export function computeRegionEntryTile(parent, child, childNodeId, party, throug
   // level has no matching staircase, the function uses the geometric entry
   // below instead.
   const stairway = stairwayTo(parent, childNodeId);
-  const landing = stairway
-    ? child.tiles.find((t) => kindOf(t.imageRef) === stairway.back)
-    : undefined;
+  const landing = stairway ? child.tiles.find((t) => tileKind(t) === stairway.back) : undefined;
   if (landing) return landing.id;
 
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
@@ -262,7 +253,7 @@ function blockAnchor(parent, group) {
  */
 export function resolveReturnTile(parent, preferredId, excludeChildNodeId) {
   const usable = parent.tiles.filter(
-    (t) => t.imageRef && !isWall(t) && t.childNodeId !== excludeChildNodeId,
+    (t) => t.imageRef && !isBlocked(t) && t.childNodeId !== excludeChildNodeId,
   );
   const pool = usable.length ? usable : parent.tiles.filter((t) => t.imageRef);
   if (!pool.length) return preferredId;

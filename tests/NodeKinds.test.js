@@ -14,6 +14,8 @@ test('environOptions returns per-kind suggestions and empty for unknown', () => 
 
 test('allowsPaletteType keeps interiors to interior pieces and regions to the rest', () => {
   assert.equal(allowsPaletteType('interior', 'interior'), true);
+  assert.equal(allowsPaletteType('interior', 'furnishing'), true);
+  assert.equal(allowsPaletteType('region', 'furnishing'), false);
   assert.equal(allowsPaletteType('interior', 'grass'), false);
   assert.equal(allowsPaletteType('region', 'grass'), true);
   assert.equal(allowsPaletteType('region', 'interior'), false);
