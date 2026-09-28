@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ArmNetwork } from '../src/map/Autotile.js';
-import { planWall, wallRing } from '../src/map/GeneratorTownWall.js';
+import { planWall, wallRadii, wallRing } from '../src/map/GeneratorTownWall.js';
 
 /**
  * A 22-cell town with one straight street through the center on each axis.
@@ -71,6 +71,12 @@ test('a wall ring refuses a street at a corner, along the wall, or on a bridge',
   const bridge = crossTown();
   bridge.rivers.join(11, 2, 's');
   assert.equal(wallRing(bridge, 11, 8), null);
+});
+
+test('wallRadii lists the rings a large town tries, clear of the map border', () => {
+  assert.deepEqual(wallRadii(14, 7, 4), []);
+  assert.deepEqual(wallRadii(22, 11, 7), [8, 7], 'a ring of 9 comes too near the border');
+  assert.deepEqual(wallRadii(48, 24, 14), [15, 16, 14]);
 });
 
 test('planWall builds a ring for a large town only, and only when one fits', () => {

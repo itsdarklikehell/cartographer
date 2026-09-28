@@ -4,7 +4,7 @@ import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
 import { fbm, valueNoise } from './GeneratorNoise.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 import { tileIdAt } from './MapGeometry.js';
-import { planWall } from './GeneratorTownWall.js';
+import { planWall, wallRadii } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').POIType} POIType */
@@ -110,12 +110,15 @@ const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
  * stays at least two cells from the center line, so it never runs through
  * the crossroads. It moves one cell sideways at random, but never on two
  * rows in a row, so each bend has a straight channel next to it that a
- * bridge fits.
+ * bridge fits. When `ring` is the radius of a wall ring, the river never
+ * runs along a side of the ring and never bends on it, so it goes straight
+ * through the wall under a water gate.
  * @param {number} size @param {() => number} rng
  * @param {number} center the index of the center row and column
+ * @param {number} [ring] the radius of the ring to keep clear, or 0 for none
  * @returns {ArmNetwork}
  */
-export function townRiver(size, rng, center) {
+export function townRiver(size, rng, center, ring = 0) {
   const rivers = new ArmNetwork();
   const vertical = rng() < 0.5;
   // Work along the river (v) and across it (u), then transpose for a river
@@ -126,14 +129,20 @@ export function townRiver(size, rng, center) {
   const join = (u, v, arm) =>
     vertical ? rivers.join(u, v, arm) : rivers.join(v, u, TRANSPOSE[arm]);
   /** @param {number} u */
-  const clear = (u) => u >= 1 && u <= size - 2 && Math.abs(u - center) >= 2;
-  const offset = 2 + randInt(rng, Math.max(1, Math.floor(size / 2) - 3));
+  const clear = (u) =>
+    u >= 1 && u <= size - 2 && Math.abs(u - center) >= 2 && Math.abs(u - center) !== ring;
+  /** @type {number[]} */
+  const offsets = [];
+  for (let d = 2; d < Math.max(3, Math.floor(size / 2) - 1); d++) if (d !== ring) offsets.push(d);
+  const offset = offsets[randInt(rng, offsets.length)];
   let u = center + (rng() < 0.5 ? -offset : offset);
   add(u, 0, 'n');
   let jogged = true;
   for (let v = 0; v < size; v++) {
     const du = rng() < 0.5 ? -1 : 1;
-    /** @type {boolean} */ const jog = !jogged && v < size - 1 && rng() < 0.25 && clear(u + du);
+    const onRing = ring > 0 && Math.abs(v - center) === ring;
+    /** @type {boolean} */
+    const jog = !jogged && !onRing && v < size - 1 && rng() < 0.25 && clear(u + du);
     if (jog) {
       join(u, v, du < 0 ? 'w' : 'e');
       u += du;
@@ -233,7 +242,8 @@ export function planTown(size, rng) {
   const c = Math.floor(size / 2);
   const core = Math.max(3, Math.round(size * 0.3));
   const cells = new Array(size * size).fill('grass');
-  const rivers = rng() < 0.6 ? townRiver(size, rng, c) : new ArmNetwork();
+  const ring = wallRadii(size, c, core)[0] ?? 0;
+  const rivers = rng() < 0.6 ? townRiver(size, rng, c, ring) : new ArmNetwork();
   const roads = new ArmNetwork();
   const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng);
   const walls = planWall({ size, roads, rivers }, c, core, rng);

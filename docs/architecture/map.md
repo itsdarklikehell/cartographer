@@ -354,7 +354,10 @@ A town has a river with a chance of three in five. `townRiver` runs it from
 one edge to the opposite edge, at least two cells from the center row and
 column. The river moves one cell to the side at random, but never on two
 rows in a row. So each bend has a straight channel beside it, and a bridge
-fits on a straight channel.
+fits on a straight channel. In a town of 22 cells or more, the river also
+keeps clear of the first ring that the wall tries. It never runs along a
+side of that ring and never bends on it, so where it meets the ring it
+goes straight through.
 
 The streets use `routeRoad` with a `turn` cost of 0.6 for each bend, so a
 street on open grass runs straight. The `heading` argument counts the first
@@ -388,8 +391,10 @@ takes the outlying block with the most farmland in the ring of cells
 around it.
 
 A town of 22 cells or more gets a wall with a chance of one in two.
-`planWall` in `src/map/GeneratorTownWall.js` tries a square ring one cell
-past the core, then two cells past, then on the core edge. It plans the
+`planWall` in `src/map/GeneratorTownWall.js` tries the rings from
+`wallRadii`: a square ring one cell past the core, then two cells past,
+then on the core edge. `planTown` passes the first radius to `townRiver`,
+so a river town gets a wall about as often as a dry town. It plans the
 wall after the streets and before the buildings, so no building covers the
 wall. `wallRing` refuses a ring where a street or the river meets a
 corner, runs along the wall, or turns on it, because a gate piece takes

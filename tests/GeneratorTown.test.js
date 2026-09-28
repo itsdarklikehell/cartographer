@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { ARMS } from '../src/map/Autotile.js';
+import { ARMS, ArmNetwork } from '../src/map/Autotile.js';
 import { generateTown, planTown, townRiver } from '../src/map/GeneratorTown.js';
+import { wallRing } from '../src/map/GeneratorTownWall.js';
 import { mulberry32 } from '../src/util/Rng.js';
 import { resolveEntryTile } from '../src/map/EntryPoint.js';
 import { isBlocked } from '../src/map/TileKinds.js';
@@ -34,6 +35,34 @@ test('a town river crosses the map, keeps off the center lines, and bends one ro
     for (const arms of rivers.arms.values()) assert.equal(arms.size, 2, 'no junctions');
   }
   assert.equal(axes.size, 2, 'rivers run both ways');
+});
+
+test('a town river keeps the first wall ring clear, so it goes straight under the wall', () => {
+  const [size, c, ring] = [22, 11, 8];
+  let crossings = 0;
+  for (let seed = 1; seed <= 60; seed++) {
+    const rivers = townRiver(size, mulberry32(seed), c, ring);
+    const walls = wallRing({ size, roads: new ArmNetwork(), rivers }, c, ring);
+    assert.ok(walls, `seed ${seed}: the river fits the ring`);
+    // A river inside the ring crosses it twice, and one outside never does.
+    const gates = [...walls.values()].filter((p) => p.startsWith('water-gate'));
+    assert.ok(gates.length === 0 || gates.length === 2, `seed ${seed}: ${gates.length}`);
+    if (gates.length) crossings++;
+  }
+  assert.ok(crossings > 40, `rivers through the wall: ${crossings}`);
+});
+
+test('river towns get a wall about as often as dry towns', () => {
+  let [river, riverWalled, dry, dryWalled] = [0, 0, 0, 0];
+  for (let seed = 1; seed <= 200; seed++) {
+    const plan = planTown(22, mulberry32(seed));
+    const walled = plan.walls.size > 0 ? 1 : 0;
+    if (plan.rivers.arms.size) [river, riverWalled] = [river + 1, riverWalled + walled];
+    else [dry, dryWalled] = [dry + 1, dryWalled + walled];
+  }
+  const rate = riverWalled / river;
+  assert.ok(rate > 0.4 && rate < 0.6, `river towns walled: ${rate}`);
+  assert.ok(Math.abs(rate - dryWalled / dry) < 0.12, `dry towns walled: ${dryWalled / dry}`);
 });
 
 /**
@@ -205,7 +234,7 @@ test('a town paves its plaza and puts mills by the river and among the fields', 
 });
 
 test('a walled town draws its wall, corner towers, gates, and water gates', () => {
-  const gen = generateTown(palette, 22, mulberry32(9));
+  const gen = generateTown(palette, 22, mulberry32(8));
   const refs = gen.tiles.flatMap((t) => [t.overlayRef ?? []].flat());
   const count = (/** @type {string} */ name) =>
     refs.filter((r) => r.endsWith(`/${name}.svg`)).length;
@@ -228,10 +257,10 @@ test('a walled town draws its wall, corner towers, gates, and water gates', () =
 });
 
 test('the party never lands on a town wall, only beside it or in a gate', () => {
-  const gen = generateTown(palette, 22, mulberry32(9));
+  const gen = generateTown(palette, 22, mulberry32(8));
   const node = /** @type {any} */ ({ id: 'town', width: 22, height: 22, tiles: gen.tiles });
   const walls = gen.tiles.filter((t) => isBlocked(t));
-  assert.ok(walls.length > 40, 'seed 9 has a wall');
+  assert.ok(walls.length > 40, 'seed 8 has a wall');
   for (const wall of walls) {
     const landing = gen.tiles.find((t) => t.id === resolveEntryTile(node, wall.id));
     assert.ok(landing && !isBlocked(landing), `off the wall at ${wall.id}`);

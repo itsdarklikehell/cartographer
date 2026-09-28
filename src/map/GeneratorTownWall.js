@@ -71,11 +71,25 @@ export function wallRing({ roads, rivers }, c, r) {
 }
 
 /**
+ * The ring radii that a town wall tries, in order: one cell past the core,
+ * two cells past, then on the core edge. A ring keeps at least two cells
+ * from the map border, so the streets have room to leave the map. A town
+ * under 22 cells gets no wall and so has no radii.
+ * @param {number} size @param {number} c the center index
+ * @param {number} core the core radius
+ * @returns {number[]}
+ */
+export function wallRadii(size, c, core) {
+  if (size < 22) return [];
+  return [core + 1, core + 2, core].filter((r) => c + r <= size - 3);
+}
+
+/**
  * Plan the wall of a town of 22 cells or more, with a chance of one in two.
- * The ring stands one cell past the core when the streets and the river
- * allow, then two cells past, then on the core edge. It keeps at least two
- * cells from the map border, so the streets have room to leave the map. A
- * town whose streets or river fit no ring gets no wall.
+ * The wall takes the first ring from `wallRadii` that the streets and the
+ * river allow. `townRiver` keeps the first ring clear, so a river alone
+ * never stops a wall. A town whose streets and river fit no ring gets no
+ * wall.
  * @param {{ size: number, roads: ArmNetwork, rivers: ArmNetwork }} plan
  * @param {number} c the center index @param {number} core the core radius
  * @param {() => number} rng
@@ -83,8 +97,7 @@ export function wallRing({ roads, rivers }, c, r) {
  */
 export function planWall(plan, c, core, rng) {
   if (plan.size < 22 || rng() >= 0.5) return new Map();
-  for (const r of [core + 1, core + 2, core]) {
-    if (c + r > plan.size - 3) continue;
+  for (const r of wallRadii(plan.size, c, core)) {
     const walls = wallRing(plan, c, r);
     if (walls) return walls;
   }
