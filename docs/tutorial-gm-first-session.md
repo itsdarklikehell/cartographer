@@ -16,7 +16,7 @@ You need the app open in a browser. The README tells you how to start it.
 
 The map shows Briarwick Vale, one region of a generated continent called
 the Marches. The party stands on the road outside the town of Briarwick.
-This campaign has quests, NPCs, enemies, and a party of two characters
+This campaign has quests, NPCs, enemies, and a party of four characters
 already in it.
 
 ## 2. Look at the world tree

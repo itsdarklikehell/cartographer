@@ -134,7 +134,10 @@ region, the party walks off the edge of its region map onto the world map,
 then enters the next region from there. The campaign ships an
 eleven-quest chain, two staffed towns of NPCs, field enemies in every
 biome, minor bosses and a major boss, lore handouts, a bestiary of reusable
-mob templates, and a two-member party with kit and spell slots.
+mob templates, and a party of four level-4 characters. The party shows a
+feat, an ability score increase, the Expertise of the Rogue, the Arcane
+Trickster and Eldritch Knight subclasses, and a fighter who multiclasses
+into wizard.
 
 ## Build mode
 

@@ -13,6 +13,7 @@ import { isHitDicePool } from '../src/entities/HitDice.js';
 import { coerceCR, crXP } from '../src/data/challenge.js';
 import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
 import { effectiveStatBlock } from '../src/entities/Creature.js';
+import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 const { grid } = campaign;
@@ -170,7 +171,10 @@ test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', (
   assert.ok(campaign.handouts.length >= 4, 'expected lore handouts');
   assert.ok(campaign.handouts.every((h) => !h.revealed));
 
-  assert.ok(campaign.characters.length >= 2);
+  assert.deepEqual(
+    campaign.characters.map((c) => c.id),
+    ['aldric', 'mirelle', 'wren', 'brannoc'],
+  );
   for (const character of campaign.characters) {
     const hp = getHP(character);
     assert.ok(hp && hp.current === hp.max && hp.max > 0, `${character.name} needs an HP pool`);
@@ -252,6 +256,48 @@ test('every quest link names a real place or creature', () => {
         if (link.tileId !== null)
           assert.ok(getTile(node, link.tileId), `${quest.id}: ${link.tileId}`);
       }
+    }
+  }
+});
+
+test('the example party shows a feat, an ability increase, expertise, subclasses, and a multiclass', () => {
+  const [aldric, mirelle, wren, brannoc] = campaign.characters;
+  for (const c of campaign.characters) assert.equal(c.level, 4, c.name);
+  const choice = (/** @type {any} */ c) => Object.values(c.asiChoices ?? {})[0];
+  assert.equal(choice(aldric)?.featId, 'resilient');
+  assert.ok(aldric.proficiencies.saves.includes('WIS'));
+  assert.deepEqual(choice(mirelle)?.increases, { WIS: 2 });
+  assert.equal(choice(wren)?.featId, 'skill-expert');
+  assert.deepEqual(wren.proficiencies.expertise, ['stealth', 'sleight-of-hand', 'perception']);
+  assert.equal(getClasses(wren)[0].subclass, 'Arcane Trickster');
+  assert.deepEqual(
+    getClasses(brannoc).map((c) => [c.classId, c.level, c.subclass ?? null]),
+    [
+      ['fighter', 3, 'Eldritch Knight'],
+      ['wizard', 1, null],
+    ],
+  );
+  for (const c of [mirelle, wren, brannoc]) {
+    assert.ok(
+      c.resources.some((r) => r.id === 'slots-1'),
+      `${c.name} casts`,
+    );
+  }
+  // Every equipped item is in the character's own inventory.
+  for (const c of campaign.characters) {
+    const owned = new Set(c.inventory.map((i) => i.id));
+    for (const id of Object.values(c.equipment))
+      if (id) assert.ok(owned.has(id), `${c.name}: ${id}`);
+  }
+});
+
+test('every example caster knows only spells of a level it has slots for', () => {
+  const levels = new Map(DEFAULT_SPELLS.map((s) => [s.id, s.level]));
+  for (const c of campaign.characters) {
+    const top = Math.max(0, ...c.resources.map((r) => Number(/^slots-(\d)$/.exec(r.id)?.[1] ?? 0)));
+    for (const id of [...(c.spellbook?.cantrips ?? []), ...(c.spellbook?.known ?? [])]) {
+      assert.ok(levels.has(id), `${c.name}: unknown spell ${id}`);
+      assert.ok((levels.get(id) ?? 0) <= top, `${c.name}: ${id} is above slot level ${top}`);
     }
   }
 });
