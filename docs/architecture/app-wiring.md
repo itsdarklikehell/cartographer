@@ -162,7 +162,9 @@ The gesture layers live beside it, in their own files:
   discovery, and NPC meets. It syncs its own views and does not call
   `resyncMapViews`. A click that would pull the party out of another node,
   such as a GM click on an ancestor opened through the breadcrumb, asks
-  first, the way a teleport does. A bound character's move does not move the
+  first, the way a teleport does. A click on a tile that walls cut off
+  (`MapPath.hasOpenPath`) asks the GM too, and a player tab refuses it with
+  a toast. A bound character's move does not move the
   party that the location panels filter on, and a Play-mode zoom into a node
   leaves the tile selection and the palette alone.
 - `mapHover.js` builds the Play-mode hover tooltip.

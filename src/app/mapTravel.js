@@ -14,6 +14,8 @@ import {
   travelerFor,
 } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
+import { hasOpenPath } from '../map/MapPath.js';
+import { describeTile } from '../map/TileCoords.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
 import { meetCreatures } from '../entities/CreatureMap.js';
@@ -270,28 +272,58 @@ export function createMapTravel(app, env) {
    * @param {import('../types/map.js').Tile} tile
    */
   function movesFromElsewhere(tile) {
-    const subject = clickSubject();
-    if (!subject && !isGM(state.role)) return false;
-    const at = subject
-      ? characterPosition(subject, partyTracker.getPosition())
-      : partyTracker.getPosition();
+    const at = moverPosition();
+    if (!at) return false;
     return at.nodeId !== navigator.getCurrentNode().id && at.nodeId !== tile.childNodeId;
   }
 
   /**
-   * Ask before a click moves someone out of the node they stand in, the way
-   * a teleport asks. The node in view or the tile can change while the
-   * dialog is open, so the move reads both again and gives up when the
-   * view has left the node.
+   * Where whoever this tab's clicks move stands, or null for a tab that
+   * moves nobody.
+   * @returns {import('../types/map.js').PartyPosition | null}
+   */
+  function moverPosition() {
+    const subject = clickSubject();
+    if (!subject && !isGM(state.role)) return null;
+    return subject
+      ? characterPosition(subject, partyTracker.getPosition())
+      : partyTracker.getPosition();
+  }
+
+  /**
+   * Whether walls and obstacles cut the tile off from whoever the click
+   * moves, in the node in view (`MapPath.hasOpenPath`). Without this check,
+   * one click takes the party through a town wall or a dungeon wall. A
+   * player's walk goes through revealed tiles only, so a move cannot tell
+   * the player whether a way through the fog exists. A mover in another node
+   * is not walking here, so the check does not apply.
    * @param {import('../types/map.js').Tile} tile
    */
-  async function confirmMoveHere(tile) {
+  function walkBlocked(tile) {
+    const at = moverPosition();
+    const node = navigator.getCurrentNode();
+    if (!at || at.nodeId !== node.id) return false;
+    return !hasOpenPath(node, at.tileId, tile.id, { revealedOnly: !isGM(state.role) });
+  }
+
+  /**
+   * Ask before a click moves someone out of the node they stand in, the way
+   * a teleport asks, or across a wall that no walk passes. The node in view
+   * or the tile can change while the dialog is open, so the move reads both
+   * again and gives up when the view has left the node.
+   * @param {import('../types/map.js').Tile} tile
+   * @param {boolean} [forced] whether walls cut the tile off
+   */
+  async function confirmMoveHere(tile, forced = false) {
     const view = navigator.getCurrentNode();
     const target = (tile.childNodeId && grid.getNode(tile.childNodeId)) || view;
     const who = clickSubject()?.name ?? 'the party';
-    const ok = await confirmModal(`Move ${who} to "${target.name}"?`, {
+    const question = forced
+      ? `Walls or obstacles block every path for ${who} to ${describeTile(tile.id)}. Move ${who} there anyway?`
+      : `Move ${who} to "${target.name}"?`;
+    const ok = await confirmModal(question, {
       title: 'Move',
-      confirmLabel: 'Move',
+      confirmLabel: forced ? 'Move anyway' : 'Move',
     });
     const now = navigator.getCurrentNode();
     const fresh = now.id === view.id ? now.tiles.find((t) => t.id === tile.id) : undefined;
@@ -315,6 +347,12 @@ export function createMapTravel(app, env) {
     if (!isGM(state.role) && !tile.revealed) return;
     if (movesFromElsewhere(tile)) {
       void confirmMoveHere(tile);
+      return;
+    }
+    // The GM can force a move that no walk makes, and a player cannot.
+    if (walkBlocked(tile)) {
+      if (isGM(state.role)) void confirmMoveHere(tile, true);
+      else app.toasts.show('Walls or obstacles block every path to that tile.');
       return;
     }
     travelTo(tile);

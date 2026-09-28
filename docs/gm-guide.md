@@ -205,6 +205,8 @@ Click **Hide panels** to give the map the full width.
 2. To move with the keyboard, focus the map, move the cursor with the
    arrows, and press Enter or Space.
 3. To zoom into a region, click a region-linked tile.
+4. If walls or obstacles block every path to the tile, a dialog asks
+   before the party moves. Click **Move anyway** to put the party there.
 
 ### Split the party
 

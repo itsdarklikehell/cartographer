@@ -679,6 +679,31 @@ between a parent map and a zoomed-in region (through `MapNavigator`) works
 the same way as moving within one node, and each node's revealed state stays
 independent, so exploring the barrow reveals nothing about Darkwood.
 
+### Walls and paths
+
+`PartyTracker.moveTo` does not check the map, so the check for a move sits in
+the click path. `mapTravel.js`'s `onCellClick` calls `walkBlocked`, which asks
+`MapPath.hasOpenPath(node, from, to)` whether a walk leads from the tile of
+whoever the click moves to the clicked tile. `hasOpenPath` is a breadth-first
+search over the four side neighbours of each cell. A step onto a tile that
+`TileKinds.isBlocked` rejects (a wall or an obstacle) stops the walk, and no
+walk ends on such a tile. An empty cell lets the walk through, so on a sparse
+hand-painted map a move across a gap asks nothing. The start tile is not checked, so a party that stands on a
+wall after a repaint can walk off it. Diagonal steps are not allowed, so a
+walk cannot slip between two wall pieces that touch at a corner.
+
+When no walk leads to the tile, a GM tab asks in a confirm dialog and moves
+the party only when the GM accepts, which keeps a way to put the party past
+a wall. A player tab shows a toast and moves nobody. A player's walk passes
+the `revealedOnly` option, so a fogged tile stops it too. Fog gives an empty
+cell no revealed state, so an empty cell also stops a player's walk. Without that
+option, a player could learn from a refused move whether a way through the
+fog exists. The check runs only when the mover stands in the node in view.
+A spectator tab, a GM who views another node, and the exit buttons, the
+teleport, and the Place action skip it. A move that passes the check, or
+that the GM forces, goes through `travelTo`, which reveals fog and takes
+exits for every move.
+
 ### Individual character tokens and the split party
 
 Usually the party moves as one marker. `CharacterTokens.js`

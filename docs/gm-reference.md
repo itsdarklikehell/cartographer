@@ -358,6 +358,23 @@ The sidebar has three tabs of session panels.
 
 Hide panels collapses the sidebar and gives the map the full width.
 
+### Party movement
+
+A click on a tile, or Enter on the keyboard cursor, moves the party there
+when a walk leads to it from the tile of the party. The walk steps to the
+four sides of each tile. A wall or an obstacle stops it, and a gate or a
+door lets it through. So a town wall, the walls of an interior, and
+furniture such as a table block the walk. An empty cell lets the walk
+through, so a gap in a map that you paint does not block a move. When no walk leads
+to the tile, the GM's tab asks before it moves the party there anyway, so
+you can still put the party past a wall. A player tab does not move the
+token, and it shows a message. The walk of a player goes through revealed
+tiles only, so an empty cell stops it.
+
+The check applies to a move inside the map in view. The exit buttons, a
+teleport from the World panel, and the Place action of a character do not
+check for a walk.
+
 ### Map markers and ranges
 
 | Marker | Meaning |
