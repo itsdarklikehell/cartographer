@@ -335,10 +335,15 @@ from every side. Grass around each settlement turns into farmland at random.
 roads can join, with bridges over straight river channels. A lake, a
 mountain range, or a river bend can cut off a pocket of land. The
 settlements and the keep all stand in the area with the most room for
-them, so that a road can join them all. The dungeon has no road, so it can
-stand in any area. When no cell keeps the rules above, as on a small map
-crossed by a lake, the sites can stand one cell from the border, and then
-beside the water. A map with any open ground then gets its settlement.
+them, so that a road can join them all. `planSites` takes only an area
+with a cell on the border when one has room, because a road from an area
+off the border cannot leave the map. A map whose areas all stay off the
+border, such as an island, takes the area with the most room. The dungeon
+has no road, so it can stand in any area. When no cell keeps the rules
+above, as on a small map crossed by a lake, the sites can stand one cell
+from the border, and then beside the water. A map with any open ground
+then gets its settlement. Island small seed 1266 is one map that needs
+the last rule.
 
 `src/map/GeneratorRoads.js` routes roads with an A* search. Each terrain
 type has a step cost in `ROAD_COST`, and a type that is not in the table,

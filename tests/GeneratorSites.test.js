@@ -9,7 +9,11 @@ import {
   siteCounts,
   siteMap,
 } from '../src/map/GeneratorSites.js';
+import { generateNodeTiles } from '../src/map/MapGenerator.js';
+import { TilePalette } from '../src/map/TilePalette.js';
 import { mulberry32 } from '../src/util/Rng.js';
+
+const palette = new TilePalette();
 
 /**
  * A plain grass terrain of the given size with no rivers.
@@ -248,6 +252,48 @@ test('a small map with no room two cells in keeps its settlement one cell from t
   const [wet] = planSites(shore, mulberry32(1));
   assert.ok(wet, 'a settlement beside the water');
   assert.equal(shore.cells[wet.y * 8 + wet.x], 'grass');
+});
+
+test('the generator puts a settlement beside the water when no other cell has room', () => {
+  // Island small seed 1266 has no cell one cell in that keeps off the sea.
+  const gen = generateNodeTiles(palette, { archetype: 'island', size: 'small' }, mulberry32(1266));
+  const { terrain, sites } = planned('island', 8, 1266);
+  assert.deepEqual(
+    gen.sites.map((s) => s.tileIds[0]),
+    sites.map((s) => s.tileId),
+  );
+  const [port] = sites;
+  assert.equal(port.marker, 'port');
+  assert.equal(Math.min(port.x, port.y, 7 - port.x, 7 - port.y), 1);
+  const beside = [-1, 0, 1].flatMap((dy) => [-1, 0, 1].map((dx) => [port.x + dx, port.y + dy]));
+  assert.ok(beside.some(([x, y]) => terrain.cells[y * 8 + x] === 'water'));
+});
+
+test('the sites stand in an area with a border cell, so a road leaves the map', () => {
+  // A ring of water three cells in cuts a large middle off from the border.
+  const size = 16;
+  const ringed = meadow(size);
+  for (let i = 0; i < size * size; i++) {
+    const [x, y] = [i % size, Math.floor(i / size)];
+    if (Math.min(x, y, size - 1 - x, size - 1 - y) === 3) ringed.cells[i] = 'water';
+  }
+  const [town] = planSites(ringed, mulberry32(1));
+  assert.equal(Math.min(town.x, town.y, size - 1 - town.x, size - 1 - town.y), 1);
+  assert.equal(connectSites(ringed, [town]).exits.length, 1);
+  // Highlands small seed 240 planned its settlement in an area off the border.
+  const { sites, roads, exits } = planned('highlands', 8, 240);
+  assert.equal(exits.length, 1);
+  const [x, y] = exits[0].split(',').map(Number);
+  const reach = roadReach(roads, x, y);
+  for (const site of sites.filter((s) => s.archetype === 'town')) {
+    assert.ok(reach.has(site.tileId), `${site.tileId} reached`);
+  }
+  const gen = generateNodeTiles(
+    palette,
+    { archetype: 'highlands', size: 'small' },
+    mulberry32(240),
+  );
+  assert.equal(gen.entry, exits[0]);
 });
 
 test('a city beside the sea stays a city and opens into a coast town', () => {

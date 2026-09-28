@@ -69,10 +69,15 @@ export function siteCounts(size) {
  * so its marker never hides an overlay and a road can reach it from every
  * side. The settlements and the keep stand in the one road area (see
  * `roadAreas`) with the most room for them, so a road can join them all.
- * The dungeon has no road and can stand in any area. A map with no room
+ * That area has a cell on the border when any area with room does, so a
+ * road can leave the map from the sites. A map whose areas all stay off
+ * the border, such as an island, takes the area with the most room. The
+ * dungeon has no road and can stand in any area. A map with no room
  * that keeps these rules, such as a small map crossed by a lake, lets its
  * sites stand one cell from the border, and then beside the water, so it
- * still gets its settlement.
+ * still gets its settlement. The first rule that finds room in an area on
+ * the border wins over a stricter rule that finds room only in an area off
+ * the border.
  * @param {WildTerrain} terrain
  * @param {() => number} rng
  * @returns {Site[]}
@@ -114,22 +119,36 @@ export function planSites(terrain, rng) {
     }
     return out;
   };
+  /** @type {Set<number>} the road areas with a cell on the border */
+  const edge = new Set();
+  for (let i = 0; i < size; i++) {
+    for (const j of [i, (size - 1) * size + i, i * size, i * size + size - 1]) edge.add(areas[j]);
+  }
   /** @type {{ x: number, y: number }[]} */
   let open = [];
   /** @type {{ x: number, y: number }[]} */
   let linked = [];
-  for (const [margin, shore] of SITE_RULES) {
-    open = cellsFor(margin, shore);
-    /** @type {Map<number, number>} */
-    const room = new Map();
-    for (const { x, y } of open) {
-      const a = areas[y * size + x];
-      room.set(a, (room.get(a) ?? 0) + 1);
+  /**
+   * Find the rule and the area for the linked sites. With `border` set,
+   * only an area with a border cell counts.
+   * @param {boolean} border
+   */
+  const choose = (border) => {
+    for (const [margin, shore] of SITE_RULES) {
+      open = cellsFor(margin, shore);
+      /** @type {Map<number, number>} */
+      const room = new Map();
+      for (const { x, y } of open) {
+        const a = areas[y * size + x];
+        if (!border || edge.has(a)) room.set(a, (room.get(a) ?? 0) + 1);
+      }
+      const main = [...room].reduce((best, next) => (next[1] > best[1] ? next : best), [-1, 0])[0];
+      linked = open.filter(({ x, y }) => areas[y * size + x] === main);
+      if (linked.length) return true;
     }
-    const main = [...room].reduce((best, next) => (next[1] > best[1] ? next : best), [-1, 0])[0];
-    linked = open.filter(({ x, y }) => areas[y * size + x] === main);
-    if (linked.length) break;
-  }
+    return false;
+  };
+  if (!choose(true)) choose(false);
   const counts = siteCounts(size);
   /** @type {Site[]} */
   const sites = [];
