@@ -38,15 +38,27 @@ function straightThrough(network, x, y, across) {
 }
 
 /**
+ * @typedef {{
+ *   size: number,
+ *   roads: ArmNetwork,
+ *   rivers: ArmNetwork,
+ *   sea?: (x: number, y: number) => boolean,
+ * }} WallGround
+ * `sea` marks the cells of a port that the sea or its shoreline covers. A
+ * wall piece there would draw over the shoreline overlay.
+ */
+
+/**
  * Plan a wall ring of radius `r` around the center, or return null when a
  * street or the river meets the ring at a corner, runs along it, or turns
  * on it, or when a street crosses the ring on a bridge. A gate or a water
  * gate takes only a street or a river that goes straight through the wall.
- * @param {{ size: number, roads: ArmNetwork, rivers: ArmNetwork }} plan
+ * A ring that meets the sea or its shore also returns null.
+ * @param {WallGround} plan
  * @param {number} c the center index @param {number} r the ring radius
  * @returns {Map<string, string> | null} wall piece per tile id
  */
-export function wallRing({ roads, rivers }, c, r) {
+export function wallRing({ roads, rivers, sea = () => false }, c, r) {
   /** @type {Map<string, string>} */
   const walls = new Map();
   for (let y = c - r; y <= c + r; y++) {
@@ -54,6 +66,7 @@ export function wallRing({ roads, rivers }, c, r) {
       const dx = x - c;
       const dy = y - c;
       if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+      if (sea(x, y)) return null;
       const street = roads.has(x, y);
       const river = rivers.has(x, y);
       if (street || river) {
@@ -88,9 +101,9 @@ export function wallRadii(size, c, core) {
  * Plan the wall of a town of 22 cells or more, with a chance of one in two.
  * The wall takes the first ring from `wallRadii` that the streets and the
  * river allow. `townRiver` keeps the first ring clear, so a river alone
- * never stops a wall. A town whose streets and river fit no ring gets no
- * wall.
- * @param {{ size: number, roads: ArmNetwork, rivers: ArmNetwork }} plan
+ * never stops a wall. A town whose streets, river, and sea fit no ring gets
+ * no wall.
+ * @param {WallGround} plan
  * @param {number} c the center index @param {number} core the core radius
  * @param {() => number} rng
  * @returns {Map<string, string>} wall piece per tile id, empty for no wall

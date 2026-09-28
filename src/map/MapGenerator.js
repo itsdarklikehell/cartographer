@@ -166,7 +166,9 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  * of this level, and a level below the first is entered by its stairs up.
  * The stack ends at level `MAX_LEVELS`, whatever `levels` asks for.
  * A building takes its furnishings from `environ`, for example `inn` or
- * `temple`. A building with a trapdoor has a forced site for its cellar, which is a
+ * `temple`. A town with the `coast` environ is a port, with sea along one
+ * border other than the south, and a town with any other environ is
+ * inland. A building with a trapdoor has a forced site for its cellar, which is a
  * small dungeon level entered by its stairs up. The `cellar` archetype
  * generates that level. A castle has forced sites for its upper floor,
  * which the `upper-floor` archetype generates and the party enters by its
@@ -253,7 +255,7 @@ export function generateNodeTiles(palette, options, rng) {
   }
   if (archetype === 'upper-floor') return done(generateUpperFloor(palette, n, rng));
   let open;
-  if (archetype === 'town') open = generateTown(palette, n, rng);
+  if (archetype === 'town') open = generateTown(palette, n, rng, environ);
   else if (archetype === 'world') open = generateWorld(palette, n, rng);
   else open = generateWilds(palette, n, rng, archetype);
   return done(open, open.sites);

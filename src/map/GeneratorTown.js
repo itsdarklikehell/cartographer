@@ -1,9 +1,9 @@
-import { ArmNetwork, ARMS, OPPOSITE } from './Autotile.js';
+import { ArmNetwork, ARMS, OPPOSITE, smoothCoastline } from './Autotile.js';
 import { terrainTiles } from './GeneratorGround.js';
 import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
 import { placeBuildings } from './GeneratorTownBuildings.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
-import { tileIdAt } from './MapGeometry.js';
+import { maskAt, tileIdAt } from './MapGeometry.js';
 import { planWall, wallRadii } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -66,11 +66,13 @@ const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
  *   entry: string,
  *   buildings: TownBuilding[],
  *   walls: Map<string, string>,
+ *   sea: Arm | null,
  * }} TownPlan
  * `cells` is the terrain type per cell, indexed `y * size + x`. `entry` is
  * the border cell of the first street out of town. `walls` maps each tile id
  * of the town wall to its piece, for example `wall-h` or `gate-v`, and is
- * empty for a town with no wall.
+ * empty for a town with no wall. `sea` is the border side of the sea of a
+ * port, or null for an inland town.
  */
 
 /**
@@ -80,15 +82,18 @@ const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
  * rows in a row, so each bend has a straight channel next to it that a
  * bridge fits. When `ring` is the radius of a wall ring, the river never
  * runs along a side of the ring and never bends on it, so it goes straight
- * through the wall under a water gate.
+ * through the wall under a water gate. A port passes `axis`, so that its
+ * river runs across the town into the sea.
  * @param {number} size @param {() => number} rng
  * @param {number} center the index of the center row and column
  * @param {number} [ring] the radius of the ring to keep clear, or 0 for none
+ * @param {'v' | 'h'} [axis] north to south (`v`) or west to east (`h`),
+ *   or a random choice when omitted
  * @returns {ArmNetwork}
  */
-export function townRiver(size, rng, center, ring = 0) {
+export function townRiver(size, rng, center, ring = 0, axis) {
   const rivers = new ArmNetwork();
-  const vertical = rng() < 0.5;
+  const vertical = axis ? axis === 'v' : rng() < 0.5;
   // Work along the river (v) and across it (u), then transpose for a river
   // that runs west to east.
   /** @param {number} u @param {number} v @param {Arm} arm */
@@ -123,6 +128,40 @@ export function townRiver(size, rng, center, ring = 0) {
 }
 
 /**
+ * The sides that the sea of a port can take. The south side keeps the
+ * entry street, so the party always enters a port on land.
+ * @type {Arm[]}
+ */
+export const SEA_SIDES = ['n', 'e', 'w'];
+
+/**
+ * The ground of a port: water along one border from SEA_SIDES, and grass
+ * everywhere else. The sea reaches between `low` and `high` cells into the
+ * map, about a tenth of the map side. Its depth moves by one cell at a time
+ * along the border, so the shore bends. `smoothCoastline` then fills each
+ * notch that the coast pieces cannot draw. The sea keeps well clear of the
+ * crossroads and of the middle of each other border, where the streets
+ * leave.
+ * @param {number} size @param {() => number} rng
+ * @returns {{ side: Arm, cells: string[] }} `cells` is indexed `y * size + x`
+ */
+export function townSea(size, rng) {
+  const side = SEA_SIDES[randInt(rng, SEA_SIDES.length)];
+  const low = Math.max(1, Math.round(size * 0.08));
+  const high = low + Math.round(size * 0.06);
+  const cells = new Array(size * size).fill('grass');
+  let depth = low + randInt(rng, high - low + 1);
+  for (let u = 0; u < size; u++) {
+    if (rng() < 0.3) depth = Math.min(high, Math.max(low, depth + (rng() < 0.5 ? -1 : 1)));
+    for (let d = 0; d < depth; d++) {
+      const [x, y] = side === 'n' ? [u, d] : side === 'w' ? [d, u] : [size - 1 - d, u];
+      cells[y * size + x] = 'water';
+    }
+  }
+  return { side, cells: smoothCoastline(cells, size, size) };
+}
+
+/**
  * Lay the streets. The first street runs from the south edge to the
  * crossroads. Each later street runs from another edge to the nearest
  * street. A town of 14 cells or more has three ways out, and one of 22 or
@@ -130,18 +169,21 @@ export function townRiver(size, rng, center, ring = 0) {
  * open ground in the core to the nearest street, so the core fills with
  * blocks. A street always finds a
  * way, because the river never bends on two rows in a row and so always
- * has a straight channel to bridge.
+ * has a straight channel to bridge. No street leaves on the side of the
+ * sea, so a port of 22 cells or more has three ways out, not four.
  * @param {RoadGround} ground @param {number} c the center index
  * @param {number} core the core radius @param {() => number} rng
+ * @param {Arm | null} sea the side of the sea, or null for an inland town
  * @returns {string} the entry: the border cell of the first street
  */
-function layStreets(ground, c, core, rng) {
+function layStreets(ground, c, core, rng, sea) {
   const { size, rivers, roads } = ground;
   const toCenter = distanceTo([[c, c]]);
   /** @param {number} x @param {number} y */
   const onRoad = (x, y) => roads.has(x, y);
   const count = size >= 22 ? 4 : size >= 14 ? 3 : 2;
-  const sides = /** @type {Arm[]} */ (['s', ...shuffle(['n', 'e', 'w'], rng)]).slice(0, count);
+  const others = /** @type {Arm[]} */ (['n', 'e', 'w']).filter((side) => side !== sea);
+  const sides = /** @type {Arm[]} */ (['s', ...shuffle(others, rng)]).slice(0, count);
   const spread = Math.max(1, Math.floor(size / 6));
   /** @type {string[]} */
   const exits = [];
@@ -196,27 +238,52 @@ function layStreets(ground, c, core, rng) {
  * or within two on a map of 32 cells or more. `placeBuildings` in
  * GeneratorTownBuildings.js then puts each building on a 2x2 block of open
  * ground and plants the fields.
+ *
+ * The `coast` environ makes the town a port, with the sea from `townSea`.
+ * The river of a port runs across the town into the sea, and the river
+ * cells under the sea drop out of the network, so the channel drains into
+ * the water. Streets keep off the sea, and walls and buildings also keep
+ * off its shore. A port under 14 cells has no river, because the sea and a
+ * river leave too little ground for its three buildings. A town with any
+ * other environ has no sea.
  * @param {number} size @param {() => number} rng
+ * @param {string} [environ] the environ of the town node
  * @returns {TownPlan}
  */
-export function planTown(size, rng) {
+export function planTown(size, rng, environ) {
   const c = Math.floor(size / 2);
   const core = Math.max(3, Math.round(size * 0.3));
-  const cells = new Array(size * size).fill('grass');
+  const port = environ === 'coast' ? townSea(size, rng) : null;
+  const cells = port?.cells ?? new Array(size * size).fill('grass');
+  const sea = port?.side ?? null;
   const ring = wallRadii(size, c, core)[0] ?? 0;
-  const rivers = rng() < 0.6 ? townRiver(size, rng, c, ring) : new ArmNetwork();
+  const axis = sea === 'n' ? 'v' : sea ? 'h' : undefined;
+  const river = rng() < 0.6 && !(port && size < 14);
+  const rivers = river ? townRiver(size, rng, c, ring, axis) : new ArmNetwork();
+  const water = maskAt(cells, size, size, 'water');
+  for (const id of [...rivers.arms.keys()]) {
+    const [x, y] = id.split(',').map(Number);
+    if (water(x, y)) rivers.drop(x, y);
+  }
+  /** @param {number} x @param {number} y a cell under the sea or beside it */
+  const shore = (x, y) => {
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) if (water(x + dx, y + dy)) return true;
+    }
+    return false;
+  };
   const roads = new ArmNetwork();
-  const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng);
-  const walls = planWall({ size, roads, rivers }, c, core, rng);
+  const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng, sea);
+  const walls = planWall({ size, roads, rivers, sea: shore }, c, core, rng);
   const square = size >= 32 ? 2 : 1;
   /** @param {number} x @param {number} y */
   const paved = (x, y) => Math.max(Math.abs(x - c), Math.abs(y - c)) <= square && !rivers.has(x, y);
   for (let y = c - square; y <= c + square; y++) {
     for (let x = c - square; x <= c + square; x++) if (paved(x, y)) cells[y * size + x] = 'plaza';
   }
-  const lot = { size, c, core, cells, roads, rivers, walls, paved };
+  const lot = { size, c, core, cells, roads, rivers, walls, paved, sea: shore };
   const buildings = placeBuildings(lot, rng);
-  return { size, cells, rivers, roads, entry, buildings, walls };
+  return { size, cells, rivers, roads, entry, buildings, walls, sea };
 }
 
 /**
@@ -227,12 +294,14 @@ export function planTown(size, rng) {
  * marker draws with span 2 over its block, and the covered cells keep their
  * grass under the scaled art. Each building with an inside is a site whose
  * four cells all link to its interior, so the party can enter from any cell
- * under the art.
+ * under the art. The sea of a port draws as water tiles, and its shore
+ * takes the coast overlays.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @param {string} [environ] the environ of the town node; `coast` makes a port
  * @returns {{ tiles: Tile[], entry: string, sites: GeneratedSite[] }}
  */
-export function generateTown(palette, size, rng) {
-  const plan = planTown(size, rng);
+export function generateTown(palette, size, rng, environ) {
+  const plan = planTown(size, rng, environ);
   const bare = new Set(plan.buildings.map((b) => b.id));
   for (let i = 0; i < plan.cells.length; i++) {
     if (plan.cells[i] === 'plaza') bare.add(tileIdAt(i % size, Math.floor(i / size)));

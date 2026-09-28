@@ -57,9 +57,11 @@ export const HOME = 'home';
  *   rivers: ArmNetwork,
  *   walls: Map<string, string>,
  *   paved: (x: number, y: number) => boolean,
+ *   sea?: (x: number, y: number) => boolean,
  * }} TownLot
  * The town that placement builds on. `c` is the center index, `core` the
- * core radius, and `paved` says whether a cell is plaza. Placement writes
+ * core radius, and `paved` says whether a cell is plaza. `sea` marks the
+ * cells of a port that the sea or its shoreline covers. Placement writes
  * into `cells`: grass under each building and farmland in the fields.
  */
 
@@ -85,13 +87,14 @@ export const HOME = 'home';
 
 /**
  * The free blocks of a lot and a `place` function that puts buildings on
- * them. A cell is open when no street, river, wall, plaza, or building
- * covers it, and a block is free when its four cells are open.
+ * them. A cell is open when no street, river, wall, plaza, building, sea,
+ * or shore covers it, and a block is free when its four cells are open. A
+ * building on the shore would hide the shoreline under its art.
  * @param {TownLot} lot
  * @returns {TownPlacer}
  */
 export function townPlacer(lot) {
-  const { size, c, core, cells, roads, rivers, walls, paved } = lot;
+  const { size, c, core, cells, roads, rivers, walls, paved, sea = () => false } = lot;
   /** @type {Set<number>} cells that a building covers */
   const taken = new Set();
   /** @param {number} x @param {number} y */
@@ -100,7 +103,8 @@ export function townPlacer(lot) {
     !rivers.has(x, y) &&
     !walls.has(tileIdAt(x, y)) &&
     !taken.has(y * size + x) &&
-    !paved(x, y);
+    !paved(x, y) &&
+    !sea(x, y);
   /** @param {number} x @param {number} y */
   const openBlock = (x, y) => open(x, y) && open(x + 1, y) && open(x, y + 1) && open(x + 1, y + 1);
   /** @type {TownBlock[]} */ const street = [];

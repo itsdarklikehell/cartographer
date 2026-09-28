@@ -73,6 +73,12 @@ test('a wall ring refuses a street at a corner, along the wall, or on a bridge',
   assert.equal(wallRing(bridge, 11, 8), null);
 });
 
+test('a wall ring refuses the sea and its shore', () => {
+  const port = { ...crossTown(), sea: (/** @type {number} */ x) => x <= 3 };
+  assert.equal(wallRing(port, 11, 8), null, 'the west side of the ring is on the shore');
+  assert.equal(wallRing(port, 11, 7)?.size, 56, 'a smaller ring keeps clear of it');
+});
+
 test('wallRadii lists the rings a large town tries, clear of the map border', () => {
   assert.deepEqual(wallRadii(14, 7, 4), []);
   assert.deepEqual(wallRadii(22, 11, 7), [8, 7], 'a ring of 9 comes too near the border');

@@ -241,6 +241,13 @@ street. The river goes under the wall through a water gate. Like an
 interior wall, the town wall is never where the party lands when it enters
 the town, and a new link never goes on it. A gate is open ground.
 
+The town map of a port has the sea along its north, east, or west edge,
+with a sandy shore. The party still enters by the street from the south
+edge. No street leaves into the sea, so a large port has three ways out. A
+river in a port flows into the sea. A small port has no river, and most
+ports get no wall, because the sea takes the ground that the wall needs.
+A port has no docks or piers.
+
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave
 has winding caverns of uneven width, with rough rock walls, pools, and a

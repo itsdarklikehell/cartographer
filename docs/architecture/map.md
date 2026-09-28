@@ -321,7 +321,8 @@ five settlements, a keep, and a dungeon on a vast map.
 
 A settlement prefers grass near a river or a lake. A settlement with at
 least four water cells within two cells of it is on the coast, and its town
-map gets the `coast` environ. The first settlement takes the best spot, and
+map gets the `coast` environ, which makes the town a port (see
+[Town layout](#town-layout)). The first settlement takes the best spot, and
 on a map of 32 cells or more it draws as a city, on the coast or not. Any
 other settlement on the coast draws as a port, and each later settlement
 inland draws as a village with a chance of one in two. The keep prefers the
@@ -380,13 +381,28 @@ keeps clear of the first ring that the wall tries. It never runs along a
 side of that ring and never bends on it, so where it meets the ring it
 goes straight through.
 
+A town with the `coast` environ is a port. `townSea` puts water along the
+north, east, or west border, and never the south border, because the entry
+street starts there. The sea reaches about a tenth of the map side into the
+map, and its depth changes by one cell at a time along the border, so the
+shore bends. `smoothCoastline` then fills each notch that the coast pieces
+cannot draw, and `terrainTiles` draws the shore with `coastOverlays`, as on
+the outdoor maps. The river of a port always runs at a right angle to the
+shore, so it flows into the sea. Its cells under the water drop out of the
+network, and the last channel drains into the sea. A port of 8 cells has no
+river, because the sea and a river together leave too little ground for
+its three buildings. Streets keep off the sea. Walls and buildings also
+keep off the shore cells, because their art would hide the shoreline. The
+catalog has no dock or pier tile, so a port has none.
+
 The streets use `routeRoad` with a `turn` cost of 0.6 for each bend, so a
 street on open grass runs straight. The `heading` argument counts the first
 step too, so a street that starts on the map edge goes straight into the
 map. The first street runs from the south edge to the crossroads, and its
 border cell is the entry. Each later street runs from another edge to the
 nearest street. A town of 14 cells or more has three ways out, and one of
-22 cells or more has four. In a town of 14 cells or more, about one lane
+22 cells or more has four. No street leaves on the side of the sea, so a
+port of 22 cells or more has three ways out. In a town of 14 cells or more, about one lane
 for each five cells of map side then runs from open ground in the core to
 the nearest street. A town of 8 cells gets no lane, because a lane there
 can take the ground that the three core buildings need.
@@ -430,8 +446,11 @@ wall after the streets and before the buildings, so no building covers the
 wall. `wallRing` refuses a ring where a street or the river meets a
 corner, runs along the wall, or turns on it, because a gate piece takes
 only a straight street and a water gate piece takes only a straight river.
-It also refuses a ring where a street crosses the wall on a bridge. A town
-whose streets or river fit no ring gets no wall. `generateTown` draws each wall
+It also refuses a ring where a street crosses the wall on a bridge, and a
+ring that meets the sea or its shore, because the wall piece would draw
+over the shoreline. A town whose streets, river, or sea fit no ring gets no
+wall. The sea of a port takes the ground of the outer rings, so most ports
+under 48 cells get no wall. `generateTown` draws each wall
 piece as the overlay of its cell, and a gate piece replaces the street
 overlay under it, because the gate art draws its own street. A water gate
 replaces the river overlay in the same way.
