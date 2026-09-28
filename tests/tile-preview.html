@@ -46,6 +46,12 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>Interior room (walls, doors, stairs)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="interior-room"></div>
 
+<h2>Interior furnishings (overlays on a floor tile, zoomed)</h2>
+<div class="grid zoom" style="grid-template-columns: repeat(6, 128px); gap: 4px;" id="furnishings"></div>
+
+<h2>Furnished hall (a throne between pillars, a feast table, a shrine, and a bedchamber)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-hall"></div>
+
 <h2>Cave level (rock walls, floor variants, a mouth on the north and west borders)</h2>
 <div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-cave"></div>
 
@@ -178,6 +184,24 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'door-v', 'floor-3', 'stairs-up', 'wall-v',
     'wall-corner-ne', 'wall-h', 'wall-h', 'wall-corner-nw',
   ].map((k) => img(`interior/interior-${k}`)).join('');
+
+  // Furnishings are overlays, so each one stacks over a floor tile.
+  const FURNISHINGS = ['altar', 'chest', 'pillar', 'throne', 'bed', 'table'];
+  document.getElementById('furnishings').innerHTML = FURNISHINGS
+    .map((f, i) => `<div class="cell" style="width: 128px; height: 128px;">${img(`interior/interior-floor-${(i % 3) + 1}`)}${img(`interior/interior-${f}`)}</div>`)
+    .join('');
+
+  // A walled hall with furnishings over the floor. A cell names a wall piece,
+  // or a floor variant and an optional furnishing.
+  const I = (k) => `interior/interior-${k}`;
+  document.getElementById('interior-hall').innerHTML = [
+    ['wall-corner-se'], ['wall-h'], ['wall-h'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-corner-sw'],
+    ['wall-v'], ['floor-1', 'pillar'], ['floor-2'], ['floor-3', 'throne'], ['floor-1'], ['floor-2', 'pillar'], ['wall-v'],
+    ['wall-v'], ['floor-3', 'pillar'], ['floor-1'], ['floor-2'], ['floor-3'], ['floor-1', 'pillar'], ['wall-v'],
+    ['door-v'], ['floor-2'], ['floor-3', 'table'], ['floor-1', 'table'], ['floor-2'], ['floor-3', 'altar'], ['wall-v'],
+    ['wall-v'], ['floor-1', 'bed'], ['floor-2', 'chest'], ['floor-3'], ['floor-1'], ['floor-2'], ['wall-v'],
+    ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-corner-nw'],
+  ].map((ks) => cell(...ks.map(I))).join('');
 
   // A cave level: rough rock surrounds the floor, and one mouth sits on the
   // north border and one on the west border.
