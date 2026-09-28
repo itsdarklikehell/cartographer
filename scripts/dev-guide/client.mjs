@@ -67,7 +67,7 @@ export const CLIENT = String.raw`
       b.type = 'button';
       b.setAttribute('aria-pressed', 'false');
       b.appendChild(el('span', null, d.name));
-      b.appendChild(el('small', null, count(d.files, 'file') + ' / ' + count(d.lines, 'line')));
+      b.appendChild(el('small', null, count(d.files, 'file') + ' / ' + d.lines.toLocaleString() + ' LOC / ' + d.code.toLocaleString() + ' SLOC'));
       b.addEventListener('click', function () { selectDir(selected === d.id ? null : d.id); });
       chipById[d.id] = b;
       chips.appendChild(b);

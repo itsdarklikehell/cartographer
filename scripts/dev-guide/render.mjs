@@ -134,8 +134,12 @@ export const SECTIONS = [
 export function renderGuide(data) {
   const { pkg, dirs, steps, snippets, measured, densest, tests, generatedAt } = data;
   const totals = dirs.reduce(
-    (acc, d) => ({ files: acc.files + d.files, lines: acc.lines + d.lines }),
-    { files: 0, lines: 0 },
+    (acc, d) => ({
+      files: acc.files + d.files,
+      lines: acc.lines + d.lines,
+      code: acc.code + d.code,
+    }),
+    { files: 0, lines: 0, code: 0 },
   );
   const finalStage = measured.stages[measured.stages.length - 1];
   const shrink = Math.round((1 - finalStage.size / measured.stages[0].size) * 100);
@@ -181,10 +185,12 @@ export function renderGuide(data) {
         no build step for development. The conventions below keep a codebase of this size
         readable without a framework to enforce them. The counts, the mount order, and the code
         samples are read from the source tree at build time, so they match the commit you have
-        checked out, and most of the panels respond to a click.
+        checked out, and most of the panels respond to a click. LOC counts every line under
+        <code>src/</code>. SLOC counts only the lines that are not blank and not comment.
       </p>
       <div class="facts">
-        <div><span class="fact-n">${num(totals.lines)}</span><span class="fact-l">lines of source</span></div>
+        <div><span class="fact-n">${num(totals.lines)}</span><span class="fact-l">lines of source (LOC)</span></div>
+        <div><span class="fact-n">${num(totals.code)}</span><span class="fact-l">lines of code (SLOC)</span></div>
         <div><span class="fact-n">${num(totals.files)}</span><span class="fact-l">source files</span></div>
         <div><span class="fact-n">${num(tests.suites)}</span><span class="fact-l">test suites</span></div>
         <div><span class="fact-n">${num(pkg.runtimeDependencies)}</span><span class="fact-l">runtime dependencies</span></div>

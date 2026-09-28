@@ -34,28 +34,58 @@ export function lineCount(file) {
 }
 
 /**
+ * The source lines of code (SLOC) in `text`: lines that are not blank and not
+ * only comment. A `//` line and each line of a block comment count as
+ * comment. A line with code before or after a comment counts as code. A
+ * comment marker inside a string literal at the start of a line is read as a
+ * real marker, so such a line is miscounted.
+ * @param {string} text
+ */
+export function codeLineCount(text) {
+  let inBlock = false;
+  let code = 0;
+  for (const raw of text.split('\n')) {
+    let line = raw.trim();
+    if (inBlock) {
+      const close = line.indexOf('*/');
+      if (close < 0) continue;
+      inBlock = false;
+      line = line.slice(close + 2).trim();
+    }
+    while (line.startsWith('/*')) {
+      const close = line.indexOf('*/', 2);
+      inBlock = close < 0;
+      line = inBlock ? '' : line.slice(close + 2).trim();
+    }
+    if (line && !line.startsWith('//')) code += 1;
+  }
+  return code;
+}
+
+/**
  * One entry per top-level thing under `src/`: each subdirectory, plus
  * `main.js` on its own. Counts cover every file the directory holds, at any
- * depth.
+ * depth. `lines` counts every line (LOC), and `code` counts only the lines
+ * that `codeLineCount` keeps (SLOC).
  * @param {string} root repository root
  */
 export function scanDirectories(root) {
   const src = join(root, 'src');
-  /** @type {{ id: string, name: string, files: number, lines: number }[]} */
+  /** @type {{ id: string, name: string, files: number, lines: number, code: number }[]} */
   const dirs = [];
+  /** @param {string[]} files */
+  const counts = (files) => ({
+    files: files.length,
+    lines: files.reduce((sum, f) => sum + lineCount(f), 0),
+    code: files.reduce((sum, f) => sum + codeLineCount(readFileSync(f, 'utf8')), 0),
+  });
 
   for (const name of readdirSync(src).sort()) {
     const full = join(src, name);
     if (statSync(full).isDirectory()) {
-      const files = walk(full);
-      dirs.push({
-        id: name,
-        name: name + '/',
-        files: files.length,
-        lines: files.reduce((sum, f) => sum + lineCount(f), 0),
-      });
+      dirs.push({ id: name, name: name + '/', ...counts(walk(full)) });
     } else if (name === 'main.js') {
-      dirs.push({ id: 'main', name: 'main.js', files: 1, lines: lineCount(full) });
+      dirs.push({ id: 'main', name: 'main.js', ...counts([full]) });
     }
   }
 
