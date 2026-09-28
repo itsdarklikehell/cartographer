@@ -240,11 +240,15 @@ test('TilePalette ships with span-2 town buildings and town wall pieces', () => 
   for (const type of ['warehouse', 'stables', 'windmill', 'watermill']) {
     assert.equal(palette.get(type)?.imageRef, `assets/tiles/town/${type}.svg`);
   }
-  assert.equal(palette.listVariants('town-wall').length, 8);
+  assert.equal(palette.listVariants('town-wall').length, 10);
   assert.equal(
     palette.getTownWallPiece('wall-corner-se')?.imageRef,
     'assets/tiles/town/town-wall-corner-se.svg',
   );
   assert.equal(palette.getTownWallPiece('gate-v')?.label, 'Town Wall (gate-v)');
+  assert.equal(
+    palette.getTownWallPiece('water-gate-h')?.imageRef,
+    'assets/tiles/town/town-water-gate-h.svg',
+  );
   assert.equal(palette.getTownWallPiece('gate-x'), undefined);
 });

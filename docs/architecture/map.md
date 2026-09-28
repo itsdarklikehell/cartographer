@@ -385,14 +385,14 @@ A town of 22 cells or more gets a wall with a chance of one in two.
 `planWall` in `src/map/GeneratorTownWall.js` tries a square ring one cell
 past the core, then two cells past, then on the core edge. It plans the
 wall after the streets and before the buildings, so no building covers the
-wall. `wallRing` refuses a ring where a street meets a corner, runs along
-the wall, turns on it, or crosses it on a bridge, because a gate piece
-takes only a straight street. It also refuses a ring with more than four
-river cells on it, where the river runs along the wall. The river goes
-through the wall in a gap, because the palette has no water gate. A town
-whose streets fit no ring gets no wall. `generateTown` draws each wall
+wall. `wallRing` refuses a ring where a street or the river meets a
+corner, runs along the wall, or turns on it, because a gate piece takes
+only a straight street and a water gate piece takes only a straight river.
+It also refuses a ring where a street crosses the wall on a bridge. A town
+whose streets or river fit no ring gets no wall. `generateTown` draws each wall
 piece as the overlay of its cell, and a gate piece replaces the street
-overlay under it, because the gate art draws its own street.
+overlay under it, because the gate art draws its own street. A water gate
+replaces the river overlay in the same way.
 
 ### Interior layouts
 

@@ -231,7 +231,7 @@ windmill among the fields. Some towns have a graveyard. Some towns have a
 river, and the streets cross it on bridges, with a watermill on its bank.
 A small town has two ways out, a medium town three, and a larger town
 four. About one large town in three gets a stone wall with a gate on each
-street. The river goes through a gap in the wall.
+street. The river goes under the wall through a water gate.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave

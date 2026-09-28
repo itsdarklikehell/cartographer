@@ -202,7 +202,7 @@ test('a town paves its plaza and puts mills by the river and among the fields', 
   assert.ok(!hamlet.buildings.some((b) => b.art.endsWith('mill')), 'no mills in a small town');
 });
 
-test('a walled town draws its wall, corner towers, and gates over the streets', () => {
+test('a walled town draws its wall, corner towers, gates, and water gates', () => {
   const gen = generateTown(palette, 22, mulberry32(9));
   const refs = gen.tiles.flatMap((t) => [t.overlayRef ?? []].flat());
   const count = (/** @type {string} */ name) =>
@@ -211,6 +211,10 @@ test('a walled town draws its wall, corner towers, and gates over the streets', 
     assert.equal(count(`town-wall-corner-${corner}`), 1);
   assert.ok(count('town-gate-h') + count('town-gate-v') >= 2, 'the streets pass through gates');
   assert.ok(count('town-wall-h') > 10 && count('town-wall-v') > 10);
+  assert.ok(
+    count('town-water-gate-h') + count('town-water-gate-v') >= 2,
+    'the river passes through water gates',
+  );
   const plaza = gen.tiles.filter((t) => t.imageRef.includes('/plaza/'));
   assert.equal(plaza.length, 9);
   assert.ok(

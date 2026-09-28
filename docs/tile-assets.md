@@ -150,7 +150,9 @@ background, and `palette.getTownWallPiece(kind)` selects one by kind.
 north-south street through an east-west wall, and `gate-v` takes an
 east-west street through a north-south wall. Each gate draws its own copy
 of `road-v` or `road-h`, so it works with or without a road overlay under
-it. Like the interior wall corners, each corner is named for its two open
+it. `water-gate-h` and `water-gate-v` take a river under the wall in the
+same way, and each one draws its own copy of the river so it joins the
+river tiles on both sides. Like the interior wall corners, each corner is named for its two open
 edges, so `wall-corner-se` connects south and east and caps the north-west
 corner of a ring.
 
@@ -201,7 +203,7 @@ the app only when its family table names it.
 | `COAST_KINDS` | The twelve shoreline pieces |
 | `MARKER_TYPES` | The single-image POI markers |
 | `TOWN_BUILDINGS` | The span-2 town buildings |
-| `TOWN_WALL_KINDS` | The eight town wall and gate pieces |
+| `TOWN_WALL_KINDS` | The ten town wall, gate, and water gate pieces |
 | `INTERIOR_KINDS` | Each interior piece with its rule meaning |
 
 `addCustom` registers a tile that a GM loads at runtime. A runtime tile is

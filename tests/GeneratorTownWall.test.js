@@ -32,15 +32,29 @@ test('a wall ring names its corners for their open edges and gates each street',
   assert.equal(walls.get('19,6'), 'wall-v');
 });
 
-test('a wall ring leaves a gap for the river and refuses a river along it', () => {
+test('a wall ring puts a water gate where the river goes straight through', () => {
   const plan = crossTown();
   for (let y = 0; y < plan.size - 1; y++) plan.rivers.join(6, y, 's');
   const walls = /** @type {Map<string, string>} */ (wallRing(plan, 11, 8));
-  assert.equal(walls.size, 62);
-  assert.ok(!walls.has('6,3') && !walls.has('6,19'));
-  // A river down the north half of the west wall puts 7 river cells on it.
-  for (let y = 0; y < 9; y++) plan.rivers.join(3, y, 's');
-  assert.equal(wallRing(plan, 11, 8), null);
+  assert.equal(walls.size, 64);
+  assert.equal(walls.get('6,3'), 'water-gate-h');
+  assert.equal(walls.get('6,19'), 'water-gate-h');
+  const across = crossTown();
+  for (let x = 0; x < across.size - 1; x++) across.rivers.join(x, 14, 'e');
+  assert.equal(wallRing(across, 11, 8)?.get('3,14'), 'water-gate-v');
+});
+
+test('a wall ring refuses a river at a corner, along the wall, or bent on it', () => {
+  const corner = crossTown();
+  corner.rivers.join(3, 3, 'e');
+  assert.equal(wallRing(corner, 11, 8), null);
+  const along = crossTown();
+  for (let y = 0; y < 9; y++) along.rivers.join(3, y, 's');
+  assert.equal(wallRing(along, 11, 8), null);
+  const bent = crossTown();
+  bent.rivers.join(6, 2, 's');
+  bent.rivers.join(6, 3, 'e');
+  assert.equal(wallRing(bent, 11, 8), null);
 });
 
 test('a wall ring refuses a street at a corner, along the wall, or on a bridge', () => {
@@ -55,7 +69,7 @@ test('a wall ring refuses a street at a corner, along the wall, or on a bridge',
   bent.roads.join(5, 3, 'e');
   assert.equal(wallRing(bent, 11, 8), null, 'a street that turns on the wall');
   const bridge = crossTown();
-  bridge.rivers.join(10, 3, 'e');
+  bridge.rivers.join(11, 2, 's');
   assert.equal(wallRing(bridge, 11, 8), null);
 });
 

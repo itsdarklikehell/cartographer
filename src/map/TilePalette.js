@@ -118,9 +118,10 @@ export function isOverlayType(type) {
 
 /**
  * Town wall pieces, overlays in `assets/tiles/town/`. The straight pieces and
- * the gates run east-west (`h`) or north-south (`v`), and a gate draws its
- * own street through the wall. A corner is named for its open edges like the
- * interior walls, so `wall-corner-se` caps the north-west corner of a ring.
+ * the gates run east-west (`h`) or north-south (`v`). A gate draws its own
+ * street through the wall, and a water gate draws its own river under the
+ * wall. A corner is named for its open edges like the interior walls, so
+ * `wall-corner-se` caps the north-west corner of a ring.
  * @type {string[]}
  */
 const TOWN_WALL_KINDS = [
@@ -132,6 +133,8 @@ const TOWN_WALL_KINDS = [
   'wall-corner-sw',
   'gate-h',
   'gate-v',
+  'water-gate-h',
+  'water-gate-v',
 ];
 
 /**

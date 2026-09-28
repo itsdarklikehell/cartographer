@@ -30,9 +30,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>Town streets (span-2 buildings over grass, beside the roads)</h2>
 <div id="town-scene" style="position: relative; width: max-content;"></div>
 
-<h2>Town walls (overlays: a gate where each street crosses the wall)</h2>
+<h2>Town walls (overlays: a gate where each street crosses the wall, a water gate where the river crosses it)</h2>
 <div style="display: flex; gap: 24px; align-items: flex-start;">
-  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-h"></div>
+  <div class="grid" style="grid-template-columns: repeat(7, 64px);" id="wall-h"></div>
   <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="wall-v"></div>
   <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-ring"></div>
 </div>
@@ -140,12 +140,17 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   ].map(([b, x, y]) => `<img src="../assets/tiles/town/${b}.svg" style="position: absolute; left: ${x * 64}px; top: ${y * 64}px; width: 128px; height: 128px;">`).join('');
 
   // Wall and gate pieces stack over the ground, and each gate also stacks over
-  // the road that goes through it. The east-west run crosses grass and desert.
+  // the road that goes through it. A water gate draws its own river, so it
+  // stacks over the ground alone and joins the river pieces on both sides.
+  // The east-west run crosses grass and desert.
   document.getElementById('wall-h').innerHTML = [
     ['grass/grass-1'], ['grass/grass-2'], ['grass/grass-3', 'road/road-v'], ['desert/desert-1'], ['desert/desert-2'],
+    ['desert/desert-3', 'river/river-v'], ['desert/desert-1'],
     ['grass/grass-2', 'town/town-wall-h'], ['grass/grass-3', 'town/town-wall-h'], ['grass/grass-1', 'road/road-v', 'town/town-gate-h'],
     ['desert/desert-3', 'town/town-wall-h'], ['desert/desert-1', 'town/town-wall-h'],
+    ['desert/desert-2', 'town/town-water-gate-h'], ['desert/desert-3', 'town/town-wall-h'],
     ['grass/grass-3'], ['grass/grass-1'], ['grass/grass-2', 'road/road-v'], ['desert/desert-2'], ['desert/desert-3'],
+    ['desert/desert-1', 'river/river-v'], ['desert/desert-2'],
   ].map(([base, ...over]) => cell(base, ...over)).join('');
 
   document.getElementById('wall-v').innerHTML = [
@@ -154,6 +159,8 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['grass/grass-2', 'road/road-h'], ['grass/grass-3', 'road/road-h', 'town/town-gate-v'], ['grass/grass-1', 'road/road-h'],
     ['snow/snow-1'], ['snow/snow-2', 'town/town-wall-v'], ['snow/snow-3'],
     ['snow/snow-2'], ['snow/snow-3', 'town/town-wall-v'], ['snow/snow-1'],
+    ['snow/snow-1', 'river/river-h'], ['snow/snow-2', 'town/town-water-gate-v'], ['snow/snow-3', 'river/river-h'],
+    ['snow/snow-3'], ['snow/snow-1', 'town/town-wall-v'], ['snow/snow-2'],
   ].map(([base, ...over]) => cell(base, ...over)).join('');
 
   // A closed ring: the corner pieces are named for their open edges, so
