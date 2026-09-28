@@ -215,7 +215,11 @@ The decisions they share are pure functions in `src/map/NodeEdits.js`.
 says where the party goes when the node it stands in shrinks,
 `relandedTile` says the same for a node that was regenerated under it, and
 `entranceArtFor` names the marker that a generated map's entrance gets on
-its parent. `coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
+its parent. `TilePaint.ensureChildLink` stamps that marker when no parent
+tile links to the node. When a link exists, `refreshChildMarker` changes a
+marker whose point-of-interest type differs from the new archetype, or one
+that shows the generic marker of another archetype, and it leaves stairs and
+doors alone. `coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
 hand-edited save from writing a kind that the renderer does not know.
 
 `src/map/NodeCleanup.js` decides where every other location goes when a

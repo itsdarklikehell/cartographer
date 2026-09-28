@@ -139,7 +139,8 @@ The left button paints, a right-button drag pans, and the wheel zooms.
 
 If nothing on the parent map links to this node, the app places an entrance
 tile near the center of the parent and tells you where. Repaint or relink
-that tile to move the entrance.
+that tile to move the entrance. If a parent tile already links to the node,
+the app changes its marker to match the new archetype.
 
 To take back a generation, undo once. The undo also removes every sub-map
 that the generation created.

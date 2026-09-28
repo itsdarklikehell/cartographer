@@ -11,7 +11,7 @@ import {
 import { expandTree } from '../map/GeneratorTree.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
-import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
+import { ENTRANCE_ART, entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
 import {
   linkedDescendants,
   regenerateLanding,
@@ -188,7 +188,8 @@ export function wireGenerateAction(app, env) {
     // internally connected. If no parent tile links to this node yet, stamp
     // one (a POI marker matching the archetype) on the parent tile nearest
     // its center, so there is always a way in. Tell the GM where it landed,
-    // so the GM can move it.
+    // so the GM can move it. An existing link keeps its tile, and its marker
+    // changes to match the new archetype.
     const parent = grid.getParent(node);
     if (parent) {
       const artFor = entranceArtFor(values.archetype);
@@ -198,9 +199,12 @@ export function wireGenerateAction(app, env) {
         markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
         createRef: palette.pickVariant('grass', tree.rng).imageRef,
         poiType: artFor ? artFor.poi : null,
+        genericRefs: new Set(
+          Object.values(ENTRANCE_ART).map((art) => palette.get(art.marker)?.imageRef ?? ''),
+        ),
       });
+      if (linked.node !== parent) grid.updateNode(linked.node);
       if (linked.tileId) {
-        grid.updateNode(linked.node);
         alertModal(
           `Linked "${node.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
           { title: 'Entrance placed', label: 'OK' },

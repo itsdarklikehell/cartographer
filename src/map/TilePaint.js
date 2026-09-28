@@ -2,7 +2,7 @@ import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
-import { isBlocked } from './TileKinds.js';
+import { isBlocked, tileKind } from './TileKinds.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
 
@@ -305,6 +305,59 @@ export function stampRegionLink(node, tileId, childNodeId) {
 }
 
 /**
+ * @typedef {{
+ *   markerRef?: string | null,
+ *   createRef: string,
+ *   poiType?: import('../types/map.js').POIType | null,
+ *   genericRefs?: Set<string>,
+ * }} EntranceArt
+ * The art for the entrance of a child on its parent. `markerRef` and
+ * `poiType` mark the entrance, and both are null for a child that takes no
+ * marker, such as a wilderness. `createRef` is the plain art for a new tile
+ * or for a marker that goes away. `genericRefs` lists the marker art that
+ * the generator stamps for any archetype (`NodeEdits.ENTRANCE_ART`), as
+ * opposed to the art of a particular place, such as an inn.
+ */
+
+/** The tile kinds of a link that the party takes as a way in, not a marker. */
+const WAY_KINDS = new Set(['door', 'stairs-up', 'stairs-down']);
+
+/**
+ * Bring the marker of an existing link to a child up to date with `art`,
+ * after the child is regenerated as another archetype. A marker is a linked
+ * tile with a point-of-interest type. A door or a staircase is the way in
+ * itself and never changes. A marker changes when its point-of-interest
+ * type differs from `art.poiType`, or when it shows generic marker art
+ * other than `art.markerRef`, for example a dungeon marker over a child
+ * that is now a cave. The art of a particular place stays when the type
+ * matches, so an inn regenerated as a building keeps its inn. A child with
+ * no marker turns the old marker into `createRef` art with no span and no
+ * type. The function returns `node` itself when no marker changes.
+ * @param {MapNode} node parent node
+ * @param {string} childId
+ * @param {EntranceArt} art
+ * @returns {MapNode}
+ */
+export function refreshChildMarker(node, childId, art) {
+  const poiType = art.poiType ?? null;
+  const markerRef = art.markerRef ?? null;
+  const generic = art.genericRefs ?? new Set();
+  let changed = false;
+  const tiles = node.tiles.map((t) => {
+    const old = t.metadata.poiType;
+    if (t.childNodeId !== childId || !old || WAY_KINDS.has(tileKind(t))) return t;
+    const stale = old !== poiType || (generic.has(t.imageRef) && t.imageRef !== markerRef);
+    if (!stale) return t;
+    changed = true;
+    if (markerRef) return { ...t, imageRef: markerRef, metadata: { ...t.metadata, poiType } };
+    const plain = { ...t, imageRef: art.createRef, metadata: { ...t.metadata, poiType: null } };
+    delete plain.span;
+    return plain;
+  });
+  return changed ? withNodeTiles(node, tiles) : node;
+}
+
+/**
  * Make sure that a node carries a tile linking to a child. This makes sure
  * that a generated child map is always reachable from its parent, instead of
  * floating in the world tree with no way in. The function does nothing if a
@@ -315,14 +368,17 @@ export function stampRegionLink(node, tileId, childNodeId) {
  * parent has no eligible tile, the function creates a new tile at the empty
  * cell nearest the centre, using `createRef` art. It returns the updated
  * node plus which tile now links. The tileId is null if a link already
- * existed, or if the grid is full with no eligible tile.
+ * existed, or if the grid is full with no eligible tile. When a link already
+ * exists, `refreshChildMarker` brings its marker up to date with `art`.
  * @param {MapNode} node parent node to link from
  * @param {string} childId node the link zooms into
- * @param {{ markerRef?: string | null, createRef: string, poiType?: import('../types/map.js').POIType | null }} art
+ * @param {EntranceArt} art
  * @returns {{ node: MapNode, tileId: string | null }}
  */
 export function ensureChildLink(node, childId, art) {
-  if (node.tiles.some((t) => t.childNodeId === childId)) return { node, tileId: null };
+  if (node.tiles.some((t) => t.childNodeId === childId)) {
+    return { node: refreshChildMarker(node, childId, art), tileId: null };
+  }
   const cx = (node.width - 1) / 2;
   const cy = (node.height - 1) / 2;
   /** @param {string} id */

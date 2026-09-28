@@ -199,7 +199,12 @@ entrance tunnel with a door on the map edge. A castle or a building gets a
 door in the south wall. A town gets a street from the south edge, and more
 streets to other edges. When nothing on the parent
 map links to the node, generation places an entrance tile near the center
-of the parent and reports where.
+of the parent and reports where. When a parent tile already links to the
+node, the tile stays where it is, and its marker changes to the marker of
+the new archetype, for example from a dungeon to a cave entrance. The art
+of a particular place, such as an inn, stays when the new archetype has the
+same point-of-interest type. A wilderness takes no marker, so its old marker
+becomes grass.
 
 The six outdoor archetypes differ in climate. Wilderness is temperate, with
 grass, forest, lakes, and some hills. Highlands have ranges of hills and
