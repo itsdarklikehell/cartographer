@@ -5,6 +5,8 @@ import {
   regenerateLanding,
   regenerateSnapshot,
   regenerateTokenMoves,
+  stackBase,
+  stackPlace,
 } from '../src/map/RegenerateNode.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
@@ -237,4 +239,47 @@ test('regenerateTokenMoves on tokens that hold no location returns nothing', () 
     landingFor,
   });
   assert.deepEqual(moves, []);
+});
+
+/** @param {import('../src/types/map.js').MapNode[]} nodes */
+const parentIn = (nodes) => (/** @type {import('../src/types/map.js').MapNode} */ node) =>
+  nodes.find((n) => n.id === node.parentId) ?? null;
+
+test('stackPlace counts the levels above a node reached by stairs down', () => {
+  const { nodes, level1 } = world();
+  const byId = (/** @type {string} */ id) => /** @type {any} */ (nodes.find((n) => n.id === id));
+  const parentOf = parentIn(nodes);
+  assert.deepEqual(stackPlace(byId('l2'), parentOf), { back: 'stairs-up', level: 2 });
+  assert.deepEqual(stackPlace(byId('l3'), parentOf), { back: 'stairs-up', level: 3 });
+  // Level 1 opens from the town by no staircase, and the root has no parent.
+  assert.equal(stackPlace(level1, parentOf), null);
+  assert.equal(stackPlace(byId('town'), parentOf), null);
+  // The cellar has a parent, but no tile of the parent links to it.
+  assert.equal(stackPlace(byId('cellar'), parentOf), null);
+});
+
+test('stackPlace reads a floor that its parent reaches by stairs up', () => {
+  const keep = withNodeTiles(createMapNode('keep', 'Keep', null, 4, 4, { kind: 'interior' }), [
+    createTile('0,0', `${INTERIOR}-stairs-up.svg`, { childNodeId: 'upper' }),
+  ]);
+  const upper = createMapNode('upper', 'Keep (upper floor)', 'keep', 4, 4, { kind: 'interior' });
+  assert.deepEqual(stackPlace(upper, parentIn([keep, upper])), { back: 'stairs-down', level: 2 });
+});
+
+test('stackPlace stops on a parent loop', () => {
+  const a = withNodeTiles(createMapNode('a', 'A', 'b', 4, 4, { kind: 'interior' }), [
+    createTile('1,1', `${INTERIOR}-stairs-down.svg`, { childNodeId: 'b' }),
+  ]);
+  const b = withNodeTiles(createMapNode('b', 'B', 'a', 4, 4, { kind: 'interior' }), [
+    createTile('1,1', `${INTERIOR}-stairs-down.svg`, { childNodeId: 'a' }),
+  ]);
+  assert.deepEqual(stackPlace(b, parentIn([a, b])), { back: 'stairs-up', level: 2 });
+});
+
+test('stackBase drops the label of a forced sub-map', () => {
+  assert.equal(stackBase('Ashford Barrow (level 2)'), 'Ashford Barrow');
+  assert.equal(stackBase('Keep (upper floor)'), 'Keep');
+  assert.equal(stackBase('Keep (dungeons)'), 'Keep');
+  assert.equal(stackBase('Inn (cellar)'), 'Inn');
+  assert.equal(stackBase('The Crypt (old)'), 'The Crypt (old)');
 });

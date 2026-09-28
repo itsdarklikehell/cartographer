@@ -187,10 +187,10 @@ The Generate card fills the current node with a generated layout.
 
 | Field | Values |
 | --- | --- |
-| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building |
+| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
 | Size | small (8 x 8), medium (14 x 14), large (22 x 22), huge (32 x 32), or vast (48 x 48) |
 | Seed | The number that reproduces the layout |
-| Levels | For a dungeon or a cave, how many levels to create |
+| Levels | For a dungeon or a cave, how many levels to create, from 1 to 10. A stack has at most 10 levels, so a deeper level allows fewer |
 | Sub-maps | For a region archetype, which places on the map also get maps of their own: none, one level down, or every level |
 
 The dialog previews the exact layout before it stamps anything. Every
@@ -263,6 +263,13 @@ level has no stairs up, because its door is the way in. The stairs down of
 one level lead to the stairs up of the level below. The stairs down
 stand as far from the stairs up as the level allows. The bottom level has
 no stairs down.
+
+When you generate a node that its parent reaches by a staircase, the node
+keeps the staircase back. A level below its parent gets stairs up where the
+first level has its door, and the dialog offers a dungeon, a cave, or a
+cellar. A floor above its parent offers the upper floor alone. The new
+levels below a regenerated level take the name of the top of the stack, for
+example "Ashford Barrow (level 3)".
 
 A world is a continent in a sea, split into up to nine regions. Each region
 is a block of land tiles that all link to one large region map. The terrain

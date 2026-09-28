@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { childSeed, expandTree } from '../src/map/GeneratorTree.js';
-import { generateNodeTiles } from '../src/map/MapGenerator.js';
+import { generateNodeTiles, MAX_LEVELS } from '../src/map/MapGenerator.js';
 import { tileKind } from '../src/map/TileKinds.js';
 import { stairwayTo } from '../src/map/MapExits.js';
 import { mulberry32 } from '../src/util/Rng.js';
@@ -127,6 +127,37 @@ test('the stairs of a multi-level dungeon lead down to each level, none from the
       assert.equal(level.parentId, nodes[nodes.indexOf(level) - 1].id);
     }
   }
+});
+
+test('a regenerated level 2 keeps its stairs up and names its levels after the stack', () => {
+  const { nodes } = expandTree(
+    palette,
+    {
+      ...root('dungeon', 'small', { kind: 'interior', levels: 2 }),
+      name: 'Elmere Barrow (level 2)',
+      base: 'Elmere Barrow',
+      level: 2,
+    },
+    { seed: 3, depth: 0 },
+    counter(),
+  );
+  assert.deepEqual(
+    nodes.map((n) => n.name),
+    ['Elmere Barrow (level 2)', 'Elmere Barrow (level 3)'],
+  );
+  const up = nodes[0].tiles.find((t) => tileKind(t) === 'stairs-up');
+  assert.equal(nodes[0].entry, up?.id, 'level 2 enters by its stairs up');
+  assert.ok(!nodes[0].tiles.some((t) => tileKind(t) === 'door'), 'level 2 has no door');
+});
+
+test('a dungeon asked for 500 levels stops at MAX_LEVELS', () => {
+  const { nodes } = expandTree(
+    palette,
+    root('dungeon', 'small', { kind: 'interior', levels: 500 }),
+    { seed: 1, depth: 0 },
+    counter(),
+  );
+  assert.equal(nodes.length, MAX_LEVELS);
 });
 
 test('cave levels chain through their stairs like dungeon levels', () => {

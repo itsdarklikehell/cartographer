@@ -20,8 +20,13 @@ import { mulberry32 } from '../util/Rng.js';
 
 /**
  * The most sub-maps that one generation creates past the forced ones. A
- * vast world opened all the way down holds about 260 maps and adds about
- * 1.1 MB to the saved campaign, where the save warns at 3 MB.
+ * vast world opened all the way down holds 226 to 276 maps (seeds 1 to 5).
+ * Its packed save is about 0.5 MiB of text, and localStorage stores two
+ * bytes per character, so it adds about 1 MiB against the 3 MiB warning of
+ * `SaveManager.QUOTA_WARN_BYTES`. The forced sub-maps do not count against
+ * the budget, because their tiles already lead down.
+ * `MapGenerator.MAX_LEVELS` limits each stack of dungeon or cave levels
+ * instead.
  */
 export const SUBMAP_BUDGET = 300;
 
@@ -34,8 +39,13 @@ export const SUBMAP_BUDGET = 300;
  *   archetype: string,
  *   size: string,
  *   levels?: number,
+ *   level?: number,
+ *   base?: string,
  * }} TreeRoot
- * The node being generated and the choice for it.
+ * The node being generated and the choice for it. `level` is the number of
+ * the node in its stack of levels (see `generateNodeTiles`). `base` is the
+ * name that the forced sub-maps of the node add their labels to, and it
+ * defaults to `name`.
  */
 
 /**
@@ -109,7 +119,7 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
       id: root.id,
       parentId: /** @type {string | null} */ (null),
       name: root.name,
-      base: root.name,
+      base: root.base ?? root.name,
       kind: root.kind,
       environ: root.environ,
       /** @type {GenerateOptions} */
@@ -117,6 +127,7 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
         archetype: root.archetype,
         size: root.size,
         levels: root.levels,
+        level: root.level,
         environ: root.environ ?? undefined,
       },
       seed,

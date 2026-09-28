@@ -1,5 +1,6 @@
 import { collectSubtreeIds } from './WorldTree.js';
 import { relandedTile } from './NodeEdits.js';
+import { stairwayTo } from './MapExits.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -41,6 +42,55 @@ export function linkedDescendants(nodes, node) {
   }
   doomed.delete(node.id);
   return nodes.filter((n) => doomed.has(n.id));
+}
+
+/**
+ * The place of a node in a stack of levels, or null when its parent does not
+ * reach it by a staircase. `back` is the tile kind in the node that leads
+ * back to the parent (`MapExits.stairwayTo`). `level` is the number of the
+ * node in its stack when the node is a level below its parent: the first
+ * level, the one a door leads into, is 1, and each staircase down adds 1.
+ * A floor above its parent gets level 2, which only a stacked archetype
+ * reads. A regeneration passes `level` to the generator, so a level below
+ * the first gets stairs up, not a door on the map edge.
+ * @param {MapNode} node
+ * @param {(node: MapNode) => MapNode | null} parentOf
+ * @returns {{ back: 'stairs-up' | 'stairs-down', level: number } | null}
+ */
+export function stackPlace(node, parentOf) {
+  const parent = parentOf(node);
+  const stairway = parent ? stairwayTo(parent, node.id) : null;
+  if (!parent || !stairway) return null;
+  let level = 2;
+  if (stairway.back === 'stairs-up') {
+    // The seen set stops the walk on a parent loop in a damaged save.
+    const seen = new Set([node.id, parent.id]);
+    let at = parent;
+    let up = parentOf(at);
+    while (up && !seen.has(up.id) && stairwayTo(up, at.id)?.back === 'stairs-up') {
+      seen.add(up.id);
+      level++;
+      at = up;
+      up = parentOf(at);
+    }
+  }
+  return { back: stairway.back, level };
+}
+
+/** The labels that `GeneratorTree.expandTree` adds to the name of a forced sub-map. */
+const STACK_LABEL = / \((level \d+|upper floor|dungeons|cellar)\)$/;
+
+/**
+ * The name of the map at the top of a stack, for a node named after it.
+ * `expandTree` names a forced sub-map as its top map plus a label, for
+ * example "Ashford Barrow (level 2)". A regenerated level takes this name as
+ * its base, so its new levels read "Ashford Barrow (level 3)", not "Ashford
+ * Barrow (level 2) (level 3)".
+ * @param {string} name
+ * @returns {string}
+ */
+export function stackBase(name) {
+  return name.replace(STACK_LABEL, '');
 }
 
 /**

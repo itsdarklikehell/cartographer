@@ -515,8 +515,25 @@ from `mulberry32(childSeed(parentSeed, siteIndex))`, and never from the RNG
 of its parent. The top map is then the same with or without its sub-maps,
 so the Generate preview builds the top map alone. `depth` limits the
 optional sites. `SUBMAP_BUDGET` stops the optional sub-maps at 300, because
-each sub-map adds to the save. A vast world with every level holds about 260
-maps and adds about 1.1 MB, and the save warns at 3 MB.
+each sub-map adds to the save. A vast world with every level holds 226 to
+276 maps over seeds 1 to 5. Its packed save is about 0.5 MiB of text. The
+browser stores two bytes per character, so the world takes about 1 MiB of
+localStorage, and the save warns at 3 MiB. The forced sub-maps do not count
+against the budget. `MAX_LEVELS` in `MapGenerator.js` limits a stack of
+dungeon or cave levels to 10 instead, and the Levels field of the Generate
+dialog has the same limit. Without it, a vast dungeon of 500 levels builds
+500 nodes.
+
+A regeneration of a node that its parent reaches by a staircase keeps that
+staircase. `stackPlace` in `src/map/RegenerateNode.js` reads the stairway
+(`MapExits.stairwayTo`) and counts the stairs down above the node for its
+level number. `archetypesFor` in `MapGenerator.js` then offers a dungeon, a
+cave, or a cellar for a level below and the upper floor for a floor above,
+and the generator gives a level above 1 its stairs up. A castle or a
+building in either place gets a door onto a floor with no outside, and a
+castle adds a second upper floor and dungeon to the stack. `stackBase`
+removes the label from the name of a regenerated level, so its new levels
+take the name of the top of the stack.
 
 `src/map/GeneratorNames.js` names each sub-map from its own RNG. A forced
 map takes the name of the map at the top of its stack and adds its label,

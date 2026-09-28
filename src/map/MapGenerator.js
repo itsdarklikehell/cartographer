@@ -71,6 +71,57 @@ export const ARCHETYPES = {
 export const STACKED_ARCHETYPES = ['dungeon', 'cave'];
 
 /**
+ * The most levels in one stack of dungeon or cave levels, counted from the
+ * first level. Each level is a node of its own, so a stack with no limit
+ * can make a save too large to store. `generateNodeTiles` stops a stack at
+ * this level, and the Generate dialog limits its Levels field to it.
+ */
+export const MAX_LEVELS = 10;
+
+/**
+ * How many levels a stack can still add, counting the level `level` itself.
+ * The result is at least 1, because the level itself always exists.
+ * @param {number} level
+ * @returns {number}
+ */
+export function levelsLeft(level) {
+  return Math.max(1, MAX_LEVELS - level + 1);
+}
+
+/**
+ * The archetypes for an interior node that its parent reaches by a
+ * staircase, by the tile kind that leads back to the parent. A node that
+ * returns by its stairs up is a level below its parent, and a node that
+ * returns by its stairs down is a floor above it. Each of these archetypes
+ * gives the node the staircase back, so the parent's stairs always land on
+ * a staircase. A castle or a building in this place adds a door to a floor
+ * that has no outside, and a castle adds a second upper floor and a second
+ * dungeon to the stack.
+ * @type {Record<'stairs-up' | 'stairs-down', { value: string, label: string }[]>}
+ */
+export const STAIRWAY_ARCHETYPES = {
+  'stairs-up': [
+    { value: 'dungeon', label: 'Dungeon (rooms + corridors)' },
+    { value: 'cave', label: 'Cave (winding caverns)' },
+    { value: 'cellar', label: 'Cellar (one small level)' },
+  ],
+  'stairs-down': [{ value: 'upper-floor', label: 'Upper floor (chambers above a hall)' }],
+};
+
+/**
+ * The archetypes that the Generate dialog offers for a node. `back` is the
+ * tile kind that leads from the node back to its parent, when the parent
+ * reaches the node by a staircase (`MapExits.stairwayTo`). A region never
+ * takes the stairway list, because stairs join interiors only.
+ * @param {NodeKind} kind
+ * @param {'stairs-up' | 'stairs-down' | null} back
+ * @returns {{ value: string, label: string }[]}
+ */
+export function archetypesFor(kind, back) {
+  return kind === 'interior' && back ? STAIRWAY_ARCHETYPES[back] : ARCHETYPES[kind];
+}
+
+/**
  * The archetypes whose maps have places that open into sub-maps of their
  * own, such as the settlements of a wilderness or the buildings of a town.
  * The Generate dialog shows its Sub-maps field for these alone.
@@ -113,6 +164,7 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  * more than one level gets stairs down, and its site for the level below is
  * forced, so the stairs always lead to a real level. `level` is the number
  * of this level, and a level below the first is entered by its stairs up.
+ * The stack ends at level `MAX_LEVELS`, whatever `levels` asks for.
  * A building with a trapdoor has a forced site for its cellar, which is a
  * small dungeon level entered by its stairs up. The `cellar` archetype
  * generates that level. A castle has forced sites for its upper floor,
@@ -127,8 +179,9 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
 export function generateNodeTiles(palette, options, rng) {
   const { archetype, size, environ = archetype } = options;
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
-  const levels = Math.max(1, Math.floor(options.levels ?? 1) || 1);
   const level = options.level ?? 1;
+  const asked = Math.floor(options.levels ?? 1) || 1;
+  const levels = Math.max(1, Math.min(asked, levelsLeft(level)));
   /** @param {{ tiles: Tile[], entry: string }} gen @param {GeneratedSite[]} [sites] */
   const done = (gen, sites = []) => ({
     width: n,

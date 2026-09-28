@@ -52,6 +52,7 @@ const SUBMAP_DEPTHS = [
  *   archetypes: { value: string, label: string }[],
  *   sizes: { value: string, label: string }[],
  *   stacked?: string[],
+ *   maxLevels?: number,
  *   nested?: string[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
  *   imageCache?: Map<string, HTMLImageElement>,
@@ -90,8 +91,10 @@ export function generateDialog(options) {
 
       // Only the archetypes in `stacked`, such as a dungeon, stack levels, so
       // the field shows for those alone. A region lists none of them, so
-      // there it never shows.
-      const levelsInput = field('Levels', numberField(1, { min: 1 }));
+      // there it never shows. `maxLevels` limits the field, because each
+      // level is a node of its own.
+      const maxLevels = options.maxLevels ?? Infinity;
+      const levelsInput = field('Levels', numberField(1, { min: 1, max: options.maxLevels }));
       const levelsField = /** @type {HTMLElement} */ (levelsInput.closest('.modal__field'));
       const syncLevels = () =>
         levelsField.classList.toggle(
@@ -161,7 +164,7 @@ export function generateDialog(options) {
       readChoice = () => ({
         archetype: archetypeSelect.value,
         size: sizeSelect.value,
-        levels: clampInt(levelsInput.value, 1),
+        levels: clampInt(levelsInput.value, 1, maxLevels),
         depth: (options.nested ?? []).includes(archetypeSelect.value)
           ? clampInt(depthSelect.value)
           : 0,

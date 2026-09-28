@@ -2,7 +2,8 @@ import { createMapNode } from '../map/TileGrid.js';
 import { withNodeTiles } from '../map/TileIndex.js';
 import {
   generateNodeTiles,
-  ARCHETYPES,
+  archetypesFor,
+  levelsLeft,
   NESTED_ARCHETYPES,
   STACKED_ARCHETYPES,
   SIZE_OPTIONS,
@@ -16,6 +17,8 @@ import {
   regenerateLanding,
   regenerateSnapshot,
   regenerateTokenMoves,
+  stackBase,
+  stackPlace,
 } from '../map/RegenerateNode.js';
 import { creaturePlacementsIn, moveCreature, unplaceFrom } from '../entities/CreatureMap.js';
 import { bindingsIn, unbindFrom } from '../handout/Handouts.js';
@@ -72,7 +75,12 @@ export function wireGenerateAction(app, env) {
   const generateBtn = mustGetElement('generate-btn');
   generateBtn.addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
-    const archetypes = ARCHETYPES[node.kind];
+    // A node that its parent reaches by a staircase is a level of a stack.
+    // It keeps the staircase back to its parent, so the dialog offers only
+    // the archetypes that make one, and a level below the first gets its
+    // number in the stack.
+    const stack = stackPlace(node, (n) => grid.getParent(n));
+    const archetypes = archetypesFor(node.kind, stack?.back ?? null);
 
     /**
      * The spec of the top map for a dialog choice. The preview and the
@@ -87,11 +95,13 @@ export function wireGenerateAction(app, env) {
     const rootFor = (choice) => ({
       id: node.id,
       name: node.name,
+      base: stack ? stackBase(node.name) : node.name,
       kind: node.kind,
       environ: node.environ,
       archetype: choice.archetype,
       size: choice.size,
       levels: choice.levels,
+      level: stack?.level,
     });
     /** @type {{ key: string, gen: Layout } | null} */
     let preview = null;
@@ -110,6 +120,7 @@ export function wireGenerateAction(app, env) {
       archetypes,
       sizes: SIZE_OPTIONS,
       stacked: STACKED_ARCHETYPES,
+      maxLevels: levelsLeft(stack?.level ?? 1),
       nested: NESTED_ARCHETYPES,
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,

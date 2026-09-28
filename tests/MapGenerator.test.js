@@ -6,9 +6,13 @@ import {
   GENERATOR_SIZES,
   SIZE_OPTIONS,
   ARCHETYPES,
+  archetypesFor,
   generateNodeTiles,
+  levelsLeft,
+  MAX_LEVELS,
   NESTED_ARCHETYPES,
 } from '../src/map/MapGenerator.js';
+import { tileKind } from '../src/map/TileKinds.js';
 import { generateDungeon } from '../src/map/GeneratorInteriors.js';
 import { wallKind } from '../src/map/GeneratorInteriorMask.js';
 import { mulberry32 } from '../src/util/Rng.js';
@@ -447,4 +451,41 @@ test('a building with a trapdoor opens into a small cellar', () => {
   assert.match(String(cellar.tiles.find((t) => t.id === cellar.entry)?.imageRef), /stairs-up/);
   assert.ok(!cellar.tiles.some((t) => t.imageRef.includes('stairs-down')));
   assert.deepEqual(cellar.sites, []);
+});
+
+test('a stack of levels ends at MAX_LEVELS, however many levels are asked for', () => {
+  const spec = { archetype: 'dungeon', size: 'small', levels: 500 };
+  const first = generateNodeTiles(palette, spec, mulberry32(2));
+  assert.equal(first.sites[0].levels, MAX_LEVELS - 1);
+  const last = generateNodeTiles(palette, { ...spec, level: MAX_LEVELS }, mulberry32(2));
+  assert.deepEqual(last.sites, [], 'the last level has no stairs down');
+  const past = generateNodeTiles(palette, { ...spec, level: MAX_LEVELS + 3 }, mulberry32(2));
+  assert.deepEqual(past.sites, []);
+  assert.equal(levelsLeft(1), MAX_LEVELS);
+  assert.equal(levelsLeft(MAX_LEVELS), 1);
+  assert.equal(levelsLeft(MAX_LEVELS + 3), 1);
+});
+
+test('a node reached by a staircase takes only the archetypes that keep the staircase', () => {
+  assert.equal(archetypesFor('region', null), ARCHETYPES.region);
+  assert.equal(archetypesFor('interior', null), ARCHETYPES.interior);
+  assert.equal(archetypesFor('region', 'stairs-up'), ARCHETYPES.region);
+  const below = archetypesFor('interior', 'stairs-up').map((a) => a.value);
+  assert.deepEqual(below, ['dungeon', 'cave', 'cellar']);
+  const above = archetypesFor('interior', 'stairs-down').map((a) => a.value);
+  assert.deepEqual(above, ['upper-floor']);
+  // Each archetype for a level below enters by its stairs up at level 2, and
+  // the upper floor enters by its stairs down.
+  for (const archetype of below) {
+    const gen = generateNodeTiles(palette, { archetype, size: 'small', level: 2 }, mulberry32(7));
+    const entry = gen.tiles.find((t) => t.id === gen.entry);
+    assert.equal(entry && tileKind(entry), 'stairs-up', archetype);
+  }
+  const upper = generateNodeTiles(
+    palette,
+    { archetype: 'upper-floor', size: 'small' },
+    mulberry32(7),
+  );
+  const entry = upper.tiles.find((t) => t.id === upper.entry);
+  assert.equal(entry && tileKind(entry), 'stairs-down');
 });

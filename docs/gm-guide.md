@@ -129,7 +129,8 @@ The left button paints, a right-button drag pans, and the wheel zooms.
    until you accept.
 4. Write down the seed if you want this layout again.
 5. For a dungeon with more than one level, set **Levels**. Each level
-   becomes a child node, joined by its stairs.
+   becomes a child node, joined by its stairs. A stack has at most 10
+   levels.
 6. For an outdoor map or a world, set **Sub-maps** to also generate the
    maps of its places: its regions, towns, keep, dungeons, caves, and town
    buildings. **One level down** stops at the places on this map, and
