@@ -85,6 +85,37 @@ test('every example caster creature knows spells of its own class', () => {
   }
 });
 
+test('each character starts with one personal handout that only its own tab sees', () => {
+  const hooks = campaign.handouts.filter((h) => h.revealed);
+  assert.deepEqual(
+    hooks.map((h) => h.audience),
+    campaign.characters.map((c) => [c.id]),
+  );
+  assert.ok(hooks.every((h) => h.nodeId === null && h.tileId === null));
+});
+
+test('the clues of the example lie on the tiles where the party finds them', () => {
+  /** @param {string} id */
+  const handout = (id) => campaign.handouts.find((h) => h.id === id);
+  assert.deepEqual(
+    [handout('barrow-inscription')?.nodeId, handout('barrow-inscription')?.tileId],
+    [creature('barrow-skeleton-1').location?.nodeId, '8,0'],
+  );
+  assert.equal(handout('snagtooth-orders')?.tileId, creature('snagtooth').location?.tileId);
+  assert.equal(handout('irennes-letter')?.nodeId, creature('pale-sworn-1').location?.nodeId);
+  assert.equal(handout('crypt-ledger')?.tileId, null);
+  assert.equal(handout('legend-of-ostrand')?.nodeId, null);
+});
+
+test('the prose of the example uses no em-dashes', () => {
+  const prose = [
+    ...campaign.handouts.flatMap((h) => [h.title, h.body]),
+    ...campaign.quests.flatMap((q) => [q.title, q.notes, ...q.objectives.map((o) => o.text)]),
+    ...campaign.creatures.flatMap((c) => [c.name, c.role ?? '', c.notes ?? '']),
+  ];
+  for (const text of prose) assert.doesNotMatch(text, /—/, text);
+});
+
 test('the example content refuses a world that lacks one of its story places', () => {
   const world = { grid: campaign.grid, places: {} };
   assert.throws(() => buildExampleContent(world), /no place named start/);

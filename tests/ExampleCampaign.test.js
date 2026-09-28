@@ -169,7 +169,7 @@ test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', (
 
   assert.ok(campaign.bestiary.length >= 6, 'expected reusable mob templates');
   assert.ok(campaign.handouts.length >= 4, 'expected lore handouts');
-  assert.ok(campaign.handouts.every((h) => !h.revealed));
+  assert.ok(campaign.handouts.every((h) => h.revealed === Boolean(h.audience)));
 
   assert.deepEqual(
     campaign.characters.map((c) => c.id),

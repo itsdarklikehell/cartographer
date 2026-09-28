@@ -43,7 +43,7 @@ export function buildExampleContent(world) {
     travelog: [],
     quests: exampleQuests(at),
     clock: createClock(),
-    handouts: exampleHandouts(),
+    handouts: exampleHandouts(at),
     bestiary: exampleBestiary(),
     splitParty: false,
     combat: null,
