@@ -67,13 +67,6 @@ export function planSites(terrain, rng) {
     }
     return false;
   };
-  /** @param {number} x @param {number} y @param {number} r */
-  const riverWithin = (x, y, r) => {
-    for (let yy = y - r; yy <= y + r; yy++) {
-      for (let xx = x - r; xx <= x + r; xx++) if (rivers.has(xx, yy)) return true;
-    }
-    return false;
-  };
   const wet = (/** @type {string} */ t) => t === 'water';
   /** @param {number} x @param {number} y */
   const waterNear = (x, y) => {
@@ -129,7 +122,7 @@ export function planSites(terrain, rng) {
 
   for (let i = 0; i < counts.settlements; i++) {
     const at = take(
-      (x, y) => grass(x, y) + (riverWithin(x, y, 2) ? 2 : 0) + (within(x, y, 2, wet) ? 1.5 : 0),
+      (x, y) => grass(x, y) + (rivers.near(x, y, 2) ? 2 : 0) + (within(x, y, 2, wet) ? 1.5 : 0),
       spacing,
     );
     const port = at !== null && waterNear(at.x, at.y) >= 4;

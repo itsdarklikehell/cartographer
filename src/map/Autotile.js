@@ -150,11 +150,28 @@ export function connectorKind(arms) {
  * which cells it covers. Two channels that run side by side without joining
  * then stay two channels, where a piece picked from neighbor cells would
  * join them.
+ *
+ * `arms` lists the edge sets by tile id, for the callers that iterate the
+ * network. `has` and `at` read a second map keyed by a number, because the
+ * road search calls them for every step it tries. With a tile id string per
+ * call, a generated island takes about 40% longer. Both maps share each
+ * edge set.
  */
 export class ArmNetwork {
   constructor() {
     /** @type {Map<string, Set<Arm>>} */
     this.arms = new Map();
+    /** @type {Map<number, Set<Arm>>} */
+    this.byKey = new Map();
+  }
+
+  /**
+   * The numeric key of a cell. It is unique for each cell with an x
+   * between -32768 and 32767, which covers every map and its border.
+   * @param {number} x @param {number} y
+   */
+  static key(x, y) {
+    return y * 65536 + x;
   }
 
   /**
@@ -162,10 +179,14 @@ export class ArmNetwork {
    * @param {number} x @param {number} y @param {Arm} arm
    */
   add(x, y, arm) {
-    const id = tileIdAt(x, y);
-    const set = this.arms.get(id) ?? new Set();
+    const key = ArmNetwork.key(x, y);
+    let set = this.byKey.get(key);
+    if (!set) {
+      set = new Set();
+      this.byKey.set(key, set);
+      this.arms.set(tileIdAt(x, y), set);
+    }
     set.add(arm);
-    this.arms.set(id, set);
   }
 
   /**
@@ -182,12 +203,24 @@ export class ArmNetwork {
 
   /** @param {number} x @param {number} y @returns {ReadonlySet<Arm>} */
   at(x, y) {
-    return this.arms.get(tileIdAt(x, y)) ?? new Set();
+    return this.byKey.get(ArmNetwork.key(x, y)) ?? new Set();
   }
 
   /** @param {number} x @param {number} y */
   has(x, y) {
-    return this.arms.has(tileIdAt(x, y));
+    return this.byKey.has(ArmNetwork.key(x, y));
+  }
+
+  /**
+   * Whether any cell within `r` of (x, y), in Chebyshev distance and with
+   * (x, y) itself included, is in the network.
+   * @param {number} x @param {number} y @param {number} r
+   */
+  near(x, y, r) {
+    for (let yy = y - r; yy <= y + r; yy++) {
+      for (let xx = x - r; xx <= x + r; xx++) if (this.has(xx, yy)) return true;
+    }
+    return false;
   }
 
   /**
@@ -196,6 +229,7 @@ export class ArmNetwork {
    * @param {number} x @param {number} y
    */
   drop(x, y) {
+    this.byKey.delete(ArmNetwork.key(x, y));
     this.arms.delete(tileIdAt(x, y));
   }
 

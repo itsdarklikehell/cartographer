@@ -51,13 +51,6 @@ export function traceRivers({ size, elevation, cells }, count, rng) {
   /** @param {number} x @param {number} y */
   const nearMountain = (x, y) =>
     ARMS.some(([, dx, dy]) => inside(x + dx, y + dy) && type(x + dx, y + dy) === 'mountain');
-  /** @param {number} x @param {number} y @param {number} r */
-  const riverWithin = (x, y, r) => {
-    for (let yy = y - r; yy <= y + r; yy++) {
-      for (let xx = x - r; xx <= x + r; xx++) if (network.has(xx, yy)) return true;
-    }
-    return false;
-  };
 
   // Sources are the highest open cells: hills, and the ground at the foot
   // of a range. Taking a shuffle of the top few keeps the choice seeded but
@@ -75,7 +68,7 @@ export function traceRivers({ size, elevation, cells }, count, rng) {
   let made = 0;
   for (const [sx, sy] of sources) {
     if (made >= count) break;
-    if (riverWithin(sx, sy, 3)) continue;
+    if (network.near(sx, sy, 3)) continue;
     if (walk(sx, sy)) made++;
   }
   return { network, ponds };

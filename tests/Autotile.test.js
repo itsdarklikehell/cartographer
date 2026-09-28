@@ -84,4 +84,19 @@ test('ArmNetwork joins cells across an edge and keeps side-by-side channels apar
   net.drop(1, 1);
   assert.equal(net.has(1, 1), false);
   assert.equal(net.pieces().get('1,0'), 'end-s');
+  assert.equal(net.arms.has('1,1'), false, 'the id map drops the cell too');
+});
+
+test('ArmNetwork keys cells off the map apart and finds a channel nearby', () => {
+  const net = new ArmNetwork();
+  net.add(-1, 0, 'e');
+  net.add(0, -1, 's');
+  assert.deepEqual([...net.at(-1, 0)], ['e']);
+  assert.deepEqual([...net.at(0, -1)], ['s']);
+  assert.equal(net.has(-1, -1) || net.has(0, 0), false, 'no two cells share a key');
+  assert.equal(net.arms.get('-1,0'), net.at(-1, 0), 'both maps share the edge set');
+  net.join(5, 5, 'e');
+  assert.ok(net.near(5, 5, 0), 'the cell itself counts');
+  assert.ok(net.near(3, 3, 2), 'a channel two cells off counts');
+  assert.equal(net.near(2, 2, 2), false, 'a channel three cells off does not');
 });
