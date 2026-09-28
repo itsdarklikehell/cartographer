@@ -33,12 +33,11 @@ function appendRevealedContent(row, handout) {
  * controls. A revealed handout shows its read-aloud body. A hidden one
  * keeps the body collapsed, so the GM can reveal it on demand at the
  * table. A player sees only revealed handouts, read-only. The panel owns
- * no state. getHandouts supplies the visible rows, and every mutation
- * flows back through a callback, matching the other panels. Modals live
- * in main.js.
- *
- * The reveal flag is what a future player-facing view renders
- * against. Today one GM-facing tab drives it manually.
+ * no state. getHandouts supplies the visible rows, already cut to what this
+ * tab may see, and every mutation flows back through a callback, matching
+ * the other panels. `describe` gives the GM a short note under a row, for
+ * example the tile the handout waits on. `dependsOn` names what that note
+ * reads besides the row. Modals live in main.js.
  * @param {HTMLElement} container
  * @param {{
  *   getHandouts: () => Handout[],
@@ -47,6 +46,8 @@ function appendRevealedContent(row, handout) {
  *   onDelete: (id: string) => Promise<boolean> | boolean,
  *   onAdd: () => Promise<Handout | null>,
  *   getRole?: () => ViewRole,
+ *   describe?: (handout: Handout) => string,
+ *   dependsOn?: () => unknown,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -99,7 +100,10 @@ export function mountHandoutPanel(container, callbacks) {
             },
           ]
         : [],
+    dependsOn: callbacks.dependsOn,
     buildExtras: (handout, row, ctx) => {
+      const note = ctx.gm ? callbacks.describe?.(handout) : '';
+      if (note) row.appendChild(el('p', 'handout-panel__note u-muted', note));
       if (!ctx.gm || handout.revealed) appendRevealedContent(row, handout);
     },
     addButtons: () => [{ label: 'New handout', icon: 'add', onClick: callbacks.onAdd }],

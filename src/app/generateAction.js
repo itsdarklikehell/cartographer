@@ -23,7 +23,7 @@ import {
   stackPlace,
 } from '../map/RegenerateNode.js';
 import { creaturePlacementsIn, moveCreature, unplaceFrom } from '../entities/CreatureMap.js';
-import { bindingsIn, unbindFrom } from '../handout/Handouts.js';
+import { bindingsIn, tileBindingsLost, unbindFrom, unbindTiles } from '../handout/Handouts.js';
 import { refreshLocationPanels } from './locationPanels.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
@@ -153,6 +153,9 @@ export function wireGenerateAction(app, env) {
     );
     const [gen, ...deeper] = tree.nodes;
     const removedIds = new Set(removed.map((n) => n.id));
+    // Every tile of the node is new, so a handout bound to one of the old
+    // tiles binds to the whole node.
+    const lostTiles = tileBindingsLost(state.handouts, node.id, () => false);
     // The regenerated layout replaces the node, removes the sub-maps its old
     // tiles led to, adds the new sub-maps, and can restamp its parent's
     // entrance link below. It also empties every location the removed nodes
@@ -167,7 +170,7 @@ export function wireGenerateAction(app, env) {
         party: partyTracker.getPosition(),
         recalled: placementsIn(state.characters, new Set([...removedIds, node.id])),
         creatures: creaturePlacementsIn(state.creatures, new Set([...removedIds, node.id])),
-        handouts: bindingsIn(state.handouts, removedIds),
+        handouts: [...bindingsIn(state.handouts, removedIds), ...lostTiles],
         entryTiles: state.entryTiles,
       }),
     );
@@ -180,7 +183,7 @@ export function wireGenerateAction(app, env) {
     // campaign-wide, the same answers the delete path gives.
     state.characters = recallFrom(state.characters, removedIds);
     state.creatures = unplaceFrom(state.creatures, removedIds);
-    state.handouts = unbindFrom(state.handouts, removedIds);
+    state.handouts = unbindTiles(unbindFrom(state.handouts, removedIds), lostTiles);
     // Nothing leads to the removed sub-maps any more, so how they were
     // entered no longer describes anything.
     state.entryTiles = forgetEntries(state.entryTiles, removedIds);

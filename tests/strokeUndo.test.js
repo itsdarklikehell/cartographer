@@ -236,6 +236,33 @@ test('undoStroke brings back an erased tile', () => {
   assert.equal(getTile(grid.getNode('keep'), '1,1'), tile);
 });
 
+test('an erase stroke binds a handout on an erased tile to the whole node, and undo binds it back', () => {
+  const { gestures, env, app } = authoring();
+  const onTile = (/** @type {string} */ id, /** @type {string} */ tileId) =>
+    createHandout(id, id, '', 'keep', true, null, { tileId });
+  app.state.handouts = [onTile('erased', '1,1'), onTile('kept', '2,2')];
+  const kept = app.state.handouts[1];
+  env.activeBrush = 'erase';
+  gestures.onStrokeCell(1, 1, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(app.state.handouts[0].tileId, null);
+  assert.equal(app.state.handouts[0].nodeId, 'keep');
+  assert.equal(app.state.handouts[1], kept, 'a handout on a tile still there keeps its identity');
+  assert.ok(app.refreshes.includes('handoutPanel'));
+
+  gestures.undoStroke();
+  assert.equal(app.state.handouts[0].tileId, '1,1');
+});
+
+test('a paint stroke leaves a tile-bound handout alone', () => {
+  const { gestures, app } = authoring();
+  app.state.handouts = [createHandout('h', 'H', '', 'keep', true, null, { tileId: '0,2' })];
+  const before = app.state.handouts;
+  gestures.onStrokeCell(0, 2, null, true);
+  gestures.onStrokeEnd();
+  assert.equal(app.state.handouts, before);
+});
+
 test('undoStroke clears a restored link to a node deleted since the edit', () => {
   const { gestures, grid, env } = authoring();
   grid.addNode(createMapNode('cellar', 'Cellar', 'keep', 2, 2, { kind: 'interior' }));

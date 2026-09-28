@@ -192,14 +192,18 @@ delete path gives: a character rejoins the party
 (`CharacterTokens.recallFrom`), a creature becomes unplaced
 (`CreatureMap.unplaceFrom`), and a handout becomes campaign-wide
 (`Handouts.unbindFrom`). A location left on a node that is gone would hide
-its owner from every panel.
+its owner from every panel. A handout bound to a tile of the regenerated
+node itself binds to the whole node (`Handouts.tileBindingsLost` and
+`unbindTiles`), because every tile of the node is new.
 
 `regenerateSnapshot` builds the undo record. The stroke-undo ring in
 `EditHistory.js` keeps an `EditSnapshot` per edit: the rewritten nodes as
 the edit found them and as it left them, the ids of created nodes, the
 removed nodes, the party position, the locations of the characters and
-creatures the edit moved, the nodes the handouts it set loose were bound
-to, and the entry memory. `undoStroke` in `mapAuthoring.js` applies them
+creatures the edit moved, the nodes and tiles the handouts it set loose were
+bound to, and the entry memory. An erase stroke learns which tiles it
+removed only at the end of the stroke, so `mapAuthoring.js` then adds the
+tile bindings it drops to the stroke's entry (`EditHistory.addHandoutBindings`). `undoStroke` in `mapAuthoring.js` applies them
 all, then refreshes the panels that filter by location through
 `app/locationPanels.js`. The rng that drew the top map also
 picks the entrance art on the parent, so one seed gives one result.
@@ -241,7 +245,8 @@ node occupied, and `deleteNode` refuses when no parent remains.
 `locationsAfterDelete` then recalls split characters inside the subtree,
 unplaces creatures there, and unbinds handouts from it, and
 `locationsAfterShrink` pulls the party, split characters, and placed
-creatures inside the new bounds through `tileWithinBounds`. `nodeActions.js`
+creatures inside the new bounds through `tileWithinBounds`. A handout bound
+to a tile outside the new bounds binds to the whole node instead. `nodeActions.js`
 reads the live state into these functions and writes the answers back.
 
 ### partyWiring.js
@@ -450,7 +455,21 @@ tray moves into the screen and back, are in [the combat guide](combat.md).
 ### storyWiring.js
 
 This module owns the travelogue (it provides `logEvent`), NPCs, quests, and
-handouts.
+handouts. The handouts part lives in `handoutWiring.js`, which
+`wireStory` calls. It mounts the panel, builds the handout dialog, and
+provides `addHandoutAt` for the tile inspector's **New handout on this
+tile** button.
+
+The handout panel renders only what `Handouts.handoutsFor` returns for the
+tab. A GM tab gets every handout of the party's node. A player tab gets the
+revealed handouts that are campaign-wide, bound to the party's node, or
+bound to the party's tile, and only those whose `audience` is null or
+names the character the tab is bound to (`getBoundCharacterId`). A
+spectator tab has no character, so a handout with an audience never lists
+there. The body and image of a filtered handout never reach the DOM of that
+tab. They are still in the save that every tab of the browser reads, which
+is the same limit the rest of the Player view has. `partyWiring.js`
+refreshes the panel when the tab's binding changes.
 
 The quest and handout panels get their add, edit, and delete callbacks from
 `entityList.js`'s `wireEntityList(app, spec)`. A spec says:

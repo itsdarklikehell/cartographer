@@ -96,6 +96,9 @@ export function wireParty(app) {
     onSelect: () => {
       characterRoster.update();
       claim.updatePicker();
+      // A handout for chosen characters shows only on their tabs, so a new
+      // binding changes the list.
+      app.views.handoutPanel.update();
     },
     selectedId: claim.getBoundId() ?? state.characters[0]?.id ?? null,
   });

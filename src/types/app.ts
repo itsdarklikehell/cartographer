@@ -86,6 +86,9 @@ export interface AppActions {
   markDirty(): void;
   // storyWiring
   logEvent(kind: LogEntryKind, message: string): void;
+  // handoutWiring: open the new-handout dialog with one tile of a node as
+  // its place. The tile inspector calls this.
+  addHandoutAt(nodeId: string, tileId: string): Promise<void>;
   // partyWiring: point the sheet, inventory, and roster back at the selected
   // character after an out-of-band character change, for example a
   // condition tick. It does nothing in combat mode, where the combat screen

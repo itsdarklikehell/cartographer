@@ -12,10 +12,9 @@ import {
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestRevealed, toggleQuestStatus } from '../quest/Quests.js';
-import { mountHandoutPanel } from '../ui/HandoutPanel.js';
-import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
+import { wireHandouts } from './handoutWiring.js';
 import { creatureForm } from './creatureForm.js';
 import { commitCreatures, storeCreature } from './combatants.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -184,48 +183,5 @@ export function wireStory(app) {
     getRole: () => state.role,
   });
 
-  const handoutList = wireEntityList(app, {
-    key: 'handouts',
-    noun: 'handout',
-    fields: (handout) => [
-      { name: 'title', label: 'Title', value: handout?.title ?? '' },
-      { name: 'body', label: 'Read-aloud / lore', value: handout?.body ?? '' },
-      handout
-        ? {
-            name: 'image',
-            label: 'Image (leave empty to keep)',
-            type: 'file',
-            value: handout.image ?? '',
-          }
-        : { name: 'image', label: 'Image (optional)', type: 'file' },
-    ],
-    // A new handout binds to the node where the party stands, so it appears
-    // at that location.
-    create: (id, title, values) =>
-      createHandout(
-        id,
-        title,
-        values.body.trim(),
-        app.partyTracker.getPosition().nodeId,
-        false,
-        values.image || null,
-      ),
-    patch: (handout, title, values) => ({
-      ...handout,
-      title,
-      body: values.body.trim(),
-      image: values.image || null,
-    }),
-    editOptions: { submitLabel: 'Save' },
-  });
-
-  app.views.handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
-    getHandouts: () => handoutsAt(state.handouts, app.partyTracker.getPosition().nodeId),
-    onToggle: (handout) => {
-      state.handouts = replaceById(state.handouts, toggleRevealed(handout));
-      app.actions.markDirty();
-    },
-    ...handoutList,
-    getRole: () => state.role,
-  });
+  wireHandouts(app);
 }

@@ -32,6 +32,7 @@ const NULL_GETTERS = ['getBoundCharacterId', 'getSelectedCharacterId', 'getSelec
 const ACTION_NAMES = [
   'markDirty',
   'logEvent',
+  'addHandoutAt',
   'refreshSelectedCharacter',
   'getBoundCharacterId',
   'getSelectedCharacterId',

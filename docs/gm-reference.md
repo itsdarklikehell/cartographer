@@ -72,6 +72,8 @@ these things from the screen:
 - the exact HP of a foe (the view shows a health band instead)
 - the notes on a tile
 - handouts and quests that you have not revealed, and the notes of every quest
+- a revealed handout for other characters, and a revealed handout for a
+  tile where the party does not stand
 - the fogged part of the map
 - the Campaign, History, and Transfer buttons and the mode switch
 
@@ -180,6 +182,7 @@ is refused.
 | Notes | Text for the GM. The GM sees it on hover in Play mode. The Player view does not show it, but the text is in the saved campaign |
 | Zooms into | The child node that this tile leads to |
 | Set party start here | Places the spawn tile of the party |
+| New handout on this tile | Opens the new-handout dialog with this tile as its place |
 
 ### Map generation
 
@@ -985,8 +988,22 @@ unequips it.
 | Time | The in-game day and watch, Advance, Short rest, Long rest |
 | NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
 | Quests | Active and completed quests, with an eye toggle. The Player view lists only revealed quests, without their notes |
-| Handouts | Read-aloud text or lore attached to a node or the campaign, with an optional image and an eye toggle |
+| Handouts | Read-aloud text or lore attached to the campaign, a node, or one tile of a node, with an optional image, an eye toggle, and an optional list of the characters who see it |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
+
+The GM sees every handout of the node where the party stands. A line under
+a row names the tile of the handout and the characters who see it. A player
+tab lists a handout only when all of these conditions are true:
+
+- The GM revealed it.
+- It is campaign-wide, or bound to the node of the party, or bound to the
+  tile where the party stands.
+- It has no chosen characters, or the tab plays one of them. A spectator
+  tab never lists a handout that has chosen characters.
+
+An erase stroke, a shrink of the node, or a regeneration of the node can
+remove the tile of a handout. The handout then binds to the whole node. An
+undo of the erase or the regeneration binds it to its tile again.
 
 A short rest restores half of each custom resource and refills pact slots.
 It restores no HP, because in 5e only spent hit dice heal on a short rest.

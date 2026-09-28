@@ -13,9 +13,15 @@ import { isOverlayType } from '../map/TileCatalog.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
 import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
-import { restoreBindings } from '../handout/Handouts.js';
+import { restoreBindings, tileBindingsLost, unbindTiles } from '../handout/Handouts.js';
 import { refreshLocationPanels } from './locationPanels.js';
-import { nodeSnapshot, pushEdit, popEdit, commitEdit } from '../map/EditHistory.js';
+import {
+  nodeSnapshot,
+  pushEdit,
+  popEdit,
+  commitEdit,
+  addHandoutBindings,
+} from '../map/EditHistory.js';
 import { revertEdit } from '../map/EditRevert.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
@@ -280,8 +286,26 @@ export function createMapAuthoring(app, env) {
     }
   };
 
+  /**
+   * A handout bound to a tile that an erase stroke removed binds to the
+   * whole node instead. Without this, the handout waits on a tile the party
+   * can never stand on, and no player tab ever lists it. The stroke's undo
+   * entry records the tile, so undo binds it back.
+   */
+  function unbindErasedTiles() {
+    const node = navigator.getCurrentNode();
+    const lost = tileBindingsLost(state.handouts, node.id, (id) => Boolean(getTile(node, id)));
+    if (lost.length === 0) return;
+    state.handouts = unbindTiles(state.handouts, lost);
+    editHistory = addHandoutBindings(editHistory, lost);
+    refreshLocationPanels(app);
+  }
+
   const onStrokeEnd = () => {
     if (env.regionAnchor) finishRegionStroke();
+    if (strokeTouched && state.mode === 'build' && env.activeBrush === 'erase') {
+      unbindErasedTiles();
+    }
     finishEdit();
     if (strokeTouched) {
       strokeTouched = false;
@@ -322,6 +346,7 @@ export function createMapAuthoring(app, env) {
         env.syncPartyMarker();
         app.actions.markDirty();
       },
+      onAddHandout: (tileId) => app.actions.addHandoutAt(navigator.currentNodeId, tileId),
     });
   }
 

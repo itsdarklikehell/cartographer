@@ -136,6 +136,12 @@
   color: var(--text-muted);
 }
 
+/* The GM's note under a row: the tile the handout waits on, and who it is for. */
+.handout-panel__note {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-label);
+}
+
 .handout-panel__body {
   margin: var(--space-1) 0 0;
   padding: var(--space-2);

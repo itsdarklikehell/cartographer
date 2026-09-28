@@ -26,6 +26,7 @@ const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'cu
  *     onCreateNew: () => void,
  *   },
  *   onSetSpawn?: (tileId: string) => void,
+ *   onAddHandout?: (tileId: string) => void,
  * }} opts
  * @returns {{ setTile: (tile: Tile | null, editable?: boolean) => void }}
  */
@@ -103,6 +104,17 @@ export function mountTileInspector(container, opts) {
   );
   if (opts.onSetSpawn) form.appendChild(spawnBtn);
 
+  // A handout for this tile lists for players only while the party stands
+  // here. The button opens the handout dialog with this tile chosen.
+  const handoutBtn = textButton(
+    'New handout on this tile',
+    () => {
+      if (tile) opts.onAddHandout?.(tile.id);
+    },
+    { className: 'tile-inspector__handout' },
+  );
+  if (opts.onAddHandout) form.appendChild(handoutBtn);
+
   function renderLinkOptions() {
     if (!opts.linking || !tile) return;
     setOptions(
@@ -132,6 +144,7 @@ export function mountTileInspector(container, opts) {
     discInput.disabled = !editable;
     notesInput.readOnly = !editable;
     spawnBtn.disabled = !editable;
+    handoutBtn.disabled = !editable;
 
     renderLinkOptions();
     root.appendChild(form);

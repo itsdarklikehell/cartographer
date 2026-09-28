@@ -426,10 +426,17 @@ the character carries.
 ### Reveal a handout
 
 1. Open the **Handouts** panel and add the read-aloud text.
-2. Attach it to the current node or to the whole campaign, and add an image
-   if you want one.
-3. When the moment arrives, click the eye toggle. Players see only revealed
-   handouts.
+2. In **Shows at**, pick the whole campaign, the node where the party
+   stands, or the tile where the party stands. Add an image if you want one.
+3. To show the handout to some players only, check their characters in
+   **Only for**. Leave all boxes clear to show it to every player.
+4. When the moment arrives, click the eye toggle. Players see only revealed
+   handouts. A handout for one tile shows only while the party stands on
+   that tile.
+
+To put a handout on a tile before the party gets there, select the tile in
+Build mode and click **New handout on this tile** in the tile inspector.
+The Handouts panel lists it when the party enters that node.
 
 ### Track a quest
 
