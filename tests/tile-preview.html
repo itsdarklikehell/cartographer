@@ -24,6 +24,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>POI markers (zoomed)</h2>
 <div class="grid zoom" style="grid-template-columns: repeat(5, 128px); gap: 4px;" id="markers"></div>
 
+<h2>Shore landmarks (a lighthouse abuts a port on either side)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="shore"></div>
+
 <h2>Interior floor (mixed variants)</h2>
 <div class="grid" style="grid-template-columns: repeat(6, 64px);" id="interior-floors"></div>
 
@@ -83,8 +86,17 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine',
     'wizard-tower', 'academy', 'barracks', 'ruins', 'cave-entrance',
     'mine', 'port', 'farm', 'graveyard', 'camp',
-    'standing-stones',
+    'standing-stones', 'village', 'city', 'oasis', 'lighthouse',
+    'watchtower',
   ].map((m) => img(`${m}/${m}`)).join('');
+
+  // The lighthouse shoreline mirrors the port shoreline, so the edge heights
+  // match in both orders along the row.
+  document.getElementById('shore').innerHTML = [
+    'grass/grass-1', 'grass/grass-2', 'grass/grass-3', 'grass/grass-1',
+    'port/port', 'lighthouse/lighthouse', 'port/port', 'lighthouse/lighthouse',
+    'water/water-1', 'water/water-2', 'water/water-3', 'water/water-1',
+  ].map(img).join('');
 
   document.getElementById('interior-floors').innerHTML =
     layout.flat().map((v) => img(`interior/interior-floor-${v}`)).join('');

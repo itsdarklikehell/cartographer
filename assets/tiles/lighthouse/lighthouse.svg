@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="12" cy="10" rx="8" ry="4.5" fill="#63a651"/>
+  <ellipse cx="52" cy="22" rx="7" ry="3.5" fill="#529044"/>
+  <!-- Shore: open water fills the south half to the bottom edge in the water
+       terrain's base color. The shoreline is the port's shoreline mirrored,
+       so its heights at x=0 and x=64 match the port's east and west edges
+       and a lighthouse abuts a port on either side. -->
+  <path d="M0 32 Q16 36 32 33 Q48 30 64 34 L64 40 L0 40 Z" fill="#c2a36c"/>
+  <path d="M0 32 Q16 36 32 33 Q48 30 64 34 L64 37 Q48 33 32 36 Q16 39 0 35 Z" fill="#cdb078"/>
+  <path d="M0 35 Q16 39 32 36 Q48 33 64 37 L64 64 L0 64 Z" fill="#33719f"/>
+  <path d="M0 35 Q16 39 32 36 Q48 33 64 37 L64 40 Q48 36 32 39 Q16 42 0 38 Z" fill="#8ac2e6" opacity="0.5"/>
+  <ellipse cx="14" cy="54" rx="10" ry="4" fill="#2d6591"/>
+  <ellipse cx="48" cy="50" rx="12" ry="5" fill="#2d6591"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M6 49 Q11 46.5 16 49 T26 49" stroke="#2a5d87" stroke-width="2" transform="translate(0 1.8)"/>
+    <path d="M6 49 Q11 46.5 16 49 T26 49" stroke="#8ac2e6" stroke-width="1.6"/>
+    <path d="M40 57 Q45 54.5 50 57 T60 57" stroke="#2a5d87" stroke-width="2" transform="translate(0 1.8)"/>
+    <path d="M40 57 Q45 54.5 50 57 T60 57" stroke="#8ac2e6" stroke-width="1.6"/>
+  </g>
+  <circle cx="30" cy="58" r="0.8" fill="#8ac2e6"/>
+  <!-- Firelight on the water below the tower. -->
+  <ellipse cx="36" cy="47" rx="7" ry="1.6" fill="#f5d06a" opacity="0.22"/>
+  <!-- Keeper's hut under thatch on the grass behind the point. -->
+  <g>
+    <rect x="8" y="21" width="12" height="8" fill="#a39d91" stroke="#5c574e" stroke-width="0.6"/>
+    <rect x="14" y="21.3" width="5.7" height="7.4" fill="#8a8479"/>
+    <path d="M8 25 H20 M11 21 V25 M17 25 V29" stroke="#6f6a60" stroke-width="0.5"/>
+    <polygon points="6,21.5 10.5,14.5 17.5,14.5 22,21.5" fill="#c9a55a"/>
+    <polygon points="14,14.5 17.5,14.5 22,21.5 14,21.5" fill="#a8843f"/>
+    <path d="M6 21.5 Q14 23 22 21.5" stroke="#8f6f35" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+    <rect x="12.5" y="24.5" width="3" height="4.5" fill="#5a4530"/>
+    <rect x="9.3" y="23" width="2" height="2" fill="#f5d06a" stroke="#5f5138" stroke-width="0.4"/>
+  </g>
+  <!-- Rocky point under the tower, running out into the water. -->
+  <g>
+    <path d="M22 41 Q21 35 26 33.5 L38 33 Q44 34.5 43 40 Q40 44.5 33 44 Q25 44.5 22 41 Z" fill="#8a857a"/>
+    <path d="M32 33.2 L38 33 Q44 34.5 43 40 Q40 44.5 33 44 Z" fill="#6f6a60"/>
+    <path d="M24 40 Q27 38.6 30 40 M35 41.5 Q38 40 41 41" stroke="#5c574e" stroke-width="0.6" fill="none"/>
+    <ellipse cx="45.5" cy="42.5" rx="2.2" ry="1.4" fill="#6f6a60"/>
+    <ellipse cx="19.5" cy="42" rx="1.8" ry="1.1" fill="#8a857a"/>
+    <path d="M20 44 Q23 45.6 26 44.4 M40 45 Q43 46 46 44.6" stroke="#e6f2fa" stroke-width="0.9" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- Tapered tower of rough-cut stone, lit on the west face, with
+       staggered block joints, arrow slits, and a plank door. -->
+  <g>
+    <path d="M26.5 39 L28.5 15 L35.5 15 L37.5 39 Z" fill="#b0aa9e"/>
+    <path d="M32 15 L35.5 15 L37.5 39 L32 39 Z" fill="#938d82"/>
+    <g stroke="#7a7468" stroke-width="0.5" fill="none">
+      <path d="M28.2 19 H35.8 M27.9 23 H36.1 M27.5 27 H36.5 M27.2 31 H36.8 M26.8 35 H37.2"/>
+      <path d="M31 15 V19 M34 19 V23 M29.5 23 V27 M33 27 V31 M30 31 V35 M35 31 V35 M32.5 35 V39"/>
+    </g>
+    <path d="M26.5 39 L28.5 15 L35.5 15 L37.5 39 Z" fill="none" stroke="#5c574e" stroke-width="0.7"/>
+    <rect x="31.2" y="20" width="1.6" height="3" rx="0.8" fill="#3a3630"/>
+    <rect x="31.2" y="28" width="1.6" height="3" rx="0.8" fill="#3a3630"/>
+    <path d="M30 39 V35.2 Q32 33.2 34 35.2 V39 Z" fill="#5a4530"/>
+    <path d="M32 34.4 V39" stroke="#3f2f20" stroke-width="0.4"/>
+  </g>
+  <!-- Signal fire in an iron basket, with its glow and a wisp of smoke. -->
+  <circle cx="32" cy="8" r="7" fill="#f59a3a" opacity="0.16"/>
+  <circle cx="32" cy="7.5" r="5.5" fill="#f5d06a" opacity="0.2"/>
+  <g fill="#d8d4ca" opacity="0.55">
+    <circle cx="35.6" cy="3" r="1.1"/>
+    <circle cx="37.6" cy="2.2" r="0.8"/>
+  </g>
+  <path d="M29 10.5 Q28.8 6.5 31 3.5 Q31.4 5.6 32.4 6 Q33 3.8 34.4 3 Q34.2 5.4 35.2 7 Q35.6 9 35 10.5 Z" fill="#f59a3a"/>
+  <path d="M30.4 10.5 Q30.3 8 31.6 6.2 Q32.2 7.8 33 7.9 Q33.4 6.8 34 6.4 Q34.6 8.6 33.8 10.5 Z" fill="#f5d06a"/>
+  <path d="M28.6 10.8 L35.4 10.8 L34.6 12.2 L29.4 12.2 Z" fill="#3a362f"/>
+  <path d="M29.6 10.8 L30.2 9.4 M32 10.8 V9.2 M34.4 10.8 L33.8 9.4" stroke="#3a362f" stroke-width="0.5"/>
+  <!-- Corbelled parapet with merlons in front of the fire platform. -->
+  <path d="M27.5 16 L26.5 13.5 H37.5 L36.5 16 Z" fill="#938d82" stroke="#5c574e" stroke-width="0.6"/>
+  <path d="M26.5 13.5 V10.5 H28.5 V12 H30.5 V10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 Z" fill="#b0aa9e"/>
+  <path d="M32 10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 H32 Z" fill="#938d82"/>
+  <path d="M26.5 13.5 V10.5 H28.5 V12 H30.5 V10.5 H33.5 V12 H35.5 V10.5 H37.5 V13.5 Z" fill="none" stroke="#5c574e" stroke-width="0.6"/>
+  <!-- Gulls over the water. -->
+  <g stroke="#e6e1d2" stroke-width="1" fill="none" stroke-linecap="round">
+    <path d="M47 26 Q48.4 24.6 49.8 26 M49.8 26 Q51.2 24.6 52.6 26"/>
+    <path d="M52 44 Q53.1 43 54.2 44 M54.2 44 Q55.3 43 56.4 44"/>
+  </g>
+</svg>
