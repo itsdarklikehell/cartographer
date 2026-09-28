@@ -46,6 +46,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>Interior room (walls, doors, stairs)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="interior-room"></div>
 
+<h2>Cave level (rock walls, floor variants, a mouth on the north and west borders)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-cave"></div>
+
 <h2>Road network (path winding through grass)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-network"></div>
 
@@ -175,6 +178,17 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'door-v', 'floor-3', 'stairs-up', 'wall-v',
     'wall-corner-ne', 'wall-h', 'wall-h', 'wall-corner-nw',
   ].map((k) => img(`interior/interior-${k}`)).join('');
+
+  // A cave level: rough rock surrounds the floor, and one mouth sits on the
+  // north border and one on the west border.
+  document.getElementById('interior-cave').innerHTML = [
+    'W', 'W', 'W', 'mouth-h', 'W', 'W', 'W',
+    'W', 'W', '1', '2', '1', 'W', 'W',
+    'mouth-v', '2', '1', '2', 'W', '1', 'W',
+    'W', '1', 'W', '1', '2', '2', 'W',
+    'W', 'W', 'W', '2', '1', 'W', 'W',
+    'W', 'W', 'W', 'W', 'W', 'W', 'W',
+  ].map((k) => img(`interior/interior-cave-${k === 'W' ? 'wall' : k.length === 1 ? `floor-${k}` : k}`)).join('');
 
   document.getElementById('road-network').innerHTML = [
     'road/road-end-e', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',
