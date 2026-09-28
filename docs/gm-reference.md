@@ -187,10 +187,11 @@ The Generate card fills the current node with a generated layout.
 
 | Field | Values |
 | --- | --- |
-| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, or town. For an interior: dungeon, cave, castle, or building |
+| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building |
 | Size | small (8 x 8), medium (14 x 14), large (22 x 22), huge (32 x 32), or vast (48 x 48) |
 | Seed | The number that reproduces the layout |
 | Levels | For a dungeon or a cave, how many levels to create |
+| Sub-maps | For a region archetype, which places on the map also get maps of their own: none, one level down, or every level |
 
 The dialog previews the exact layout before it stamps anything. Every
 generated layout can reach its parent map. A dungeon or a cave gets an
@@ -239,7 +240,8 @@ has winding caverns of uneven width, with rough rock walls, pools, and a
 cave mouth on the border. A castle splits into halls and chambers behind a
 wall ring, with stairs up and down. Its largest room is a great hall with a
 throne and pillars. A building splits into a few small rooms and has no
-stairs. The room behind its door has a hearth and a table. The other rooms
+stairs. About one building in three has a trapdoor down to a small cellar.
+The room behind its door has a hearth and a table. The other rooms
 of a castle or a building are bedrooms, dining rooms, libraries,
 storerooms, chapels in a castle, or empty rooms. A dungeon has pillars in
 some large rooms, and a dungeon or a cave has rubble. The bottom level
@@ -249,13 +251,46 @@ A pillar, a table, a bed, and a bookshelf are obstacles. Like a wall, an
 obstacle is never where the party lands when it enters a map, and a new
 link never goes on one. A generated map never puts an obstacle beside a
 door or a staircase, or where it cuts off part of the floor. A trapdoor
-leads down like stairs down. Link it to the level below, and that level
-returns through its stairs up.
+leads down like stairs down. A generated building links its trapdoor to
+its cellar. On a map that you paint, link the trapdoor to the level below,
+and that level returns through its stairs up.
 
 Each level of a multi-level dungeon or cave becomes a child node. The stairs
 down of one level lead to the stairs up of the level below. The stairs down
 stand as far from the stairs up as the level allows. The bottom level has
 no stairs down.
+
+A world is a continent in a sea, split into up to nine regions. Each region
+is a block of land tiles that all link to one large region map. The terrain
+of the block sets the archetype of that map. Mountains and hills make
+highlands, snow makes a frontier, sand makes a desert, swamp makes
+wetlands, and other land makes wilderness. A small island is in no region.
+A world has rivers but no roads or settlements, because each region gets
+those on its own map.
+
+The Sub-maps field shows for every region archetype. It sets
+which places on the new map get maps of their own:
+
+- **None** changes the map alone.
+- **One level down** also gives each place on the map its own map. The
+  places are the regions of a world, the settlements, keep, dungeon, cave
+  entrances, mines, and ruins of an outdoor map, and the buildings of a
+  town.
+- **Every level** also gives the places on those maps their own maps, down
+  to the buildings of each town.
+
+Each sub-map gets a generated name. Its layout comes from its own seed,
+which comes from the seed of the map above it. The preview then stays the
+same with every Sub-maps choice. A dungeon or a cave sub-map gets one to three levels. All
+four cells of a town building link to its inside. A well, a fountain, a
+market, and a graveyard have no inside. One generation creates at most 300
+sub-maps. A place past that limit keeps its marker with no link, and the
+message after the generation counts those places. One undo removes the new
+map and every new sub-map.
+
+Generation makes the levels of a dungeon or a cave, and the cellar under a
+trapdoor, with every Sub-maps choice, because their stairs and trapdoors
+already lead down.
 
 ### Link warnings
 

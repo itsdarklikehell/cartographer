@@ -8,11 +8,30 @@ import { labeled, numberField, select } from './formFields.js';
 import { openDialog } from './Modal.js';
 
 /**
- * @typedef {{ archetype: string, size: string, levels: number, seed: number }} GenerateChoice
+ * @typedef {{
+ *   archetype: string,
+ *   size: string,
+ *   levels: number,
+ *   depth: number,
+ *   seed: number,
+ * }} GenerateChoice
+ * `depth` is how many levels of sub-maps to build under the map, where 0
+ * builds the map alone.
  */
 
 /**
- * The Generate dialog: archetype, size, and levels fields, plus a live
+ * The Sub-maps choices. "Every level" is deeper than any stack of places
+ * goes: a world opens into regions, a region into towns, and a town into
+ * buildings.
+ */
+const SUBMAP_DEPTHS = [
+  { value: '0', label: 'None' },
+  { value: '1', label: 'One level down' },
+  { value: '9', label: 'Every level' },
+];
+
+/**
+ * The Generate dialog: archetype, size, levels, and sub-maps fields, plus a live
  * preview of the candidate layout and its seed. Every field change
  * rerenders the preview through `makeCandidate`, a pure seeded build the
  * caller memoizes. Reroll draws a new seed. The seed field is editable,
@@ -33,6 +52,7 @@ import { openDialog } from './Modal.js';
  *   archetypes: { value: string, label: string }[],
  *   sizes: { value: string, label: string }[],
  *   stacked?: string[],
+ *   nested?: string[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
  *   imageCache?: Map<string, HTMLImageElement>,
  *   returnFocus?: HTMLElement | null,
@@ -80,6 +100,18 @@ export function generateDialog(options) {
         );
       syncLevels();
       archetypeSelect.addEventListener('change', syncLevels);
+
+      // The Sub-maps field shows for the archetypes in `nested` alone, whose
+      // maps have places that open into maps of their own.
+      const depthSelect = field('Sub-maps', select(SUBMAP_DEPTHS, '0'));
+      const depthField = /** @type {HTMLElement} */ (depthSelect.closest('.modal__field'));
+      const syncDepth = () =>
+        depthField.classList.toggle(
+          'modal__field--hidden',
+          !(options.nested ?? []).includes(archetypeSelect.value),
+        );
+      syncDepth();
+      archetypeSelect.addEventListener('change', syncDepth);
 
       // This is the seed row: the editable seed plus a Reroll button that
       // draws a fresh one. The preview canvas below always shows the
@@ -130,6 +162,9 @@ export function generateDialog(options) {
         archetype: archetypeSelect.value,
         size: sizeSelect.value,
         levels: clampInt(levelsInput.value, 1),
+        depth: (options.nested ?? []).includes(archetypeSelect.value)
+          ? clampInt(depthSelect.value)
+          : 0,
         seed: clampInt(seedInput.value),
       });
 

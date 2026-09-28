@@ -1,6 +1,15 @@
 import { randInt } from './GeneratorRandom.js';
 import { tileIdAt } from './MapGeometry.js';
-import { DOOR_H, DOOR_V, FLOOR, maskTiles, tileStamper, WALL } from './GeneratorInteriorMask.js';
+import {
+  DOOR_H,
+  DOOR_V,
+  FLOOR,
+  interiorRef,
+  maskTiles,
+  tileStamper,
+  walkDistances,
+  WALL,
+} from './GeneratorInteriorMask.js';
 import { dress, furnishHalls, furnisher } from './GeneratorFurnish.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -88,12 +97,14 @@ export function hallLayout(size, rng, style) {
  * @param {Tile[]} tiles @param {TilePalette} palette @param {number[]} cells
  * @param {number} size @param {() => number} rng @param {Room[]} rooms
  * @param {boolean} castle @param {number[]} reserved cell indexes of the stairs
+ * @returns {Map<number, string>} the furnishing on each furnished cell
  */
 function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved) {
   const doorX = Math.floor(size / 2);
   const { place, placed } = furnisher(cells, size, [doorX, size - 1], new Set(reserved));
   furnishHalls(place, rng, rooms, { castle, entrance: [doorX, size - 2] });
   dress(tiles, palette, size, placed);
+  return placed;
 }
 
 /**
@@ -118,16 +129,32 @@ export function generateCastle(palette, size, rng) {
   return { tiles, entry };
 }
 
+/** The chance that a building has a cellar under a trapdoor. */
+export const CELLAR_CHANCE = 0.3;
+
 /**
  * Generate the inside of one building, such as a house, a shop, or a
  * temple: a few small rooms of at least two cells a side, and no stairs.
- * The room behind the entrance has a hearth and a table.
+ * The room behind the entrance has a hearth and a table. A building has a
+ * cellar with a chance of `CELLAR_CHANCE`. Its trapdoor goes on the bare
+ * floor cell farthest from the entrance, and `stairsDown` names that tile,
+ * so the caller can link it to the cellar level.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {{ tiles: Tile[], entry: string }}
+ * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
  */
 export function generateBuilding(palette, size, rng) {
   const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth: 3 });
   const tiles = maskTiles(palette, cells, size, rng);
-  furnishHall(tiles, palette, cells, size, rng, rooms, false, []);
-  return { tiles, entry };
+  const placed = furnishHall(tiles, palette, cells, size, rng, rooms, false, []);
+  if (rng() >= CELLAR_CHANCE) return { tiles, entry, stairsDown: null };
+  const dist = walkDistances(cells, size, Math.floor(size / 2), size - 1);
+  let at = -1;
+  cells.forEach((code, i) => {
+    if (code === FLOOR && !placed.has(i) && (at < 0 || dist[i] > dist[at])) at = i;
+  });
+  if (at < 0) return { tiles, entry, stairsDown: null };
+  const stairsDown = tileIdAt(at % size, Math.floor(at / size));
+  const tile = /** @type {Tile} */ (tiles.find((t) => t.id === stairsDown));
+  tile.overlayRef = interiorRef(palette, 'trapdoor');
+  return { tiles, entry, stairsDown };
 }

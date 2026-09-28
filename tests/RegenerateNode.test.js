@@ -57,6 +57,20 @@ test('linkedDescendants never returns the node itself, and skips a dead link', (
   assert.deepEqual(linkedDescendants([...nodes, loop], loop), []);
 });
 
+test('linkedDescendants lists a child once when many tiles lead to it', () => {
+  const { nodes, level1 } = world();
+  const wide = withNodeTiles(createMapNode('wide', 'Wide', null, 3, 1), [
+    createTile('0,0', 'grass.svg', { childNodeId: 'l1' }),
+    createTile('1,0', 'grass.svg', { childNodeId: 'l1' }),
+    createTile('2,0', 'grass.svg', { childNodeId: 'l1' }),
+  ]);
+  const all = [...nodes.filter((n) => n.id !== 'l1'), { ...level1, parentId: 'wide' }, wide];
+  assert.deepEqual(
+    linkedDescendants(all, wide).map((n) => n.id),
+    ['l2', 'l3', 'cellar', 'l1'],
+  );
+});
+
 test('linkedDescendants on a node with no tiles returns nothing', () => {
   const { nodes } = world();
   assert.deepEqual(linkedDescendants(nodes, createMapNode('bare', 'Bare', null, 2, 2)), []);

@@ -7,7 +7,7 @@ import {
   SIZE_OPTIONS,
   ARCHETYPES,
   generateNodeTiles,
-  generateLevels,
+  NESTED_ARCHETYPES,
 } from '../src/map/MapGenerator.js';
 import { generateDungeon } from '../src/map/GeneratorInteriors.js';
 import { wallKind } from '../src/map/GeneratorInteriorMask.js';
@@ -29,15 +29,15 @@ test('an unknown size preset falls back to the medium dimensions', () => {
   );
   assert.equal(gen.width, med);
   assert.equal(gen.height, med);
-  // generateLevels shares the same size lookup and clamps the count.
-  const levels = generateLevels(
+  // A dungeon shares the same size lookup, and its level count clamps up to
+  // one, so it gets no stairs down and no site below.
+  const level = generateNodeTiles(
     palette,
-    { size: 'gargantuan', levels: 0 },
+    { archetype: 'dungeon', size: 'gargantuan', levels: 0 },
     mulberry32(1),
-    () => 'x',
   );
-  assert.equal(levels.length, 1, 'levels count clamps up to at least one');
-  assert.equal(levels[0].width, med);
+  assert.equal(level.width, med);
+  assert.deepEqual(level.sites, []);
 });
 
 test('generateDungeon defaults entrance to edge and descend to true', () => {
@@ -242,50 +242,6 @@ test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => 
   assert.ok(!gen.tiles.some((t) => t.imageRef.includes('stairs-down')));
 });
 
-test('multi-level dungeon links each stairs-down to the level below, none on the bottom', () => {
-  for (const seed of [5, 21]) {
-    const ids = ['lvl-2', 'lvl-3', 'lvl-4'];
-    let next = 0;
-    const levels = generateLevels(
-      palette,
-      { size: 'medium', levels: 3 },
-      mulberry32(seed),
-      () => ids[next++],
-    );
-    assert.equal(levels.length, 3, `seed ${seed}: three levels`);
-    assert.equal(levels[0].id, null, 'first level fills the existing node');
-    assert.deepEqual(
-      levels.slice(1).map((l) => l.id),
-      ['lvl-2', 'lvl-3'],
-    );
-    for (let i = 0; i < levels.length; i++) {
-      const down = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-down'));
-      const up = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-up'));
-      assert.equal(up.length, 1, `seed ${seed} level ${i + 1}: one stairs-up`);
-      if (i < levels.length - 1) {
-        assert.equal(down.length, 1, `seed ${seed} level ${i + 1}: one stairs-down`);
-        assert.equal(
-          down[0].childNodeId,
-          levels[i + 1].id,
-          `seed ${seed} level ${i + 1}: stairs-down links to the level below`,
-        );
-      } else {
-        assert.equal(down.length, 0, `seed ${seed}: bottom level has no stairs-down`);
-      }
-    }
-    // Deeper levels are stairs-entered: entry is their stairs-up, and there is
-    // no border door (that's the surface entrance of level 1 only).
-    for (const level of levels.slice(1)) {
-      const up = level.tiles.find((t) => t.imageRef.includes('stairs-up'));
-      assert.equal(level.entry, up.id, `seed ${seed}: deep level entry is its stairs-up`);
-      assert.ok(
-        !level.tiles.some((t) => t.imageRef.includes('door')),
-        `seed ${seed}: deep level has no surface door`,
-      );
-    }
-  }
-});
-
 test('wallKind picks pieces by connected wall arms', () => {
   assert.equal(wallKind(true, true, true, true), 'wall-cross');
   assert.equal(wallKind(true, true, false, true), 'wall-tee-n');
@@ -443,4 +399,51 @@ test('each climate archetype dispatches to its own profile', () => {
   );
   const sandy = desert.tiles.filter((t) => t.imageRef.includes('/desert/')).length;
   assert.ok(sandy > desert.tiles.length / 3, `desert tiles: ${sandy}`);
+});
+
+test('every region archetype, the world included, opens into sub-maps', () => {
+  assert.ok(ARCHETYPES.region.some((a) => a.value === 'world'));
+  assert.deepEqual(
+    NESTED_ARCHETYPES,
+    ARCHETYPES.region.map((a) => a.value),
+  );
+  const world = generateNodeTiles(palette, { archetype: 'world', size: 'medium' }, mulberry32(1));
+  assert.ok(world.sites.length >= 2);
+});
+
+test('a dungeon level opens into the level below as a forced site', () => {
+  const gen = generateNodeTiles(
+    palette,
+    { archetype: 'dungeon', size: 'medium', levels: 3, level: 2, environ: 'crypt' },
+    mulberry32(5),
+  );
+  assert.deepEqual(gen.sites, [
+    {
+      tileIds: [gen.sites[0].tileIds[0]],
+      archetype: 'dungeon',
+      kind: 'interior',
+      environ: 'crypt',
+      size: 'medium',
+      label: 'level 3',
+      forced: true,
+      levels: 2,
+      level: 3,
+    },
+  ]);
+  const up = gen.tiles.find((t) => t.id === gen.entry);
+  assert.match(String(up?.imageRef), /stairs-up/, 'a level below the first enters by its stairs');
+});
+
+test('a building with a trapdoor opens into a small cellar', () => {
+  const gen = generateNodeTiles(palette, { archetype: 'building', size: 'small' }, mulberry32(10));
+  assert.equal(gen.sites.length, 1);
+  assert.equal(gen.sites[0].archetype, 'cellar');
+  assert.ok(gen.sites[0].forced);
+  const plain = generateNodeTiles(palette, { archetype: 'building', size: 'small' }, mulberry32(1));
+  assert.deepEqual(plain.sites, []);
+  const cellar = generateNodeTiles(palette, { archetype: 'cellar', size: 'small' }, mulberry32(3));
+  assert.equal(cellar.width, 8);
+  assert.match(String(cellar.tiles.find((t) => t.id === cellar.entry)?.imageRef), /stairs-up/);
+  assert.ok(!cellar.tiles.some((t) => t.imageRef.includes('stairs-down')));
+  assert.deepEqual(cellar.sites, []);
 });

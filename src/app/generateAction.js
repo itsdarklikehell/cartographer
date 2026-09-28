@@ -2,11 +2,12 @@ import { createMapNode } from '../map/TileGrid.js';
 import { withNodeTiles } from '../map/TileIndex.js';
 import {
   generateNodeTiles,
-  generateLevels,
   ARCHETYPES,
+  NESTED_ARCHETYPES,
   STACKED_ARCHETYPES,
   SIZE_OPTIONS,
 } from '../map/MapGenerator.js';
+import { expandTree } from '../map/GeneratorTree.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
@@ -32,6 +33,7 @@ import { resyncMapViews } from './mapResync.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 /** @typedef {import('../ui/GenerateDialog.js').GenerateChoice} GenerateChoice */
+/** @typedef {import('../map/GeneratorTree.js').TreeRoot} TreeRoot */
 /** @typedef {{ width: number, height: number, tiles: import('../types/map.js').Tile[], entry: string }} Layout */
 
 /**
@@ -55,7 +57,11 @@ function replaceQuestion(node, removed) {
  * tile by tile. Archetypes are filtered to the node's kind, and overwriting
  * a non-empty node asks for confirmation. The sub-maps the old tiles led to
  * are removed with the tiles, because nothing reaches them once the tiles
- * are gone. The stroke-undo ring records the whole change.
+ * are gone. The generation also creates the new sub-maps: the levels below
+ * a dungeon, the cellar under a trapdoor, and, to the depth the GM picks,
+ * the maps of the places on the new map (see `GeneratorTree.expandTree`).
+ * The stroke-undo ring records the whole change, so one undo removes every
+ * new sub-map.
  * @param {AppContext} app
  * @param {MapEnv} env the map wiring's shared context, for the stroke-undo
  *   snapshot and the post-generate resync
@@ -69,49 +75,42 @@ export function wireGenerateAction(app, env) {
     const archetypes = ARCHETYPES[node.kind];
 
     /**
-     * Build and cache the full generation result for a dialog choice. The
-     * RNG is seeded from the choice, so the preview the dialog draws and the
-     * layout stamped on accept are the same map. The seed shown to the GM
-     * reproduces it later. This function builds multi-level dungeons and caves whole,
-     * so the preview's level 1 carries the exact stairs the accepted map will.
-     * The rng is kept so the entrance art drawn after the layout follows the
-     * seed too.
-     * @type {{ key: string, gen: Layout, levels: ReturnType<typeof generateLevels> | null, rng: () => number } | null}
-     */
-    let candidate = null;
-    const freshId = () => freshNodeId((id) => Boolean(grid.getNode(id)));
-    /** @param {GenerateChoice} choice */
-    const buildCandidate = (choice) => {
-      if (candidate?.key !== JSON.stringify(choice)) {
-        const rng = mulberry32(choice.seed);
-        candidate = { key: JSON.stringify(choice), ...buildLayout(choice, rng), rng };
-      }
-      return candidate;
-    };
-    /**
+     * The spec of the top map for a dialog choice. The preview and the
+     * accepted tree both generate the top map from this spec and a fresh RNG
+     * seeded from the choice, so the preview is the map the GM gets, and the
+     * seed shown to the GM reproduces it later. A multi-level dungeon or
+     * cave previews its first level with the stairs down that lead to the
+     * level below.
      * @param {GenerateChoice} choice
-     * @param {() => number} rng
-     * @returns {{ gen: Layout, levels: ReturnType<typeof generateLevels> | null }}
+     * @returns {TreeRoot}
      */
-    const buildLayout = (choice, rng) => {
-      if (STACKED_ARCHETYPES.includes(choice.archetype)) {
-        // A dungeon or a cave can be a chain of levels. Each level's stairs-down
-        // links to a freshly created child node that holds the level
-        // below, so stairs always connect to a real generated level.
-        const options = { archetype: choice.archetype, size: choice.size, levels: choice.levels };
-        const levels = generateLevels(palette, options, rng, freshId);
-        return { gen: levels[0], levels };
-      }
-      const options = { kind: node.kind, archetype: choice.archetype, size: choice.size };
-      return { gen: generateNodeTiles(palette, options, rng), levels: null };
-    };
+    const rootFor = (choice) => ({
+      id: node.id,
+      name: node.name,
+      kind: node.kind,
+      environ: node.environ,
+      archetype: choice.archetype,
+      size: choice.size,
+      levels: choice.levels,
+    });
+    /** @type {{ key: string, gen: Layout } | null} */
+    let preview = null;
     /** @param {GenerateChoice} choice */
-    const makeCandidate = (choice) => buildCandidate(choice).gen;
+    const makeCandidate = (choice) => {
+      const key = JSON.stringify({ ...choice, depth: 0 });
+      if (preview?.key !== key) {
+        const root = rootFor(choice);
+        const spec = { ...root, environ: root.environ ?? undefined };
+        preview = { key, gen: generateNodeTiles(palette, spec, mulberry32(choice.seed)) };
+      }
+      return preview.gen;
+    };
 
     const values = await generateDialog({
       archetypes,
       sizes: SIZE_OPTIONS,
       stacked: STACKED_ARCHETYPES,
+      nested: NESTED_ARCHETYPES,
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,
       returnFocus: generateBtn,
@@ -127,12 +126,16 @@ export function wireGenerateAction(app, env) {
     ) {
       return;
     }
-    const built = buildCandidate(values);
-    const gen = built.gen;
-    const deeper = built.levels ? built.levels.slice(1) : [];
+    const tree = expandTree(
+      palette,
+      rootFor(values),
+      { seed: values.seed, depth: values.depth },
+      () => freshNodeId((id) => Boolean(grid.getNode(id))),
+    );
+    const [gen, ...deeper] = tree.nodes;
     const removedIds = new Set(removed.map((n) => n.id));
     // The regenerated layout replaces the node, removes the sub-maps its old
-    // tiles led to, adds the deeper levels, and can restamp its parent's
+    // tiles led to, adds the new sub-maps, and can restamp its parent's
     // entrance link below. It also empties every location the removed nodes
     // held, and re-lands every character and creature standing in the node
     // itself. Record all of it so the stroke-undo ring can revert it.
@@ -140,7 +143,7 @@ export function wireGenerateAction(app, env) {
       regenerateSnapshot({
         node,
         parent: grid.getParent(node),
-        created: deeper.map((level) => /** @type {string} */ (level.id)),
+        created: deeper.map((sub) => sub.id),
         removed,
         party: partyTracker.getPosition(),
         recalled: placementsIn(state.characters, new Set([...removedIds, node.id])),
@@ -162,17 +165,13 @@ export function wireGenerateAction(app, env) {
     // Nothing leads to the removed sub-maps any more, so how they were
     // entered no longer describes anything.
     state.entryTiles = forgetEntries(state.entryTiles, removedIds);
-    deeper.forEach((level, i) => {
-      const child = createMapNode(
-        /** @type {string} */ (level.id),
-        `${node.name} (level ${i + 2})`,
-        node.id,
-        level.width,
-        level.height,
-        { kind: 'interior', environ: node.environ },
-      );
-      grid.addNode(withNodeTiles(child, level.tiles));
-    });
+    for (const sub of deeper) {
+      const child = createMapNode(sub.id, sub.name, sub.parentId, sub.width, sub.height, {
+        kind: sub.kind,
+        environ: sub.environ,
+      });
+      grid.addNode(withNodeTiles(child, sub.tiles));
+    }
     grid.updateNode(withNodeTiles({ ...node, width: gen.width, height: gen.height }, gen.tiles));
     // A generated map must be reachable from the overworld, not just
     // internally connected. If no parent tile links to this node yet, stamp
@@ -186,7 +185,7 @@ export function wireGenerateAction(app, env) {
         // Wilderness gets no marker. The link rides the existing terrain tile
         // (or a fresh grass tile) and shows as a region outline once discovered.
         markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
-        createRef: palette.pickVariant('grass', built.rng).imageRef,
+        createRef: palette.pickVariant('grass', tree.rng).imageRef,
         poiType: artFor ? artFor.poi : null,
       });
       if (linked.tileId) {
@@ -259,6 +258,11 @@ export function wireGenerateAction(app, env) {
     resyncMapViews(app, env, { reframe: true });
     refreshLocationPanels(app);
     app.actions.markDirty();
-    app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);
+    const subs = deeper.length === 1 ? '1 sub-map' : `${deeper.length} sub-maps`;
+    const extra = deeper.length ? ` with ${subs}` : '';
+    const unbuilt = tree.skipped ? ` ${tree.skipped} more places have no map yet.` : '';
+    app.toasts.show(
+      `Generated ${values.archetype} map in "${node.name}"${extra} (seed ${values.seed}).${unbuilt}`,
+    );
   });
 }

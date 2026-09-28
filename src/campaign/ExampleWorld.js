@@ -457,8 +457,8 @@ export function buildExampleWorld(palette, rng = Math.random) {
   ];
   /** @type {Record<string, GeneratedNode>} */
   const gens = {};
-  for (const { id, kind, archetype } of regions) {
-    gens[id] = generateNodeTiles(palette, { kind, archetype, size: 'medium' }, rng);
+  for (const { id, archetype } of regions) {
+    gens[id] = generateNodeTiles(palette, { archetype, size: 'medium' }, rng);
   }
 
   // Northmarch: the raiders' camp, deep in the forest, with Snagtooth at it

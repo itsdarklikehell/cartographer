@@ -130,11 +130,18 @@ The left button paints, a right-button drag pans, and the wheel zooms.
 4. Write down the seed if you want this layout again.
 5. For a dungeon with more than one level, set **Levels**. Each level
    becomes a child node, joined by its stairs.
-6. Accept. If the node already has tiles, the app confirms first.
+6. For an outdoor map or a world, set **Sub-maps** to also generate the
+   maps of its places: its regions, towns, keep, dungeons, caves, and town
+   buildings. **One level down** stops at the places on this map, and
+   **Every level** goes down to the buildings of each town.
+7. Accept. If the node already has tiles, the app confirms first.
 
 If nothing on the parent map links to this node, the app places an entrance
 tile near the center of the parent and tells you where. Repaint or relink
 that tile to move the entrance.
+
+To take back a generation, undo once. The undo also removes every sub-map
+that the generation created.
 
 ### Mark a point of interest
 

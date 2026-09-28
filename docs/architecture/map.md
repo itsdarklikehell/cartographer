@@ -310,7 +310,7 @@ pond cell becomes water.
 After the rivers, `src/map/GeneratorSites.js` places the sites of an
 outdoor map. A site is a place that people built: a settlement, a keep, or
 a dungeon. Each site marks one tile with a marker and names the archetype
-that its own map would have (`town`, `castle`, or `dungeon`). `siteCounts`
+of its own map (`town`, `castle`, or `dungeon`). `siteCounts`
 sets how many of each a map gets, from one settlement on a small map to
 five settlements, a keep, and a dungeon on a vast map.
 
@@ -430,8 +430,9 @@ edge level cuts a straight tunnel from its stairs up to the nearest border
 and sets a door there. `interiorExits` in `MapExits.js` accepts a door on
 the border as a way out, so the party can walk back to the parent map. The
 stairs down go on the cell farthest from the stairs up by walking distance.
-`generateLevels` in `MapGenerator.js` chains the levels and links each
-stairs down to the level below through `childNodeId`.
+The stairs down of a level lead to the level below through `childNodeId`.
+The level lists a forced site for that level, and `expandTree` builds it
+(see [Nested generation](#nested-generation)).
 
 A castle and a building (`src/map/GeneratorHalls.js`) fill the whole grid
 with a wall ring and a door in the middle of the south wall. `hallLayout`
@@ -441,7 +442,11 @@ cuts the longer side, so rooms stay near square. A new wall never ends
 beside a door in the wall around its room, because that wall would block
 the door from one side. A castle keeps rooms of at least three cells a side
 and has stairs, and a building keeps rooms of at least two cells a side,
-with no stairs.
+with no stairs. A building has a cellar with a chance of `CELLAR_CHANCE`
+(three in ten). Its trapdoor goes on the bare floor cell farthest from the
+door, after the furnishings. The `cellar` archetype in `MapGenerator.js`
+generates the cellar as a small dungeon level that the party enters by its
+stairs up.
 
 Each interior generator then furnishes its map through `src/map/GeneratorFurnish.js`.
 A furnishing is an overlay on a floor tile, and `furnisher` refuses a cell
@@ -457,6 +462,47 @@ with pillars, and a cave level gets small pools. Both scatter rubble, and
 the bottom level of each puts a chest on the floor cell farthest from the
 way in.
 
+### Nested generation
+
+Every archetype returns `sites` beside its tiles. A site is a place on the
+map that opens into a sub-map of its own. Its type is `GeneratedSite` in
+`src/types/map.ts`, and it lists the tiles that link to the sub-map, plus
+the archetype, the kind, the environ, and the size preset of that map. An
+outdoor map lists its settlements, its keep, and its dungeon, and each cave
+entrance, mine, and ruin (`siteMap` in `GeneratorSites.js`). A town lists
+each building that has an inside, over all four cells of its art. A well, a
+fountain, a market, and a graveyard are open ground, so they are not sites.
+
+A dungeon or a cave level with stairs down lists a forced site for the level
+below it. A building with a trapdoor lists a forced site for its cellar. A
+forced site always gets its map, because its tile already leads down.
+
+`src/map/GeneratorWorld.js` is the world archetype. Its terrain uses the
+`continent` profile, with rivers but no roads or settlements. `partitionLand`
+splits the largest land mass into regions of about 80 cells each, to a
+maximum of nine. The first seed is a random cell, and each later seed is the
+cell farthest from the seeds so far. Each region grows from its seed over
+land, one ring of neighbors at a time, so a region is always one connected
+block. Each other land mass of 12 cells or more becomes one region, and a
+smaller island is in no region. `regionFor` picks the archetype of each
+region from its terrain. Every tile of a region links to the region map, so
+the region shows as one region group on the world.
+
+`expandTree` in `src/map/GeneratorTree.js` builds a map and its sub-maps,
+breadth first. The top map draws from `mulberry32(seed)`. Each sub-map draws
+from `mulberry32(childSeed(parentSeed, siteIndex))`, and never from the RNG
+of its parent. The top map is then the same with or without its sub-maps,
+so the Generate preview builds the top map alone. `depth` limits the
+optional sites. `SUBMAP_BUDGET` stops the optional sub-maps at 300, because
+each sub-map adds to the save. A vast world with every level holds about 260
+maps and adds about 1.1 MB, and the save warns at 3 MB.
+
+`src/map/GeneratorNames.js` names each sub-map from its own RNG. A forced
+map takes the name of the map at the top of its stack and adds its label,
+for example "Ashford Barrow (level 2)". `expandTree` gets node ids from a
+`makeId` callback. It also refuses an id that it gave out earlier in the
+same batch, so two new nodes never share an id.
+
 ### Generator modules
 
 The generator archetypes build on these helpers, and `MapGenerator`
@@ -467,7 +513,9 @@ dispatches to them. The climate archetypes are in
 The dungeon is in `src/map/GeneratorInteriors.js`, the cave in
 `src/map/GeneratorCave.js`, and the castle and the building in
 `src/map/GeneratorHalls.js`. They all draw furnishings with
-`src/map/GeneratorFurnish.js`. The example world in
+`src/map/GeneratorFurnish.js`. The world is in `src/map/GeneratorWorld.js`,
+and `src/map/GeneratorTree.js` and `src/map/GeneratorNames.js` build and
+name the sub-maps. The example world in
 `campaign/ExampleWorld.js` uses them too.
 
 A tile's `overlayRef` can be either a single reference or a draw-ordered

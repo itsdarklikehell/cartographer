@@ -80,3 +80,26 @@ export interface PartyPosition {
   nodeId: string;
   tileId: string;
 }
+
+/** A place on a generated map that can open into a sub-map of its own, for
+ *  example a town marker on a wilderness or the stairs down of a dungeon
+ *  level. See GeneratorTree.expandTree.
+ *  `tileIds` are the tiles that link to the sub-map. `size` is a size preset
+ *  of MapGenerator.GENERATOR_SIZES. `label` names the kind of place, for
+ *  example "inn" or "village", and a `forced` site uses it as the name
+ *  suffix, for example "level 2". A `forced` site is always built, whatever
+ *  the depth and the budget, because its tile already leads somewhere.
+ *  `levels` is the level count of a dungeon or a cave, counted from this
+ *  site down, and `level` is the number of the level that the site opens
+ *  into, where the top level is 1. */
+export interface GeneratedSite {
+  tileIds: string[];
+  archetype: string;
+  kind: NodeKind;
+  environ: string;
+  size: string;
+  label: string;
+  forced?: boolean;
+  levels?: number;
+  level?: number;
+}

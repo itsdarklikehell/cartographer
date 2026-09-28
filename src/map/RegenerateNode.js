@@ -23,17 +23,21 @@ import { relandedTile } from './NodeEdits.js';
  * The nodes the old tiles of `node` link to, with their whole subtrees. A
  * regeneration removes these. A child that no tile links to is already
  * unreachable, and the regeneration leaves it alone. The node itself is
- * never in the result, even when a tile links back to it.
+ * never in the result, even when a tile links back to it. Many tiles can
+ * link to one child, for example every tile of a region on a world map, so
+ * each child subtree is walked once.
  * @param {MapNode[]} nodes every node in the grid
  * @param {MapNode} node the node being regenerated
  * @returns {MapNode[]}
  */
 export function linkedDescendants(nodes, node) {
+  const children = new Set(
+    node.tiles.map((t) => t.childNodeId).filter((id) => id && id !== node.id),
+  );
   /** @type {Set<string>} */
   const doomed = new Set();
-  for (const tile of node.tiles) {
-    if (!tile.childNodeId || tile.childNodeId === node.id) continue;
-    for (const id of collectSubtreeIds(nodes, tile.childNodeId)) doomed.add(id);
+  for (const child of children) {
+    for (const id of collectSubtreeIds(nodes, /** @type {string} */ (child))) doomed.add(id);
   }
   doomed.delete(node.id);
   return nodes.filter((n) => doomed.has(n.id));

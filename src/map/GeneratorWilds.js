@@ -5,11 +5,12 @@ import { randInt, shuffle } from './GeneratorRandom.js';
 import { BIOME_TERRAIN, TERRAIN_PROFILES, terrainField } from './GeneratorTerrain.js';
 import { traceRivers } from './GeneratorRivers.js';
 import { bridgeAt } from './GeneratorRoads.js';
-import { connectSites, plantFarmland, planSites } from './GeneratorSites.js';
+import { connectSites, plantFarmland, planSites, siteMap } from './GeneratorSites.js';
 import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./GeneratorSites.js').Site} Site */
 
 /**
@@ -47,6 +48,12 @@ const LANDMARK_AFFINITY = {
   oasis: { on: 'desert' },
   lighthouse: { shore: true },
 };
+
+/**
+ * The landmarks that open into a sub-map, and the archetype of that map.
+ * @type {Record<string, string>}
+ */
+const LANDMARK_MAPS = { 'cave-entrance': 'cave', mine: 'cave', ruins: 'dungeon' };
 
 /** The fewest water cells within two cells that count as open water. */
 const OPEN_WATER = 4;
@@ -285,13 +292,15 @@ export function fordCrossings(terrain, sites) {
  * wilderness, highlands, frontier, desert, wetlands, or island. The entry
  * is the border tile where the first road leaves the map. A map with no
  * road off the map, such as an island, enters at the bottom-center border
- * tile. `sites` lists the settlements, the keep, and the dungeon, each with
- * the archetype its own map would have.
+ * tile. `sites` lists the settlements, the keep, the dungeon, and each
+ * cave entrance, mine, and ruin that drew its marker, each with the
+ * sub-map it opens into. A mine and a cave entrance open into a cave, and a
+ * ruin into a dungeon.
  * @param {TilePalette} palette
  * @param {number} size
  * @param {() => number} rng
  * @param {string} [archetype] a key of TERRAIN_PROFILES
- * @returns {{ tiles: Tile[], entry: string, sites: Site[] }}
+ * @returns {{ tiles: Tile[], entry: string, sites: GeneratedSite[] }}
  */
 export function generateWilds(palette, size, rng, archetype = 'wilderness') {
   const terrain = wildTerrain(size, archetype, rng);
@@ -307,13 +316,31 @@ export function generateWilds(palette, size, rng, archetype = 'wilderness') {
     new Set(sites.map((s) => s.tileId)),
   );
   const byId = tilesById(tiles);
+  /** @type {GeneratedSite[]} */
+  const maps = [];
   for (const site of sites) {
     const tile = /** @type {Tile} */ (byId.get(site.tileId));
     const ref = palette.get(site.marker)?.imageRef;
     if (!ref) continue;
     tile.imageRef = ref;
     tile.metadata = { ...tile.metadata, poiType: site.poi };
+    maps.push(siteMap(site));
   }
-  placeLandmarks(palette, terrain, tiles, clamp(Math.round(size / 7), 1), rng);
-  return { tiles, entry: exits[0] ?? tileIdAt(Math.floor(size / 2), size - 1), sites };
+  const landmarks = placeLandmarks(palette, terrain, tiles, clamp(Math.round(size / 7), 1), rng);
+  for (const id of landmarks) {
+    const ref = /** @type {Tile} */ (byId.get(id)).imageRef;
+    const type = Object.keys(LANDMARK_MAPS).find((t) => palette.get(t)?.imageRef === ref);
+    if (!type) continue;
+    const inside = LANDMARK_MAPS[type];
+    maps.push({
+      tileIds: [id],
+      archetype: inside,
+      kind: 'interior',
+      environ: inside,
+      size: 'medium',
+      label: type,
+    });
+  }
+  const entry = exits[0] ?? tileIdAt(Math.floor(size / 2), size - 1);
+  return { tiles, entry, sites: maps };
 }

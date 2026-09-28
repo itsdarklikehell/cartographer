@@ -224,3 +224,26 @@ test('a walled town draws its wall, corner towers, gates, and water gates', () =
   const open = generateTown(palette, 22, mulberry32(1));
   assert.ok(!open.tiles.some((t) => String(t.overlayRef).includes('town-')), 'seed 1 has no wall');
 });
+
+test('each building with an inside is a site over its four cells', () => {
+  for (const seed of [1, 2, 3]) {
+    const size = 22;
+    const town = generateTown(palette, size, mulberry32(seed));
+    const plan = planTown(size, mulberry32(seed));
+    const open = ['well', 'fountain', 'market', 'graveyard'];
+    const inside = plan.buildings.filter((b) => !open.includes(b.art));
+    assert.equal(town.sites.length, inside.length, `seed ${seed}`);
+    town.sites.forEach((site, i) => {
+      const [x, y] = inside[i].id.split(',').map(Number);
+      assert.deepEqual(site.tileIds, [
+        `${x},${y}`,
+        `${x + 1},${y}`,
+        `${x},${y + 1}`,
+        `${x + 1},${y + 1}`,
+      ]);
+      assert.equal(site.archetype, 'building');
+      assert.equal(site.label, inside[i].art);
+      assert.ok(!open.includes(site.label));
+    });
+  }
+});

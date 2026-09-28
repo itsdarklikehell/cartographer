@@ -175,7 +175,9 @@ The gesture layers live beside it, in their own files:
 
 A generated layout replaces every tile of the node, so the sub-maps the
 replaced tiles led to are removed with them. A multi-level dungeon leaves its
-deeper levels this way, and the new level 1 gets new ones. The pure decisions
+deeper levels this way, and the new level 1 gets new ones. The new nodes come
+from `GeneratorTree.expandTree`, and the undo record names every one of them
+in its created ids. The pure decisions
 live in `src/map/RegenerateNode.js`. `linkedDescendants` names the nodes to
 remove: every node a replaced tile links to, with its subtree. A child that
 no tile links to is left alone, because it was already unreachable.
@@ -197,7 +199,7 @@ removed nodes, the party position, the locations of the characters and
 creatures the edit moved, the nodes the handouts it set loose were bound
 to, and the entry memory. `undoStroke` in `mapAuthoring.js` applies them
 all, then refreshes the panels that filter by location through
-`app/locationPanels.js`. The rng that drew the layout also
+`app/locationPanels.js`. The rng that drew the top map also
 picks the entrance art on the parent, so one seed gives one result.
 
 Each edit calls `finishEdit` on the `MapEnv` when it is done, which records

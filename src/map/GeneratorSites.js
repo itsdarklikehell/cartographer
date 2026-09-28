@@ -3,6 +3,7 @@ import { ArmNetwork } from './Autotile.js';
 import { distanceTo, layRoad, ROAD_COST, routeRoad } from './GeneratorRoads.js';
 
 /** @typedef {import('../types/map.js').POIType} POIType */
+/** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./GeneratorWilds.js').WildTerrain} WildTerrain */
 
 /**
@@ -258,4 +259,23 @@ export function connectSites(terrain, sites) {
     exits.push(tileIdAt(bx, by));
   }
   return { roads, exits };
+}
+
+/**
+ * The sub-map of a site. A settlement opens into a town region: a city
+ * gets a large map, a village a small one, and a town or a port a medium
+ * one. A keep and a dungeon open into a medium interior.
+ * @param {Site} site
+ * @returns {GeneratedSite}
+ */
+export function siteMap(site) {
+  const town = site.archetype === 'town';
+  return {
+    tileIds: [site.tileId],
+    archetype: site.archetype,
+    kind: town ? 'region' : 'interior',
+    environ: !town ? site.archetype : site.marker === 'port' ? 'coast' : 'grassland',
+    size: site.marker === 'city' ? 'large' : site.marker === 'village' ? 'small' : 'medium',
+    label: site.marker,
+  };
 }

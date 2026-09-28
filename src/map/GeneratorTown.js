@@ -8,6 +8,7 @@ import { planWall } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').POIType} POIType */
+/** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./Autotile.js').Arm} Arm */
 /** @typedef {import('./GeneratorRoads.js').RoadGround} RoadGround */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -47,6 +48,35 @@ const EXTRA_BUILDINGS = [
  * crossroads or a cottage at the edge of the core.
  */
 const HOME = 'home';
+
+/**
+ * The interior environ of each building that opens into a sub-map of its
+ * own. A well, a fountain, a market, and a graveyard are open ground, so they
+ * have no inside. The larger public buildings get a medium map.
+ * @type {Record<string, { environ: string, size: string }>}
+ */
+const BUILDING_INTERIORS = {
+  inn: { environ: 'inn', size: 'small' },
+  tavern: { environ: 'tavern', size: 'small' },
+  blacksmith: { environ: 'shop', size: 'small' },
+  'general-store': { environ: 'shop', size: 'small' },
+  alchemist: { environ: 'shop', size: 'small' },
+  bakery: { environ: 'shop', size: 'small' },
+  temple: { environ: 'temple', size: 'medium' },
+  shrine: { environ: 'temple', size: 'small' },
+  'wizard-tower': { environ: 'academy', size: 'small' },
+  academy: { environ: 'academy', size: 'medium' },
+  barracks: { environ: 'barracks', size: 'medium' },
+  guildhall: { environ: 'guildhall', size: 'medium' },
+  'town-hall': { environ: 'guildhall', size: 'medium' },
+  warehouse: { environ: 'warehouse', size: 'small' },
+  stables: { environ: 'warehouse', size: 'small' },
+  watermill: { environ: 'warehouse', size: 'small' },
+  windmill: { environ: 'warehouse', size: 'small' },
+  house: { environ: 'house', size: 'small' },
+  cottage: { environ: 'house', size: 'small' },
+  farm: { environ: 'house', size: 'small' },
+};
 
 /** The extra cost of a bend in a street, so streets run straight. */
 const TURN = 0.6;
@@ -339,9 +369,11 @@ export function planTown(size, rng) {
  * pieces draw as overlays in place of any street under them. The plaza
  * takes no street overlay, so the streets open onto the cobbles. Each building
  * marker draws with span 2 over its block, and the covered cells keep their
- * grass under the scaled art.
+ * grass under the scaled art. Each building with an inside is a site whose
+ * four cells all link to its interior, so the party can enter from any cell
+ * under the art.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {{ tiles: Tile[], entry: string }}
+ * @returns {{ tiles: Tile[], entry: string, sites: GeneratedSite[] }}
  */
 export function generateTown(palette, size, rng) {
   const plan = planTown(size, rng);
@@ -361,5 +393,19 @@ export function generateTown(palette, size, rng) {
     const tile = /** @type {Tile} */ (byId.get(id));
     tile.overlayRef = /** @type {PaletteEntry} */ (palette.getTownWallPiece(piece)).imageRef;
   }
-  return { tiles, entry: plan.entry };
+  /** @type {GeneratedSite[]} */
+  const sites = [];
+  for (const { id, art } of plan.buildings) {
+    const inside = BUILDING_INTERIORS[art];
+    if (!inside) continue;
+    const [x, y] = id.split(',').map(Number);
+    const tileIds = [
+      tileIdAt(x, y),
+      tileIdAt(x + 1, y),
+      tileIdAt(x, y + 1),
+      tileIdAt(x + 1, y + 1),
+    ];
+    sites.push({ tileIds, archetype: 'building', kind: 'interior', label: art, ...inside });
+  }
+  return { tiles, entry: plan.entry, sites };
 }

@@ -3,9 +3,11 @@ import { generateTown } from './GeneratorTown.js';
 import { generateDungeon } from './GeneratorInteriors.js';
 import { generateCave } from './GeneratorCave.js';
 import { generateBuilding, generateCastle } from './GeneratorHalls.js';
+import { generateWorld } from './GeneratorWorld.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
+/** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 
 /**
@@ -13,8 +15,8 @@ import { generateBuilding, generateCastle } from './GeneratorHalls.js';
  * Build UI offers, and the dispatchers that run a generator and hand the
  * caller a stampable tile grid. The archetype generators themselves live in
  * GeneratorWilds.js (wilderness and its climate variants), GeneratorTown.js
- * (town), GeneratorInteriors.js (dungeon), GeneratorCave.js (cave), and
- * GeneratorHalls.js (castle, building).
+ * (town), GeneratorInteriors.js (dungeon), GeneratorCave.js (cave),
+ * GeneratorHalls.js (castle, building), and GeneratorWorld.js (world).
  */
 
 /**
@@ -52,6 +54,7 @@ export const ARCHETYPES = {
     { value: 'wetlands', label: 'Wetlands (lakes, swamp, many rivers)' },
     { value: 'island', label: 'Island (land ringed by sea)' },
     { value: 'town', label: 'Town (roads + buildings)' },
+    { value: 'world', label: 'World (a continent split into regions)' },
   ],
   interior: [
     { value: 'dungeon', label: 'Dungeon (rooms + corridors)' },
@@ -62,6 +65,39 @@ export const ARCHETYPES = {
 };
 
 /**
+ * The archetypes that stack into levels joined by stairs. The Generate
+ * dialog shows its Levels field for these alone.
+ */
+export const STACKED_ARCHETYPES = ['dungeon', 'cave'];
+
+/**
+ * The archetypes whose maps have places that open into sub-maps of their
+ * own, such as the settlements of a wilderness or the buildings of a town.
+ * The Generate dialog shows its Sub-maps field for these alone.
+ */
+export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
+
+/**
+ * @typedef {{
+ *   archetype: string,
+ *   size: string,
+ *   levels?: number,
+ *   level?: number,
+ *   environ?: string,
+ * }} GenerateOptions
+ */
+
+/**
+ * @typedef {{
+ *   width: number,
+ *   height: number,
+ *   tiles: Tile[],
+ *   entry: string,
+ *   sites: GeneratedSite[],
+ * }} GeneratedMap
+ */
+
+/**
  * Generate a full tile grid for a node from an archetype and size preset.
  * This is a pure function with an injected RNG (pass `Math.random` in the
  * app, a seeded generator in tests). The returned width and height replace
@@ -69,73 +105,74 @@ export const ARCHETYPES = {
  * guarantees `entry`: a border tile that exists and connects to the layout's
  * walkable area (a door for interiors, a road end or open ground for
  * regions). A generated space is then always reachable from its parent map.
- * @param {TilePalette} palette
- * @param {{ kind: NodeKind, archetype: string, size: string }} options
- * @param {() => number} rng
- * @returns {{ width: number, height: number, tiles: Tile[], entry: string }}
- */
-export function generateNodeTiles(palette, { archetype, size }, rng) {
-  const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
-  let gen;
-  if (archetype === 'town') gen = generateTown(palette, n, rng);
-  else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng, { descend: false });
-  else if (archetype === 'cave') gen = generateCave(palette, n, rng, { descend: false });
-  else if (archetype === 'castle') gen = generateCastle(palette, n, rng);
-  else if (archetype === 'building') gen = generateBuilding(palette, n, rng);
-  else gen = generateWilds(palette, n, rng, archetype);
-  return { width: n, height: n, tiles: gen.tiles, entry: gen.entry };
-}
-
-/**
- * The archetypes that stack into levels joined by stairs. The Generate
- * dialog shows its Levels field for these alone.
- */
-export const STACKED_ARCHETYPES = ['dungeon', 'cave'];
-
-/**
- * Generate a multi-level dungeon or cave as a chain of levels. Level 1 is entered
- * from the map edge through a corridor and a border door. Each deeper level
- * is entered by stairs. Every level's stairs-down tile links, through the
- * existing `childNodeId` zoom link, to the level below it, so stairs always
- * connect to a real generated level. The bottom level places no stairs-down,
- * so no stairs lead to nothing. `makeId` supplies each sub-level's node id.
- * It is injected so the caller can guarantee uniqueness against its grid and
- * tests stay pure.
+ * The world archetype is the exception, because the sea surrounds it, and
+ * its entry is the shore nearest the middle of the south border.
  *
- * This returns one entry per level, top first. The caller stamps level 1's
- * tiles into the node being generated and creates a child node per deeper level.
+ * `sites` lists the places on the map that open into sub-maps of their own.
+ * `GeneratorTree.expandTree` builds those sub-maps. A dungeon or a cave with
+ * more than one level gets stairs down, and its site for the level below is
+ * forced, so the stairs always lead to a real level. `level` is the number
+ * of this level, and a level below the first is entered by its stairs up.
+ * A building with a trapdoor has a forced site for its cellar, which is a
+ * small dungeon level entered by its stairs up. The `cellar` archetype
+ * generates that level.
  * @param {TilePalette} palette
- * @param {{ archetype?: string, size: string, levels: number }} options
- *   `archetype` is dungeon or cave, and defaults to dungeon
+ * @param {GenerateOptions} options
  * @param {() => number} rng
- * @param {() => string} makeId
- * @returns {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]}
- *   `id` is null for the first level (it fills the existing node) and a fresh
- *   node id for each level below.
+ * @returns {GeneratedMap}
  */
-export function generateLevels(palette, { archetype, size, levels }, rng, makeId) {
-  const level = archetype === 'cave' ? generateCave : generateDungeon;
+export function generateNodeTiles(palette, options, rng) {
+  const { archetype, size, environ = archetype } = options;
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
-  const count = Math.max(1, Math.floor(levels) || 1);
-  /** @type {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]} */
-  const out = [];
-  /** @type {Tile | null} the stairs-down tile awaiting a link to the level below */
-  let pendingStairs = null;
-  for (let i = 0; i < count; i++) {
-    const last = i === count - 1;
-    const gen = level(palette, n, rng, {
-      entrance: i === 0 ? 'edge' : 'stairs',
-      // A level gets stairs-down only if a level genuinely exists below it.
-      // A level that failed to place them, because its floor is one cell,
-      // ends the chain early instead of orphaning levels.
-      descend: !last,
-    });
-    const id = i === 0 ? null : makeId();
-    out.push({ id, width: n, height: n, tiles: gen.tiles, entry: gen.entry });
-    if (pendingStairs) pendingStairs.childNodeId = /** @type {string} */ (id);
-    if (last || !gen.stairsDown) break;
-    pendingStairs = gen.tiles.find((t) => t.id === gen.stairsDown) ?? null;
-    if (!pendingStairs) break;
+  const levels = Math.max(1, Math.floor(options.levels ?? 1) || 1);
+  const level = options.level ?? 1;
+  /** @param {{ tiles: Tile[], entry: string }} gen @param {GeneratedSite[]} [sites] */
+  const done = (gen, sites = []) => ({
+    width: n,
+    height: n,
+    tiles: gen.tiles,
+    entry: gen.entry,
+    sites,
+  });
+  if (STACKED_ARCHETYPES.includes(archetype)) {
+    const make = archetype === 'cave' ? generateCave : generateDungeon;
+    const entrance = level > 1 ? 'stairs' : 'edge';
+    const gen = make(palette, n, rng, { entrance, descend: levels > 1 });
+    if (!gen.stairsDown) return done(gen);
+    const below = {
+      tileIds: [gen.stairsDown],
+      archetype,
+      kind: /** @type {NodeKind} */ ('interior'),
+      environ,
+      size,
+      label: `level ${level + 1}`,
+      forced: true,
+      levels: levels - 1,
+      level: level + 1,
+    };
+    return done(gen, [below]);
   }
-  return out;
+  if (archetype === 'cellar') {
+    return done(generateDungeon(palette, n, rng, { entrance: 'stairs', descend: false }));
+  }
+  if (archetype === 'building') {
+    const gen = generateBuilding(palette, n, rng);
+    if (!gen.stairsDown) return done(gen);
+    const cellar = {
+      tileIds: [gen.stairsDown],
+      archetype: 'cellar',
+      kind: /** @type {NodeKind} */ ('interior'),
+      environ: 'cellar',
+      size: 'small',
+      label: 'cellar',
+      forced: true,
+    };
+    return done(gen, [cellar]);
+  }
+  if (archetype === 'castle') return done(generateCastle(palette, n, rng));
+  let open;
+  if (archetype === 'town') open = generateTown(palette, n, rng);
+  else if (archetype === 'world') open = generateWorld(palette, n, rng);
+  else open = generateWilds(palette, n, rng, archetype);
+  return done(open, open.sites);
 }

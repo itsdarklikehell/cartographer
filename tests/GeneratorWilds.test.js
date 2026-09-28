@@ -169,17 +169,17 @@ test('a landmark with no marker art in the palette is skipped', () => {
   assert.deepEqual(placeLandmarks(bare, terrain, tiles, 2, mulberry32(4)), []);
 });
 
-test('a site with no marker art keeps its terrain tile', () => {
+test('a site with no marker art keeps its terrain tile and opens no sub-map', () => {
   const bare = new TilePalette();
-  for (const type of ['settlement', 'port', 'castle', 'dungeon']) bare.entries.delete(type);
+  const gone = ['settlement', 'port', 'castle', 'dungeon'];
+  for (const type of gone) bare.entries.delete(type);
+  const full = generateWilds(palette, 22, mulberry32(6));
+  assert.ok(full.sites.some((s) => gone.includes(s.label)));
   const gen = generateWilds(bare, 22, mulberry32(6));
-  assert.ok(gen.sites.length > 0);
   for (const site of gen.sites) {
-    const tile = gen.tiles.find((t) => t.id === site.tileId);
-    assert.ok(
-      !tile?.imageRef.includes(`/${site.marker}/`),
-      `${site.tileId} shows no ${site.marker}`,
-    );
+    assert.ok(!gone.includes(site.label), `${site.label} opens no sub-map`);
+    const tile = gen.tiles.find((t) => t.id === site.tileIds[0]);
+    assert.ok(tile?.imageRef.includes(`/${site.label}/`), `${site.label} draws its marker`);
   }
 });
 

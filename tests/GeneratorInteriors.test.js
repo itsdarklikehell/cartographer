@@ -5,7 +5,6 @@ import { generateDungeon, roomLinks } from '../src/map/GeneratorInteriors.js';
 import { generateCave, growCavern } from '../src/map/GeneratorCave.js';
 import { generateBuilding, generateCastle, hallLayout } from '../src/map/GeneratorHalls.js';
 import { DOOR_H, DOOR_V, FLOOR, WALL } from '../src/map/GeneratorInteriorMask.js';
-import { generateLevels } from '../src/map/MapGenerator.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
@@ -94,22 +93,6 @@ test('a cave enters through a border door and descends by default', () => {
   assert.ok(gen.stairsDown);
 });
 
-test('cave levels chain through their stairs like dungeon levels', () => {
-  const ids = ['c2', 'c3'];
-  const levels = generateLevels(
-    palette,
-    { archetype: 'cave', size: 'medium', levels: 3 },
-    mulberry32(4),
-    () => /** @type {string} */ (ids.shift()),
-  );
-  assert.deepEqual(
-    levels.map((l) => l.id),
-    [null, 'c2', 'c3'],
-  );
-  const down = levels[0].tiles.find((t) => t.imageRef.includes('stairs-down'));
-  assert.equal(down?.childNodeId, 'c2');
-});
-
 test('hall walls split rooms with one door each and never block a door', () => {
   for (const seed of [1, 2, 3, 4, 5, 6]) {
     const size = 22;
@@ -145,4 +128,22 @@ test('a castle has stairs and a building has none', () => {
   assert.equal(building.tiles.length, 14 * 14);
   assert.ok(!building.tiles.some((t) => t.imageRef.includes('stairs')));
   assert.ok(building.tiles.filter((t) => t.imageRef.includes('door')).length >= 3);
+});
+
+test('a building with a cellar puts its trapdoor on the bare floor farthest from the door', () => {
+  const size = 8;
+  const building = generateBuilding(palette, size, mulberry32(10));
+  const trapdoor = building.tiles.find((t) => t.id === building.stairsDown);
+  assert.match(String(trapdoor?.overlayRef), /trapdoor/);
+  assert.equal(building.tiles.filter((t) => String(t.overlayRef).includes('trapdoor')).length, 1);
+  const [x, y] = /** @type {string} */ (building.stairsDown).split(',').map(Number);
+  assert.ok(y < size - 2, 'the trapdoor is away from the entrance');
+  assert.ok(x > 0 && x < size - 1);
+  assert.equal(generateBuilding(palette, size, mulberry32(1)).stairsDown, null);
+});
+
+test('a building with no bare floor gets no cellar', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    assert.equal(generateBuilding(palette, 3, mulberry32(seed)).stairsDown, null);
+  }
 });
