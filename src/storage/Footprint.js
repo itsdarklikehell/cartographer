@@ -8,18 +8,21 @@
  * and `HistoryLog.trimToCap` measures every delta again in the same save.
  * Near the warning threshold that copied several megabytes of strings per
  * autosave. This module keeps a `Map` from key to stored length instead. It
- * reads the origin once, and every writer in `src/storage/` records its own
- * writes through `writeStored` and `removeStored`.
+ * reads the origin once. Every localStorage write in the app goes through
+ * `writeStored` and `removeStored`, which record it. That includes the theme
+ * flag in `ui/ThemeToggle.js` and the onboarding flag in `app/onboarding.js`.
+ * A direct `setItem` that rewrites an existing key with a new length keeps
+ * the key count the same, so no backstop below detects it and the footprint
+ * stays wrong until the next re-read. A test in `tests/Footprint.test.js`
+ * fails when code outside `src/storage/` calls `localStorage.setItem`,
+ * `removeItem`, or `clear` directly.
  *
  * Other tabs write the same keys. Their writes reach this tab as `storage`
  * events, and `SaveManager.onExternalSave` passes every such event to
- * `recordExternalWrite`, so the ledger follows them without a re-read. Two
- * backstops cover writes the ledger cannot see: it re-reads the origin when
- * the key count differs from its own size, and when the `localStorage`
- * object itself is a different one (a test installs a fresh stub per case).
- * The theme and onboarding flags are written outside this module. They are
- * a few bytes each, so a stale length for one of them cannot move the
- * footprint by a meaningful amount.
+ * `recordExternalWrite`, so the ledger follows them without a re-read. The
+ * ledger also re-reads the origin when the key count differs from its own
+ * size, and when the `localStorage` object itself is a different one (a test
+ * installs a fresh stub per case).
  */
 
 /** @type {Map<string, number> | null} */

@@ -9,6 +9,9 @@ import {
   writeStored,
 } from '../src/storage/Footprint.js';
 import { installLocalStorage } from './helpers/env.js';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /** Bytes of one key and value pair, as localStorage charges them. */
 const cost = (/** @type {string} */ key, /** @type {string} */ value) =>
@@ -110,4 +113,24 @@ test('a write that throws records nothing and rethrows', () => {
   };
   assert.throws(() => writeStored('b', 'yy'));
   assert.equal(storageFootprint(), cost('a', 'x'));
+});
+
+test('a flag rewrite with the same key count updates the footprint', () => {
+  const key = 'campaign-builder:theme';
+  writeStored(key, 'light');
+  assert.equal(storageFootprint(), cost(key, 'light'));
+  writeStored(key, 'dark');
+  assert.equal(storageFootprint(), cost(key, 'dark'));
+  removeStored(key);
+  assert.equal(storageFootprint(), 0);
+});
+
+test('no code outside src/storage/ writes localStorage directly', () => {
+  const root = fileURLToPath(new URL('../src/', import.meta.url));
+  const direct = /localStorage\s*\.\s*(setItem|removeItem|clear)\b/;
+  const offenders = readdirSync(root, { recursive: true })
+    .map(String)
+    .filter((path) => path.endsWith('.js') && !path.startsWith(`storage${sep}`))
+    .filter((path) => direct.test(readFileSync(join(root, path), 'utf8')));
+  assert.deepEqual(offenders, [], 'use writeStored and removeStored from storage/Footprint.js');
 });

@@ -68,13 +68,18 @@ a successful save.
 The save wrapper also reports the footprint of the whole origin, because
 the save, the history deltas, the image sidecar, and the library share one
 quota. `storage/Footprint.js` keeps a ledger from key to stored length, so
-this check does not read every stored value after each save. Every writer
-under `src/storage/` records its writes through `writeStored` and
-`removeStored`, and `HistoryLog.trimToCap` reads delta sizes from the same
-ledger. Writes from other tabs arrive as `storage` events, and
-`onExternalSave` passes each one to the ledger. The ledger re-reads the
-origin when the key count differs from its own size, which covers the few
-small flags written outside the storage modules.
+this check does not read every stored value after each save. Every
+localStorage write in the app goes through `writeStored` and `removeStored`,
+which record it in the ledger. The theme switch and the onboarding overlay
+use them too, although they live in `src/ui/` and `src/app/`.
+`HistoryLog.trimToCap` reads delta sizes from the same ledger. Writes from
+other tabs arrive as `storage` events, and `onExternalSave` passes each one
+to the ledger. The ledger re-reads the origin when the key count differs
+from its own size. A direct `setItem` that rewrites a key with a new length
+does not change the key count, so the ledger cannot detect it. To prevent
+this, a test in `tests/Footprint.test.js` scans `src/` and fails when a file
+outside `src/storage/` calls `localStorage.setItem`, `removeItem`, or
+`clear`.
 
 The export and import buttons go through `storage/CampaignFile.js` instead
 of `downloadState` and `readStateFromFile`. `serializeCampaignFile` writes

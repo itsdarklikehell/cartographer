@@ -1,6 +1,7 @@
 import { el, mustGetElement } from '../ui/dom.js';
 import { textButton } from '../ui/buttons.js';
 import { isBlankCampaign } from '../campaign/Campaigns.js';
+import { writeStored } from '../storage/Footprint.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -31,7 +32,7 @@ export function maybeShowOnboarding(app) {
   const overlay = el('div', 'onboarding', card);
 
   const dismiss = () => {
-    localStorage.setItem(ONBOARDED_KEY, '1');
+    writeStored(ONBOARDED_KEY, '1');
     overlay.remove();
   };
 
