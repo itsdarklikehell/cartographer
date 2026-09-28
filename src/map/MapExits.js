@@ -163,7 +163,7 @@ function exitTileId(exit) {
  * @param {Tile} tile
  * @returns {boolean}
  */
-function opensOutward(node, tile) {
+export function opensOutward(node, tile) {
   const coords = parseCoords(tile.id);
   if (!coords) return false;
   const onBorder =

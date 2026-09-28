@@ -1,5 +1,5 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
-import { blockFor, nearestSide, sideAxis, stairwayTo } from './MapExits.js';
+import { blockFor, nearestSide, opensOutward, sideAxis, stairwayTo } from './MapExits.js';
 import { isBlocked, tileKind } from './TileKinds.js';
 import { clamp } from '../util/num.js';
 
@@ -158,7 +158,39 @@ export function computeRegionEntryTile(parent, child, childNodeId, party, throug
   const block = group
     ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
     : null;
-  return resolveEntryTile(child, computeEntryTile(child.width, child.height, block, partyCoords));
+  const preferred = computeEntryTile(child.width, child.height, block, partyCoords);
+  // An interior is entered through its door. The floor tile nearest the
+  // approach side can be far from the door, or near the stairs down of a
+  // generated dungeon, so the party lands on the outward door nearest the
+  // geometric pick. An interior with no outward door falls back to the
+  // nearest walkable tile.
+  const door = child.kind === 'interior' ? nearestOutwardDoor(child, preferred) : null;
+  return door ?? resolveEntryTile(child, preferred);
+}
+
+/**
+ * The outward door of an interior nearest a tile, or null when the interior
+ * has none. An outward door is a door or a cave mouth with the outside of
+ * the structure on one side (`MapExits.opensOutward`). A door that links to
+ * a child node leads further in, so it does not count.
+ * @param {import('../types/map.js').MapNode} node
+ * @param {string} nearId tile id ("x,y") to measure from
+ * @returns {string | null}
+ */
+export function nearestOutwardDoor(node, nearId) {
+  const target = parseCoords(nearId) ?? { x: 0, y: 0 };
+  let best = null;
+  let bestScore = Infinity;
+  for (const tile of node.tiles) {
+    if (tile.childNodeId || tileKind(tile) !== 'door' || !opensOutward(node, tile)) continue;
+    const coords = /** @type {Coords} */ (parseCoords(tile.id));
+    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
+    if (d < bestScore) {
+      best = tile.id;
+      bestScore = d;
+    }
+  }
+  return best;
 }
 
 /**

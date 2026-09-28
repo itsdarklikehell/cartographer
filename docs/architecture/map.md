@@ -740,6 +740,20 @@ way, picks the first matching stair in tile order. A second staircase meant
 to go somewhere else needs its own link to a child node, which takes it out
 of the exit list.
 
+### Entry landing
+
+`EntryPoint.computeRegionEntryTile(parent, child, childNodeId, party)`
+picks the tile where the party lands in a child. A child that the parent
+reaches by a staircase lands the party on its staircase back. Otherwise
+`computeEntryTile` projects the party's position beside the block onto the
+matching side of the child. An interior then lands the party on the outward
+door nearest that tile (`nearestOutwardDoor`), with the same outward test
+that `interiorExits` uses. A generated dungeon leaves void around its rooms,
+so the floor tile nearest the approach side can be far from its door, and
+sometimes next to its stairs down. An interior with no outward door and a
+region child both snap through `resolveEntryTile` to the nearest walkable
+tile.
+
 ### Return landing
 
 `EntryPoint.computeParentReturnTile(parent, child, exit, position)` mirrors

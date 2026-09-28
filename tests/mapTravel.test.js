@@ -242,6 +242,10 @@ test('a door leads out only once the mover stands on it', () => {
   const { navigator, partyTracker, clickTile, log } = world({ interior: true });
   clickTile('2,4');
   assert.equal(navigator.getCurrentNode().id, 'child');
+  // The party lands on the door of the interior, then steps inside.
+  assert.equal(partyTracker.getPosition().tileId, '0,2');
+  clickTile('1,2');
+  assert.equal(partyTracker.getPosition().tileId, '1,2');
   // First click walks onto the door; the party stays inside.
   clickTile('0,2');
   assert.equal(navigator.getCurrentNode().id, 'child');
@@ -777,6 +781,9 @@ test('a lone character leaves an interior through the door it stands on', () => 
   const w = world({ interior: true, characters: [hero], splitParty: true, selected: 'hero' });
   w.clickTile('2,4');
   assert.equal(w.navigator.getCurrentNode().id, 'child');
+  // The character lands on the door, then steps inside.
+  assert.deepEqual(w.state.characters[0].location, { nodeId: 'child', tileId: '0,2' });
+  w.clickTile('1,2');
   // The first click walks the character onto the door; it stays inside.
   w.clickTile('0,2');
   assert.deepEqual(w.state.characters[0].location, { nodeId: 'child', tileId: '0,2' });
