@@ -89,9 +89,17 @@ export function partitionLand(cells, size, rng) {
   const [main, ...islands] = masses;
   const count = Math.min(MAX_REGIONS, Math.max(1, Math.round(main.length / REGION_CELLS)));
   const seeds = [main[randInt(rng, main.length)]];
-  /** @param {number} a @param {number} b */
-  const gap = (a, b) =>
-    Math.hypot((a % size) - (b % size), Math.floor(a / size) - Math.floor(b / size));
+  /**
+   * The squared distance between two cells. It orders the cells in the same
+   * way as the distance, and integer arithmetic gives the same result in
+   * every browser engine, where Math.hypot can round differently.
+   * @param {number} a @param {number} b
+   */
+  const gap = (a, b) => {
+    const dx = (a % size) - (b % size);
+    const dy = Math.floor(a / size) - Math.floor(b / size);
+    return dx * dx + dy * dy;
+  };
   while (seeds.length < count) {
     let far = main[0];
     let best = -1;

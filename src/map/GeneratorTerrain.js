@@ -215,8 +215,12 @@ export function terrainField(size, profile, rng) {
       const i = y * size + x;
       let e = fbm(elevNoise, x * unit, y * unit);
       if (profile.falloff) {
-        const d = Math.hypot(x + 0.5 - half, y + 0.5 - half) / half;
-        e -= profile.falloff * d * d * 0.6;
+        // The squared distance uses exact arithmetic only. Math.hypot can
+        // round in a different way in each browser engine, and then one seed
+        // gives a different map in each browser.
+        const dx = x + 0.5 - half;
+        const dy = y + 0.5 - half;
+        e -= (profile.falloff * (dx * dx + dy * dy) * 0.6) / (half * half);
       }
       elevation[i] = e;
       moisture[i] = fbm(moistNoise, x * unit, y * unit, 3);

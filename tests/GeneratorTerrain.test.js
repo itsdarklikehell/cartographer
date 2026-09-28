@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { fbm, quantile, stretch, valueNoise } from '../src/map/GeneratorNoise.js';
 import {
@@ -134,5 +136,14 @@ test('a sea-bound profile puts the whole border under water at any size', () => 
       cells.some((c) => c !== 'water'),
       `${name} ${size}: some land`,
     );
+  }
+});
+
+test('no generator module calls Math.hypot, whose rounding differs between engines', () => {
+  const dir = new URL('../src/map/', import.meta.url).pathname;
+  const files = readdirSync(dir).filter((f) => /^(Generator|MapGenerator).*\.js$/.test(f));
+  assert.ok(files.length > 10, 'the generator modules are found');
+  for (const file of files) {
+    assert.doesNotMatch(readFileSync(join(dir, file), 'utf8'), /Math\.hypot\(/, file);
   }
 });
