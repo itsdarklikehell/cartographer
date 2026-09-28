@@ -48,6 +48,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>River network (with a road bridge)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-network"></div>
 
+<h2>River fords (a road wading across each channel)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="river-fords"></div>
+
 <h2>River pieces (all)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-all"></div>
 
@@ -100,7 +103,8 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   ].map((m) => img(`${m}/${m}`)).join('');
 
   const TOWN = ['house', 'cottage', 'market', 'well', 'fountain',
-    'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables'];
+    'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables',
+    'windmill', 'watermill'];
   document.getElementById('town').innerHTML = TOWN.map((b) => img(`town/${b}`)).join('');
 
   // A 14x8 block of grass split by two crossing streets. Each building is a
@@ -160,6 +164,14 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'river/river-end-w', 'river/river-h', 'river/river-corner-sw', 'grass/grass-1',
     'road/road-end-e', 'road/road-h', 'river/river-bridge-h', 'road/road-end-w',
     'grass/grass-2', 'grass/grass-1', 'river/river-end-n', 'grass/grass-3',
+  ].map((s) => (s.startsWith('grass/') ? cell(s) : cell('grass/grass-1', s))).join('');
+
+  // Each ford joins straight river pieces along its channel and straight road
+  // pieces along its road, in both orientations.
+  document.getElementById('river-fords').innerHTML = [
+    'grass/grass-1', 'river/river-v', 'grass/grass-2', 'grass/grass-3', 'grass/grass-1', 'road/road-v', 'grass/grass-3',
+    'road/road-h', 'river/river-ford-h', 'road/road-h', 'grass/grass-2', 'river/river-h', 'river/river-ford-v', 'river/river-h',
+    'grass/grass-2', 'river/river-v', 'grass/grass-1', 'grass/grass-3', 'grass/grass-2', 'road/road-v', 'grass/grass-1',
   ].map((s) => (s.startsWith('grass/') ? cell(s) : cell('grass/grass-1', s))).join('');
 
   // Same non-meeting ordering as the road grid, with the two bridges appended.

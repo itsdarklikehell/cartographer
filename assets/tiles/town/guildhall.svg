@@ -36,7 +36,7 @@
   <!-- Double door in a stone surround. -->
   <path d="M27.5 51.5 V45 Q32 39.8 36.5 45 V51.5 Z" fill="#e6dcc3" stroke="#9a8f78" stroke-width="0.4"/>
   <path d="M28.6 51.5 V45.3 Q32 41.2 35.4 45.3 V51.5 Z" fill="#4f3a24"/>
-  <path d="M32 43.4 V51.5" stroke="#3a2a19" stroke-width="0.6"/>
+  <path d="M32 43.25 V51.5" stroke="#3a2a19" stroke-width="0.6"/>
   <circle cx="31" cy="47.6" r="0.45" fill="#c9a020"/>
   <circle cx="33" cy="47.6" r="0.45" fill="#c9a020"/>
   <rect x="26.5" y="51.5" width="11" height="1.4" fill="#a39d91"/>

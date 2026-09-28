@@ -53,7 +53,8 @@
   <rect x="20.5" y="34.5" width="23" height="1.6" fill="#cbc2ad" stroke="#8f887c" stroke-width="0.4"/>
   <rect x="28.6" y="38.5" width="6.8" height="10.5" fill="#5a4530"/>
   <path d="M28.6 38.5 Q32 35.8 35.4 38.5" fill="#5a4530"/>
-  <path d="M32 37.3 V49" stroke="#46351f" stroke-width="0.5"/>
+  <path d="M32 37.15 V49" stroke="#46351f" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="43.8" r="0.45"/><circle cx="32.9" cy="43.8" r="0.45"/></g>
   <g fill="#efe9da" stroke="#8f887c" stroke-width="0.4">
     <rect x="21.5" y="36.1" width="2.2" height="12.9"/>
     <rect x="25.3" y="36.1" width="2.2" height="12.9"/>

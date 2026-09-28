@@ -33,10 +33,11 @@
     <rect x="48.5" y="36" width="4" height="4.5"/>
   </g>
   <path d="M13.5 36 V40.5 M20 36 V40.5 M44 36 V40.5 M50.5 36 V40.5 M27.5 29.4 V34 M36.5 29.4 V34" stroke="#8a7f64" stroke-width="0.5"/>
-  <!-- entrance: steps, arched door, crest -->
+  <!-- entrance: steps, arched double door, crest -->
   <rect x="26.5" y="45" width="11" height="2" fill="#cfc3a8" stroke="#a89a7c" stroke-width="0.5"/>
   <path d="M28.5 45 L28.5 39 Q32 36.2 35.5 39 L35.5 45 Z" fill="#4a3a2c"/>
   <path d="M32 37.6 V45" stroke="#5f4c3a" stroke-width="0.6"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="41.6" r="0.45"/><circle cx="32.9" cy="41.6" r="0.45"/></g>
   <path d="M30 27.6 h4 l-0.5 3.4 q-1.5 1.2 -3 0 Z" fill="#8c3b4a" stroke="#c9a020" stroke-width="0.5"/>
   <path d="M25 51.5 Q32 50 39 51.5" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
 </svg>

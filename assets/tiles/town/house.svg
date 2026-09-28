@@ -42,11 +42,11 @@
     <rect x="34" y="30.5" width="1.4" height="5" fill="#3f5732"/>
     <rect x="40.6" y="30.5" width="1.4" height="5" fill="#3f5732"/>
   </g>
-  <!-- Ground floor: arched door on a step, two windows with a flower box. -->
+  <!-- Ground floor: arched double door on a step, two windows with a flower box. -->
   <rect x="29" y="41" width="6" height="9" fill="#5a4530"/>
   <path d="M29 41 Q32 38.6 35 41" fill="#5a4530"/>
-  <path d="M32 40 V50" stroke="#46351f" stroke-width="0.5"/>
-  <circle cx="33.8" cy="45.6" r="0.55" fill="#c9a020"/>
+  <path d="M32 39.8 V50" stroke="#46351f" stroke-width="0.5"/>
+  <g fill="#c9a020"><circle cx="31.1" cy="45.6" r="0.45"/><circle cx="32.9" cy="45.6" r="0.45"/></g>
   <rect x="28" y="50" width="8" height="1.4" fill="#a39d91"/>
   <rect x="20" y="41.5" width="5.5" height="4.5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>
   <rect x="38.5" y="41.5" width="5.5" height="4.5" fill="#e8c05a" stroke="#7a5a3a" stroke-width="0.6"/>

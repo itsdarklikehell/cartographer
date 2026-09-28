@@ -16,9 +16,10 @@
   <path d="M10.5 32.5 L14.5 26 L43.5 26 L47.5 32.5 Z" fill="#6f5b40"/>
   <path d="M14.5 26 L43.5 26 L47.5 32.5 L29 32.5 Z" fill="#5a4a33"/>
   <path d="M13 30.8 L45 30.8 M14.6 28.6 L43.4 28.6" stroke="#5f4e38" stroke-width="0.7" fill="none"/>
-  <!-- door and slit windows -->
+  <!-- double door and slit windows -->
   <rect x="26" y="36.5" width="6" height="7.5" fill="#4a3a2c"/>
   <path d="M26 36.5 h6 M29 36.5 V44" stroke="#6b5a44" stroke-width="0.6"/>
+  <g fill="#c9a020"><circle cx="28.1" cy="40.5" r="0.42"/><circle cx="29.9" cy="40.5" r="0.42"/></g>
   <g fill="#3a3630">
     <rect x="16" y="35" width="2" height="5" rx="1"/>
     <rect x="21" y="35" width="2" height="5" rx="1"/>
