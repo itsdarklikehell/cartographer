@@ -419,9 +419,12 @@ corridor bends once, and a coin toss picks the order of its two legs.
 A cave level (`src/map/GeneratorCave.js`) grows with a cellular automaton.
 Each cell starts as rock with a chance of 0.45. In each of four rounds, a
 cell with five or more rock neighbors turns to rock, and a cell with three
-or fewer opens. Only the largest connected cavern stays. The generator
-tries again when the cavern covers less than a fifth of the map, and after
-six tries it uses a room of three by three cells in the middle. A cave draws
+or fewer opens. Only the largest connected cavern stays, through
+`largestArea` in `GeneratorInteriorMask.js`. The generator tries again when
+the cavern covers less than a fifth of the map, up to six tries, and keeps
+the largest cavern of all the tries. When that cavern has fewer than
+`MIN_CAVERN` (nine) cells, a room of three by three cells in the middle
+takes its place, so every level has room for both of its stairs. A cave draws
 with `CAVE_ART` from `GeneratorInteriorMask.js`: cave floors, one rough wall
 piece for every wall cell, and a cave mouth in place of the border door.
 
@@ -431,7 +434,9 @@ level has no level above it, so it gets no stairs up. It cuts a straight
 tunnel from the `up` cell to the nearest border and sets a door there.
 `interiorExits` in `MapExits.js` accepts a door on the border as a way out,
 so the party can walk back to the parent map. The stairs down go on the
-cell farthest from the `up` cell by walking distance.
+cell farthest from the way in by walking distance. The way in is the
+border door of an edge level and the stairs up of a stairs level. A walk
+from the door keeps the stairs down of a one-room level out of its tunnel.
 The stairs down of a level lead to the level below through `childNodeId`.
 The level lists a forced site for that level, and `expandTree` builds it
 (see [Nested generation](#nested-generation)).
@@ -447,9 +452,16 @@ and has stairs, and a building keeps rooms of at least two cells a side,
 with no stairs. The stairs up of a castle lead to its upper floor, which
 `generateUpperFloor` lays out with the same splits and no door. Its stairs
 down sit in the corner above the stairs up of the keep and are its entry.
-The stairs down of a castle lead to one dungeon level. A building has a cellar with a chance of `CELLAR_CHANCE`
-(three in ten). Its trapdoor goes on the bare floor cell farthest from the
-door, after the furnishings. The `cellar` archetype in `MapGenerator.js`
+The stairs down of a castle lead to one dungeon level. They go in the last
+room, on the first cell that `stairsCell` accepts, with the corners first.
+`stairsCell` refuses a cell beside a door, because a click on a linked tile
+always follows the link and the party could never walk through that door.
+It also refuses a cell whose loss cuts any floor off from the south door.
+A building has a cellar with a chance of `CELLAR_CHANCE` (three in ten).
+Its trapdoor goes on the floor cell farthest from the door that
+`stairsCell` accepts. The building picks that cell before the furnishings,
+so no obstacle goes beside it, and a building with no cellar leaves the
+cell bare. The `cellar` archetype in `MapGenerator.js`
 generates the cellar as a small dungeon level that the party enters by its
 stairs up.
 
@@ -458,7 +470,8 @@ A furnishing is an overlay on a floor tile, and `furnisher` refuses a cell
 where it does not fit. An obstacle, such as a pillar, a table, a bed, or a
 bookshelf, never goes beside a door or a staircase. The furnisher also walks
 the level from the way in after each obstacle and takes the obstacle back
-when a floor cell becomes unreachable. A castle puts a throne and two rows
+when a floor cell becomes unreachable. The walk never crosses a staircase,
+so an obstacle cannot leave a staircase as the only way to a cell. A castle puts a throne and two rows
 of pillars in its largest room, and a building puts a hearth and a table in
 the room behind its door. The other rooms of a castle or a building each get
 a role at random: a bedroom, a dining room, a library, a storeroom, a chapel

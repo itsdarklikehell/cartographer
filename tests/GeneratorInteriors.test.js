@@ -3,7 +3,13 @@ import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { generateDungeon, roomLinks } from '../src/map/GeneratorInteriors.js';
 import { generateCave, growCavern } from '../src/map/GeneratorCave.js';
-import { generateBuilding, generateCastle, hallLayout } from '../src/map/GeneratorHalls.js';
+import {
+  doorColumn,
+  generateBuilding,
+  generateCastle,
+  hallLayout,
+  stairsCell,
+} from '../src/map/GeneratorHalls.js';
 import { DOOR_H, DOOR_V, FLOOR, WALL } from '../src/map/GeneratorInteriorMask.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
@@ -142,8 +148,24 @@ test('a building with a cellar puts its trapdoor on the bare floor farthest from
   assert.equal(generateBuilding(palette, size, mulberry32(1)).stairsDown, null);
 });
 
-test('a building with no bare floor gets no cellar', () => {
+test('a building with no floor away from its door gets no cellar', () => {
   for (let seed = 1; seed <= 20; seed++) {
     assert.equal(generateBuilding(palette, 3, mulberry32(seed)).stairsDown, null);
   }
+});
+
+test('stairsCell skips doorways, taken cells, and cells that cut the hall', () => {
+  const code = { '.': FLOOR, '#': WALL, '-': DOOR_H };
+  const rows = ['#####', '#.#.#', '#.#.#', '#...#', '##-##'];
+  const cells = rows
+    .join('')
+    .split('')
+    .map((c) => code[/** @type {'.'} */ (c)]);
+  const at = (/** @type {number} */ x, /** @type {number} */ y) => y * 5 + x;
+  assert.equal(doorColumn(5), 2);
+  assert.equal(stairsCell(cells, 5, [at(0, 0), at(2, 3)]), null, 'a wall and a doorway');
+  assert.equal(stairsCell(cells, 5, [at(1, 2)]), null, 'the only way to 1,1');
+  assert.equal(stairsCell(cells, 5, [at(1, 2), at(1, 1)]), at(1, 1));
+  assert.equal(stairsCell(cells, 5, [at(1, 1)], [at(1, 1)]), null, 'a taken cell');
+  assert.equal(stairsCell(cells, 5, [at(3, 2)], [at(3, 1)]), at(3, 2));
 });

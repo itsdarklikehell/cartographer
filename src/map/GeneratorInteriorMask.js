@@ -38,7 +38,22 @@ export function interiorRef(palette, kind) {
 }
 
 /** @param {number} code */
-const isDoor = (code) => code === DOOR_H || code === DOOR_V;
+export const isDoor = (code) => code === DOOR_H || code === DOOR_V;
+
+/**
+ * Whether a door is one of the four orthogonal neighbors of (x, y). A
+ * staircase does not go on such a cell, because a click on a linked tile
+ * always follows the link, and the party could then never walk through
+ * the door.
+ * @param {number[]} cells @param {number} size @param {number} x @param {number} y
+ */
+export function besideDoor(cells, size, x, y) {
+  return NEIGHBORS4.some(([dx, dy]) => {
+    const nx = x + dx;
+    const ny = y + dy;
+    return nx >= 0 && ny >= 0 && nx < size && ny < size && isDoor(cells[ny * size + nx]);
+  });
+}
 
 /**
  * Pick a wall piece for a wall cell, based on which orthogonal neighbors
@@ -234,6 +249,36 @@ export function farthest(dist, size, candidates) {
     }
   }
   return pick;
+}
+
+/**
+ * Keep only the largest 4-connected area of floor and door cells, and turn
+ * every other cell to void.
+ * @param {number[]} cells @param {number} size
+ * @returns {number[]}
+ */
+export function largestArea(cells, size) {
+  const seen = new Uint8Array(size * size);
+  /** @type {Int32Array | null} */
+  let best = null;
+  let bestSize = 0;
+  cells.forEach((code, i) => {
+    if (seen[i] || (code !== FLOOR && !isDoor(code))) return;
+    const dist = walkDistances(cells, size, i % size, Math.floor(i / size));
+    let count = 0;
+    dist.forEach((d, j) => {
+      if (d >= 0) {
+        seen[j] = 1;
+        count++;
+      }
+    });
+    if (count > bestSize) {
+      bestSize = count;
+      best = dist;
+    }
+  });
+  const keep = best;
+  return cells.map((code, i) => (keep && keep[i] >= 0 ? code : VOID));
 }
 
 /**

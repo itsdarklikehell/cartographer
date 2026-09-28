@@ -1,5 +1,12 @@
-import { NEIGHBORS4, NEIGHBORS8 } from './MapGeometry.js';
-import { CAVE_ART, FLOOR, floorCells, tunnelToEdge, VOID } from './GeneratorInteriorMask.js';
+import { NEIGHBORS8 } from './MapGeometry.js';
+import {
+  CAVE_ART,
+  FLOOR,
+  floorCells,
+  largestArea,
+  tunnelToEdge,
+  VOID,
+} from './GeneratorInteriorMask.js';
 import { furnishCave } from './GeneratorFurnish.js';
 import { finishLevel } from './GeneratorInteriors.js';
 
@@ -29,6 +36,12 @@ const ROUNDS = 4;
 const TRIES = 6;
 
 /**
+ * The smallest cavern that a level keeps, in cells. A smaller cavern gives
+ * way to the fallback room of three by three cells, which has this size.
+ */
+export const MIN_CAVERN = 9;
+
+/**
  * Grow one cavern mask: the largest 4-connected open area after the
  * automaton runs. The border row and column stay rock, so walls fit inside
  * the grid.
@@ -50,36 +63,18 @@ export function growCavern(size, rng) {
       return count >= 5 ? true : count <= 3 ? false : was;
     });
   }
-  /** @type {number[]} */
-  const label = new Array(size * size).fill(-1);
-  let best = -1;
-  let bestSize = 0;
-  for (let start = 0; start < size * size; start++) {
-    if (rock[start] || label[start] !== -1) continue;
-    label[start] = start;
-    const queue = [start];
-    for (let head = 0; head < queue.length; head++) {
-      const i = queue[head];
-      for (const [dx, dy] of NEIGHBORS4) {
-        const j = i + dy * size + dx;
-        if (!rock[j] && label[j] === -1) {
-          label[j] = start;
-          queue.push(j);
-        }
-      }
-    }
-    if (queue.length > bestSize) {
-      bestSize = queue.length;
-      best = start;
-    }
-  }
-  return label.map((l) => (l === best && best !== -1 ? FLOOR : VOID));
+  return largestArea(
+    rock.map((r) => (r ? VOID : FLOOR)),
+    size,
+  );
 }
 
 /**
  * Generate one cave level. The automaton runs until it grows a cavern that
- * covers at least a fifth of the map. After a few failed tries, a small
- * room in the middle of the map stands in, so a level always has floor.
+ * covers at least a fifth of the map, and the level keeps the largest
+ * cavern of all its tries. When that cavern has fewer than `MIN_CAVERN`
+ * cells, a room of three by three cells in the middle of the map stands in.
+ * A level then always has room for its stairs up and its stairs down.
  * The way in sits on the cavern cell nearest the border. A stairs level puts
  * its stairs up there, and an edge level cuts its tunnel and its door from
  * there. The stairs down sit on the cavern cell farthest from the way in. The cave draws with the rough cave pieces,
@@ -91,12 +86,17 @@ export function growCavern(size, rng) {
 export function generateCave(palette, size, rng, options = {}) {
   const entrance = options.entrance ?? 'edge';
   const descend = options.descend ?? true;
-  let cells = growCavern(size, rng);
-  for (let t = 1; t < TRIES && floorCells(cells, size).length < (size * size) / 5; t++) {
-    cells = growCavern(size, rng);
+  /** @type {[number, number][]} */
+  let floor = [];
+  /** @type {number[]} */
+  let cells = [];
+  for (let t = 0; t < TRIES && floor.length < (size * size) / 5; t++) {
+    const next = growCavern(size, rng);
+    const nextFloor = floorCells(next, size);
+    if (nextFloor.length > floor.length) [cells, floor] = [next, nextFloor];
   }
-  let floor = floorCells(cells, size);
-  if (!floor.length) {
+  if (floor.length < MIN_CAVERN) {
+    cells = new Array(size * size).fill(VOID);
     const mid = size >> 1;
     for (let y = mid - 1; y <= mid + 1; y++) {
       for (let x = mid - 1; x <= mid + 1; x++) cells[y * size + x] = FLOOR;

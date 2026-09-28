@@ -71,12 +71,23 @@ test('a furnisher keeps obstacles off doorways and stairs and never cuts a floor
   const { place } = furnisher(cells, 7, [3, 5], new Set([8]));
   assert.equal(place(3, 4, 'table'), false, 'beside the door');
   assert.equal(place(2, 1, 'pillar'), false, 'beside the stairs on 1,1');
-  assert.equal(place(1, 2, 'bed'), false, 'the only way to the north corridor');
+  assert.equal(place(1, 2, 'bed'), false, 'beside the stairs on 1,1 from the south');
   assert.equal(place(1, 2, 'rubble'), true, 'a plain furnishing never blocks');
   assert.equal(place(5, 3, 'bookshelf'), true, 'a dead-end corner is free to block');
   assert.equal(place(4, 3, 'bookshelf'), true);
   assert.equal(place(5, 4, 'pillar'), true);
   assert.equal(place(2, 4, 'pillar'), false, 'the only way west');
+  assert.equal(place(4, 1, 'pillar'), true, 'the stairs already cut off the north corridor');
+});
+
+test('a furnisher never makes the walk from the way in cross a staircase', () => {
+  const cells = maskFrom(['#######', '#.....#', '#.###.#', '#.....#', '###-###']);
+  const { place } = furnisher(cells, 7, [3, 4], new Set([1 * 7 + 3]));
+  assert.equal(place(1, 2, 'pillar'), false, 'the west way to 1,1 and 2,1');
+  assert.equal(place(5, 2, 'table'), false, 'the east way to 4,1 and 5,1');
+  assert.equal(place(1, 1, 'bed'), false, 'the only way to 2,1');
+  const start = furnisher(cells, 7, [3, 1], new Set([1 * 7 + 3]));
+  assert.equal(start.place(1, 2, 'pillar'), true, 'the walk starts on a reserved way in');
 });
 
 test('dress draws the furnishings as overlays and skips a cell with no tile', () => {

@@ -1,7 +1,7 @@
 import { tilesById } from './TileGrid.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 import { NEIGHBORS4, tileIdAt } from './MapGeometry.js';
-import { DOOR_H, DOOR_V, FLOOR, interiorRef, walkDistances } from './GeneratorInteriorMask.js';
+import { FLOOR, interiorRef, isDoor, walkDistances } from './GeneratorInteriorMask.js';
 import { FURNISHING_KINDS } from './TileKinds.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -27,11 +27,10 @@ import { FURNISHING_KINDS } from './TileKinds.js';
  * not fit there.
  */
 
-/** @param {number} code */
-const isDoor = (code) => code === DOOR_H || code === DOOR_V;
-
 /**
- * A furnisher for one finished mask.
+ * A furnisher for one finished mask. The walk from the way in never crosses
+ * a reserved cell, because a click on a staircase always follows its link.
+ * An obstacle may not take away any cell of that walk except its own.
  * @param {number[]} cells @param {number} size
  * @param {[number, number]} start the way in, which every open cell stays joined to
  * @param {Set<number>} reserved cell indexes that take no furnishing, such as stairs
@@ -40,9 +39,12 @@ const isDoor = (code) => code === DOOR_H || code === DOOR_V;
 export function furnisher(cells, size, start, reserved) {
   /** @type {Map<number, string>} */
   const placed = new Map();
-  /** @type {Set<number>} */
-  const blocked = new Set();
-  const open = cells.filter((code) => code === FLOOR || isDoor(code)).length;
+  const startIndex = start[1] * size + start[0];
+  /** @type {Set<number>} the reserved cells and the obstacles */
+  const blocked = new Set([...reserved].filter((i) => i !== startIndex));
+  const reach = () =>
+    walkDistances(cells, size, start[0], start[1], blocked).filter((d) => d >= 0).length;
+  let reached = reach();
   const inside = (/** @type {number} */ x, /** @type {number} */ y) =>
     x >= 0 && y >= 0 && x < size && y < size;
   /** @type {Place} */
@@ -56,11 +58,12 @@ export function furnisher(cells, size, start, reserved) {
       });
       if (crowds) return false;
       blocked.add(i);
-      const dist = walkDistances(cells, size, start[0], start[1], blocked);
-      if (dist.filter((d) => d >= 0).length !== open - blocked.size) {
+      const now = reach();
+      if (now < reached - 1) {
         blocked.delete(i);
         return false;
       }
+      reached = now;
     }
     placed.set(i, kind);
     return true;

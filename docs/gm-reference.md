@@ -251,7 +251,9 @@ keeps a chest on the floor cell farthest from the way in.
 A pillar, a table, a bed, and a bookshelf are obstacles. Like a wall, an
 obstacle is never where the party lands when it enters a map, and a new
 link never goes on one. A generated map never puts an obstacle beside a
-door or a staircase, or where it cuts off part of the floor. A trapdoor
+door or a staircase, or where it cuts off part of the floor. A generated
+staircase or trapdoor never sits directly inside a door, and the party
+never has to cross one to reach the rest of the floor. A trapdoor
 leads down like stairs down. A generated building links its trapdoor to
 its cellar. On a map that you paint, link the trapdoor to the level below,
 and that level returns through its stairs up.

@@ -2,12 +2,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import {
+  besideDoor,
   CAVE_ART,
   DOOR_H,
   DOOR_V,
   farthest,
   FLOOR,
   floorCells,
+  isDoor,
+  largestArea,
   maskTiles,
   tileStamper,
   tunnelToEdge,
@@ -64,6 +67,29 @@ test('walkDistances walks floor and doors and farthest picks the far reachable c
   assert.equal(farthest(dist, 5, [[0, 0]]), null, 'the start cell is never picked');
   const around = walkDistances(cells, 5, 0, 0, new Set([1 * 5 + 1]));
   assert.equal(around[2 * 5 + 1], -1, 'a blocked cell cuts the walk');
+});
+
+test('besideDoor looks at the four neighbors inside the grid', () => {
+  const cells = maskFrom(['|..', '...', '.-.']);
+  assert.equal(isDoor(DOOR_H) && isDoor(DOOR_V) && !isDoor(FLOOR), true);
+  assert.equal(besideDoor(cells, 3, 1, 0), true, 'the door to the west');
+  assert.equal(besideDoor(cells, 3, 1, 1), true, 'the door to the south');
+  assert.equal(besideDoor(cells, 3, 2, 0), false);
+  assert.equal(besideDoor(cells, 3, 0, 1), true, 'the door to the north');
+  assert.equal(besideDoor(cells, 3, 2, 1), false, 'a diagonal door does not count');
+});
+
+test('largestArea keeps the biggest joined area of floor and doors', () => {
+  const cells = maskFrom(['..#..', '..#.-', '#####', '.....']);
+  const kept = largestArea(cells, 5);
+  assert.deepEqual(
+    kept.map((c) => (c === VOID ? ' ' : c === FLOOR ? '.' : '-')).join(''),
+    '               .....',
+  );
+  const tie = largestArea(maskFrom(['.#.']), 3);
+  assert.deepEqual(tie, [FLOOR, VOID, VOID], 'the first of two equal areas stays');
+  assert.deepEqual(largestArea(maskFrom(['###']), 3), [VOID, VOID, VOID]);
+  assert.deepEqual(largestArea(maskFrom(['.-.']), 3), [FLOOR, DOOR_H, FLOOR]);
 });
 
 test('maskTiles skips void, joins walls to doors, and the stamper ignores missing ids', () => {

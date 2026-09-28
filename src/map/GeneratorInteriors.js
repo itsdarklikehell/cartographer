@@ -1,5 +1,5 @@
 import { randInt } from './GeneratorRandom.js';
-import { tileIdAt } from './MapGeometry.js';
+import { parseCoords, tileIdAt } from './MapGeometry.js';
 import {
   farthest,
   floorCells,
@@ -58,15 +58,16 @@ import { dress, furnishDungeon, furnisher } from './GeneratorFurnish.js';
  * }} LevelLayout
  * Where the stairs and the way in go on a finished level. The stairs up of a
  * stairs level go on `up`, and so does the start of the tunnel of an edge
- * level. The stairs down go on the candidate farthest from `up`. `door`
+ * level. The stairs down go on the candidate farthest from the way in. `door`
  * is the border door of an edge level, or null for a stairs level. `art` is
  * the set of pieces to draw with, and `furnish` places the furnishings.
  */
 
 /**
  * Put the stairs, the entry, and the furnishings on a finished level. The
- * stairs down go on the candidate farthest from the stairs up by walking
- * distance, so a descent makes the party cross the level.
+ * stairs down go on the candidate farthest from the way in by walking
+ * distance, so a descent makes the party cross the level. The way in is the
+ * border door of an edge level and the stairs up of a stairs level.
  * @param {TilePalette} palette @param {number[]} cells @param {number} size
  * @param {() => number} rng @param {LevelLayout} layout @param {boolean} descend
  * @returns {Level}
@@ -80,13 +81,17 @@ export function finishLevel(palette, cells, size, rng, layout, descend) {
   // stairs up there would lead nowhere. Its tunnel starts from a bare floor
   // cell instead.
   if (!layout.door) stamp(tileIdAt(ux, uy), 'stairs-up');
-  const dist = walkDistances(cells, size, ux, uy);
+  // Distances count from the way in, which is the door of an edge level. The
+  // search over every floor cell then never picks the tunnel cell beside
+  // the door.
+  const from = (layout.door && parseCoords(layout.door)) || { x: ux, y: uy };
+  const dist = walkDistances(cells, size, from.x, from.y);
   const reserved = new Set([uy * size + ux]);
   /** @type {string | null} */
   let stairsDown = null;
   if (descend) {
     // A level with one room has no other candidate, so the stairs down go
-    // on the far side of that room.
+    // on the floor cell farthest from the way in.
     const down =
       farthest(dist, size, layout.candidates) ?? farthest(dist, size, floorCells(cells, size));
     if (down) {
