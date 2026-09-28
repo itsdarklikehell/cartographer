@@ -359,7 +359,10 @@ the tree. The dungeon gets no road. The first exit becomes the entry of the
 map. When no border cell of the area can take a road, `connectSites` skips
 the exit search, because each search would cover the whole area and fail.
 A map with no exit, such as an island with its whole border under water,
-enters at the bottom-center border tile.
+enters where `southLanding` in `src/map/GeneratorGround.js` says. That is
+the land cell nearest the middle of the south border that has no marker,
+where one row north counts as two columns across. The world uses the same
+search for its entry.
 
 ### Town layout
 

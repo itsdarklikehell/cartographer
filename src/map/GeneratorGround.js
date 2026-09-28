@@ -11,8 +11,9 @@ import { bridgeAt } from './GeneratorRoads.js';
 /**
  * The ground of the open maps. `wildTerrain` builds the classified cells and
  * the rivers of a climate archetype, and `terrainTiles` draws cells, rivers,
- * and roads as tiles. The wilderness, the town, and the world generators all
- * use this module.
+ * and roads as tiles. `southLanding` finds the entry of a map with no road
+ * off it. The wilderness, the town, and the world generators all use this
+ * module.
  */
 
 /**
@@ -34,6 +35,33 @@ import { bridgeAt } from './GeneratorRoads.js';
  * @param {number} ax @param {number} ay @param {number} bx @param {number} by
  */
 export const chebyshev = (ax, ay, bx, by) => Math.max(Math.abs(ax - bx), Math.abs(ay - by));
+
+/**
+ * The land cell nearest the middle of the south border, where one row north
+ * counts as two columns across. A map ringed by sea enters here, so a party
+ * lands on the shore instead of in the sea. A map with land at the middle
+ * of its south border enters on that border tile.
+ * @param {string[]} cells terrain class per cell, indexed `y * size + x`
+ * @param {number} size
+ * @param {(i: number) => boolean} [skip] cells that cannot take the entry
+ * @returns {string} the tile id, or the middle of the south border on a map
+ *   with no land
+ */
+export function southLanding(cells, size, skip = () => false) {
+  const mid = Math.floor(size / 2);
+  let entry = tileIdAt(mid, size - 1);
+  let best = Infinity;
+  cells.forEach((type, i) => {
+    const x = i % size;
+    const y = Math.floor(i / size);
+    const d = Math.abs(x - mid) + (size - 1 - y) * 2;
+    if (type !== 'water' && d < best && !skip(i)) {
+      best = d;
+      entry = tileIdAt(x, y);
+    }
+  });
+  return entry;
+}
 
 /**
  * The terrain of one open-terrain map before any tile exists: classified

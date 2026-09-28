@@ -2,7 +2,7 @@ import { tilesById } from './TileGrid.js';
 import { tileIdAt } from './MapGeometry.js';
 import { ARMS } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
-import { chebyshev, terrainTiles, wildTerrain } from './GeneratorGround.js';
+import { chebyshev, southLanding, terrainTiles, wildTerrain } from './GeneratorGround.js';
 import { connectSites, plantFarmland, planSites, siteMap } from './GeneratorSites.js';
 import { clamp } from '../util/num.js';
 
@@ -185,8 +185,9 @@ export function fordCrossings(terrain, sites) {
  * Generate an open-terrain map for one of the climate archetypes:
  * wilderness, highlands, frontier, desert, wetlands, or island. The entry
  * is the border tile where the first road leaves the map. A map with no
- * road off the map, such as an island, enters at the bottom-center border
- * tile. `sites` lists the settlements, the keep, the dungeon, and each
+ * road off the map, such as an island, enters on the land nearest the
+ * middle of the south border (see `southLanding`), on a tile with no
+ * marker. `sites` lists the settlements, the keep, the dungeon, and each
  * cave entrance, mine, and ruin that drew its marker, each with the
  * sub-map it opens into. A mine and a cave entrance open into a cave, and a
  * ruin into a dungeon.
@@ -235,6 +236,8 @@ export function generateWilds(palette, size, rng, archetype = 'wilderness') {
       label: type,
     });
   }
-  const entry = exits[0] ?? tileIdAt(Math.floor(size / 2), size - 1);
+  // The tiles run in the same row-major order as the cells.
+  const entry =
+    exits[0] ?? southLanding(terrain.cells, size, (i) => Boolean(tiles[i].metadata.poiType));
   return { tiles, entry, sites: maps };
 }

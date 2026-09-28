@@ -28,15 +28,19 @@ test('every climate archetype fills the grid and marks landmarks on open ground'
       const label = `${archetype} ${seed}`;
       assert.equal(gen.tiles.length, size * size, `${label}: fully tiled`);
       const [ex, ey] = gen.entry.split(',').map(Number);
-      assert.ok(
-        ex === 0 || ey === 0 || ex === size - 1 || ey === size - 1,
-        `${label}: border entry`,
+      const entryTile = /** @type {import('../src/types/map.js').Tile} */ (
+        gen.tiles.find((t) => t.id === gen.entry)
       );
-      const entryTile = gen.tiles.find((t) => t.id === gen.entry);
-      assert.ok(
-        gen.entry === `${size / 2},${size - 1}` || /\/road\//.test(String(entryTile?.overlayRef)),
-        `${label}: the entry is a road end or the bottom center`,
-      );
+      if (/\/road\//.test(String(entryTile.overlayRef))) {
+        assert.ok(
+          ex === 0 || ey === 0 || ex === size - 1 || ey === size - 1,
+          `${label}: a road entry is on the border`,
+        );
+      } else {
+        // With no road off the map, the entry is land with no marker.
+        assert.doesNotMatch(entryTile.imageRef, /water\//, `${label}: the entry is land`);
+        assert.equal(entryTile.metadata.poiType, null, `${label}: no marker on the entry`);
+      }
       const landmarks = gen.tiles.filter(
         (t) => t.metadata.poiType === 'landmark' && !t.imageRef.includes('/castle/'),
       );
@@ -49,6 +53,22 @@ test('every climate archetype fills the grid and marks landmarks on open ground'
           assert.ok(Math.max(Math.abs(ox - x), Math.abs(oy - y)) >= 3, `${label}: spaced`);
         }
       }
+    }
+  }
+});
+
+test('a map with no road off it enters on land, never in the sea', () => {
+  /** @param {string} archetype @param {number} size @param {number} seed */
+  const entryCell = (archetype, size, seed) => {
+    const gen = generateWilds(palette, size, mulberry32(seed), archetype);
+    const tile = gen.tiles.find((t) => t.id === gen.entry);
+    return String(tile?.imageRef);
+  };
+  // Wetlands small seed 5 has water at the middle of its south border.
+  assert.doesNotMatch(entryCell('wetlands', 8, 5), /water\//);
+  for (const size of [8, 14, 22, 32]) {
+    for (let seed = 0; seed < 8; seed++) {
+      assert.doesNotMatch(entryCell('island', size, seed), /water\//, `island ${size} ${seed}`);
     }
   }
 });

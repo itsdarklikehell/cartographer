@@ -1,6 +1,6 @@
 import { NEIGHBORS4, tileIdAt } from './MapGeometry.js';
 import { randInt } from './GeneratorRandom.js';
-import { terrainTiles, wildTerrain } from './GeneratorGround.js';
+import { southLanding, terrainTiles, wildTerrain } from './GeneratorGround.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
@@ -155,17 +155,5 @@ export function generateWorld(palette, size, rng) {
       const tileIds = block.map((i) => tileIdAt(i % size, Math.floor(i / size)));
       return { tileIds, archetype, kind: 'region', environ, size: 'large', label: archetype };
     });
-  const mid = Math.floor(size / 2);
-  let entry = tileIdAt(mid, size - 1);
-  let best = Infinity;
-  terrain.cells.forEach((type, i) => {
-    const x = i % size;
-    const y = Math.floor(i / size);
-    const d = Math.abs(x - mid) + (size - 1 - y) * 2;
-    if (type !== 'water' && d < best) {
-      best = d;
-      entry = tileIdAt(x, y);
-    }
-  });
-  return { tiles, entry, sites };
+  return { tiles, entry: southLanding(terrain.cells, size), sites };
 }

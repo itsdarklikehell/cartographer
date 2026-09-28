@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { overlayList } from '../src/map/TileGrid.js';
 import { ArmNetwork } from '../src/map/Autotile.js';
-import { chebyshev, terrainTiles, wildTerrain } from '../src/map/GeneratorGround.js';
+import { chebyshev, southLanding, terrainTiles, wildTerrain } from '../src/map/GeneratorGround.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 const palette = new TilePalette();
@@ -115,6 +115,27 @@ test('tiles draw each biome, or the class where a later step changed the cell', 
   const sea = wildTerrain(32, 'island', mulberry32(2));
   const island = terrainTiles(palette, sea, mulberry32(2));
   assert.ok(island.some((t) => t.imageRef.includes('/deep-water/')));
+});
+
+test('southLanding picks the land nearest the middle of the south border', () => {
+  const size = 5;
+  const sea = new Array(size * size).fill('water');
+  assert.equal(southLanding(sea, size), '2,4', 'no land: the middle of the border');
+  const shore = [...sea];
+  shore[4 * size + 2] = 'grass';
+  assert.equal(southLanding(shore, size), '2,4', 'land on the border middle');
+  const bay = [...sea];
+  bay[3 * size + 2] = 'grass';
+  bay[4 * size + 0] = 'grass';
+  // One row up counts as two columns across, so the tie keeps the first.
+  assert.equal(southLanding(bay, size), '2,3');
+  bay[4 * size + 1] = 'grass';
+  assert.equal(southLanding(bay, size), '1,4', 'one column across beats one row up');
+  assert.equal(
+    southLanding(bay, size, (i) => i === 4 * size + 1),
+    '2,3',
+    'a skipped cell takes no entry',
+  );
 });
 
 test('chebyshev counts king moves between two cells', () => {
