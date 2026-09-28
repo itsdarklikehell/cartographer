@@ -471,11 +471,18 @@ where it does not fit. An obstacle, such as a pillar, a table, a bed, or a
 bookshelf, never goes beside a door or a staircase. The furnisher also walks
 the level from the way in after each obstacle and takes the obstacle back
 when a floor cell becomes unreachable. The walk never crosses a staircase,
-so an obstacle cannot leave a staircase as the only way to a cell. A castle puts a throne and two rows
-of pillars in its largest room, and a building puts a hearth and a table in
-the room behind its door. The other rooms of a castle or a building each get
-a role at random: a bedroom, a dining room, a library, a storeroom, a chapel
-in a castle, or an empty room. A dungeon level lines some large square rooms
+so an obstacle cannot leave a staircase as the only way to a cell. A castle
+puts a throne and two rows of pillars in its largest room. The other rooms
+of a castle each get a role at random: a bedroom, a dining room, a library,
+a storeroom, a chapel, or an empty room. A building takes its layout from
+its environ, which a town sets for each building (`BUILDING_INTERIORS` in
+`GeneratorTown.js`) and `generateNodeTiles` passes to `generateBuilding`.
+`BUILDING_LAYOUTS` names what goes in the room behind the door and the roles
+that the other rooms draw from. An inn has guest bedrooms, a temple an altar
+and a colonnade, a barracks a row of beds, a shop a counter and its stock,
+an academy bookshelves and a table, and a warehouse barrels and chests. A
+house, and a building with an environ that has no layout, puts a hearth and
+a table in the room behind its door. A dungeon level lines some large square rooms
 with pillars, and a cave level gets small pools. Both scatter rubble, and
 the bottom level of each puts a chest on the floor cell farthest from the
 way in.

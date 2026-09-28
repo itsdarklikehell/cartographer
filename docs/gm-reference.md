@@ -247,9 +247,12 @@ wall ring. Its stairs up lead to an upper floor of chambers, and its stairs
 down lead to a dungeon level beneath the keep. Its largest room is a great hall with a
 throne and pillars. A building splits into a few small rooms and has no
 stairs. About one building in three has a trapdoor down to a small cellar.
-The room behind its door has a hearth and a table. The other rooms
-of a castle or a building are bedrooms, dining rooms, libraries,
-storerooms, chapels in a castle, or empty rooms. A dungeon has pillars in
+The room behind the door of a house has a hearth and a table. The other rooms
+of a castle or a house are bedrooms, dining rooms, libraries,
+storerooms, chapels in a castle, or empty rooms. A town building takes
+its furnishings from what it is. An inn has more bedrooms, a temple has an
+altar and pillars, a barracks has rows of beds, a shop has a counter and
+stock, an academy has bookshelves, and a warehouse has barrels and chests. A dungeon has pillars in
 some large rooms, and a dungeon or a cave has rubble. The bottom level
 keeps a chest on the floor cell farthest from the way in.
 

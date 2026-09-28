@@ -165,7 +165,8 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  * forced, so the stairs always lead to a real level. `level` is the number
  * of this level, and a level below the first is entered by its stairs up.
  * The stack ends at level `MAX_LEVELS`, whatever `levels` asks for.
- * A building with a trapdoor has a forced site for its cellar, which is a
+ * A building takes its furnishings from `environ`, for example `inn` or
+ * `temple`. A building with a trapdoor has a forced site for its cellar, which is a
  * small dungeon level entered by its stairs up. The `cellar` archetype
  * generates that level. A castle has forced sites for its upper floor,
  * which the `upper-floor` archetype generates and the party enters by its
@@ -212,7 +213,7 @@ export function generateNodeTiles(palette, options, rng) {
     return done(generateDungeon(palette, n, rng, { entrance: 'stairs', descend: false }));
   }
   if (archetype === 'building') {
-    const gen = generateBuilding(palette, n, rng);
+    const gen = generateBuilding(palette, n, rng, environ);
     if (!gen.stairsDown) return done(gen);
     const cellar = {
       tileIds: [gen.stairsDown],

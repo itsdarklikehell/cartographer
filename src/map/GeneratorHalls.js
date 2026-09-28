@@ -143,12 +143,13 @@ export function hallLayout(size, rng, style) {
  * @param {number} size @param {() => number} rng @param {Room[]} rooms
  * @param {boolean} castle @param {number[]} reserved cell indexes of the stairs
  * @param {[number, number]} [way] the way in of a hall with no door
+ * @param {string} [environ] the environ of a building, which picks its layout
  */
-function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved, way) {
+function furnishHall(tiles, palette, cells, size, rng, rooms, castle, reserved, way, environ) {
   const doorX = doorColumn(size);
   const start = way ?? [doorX, size - 1];
   const { place, placed } = furnisher(cells, size, start, new Set(reserved));
-  furnishHalls(place, rng, rooms, { castle, entrance: way ?? [doorX, size - 2] });
+  furnishHalls(place, rng, rooms, { castle, entrance: way ?? [doorX, size - 2], environ });
   dress(tiles, palette, size, placed);
 }
 
@@ -219,17 +220,19 @@ export const CELLAR_CHANCE = 0.3;
 /**
  * Generate the inside of one building, such as a house, a shop, or a
  * temple: a few small rooms of at least two cells a side, and no stairs.
- * The room behind the entrance has a hearth and a table. A building has a
- * cellar with a chance of `CELLAR_CHANCE`. Its trapdoor goes on the floor
+ * `environ`, such as `inn` or `temple`, picks the furnishings
+ * (`GeneratorFurnish.BUILDING_LAYOUTS`). A building has a cellar with a
+ * chance of `CELLAR_CHANCE`. Its trapdoor goes on the floor
  * cell farthest from the entrance that `stairsCell` accepts, and
  * `stairsDown` names that tile, so the caller can link it to the cellar
  * level. The building picks the trapdoor cell before the furnishings, so no
  * obstacle goes beside it and no walk has to cross it. A building with no
  * cellar leaves that cell bare.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @param {string} [environ]
  * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
  */
-export function generateBuilding(palette, size, rng) {
+export function generateBuilding(palette, size, rng, environ) {
   const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth: 3 });
   const tiles = maskTiles(palette, cells, size, rng);
   const dist = walkDistances(cells, size, doorColumn(size), size - 1);
@@ -239,7 +242,8 @@ export function generateBuilding(palette, size, rng) {
     size,
     far.sort((a, b) => dist[b] - dist[a]),
   );
-  furnishHall(tiles, palette, cells, size, rng, rooms, false, at === null ? [] : [at]);
+  const reserved = at === null ? [] : [at];
+  furnishHall(tiles, palette, cells, size, rng, rooms, false, reserved, undefined, environ);
   if (at === null || rng() >= CELLAR_CHANCE) return { tiles, entry, stairsDown: null };
   const stairsDown = tileIdAt(at % size, Math.floor(at / size));
   const tile = /** @type {Tile} */ (tiles.find((t) => t.id === stairsDown));

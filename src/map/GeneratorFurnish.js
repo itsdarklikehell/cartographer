@@ -140,23 +140,84 @@ const ROLES = {
 };
 
 /**
+ * @typedef {{ main: (place: Place, room: Room, rng: () => number) => void, roles: string[] }} Layout
+ * How a building furnishes its rooms. `main` furnishes the room behind the
+ * entrance, and each other room draws its role from `roles`.
+ */
+
+/** The layout of a home, and of any building whose environ has no layout. */
+const HOME = {
+  /** @type {Layout['main']} */
+  main(place, room, rng) {
+    place(midX(room), room.y0, 'hearth');
+    ROLES.dining(place, room, rng);
+  },
+  roles: ['bedroom', 'dining', 'library', 'storeroom', 'empty'],
+};
+
+/**
+ * The layout of a building by its environ (`BUILDING_INTERIORS` in
+ * `GeneratorTown.js`). An inn has guest bedrooms, a temple an altar and a
+ * colonnade, a barracks a dormitory, and a shop or a warehouse its stock.
+ * @type {Record<string, Layout>}
+ */
+export const BUILDING_LAYOUTS = {
+  house: HOME,
+  inn: { main: HOME.main, roles: ['bedroom', 'bedroom', 'bedroom', 'storeroom'] },
+  tavern: { main: HOME.main, roles: ['storeroom', 'dining', 'bedroom'] },
+  guildhall: { main: HOME.main, roles: ['library', 'dining', 'storeroom'] },
+  shop: {
+    main(place, room, rng) {
+      place(midX(room), midY(room), 'table');
+      ROLES.storeroom(place, room, rng);
+    },
+    roles: ['storeroom', 'storeroom', 'bedroom'],
+  },
+  warehouse: { main: ROLES.storeroom, roles: ['storeroom', 'storeroom', 'empty'] },
+  temple: {
+    main(place, room) {
+      place(midX(room), room.y0, 'altar');
+      if (room.x1 - room.x0 >= 4 && room.y1 - room.y0 >= 4) colonnade(place, room);
+    },
+    roles: ['chapel', 'bedroom', 'library'],
+  },
+  academy: {
+    main(place, room, rng) {
+      ROLES.library(place, room, rng);
+      place(midX(room), midY(room), 'table');
+    },
+    roles: ['library', 'library', 'bedroom'],
+  },
+  barracks: {
+    main(place, room) {
+      for (let x = room.x0; x <= room.x1; x += 2) place(x, room.y0, 'bed');
+    },
+    roles: ['bedroom', 'bedroom', 'storeroom', 'dining'],
+  },
+};
+
+/**
  * Furnish the rooms of a castle or a building. A castle puts a throne and
- * two rows of pillars in its largest room, the great hall. A building puts
- * a hearth and a table in the room behind its entrance. Each other room
- * gets a role at random.
+ * two rows of pillars in its largest room, the great hall. A building
+ * furnishes the room behind its entrance and picks the roles of its other
+ * rooms by its environ (`BUILDING_LAYOUTS`), and a home puts a hearth and a
+ * table behind the entrance. Each other room gets a role at random.
  * @param {Place} place @param {() => number} rng @param {Room[]} rooms
- * @param {{ castle: boolean, entrance: [number, number] }} hall
+ * @param {{ castle: boolean, entrance: [number, number], environ?: string }} hall
  *   `entrance` is the floor cell inside the entrance door
  */
-export function furnishHalls(place, rng, rooms, { castle, entrance }) {
+export function furnishHalls(place, rng, rooms, { castle, entrance, environ = '' }) {
   const area = (/** @type {Room} */ r) => (r.x1 - r.x0 + 1) * (r.y1 - r.y0 + 1);
   const [ex, ey] = entrance;
   const main = castle
     ? rooms.reduce((a, b) => (area(b) > area(a) ? b : a))
     : rooms.find((r) => ex >= r.x0 && ex <= r.x1 && ey >= r.y0 && ey <= r.y1);
+  // An own-key test, so an environ such as "constructor" reads as a home.
+  const own = Object.prototype.hasOwnProperty.call(BUILDING_LAYOUTS, environ);
+  const layout = own ? BUILDING_LAYOUTS[environ] : HOME;
   const roles = castle
     ? ['bedroom', 'dining', 'library', 'storeroom', 'chapel', 'empty']
-    : ['bedroom', 'dining', 'library', 'storeroom', 'empty'];
+    : layout.roles;
   for (const room of rooms) {
     if (room !== main) ROLES[roles[randInt(rng, roles.length)]](place, room, rng);
   }
@@ -170,8 +231,7 @@ export function furnishHalls(place, rng, rooms, { castle, entrance }) {
       }
     }
   } else {
-    place(midX(main), main.y0, 'hearth');
-    ROLES.dining(place, main, rng);
+    layout.main(place, main, rng);
   }
 }
 
