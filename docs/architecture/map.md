@@ -359,15 +359,40 @@ nearest street. A town of 14 cells or more has three ways out, and one of
 22 cells or more has four. Then about one lane for each five cells of map
 side runs from open ground in the core to the nearest street.
 
-Each building fills a 2x2 block of open ground beside a street and draws
-with span 2. The core set (inn, tavern, blacksmith, general store, and
-temple) takes the blocks nearest the crossroads, so the example campaign
-finds its innkeeper, smith, and priest in each medium town. The other
-building markers come next, and then homes, until the town has one
-building for each thirty cells of map area. A town of 14 cells or more
-gets a graveyard at the edge of the core, with a chance of three in five.
+The plaza paves the cells within one cell of the crossroads, or within two
+on a map of 32 cells or more. The plaza cells get no street overlay, so the
+streets open onto the cobbles.
+
+Each building fills a 2x2 block of open ground beside a street or the
+plaza, and draws with span 2. The core set (inn, tavern, blacksmith,
+general store, and temple) takes the blocks nearest the crossroads, so the
+example campaign finds its innkeeper, smith, and priest in each medium
+town. The civic set comes next: a well or a fountain, and on a map of 22
+cells or more a market and a town hall. Extra buildings from
+`EXTRA_BUILDINGS` then take half of the remaining blocks, and homes take
+the rest, until the town has one building for each thirty cells of map
+area. A home is a house near the crossroads and a cottage near the edge of
+the core.
+
+A town of 14 cells or more gets a watermill on a block beside its river,
+and a graveyard at the edge of the core with a chance of three in five.
 Outside the core, one farm for each ten cells of map side takes a block,
-and noise turns patches of the open ground into farmland.
+and noise turns patches of the open ground into farmland. Then a windmill
+takes the outlying block with the most farmland in the ring of cells
+around it.
+
+A town of 22 cells or more gets a wall with a chance of one in two.
+`planWall` in `src/map/GeneratorTownWall.js` tries a square ring one cell
+past the core, then two cells past, then on the core edge. It plans the
+wall after the streets and before the buildings, so no building covers the
+wall. `wallRing` refuses a ring where a street meets a corner, runs along
+the wall, turns on it, or crosses it on a bridge, because a gate piece
+takes only a straight street. It also refuses a ring with more than four
+river cells on it, where the river runs along the wall. The river goes
+through the wall in a gap, because the palette has no water gate. A town
+whose streets fit no ring gets no wall. `generateTown` draws each wall
+piece as the overlay of its cell, and a gate piece replaces the street
+overlay under it, because the gate art draws its own street.
 
 ### Interior layouts
 
@@ -418,7 +443,7 @@ The generator archetypes build on these helpers, and `MapGenerator`
 dispatches to them. The climate archetypes are in
 `src/map/GeneratorWilds.js`, with their sites and roads in
 `src/map/GeneratorSites.js` and `src/map/GeneratorRoads.js`. The town is in
-`src/map/GeneratorTown.js`. The dungeon is in
+`src/map/GeneratorTown.js`, with its wall in `src/map/GeneratorTownWall.js`. The dungeon is in
 `src/map/GeneratorInteriors.js`, the cave in `src/map/GeneratorCave.js`,
 and the castle and the building in `src/map/GeneratorHalls.js`. The example
 world in `campaign/ExampleWorld.js` uses them too.

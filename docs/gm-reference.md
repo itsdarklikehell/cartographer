@@ -223,10 +223,15 @@ out.
 
 A town has a core of streets and buildings around a central crossroads.
 The inn, the tavern, the blacksmith, the general store, and the temple
-stand nearest the crossroads. A larger town adds the other shops and
-homes, and some towns have a graveyard. Farms and fields lie outside the
-core. Some towns have a river, and the streets cross it on bridges. A
-small town has two ways out, a medium town three, and a larger town four.
+stand nearest the crossroads, around a cobbled plaza. A well or a fountain
+stands near them, and a large town adds a market and a town hall. A larger
+town then adds other shops and trades, houses near the center, and
+cottages near the edge. Farms and fields lie outside the core, with a
+windmill among the fields. Some towns have a graveyard. Some towns have a
+river, and the streets cross it on bridges, with a watermill on its bank.
+A small town has two ways out, a medium town three, and a larger town
+four. About one large town in three gets a stone wall with a gate on each
+street. The river goes through a gap in the wall.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave

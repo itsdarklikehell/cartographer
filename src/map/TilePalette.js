@@ -31,6 +31,7 @@ const VARIANT_COUNTS = {
   glacier: 3,
   'snow-hills': 3,
   'snow-mountain': 5,
+  plaza: 5,
 };
 
 /**
@@ -112,8 +113,47 @@ const COAST_KINDS = [
  * @returns {boolean}
  */
 export function isOverlayType(type) {
-  return type === 'road' || type === 'river' || type === 'coast';
+  return type === 'road' || type === 'river' || type === 'coast' || type === 'town-wall';
 }
+
+/**
+ * Town wall pieces, overlays in `assets/tiles/town/`. The straight pieces and
+ * the gates run east-west (`h`) or north-south (`v`), and a gate draws its
+ * own street through the wall. A corner is named for its open edges like the
+ * interior walls, so `wall-corner-se` caps the north-west corner of a ring.
+ * @type {string[]}
+ */
+const TOWN_WALL_KINDS = [
+  'wall-h',
+  'wall-v',
+  'wall-corner-ne',
+  'wall-corner-nw',
+  'wall-corner-se',
+  'wall-corner-sw',
+  'gate-h',
+  'gate-v',
+];
+
+/**
+ * Town buildings with no variants, in `assets/tiles/town/`. The art draws
+ * a building over a 2x2 block, so the town generator paints each one at
+ * span 2.
+ * @type {string[]}
+ */
+const TOWN_BUILDINGS = [
+  'house',
+  'cottage',
+  'market',
+  'well',
+  'fountain',
+  'town-hall',
+  'guildhall',
+  'bakery',
+  'warehouse',
+  'stables',
+  'windmill',
+  'watermill',
+];
 
 /**
  * Single-image POI markers with no variants.
@@ -274,6 +314,26 @@ function buildBuiltins() {
     });
   }
 
+  for (const type of TOWN_BUILDINGS) {
+    entries.push({
+      id: type,
+      type,
+      label: titleCase(type),
+      imageRef: `${TILE_ROOT}/town/${type}.svg`,
+      custom: false,
+    });
+  }
+
+  for (const kind of TOWN_WALL_KINDS) {
+    entries.push({
+      id: `town-${kind}`,
+      type: 'town-wall',
+      label: `Town Wall (${kind})`,
+      imageRef: `${TILE_ROOT}/town/town-${kind}.svg`,
+      custom: false,
+    });
+  }
+
   for (const kind of Object.keys(INTERIOR_KINDS)) {
     entries.push({
       id: `interior-${kind}`,
@@ -385,6 +445,16 @@ export class TilePalette {
    */
   getCoastPiece(kind) {
     return this.entries.get(`coast-${kind}`);
+  }
+
+  /**
+   * Look up a town wall piece by kind, for example "wall-h",
+   * "wall-corner-se", or "gate-v".
+   * @param {string} kind
+   * @returns {PaletteEntry | undefined}
+   */
+  getTownWallPiece(kind) {
+    return this.entries.get(`town-${kind}`);
   }
 
   /**

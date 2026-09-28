@@ -85,6 +85,7 @@ test('town streets form one network that leaves the map on several sides', () =>
 
 test('town buildings take free blocks beside streets, core set first', () => {
   let graveyards = 0;
+  const homes = new Set();
   for (let seed = 1; seed <= 10; seed++) {
     const size = 22;
     const plan = planTown(size, mulberry32(seed));
@@ -92,7 +93,12 @@ test('town buildings take free blocks beside streets, core set first', () => {
     for (const art of ['inn', 'tavern', 'blacksmith', 'general-store', 'temple']) {
       assert.ok(arts.slice(0, 5).includes(art), `seed ${seed}: ${art} comes first`);
     }
-    assert.ok(arts.includes('settlement'), 'homes fill a large town');
+    for (const art of ['market', 'town-hall'])
+      assert.ok(arts.includes(art), `seed ${seed}: ${art}`);
+    assert.ok(arts.includes('well') !== arts.includes('fountain'), 'a well or a fountain');
+    assert.ok(arts.includes('house') || arts.includes('cottage'), 'homes fill a large town');
+    for (const art of arts) if (art === 'house' || art === 'cottage') homes.add(art);
+    assert.ok(!arts.includes('settlement'));
     assert.ok(arts.includes('farm'), 'farms on the outskirts');
     if (arts.includes('graveyard')) graveyards++;
     const covered = new Set();
@@ -112,12 +118,16 @@ test('town buildings take free blocks beside streets, core set first', () => {
         covered.add(`${bx},${by}`);
       }
       const beside = block.some(([bx, by]) =>
-        ARMS.some(([, dx, dy]) => plan.roads.has(bx + dx, by + dy)),
+        ARMS.some(
+          ([, dx, dy]) =>
+            plan.roads.has(bx + dx, by + dy) || plan.cells[(by + dy) * size + bx + dx] === 'plaza',
+        ),
       );
       assert.ok(beside, `seed ${seed}: ${id} is beside a street`);
     }
   }
   assert.ok(graveyards > 0 && graveyards < 10, `some towns have a graveyard: ${graveyards}`);
+  assert.equal(homes.size, 2, 'houses near the crossroads and cottages at the edge');
 });
 
 test('town fields lie outside the core only', () => {
@@ -149,4 +159,64 @@ test('a generated town draws bridges, scaled buildings, and fields', () => {
   assert.equal(innTile?.metadata.poiType, 'settlement');
   assert.ok(gen.tiles.some((t) => t.imageRef.includes('farmland')));
   assert.equal(gen.tiles.length, size * size);
+});
+
+test('a town paves its plaza and puts mills by the river and among the fields', () => {
+  let watermills = 0;
+  let windmills = 0;
+  for (let seed = 1; seed <= 12; seed++) {
+    const size = 22;
+    const plan = planTown(size, mulberry32(seed));
+    const plaza = plan.cells.flatMap((t, i) =>
+      t === 'plaza' ? [[i % size, (i - (i % size)) / size]] : [],
+    );
+    assert.equal(plaza.length, 9, `seed ${seed}: a 3x3 plaza`);
+    for (const [x, y] of plaza) assert.ok(Math.abs(x - 11) <= 1 && Math.abs(y - 11) <= 1);
+    for (const { id, art } of plan.buildings) {
+      const [x, y] = xy(id);
+      const ring = [];
+      for (let yy = y - 1; yy <= y + 2; yy++) {
+        for (let xx = x - 1; xx <= x + 2; xx++) {
+          if (xx < x || xx > x + 1 || yy < y || yy > y + 1) ring.push([xx, yy]);
+        }
+      }
+      if (art === 'watermill') {
+        watermills++;
+        assert.ok(
+          ring.some(([rx, ry]) => plan.rivers.has(rx, ry)),
+          `seed ${seed}: by the river`,
+        );
+      }
+      if (art === 'windmill') {
+        windmills++;
+        const fields = ring.filter(([rx, ry]) => plan.cells[ry * size + rx] === 'farmland');
+        assert.ok(fields.length >= 4, `seed ${seed}: ${fields.length} fields round the windmill`);
+      }
+    }
+  }
+  assert.ok(watermills > 0 && watermills < 12, `watermills: ${watermills}`);
+  assert.ok(windmills > 6, `windmills: ${windmills}`);
+  const city = planTown(32, mulberry32(1));
+  assert.equal(city.cells.filter((t) => t === 'plaza').length, 25, 'a 5x5 plaza');
+  const hamlet = planTown(8, mulberry32(1));
+  assert.ok(!hamlet.buildings.some((b) => b.art.endsWith('mill')), 'no mills in a small town');
+});
+
+test('a walled town draws its wall, corner towers, and gates over the streets', () => {
+  const gen = generateTown(palette, 22, mulberry32(9));
+  const refs = gen.tiles.flatMap((t) => [t.overlayRef ?? []].flat());
+  const count = (/** @type {string} */ name) =>
+    refs.filter((r) => r.endsWith(`/${name}.svg`)).length;
+  for (const corner of ['ne', 'nw', 'se', 'sw'])
+    assert.equal(count(`town-wall-corner-${corner}`), 1);
+  assert.ok(count('town-gate-h') + count('town-gate-v') >= 2, 'the streets pass through gates');
+  assert.ok(count('town-wall-h') > 10 && count('town-wall-v') > 10);
+  const plaza = gen.tiles.filter((t) => t.imageRef.includes('/plaza/'));
+  assert.equal(plaza.length, 9);
+  assert.ok(
+    plaza.every((t) => !t.overlayRef),
+    'the streets open onto the plaza',
+  );
+  const open = generateTown(palette, 22, mulberry32(1));
+  assert.ok(!open.tiles.some((t) => String(t.overlayRef).includes('town-')), 'seed 1 has no wall');
 });

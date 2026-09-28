@@ -4,6 +4,7 @@ import { distanceTo, layRoad, routeRoad } from './GeneratorRoads.js';
 import { fbm, valueNoise } from './GeneratorNoise.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 import { tileIdAt } from './MapGeometry.js';
+import { planWall } from './GeneratorTownWall.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').POIType} POIType */
@@ -25,11 +26,27 @@ import { tileIdAt } from './MapGeometry.js';
  */
 const CORE_BUILDINGS = ['inn', 'tavern', 'blacksmith', 'general-store', 'temple'];
 
-/** The buildings a larger town adds after the core set, in random order. */
-const EXTRA_BUILDINGS = ['alchemist', 'shrine', 'wizard-tower', 'academy', 'barracks'];
+/**
+ * The buildings a larger town adds after the core and civic sets, in random
+ * order. They take half of the blocks that remain, and homes take the rest.
+ */
+const EXTRA_BUILDINGS = [
+  'alchemist',
+  'shrine',
+  'wizard-tower',
+  'academy',
+  'barracks',
+  'guildhall',
+  'bakery',
+  'warehouse',
+  'stables',
+];
 
-/** The marker for the homes that fill the rest of a large town. */
-const HOUSE = 'settlement';
+/**
+ * The stand-in art for a home. `place` swaps it for a house near the
+ * crossroads or a cottage at the edge of the core.
+ */
+const HOME = 'home';
 
 /** The extra cost of a bend in a street, so streets run straight. */
 const TURN = 0.6;
@@ -50,9 +67,12 @@ const TRANSPOSE = { n: 'w', w: 'n', s: 'e', e: 's' };
  *   roads: ArmNetwork,
  *   entry: string,
  *   buildings: TownBuilding[],
+ *   walls: Map<string, string>,
  * }} TownPlan
  * `cells` is the terrain type per cell, indexed `y * size + x`. `entry` is
- * the border cell of the first street out of town.
+ * the border cell of the first street out of town. `walls` maps each tile id
+ * of the town wall to its piece, for example `wall-h` or `gate-v`, and is
+ * empty for a town with no wall.
  */
 
 /**
@@ -160,15 +180,22 @@ function layStreets(ground, c, core, rng) {
 }
 
 /**
- * Plan a town: its river, streets, buildings, and fields, with no tiles.
- * The core is the square of cells within `core` of the crossroads. Each
- * building fills a 2x2 block of open ground beside a street. The core set
- * comes first and nearest the center, then the extra buildings, then homes
- * until the town has as many buildings as a thirtieth of the map area.
- * Past the edge of the core, one farm for each ten cells of map side takes
- * a block, and fields cover patches of the open ground. A town of 14 cells
- * or more gets a graveyard at the edge of the core, with a chance of three
- * in five.
+ * Plan a town: its river, streets, plaza, wall, buildings, and fields, with
+ * no tiles. The core is the square of cells within `core` of the
+ * crossroads. The plaza paves the cells within one cell of the crossroads,
+ * or within two on a map of 32 cells or more. Each building fills a 2x2
+ * block of open ground beside a street or the plaza. The core set comes first and
+ * nearest the center. The civic set follows: a well or a fountain, and on a
+ * map of 22 cells or more a market and a town hall. Extra buildings then
+ * take half of the remaining blocks and homes take the rest, until the town
+ * has as many buildings as a thirtieth of the map area. A home is a house
+ * near the crossroads and a cottage near the edge of the core.
+ *
+ * A town of 14 cells or more gets a watermill on a block beside its river.
+ * It also gets a graveyard at the edge of the core, with a chance of three
+ * in five. Past the edge of the core, one farm for each ten cells of map
+ * side takes a block, and fields cover patches of the open ground. Then a
+ * windmill takes the outlying block with the most fields around it.
  * @param {number} size @param {() => number} rng
  * @returns {TownPlan}
  */
@@ -179,16 +206,30 @@ export function planTown(size, rng) {
   const rivers = rng() < 0.6 ? townRiver(size, rng, c) : new ArmNetwork();
   const roads = new ArmNetwork();
   const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng);
+  const walls = planWall({ size, roads, rivers }, c, core, rng);
+  const square = size >= 32 ? 2 : 1;
+  /** @param {number} x @param {number} y */
+  const paved = (x, y) => Math.max(Math.abs(x - c), Math.abs(y - c)) <= square && !rivers.has(x, y);
+  for (let y = c - square; y <= c + square; y++) {
+    for (let x = c - square; x <= c + square; x++) if (paved(x, y)) cells[y * size + x] = 'plaza';
+  }
 
   /** @type {Set<number>} cells that a building covers */
   const taken = new Set();
   /** @param {number} x @param {number} y */
-  const open = (x, y) => !roads.has(x, y) && !rivers.has(x, y) && !taken.has(y * size + x);
-  /** @type {{ x: number, y: number, d: number }[]} */
+  const open = (x, y) =>
+    !roads.has(x, y) &&
+    !rivers.has(x, y) &&
+    !walls.has(tileIdAt(x, y)) &&
+    !taken.has(y * size + x) &&
+    !paved(x, y);
+  /** @param {number} x @param {number} y */
+  const openBlock = (x, y) => open(x, y) && open(x + 1, y) && open(x, y + 1) && open(x + 1, y + 1);
+  /** @type {{ x: number, y: number, d: number, river: boolean }[]} */
   const blocks = [];
   for (let y = 0; y < size - 1; y++) {
     for (let x = 0; x < size - 1; x++) {
-      if (!open(x, y) || !open(x + 1, y) || !open(x, y + 1) || !open(x + 1, y + 1)) continue;
+      if (!openBlock(x, y)) continue;
       const edge = [
         [x, y - 1],
         [x + 1, y - 1],
@@ -199,14 +240,16 @@ export function planTown(size, rng) {
         [x - 1, y],
         [x - 1, y + 1],
       ];
-      if (!edge.some(([ex, ey]) => roads.has(ex, ey))) continue;
-      blocks.push({ x, y, d: Math.max(Math.abs(x + 0.5 - c), Math.abs(y + 0.5 - c)) });
+      if (!edge.some(([ex, ey]) => roads.has(ex, ey) || paved(ex, ey))) continue;
+      const d = Math.max(Math.abs(x + 0.5 - c), Math.abs(y + 0.5 - c));
+      blocks.push({ x, y, d, river: edge.some(([ex, ey]) => rivers.has(ex, ey)) });
     }
   }
   /** @type {TownBuilding[]} */
   const buildings = [];
   /**
-   * Put buildings on the first free blocks of `list`, one for each art.
+   * Put buildings on the first free blocks of `list`, one for each art. A
+   * covered cell goes back to grass, which the scaled art hides.
    * @param {{ x: number, y: number }[]} list @param {string[]} arts
    * @param {POIType} poi
    */
@@ -214,15 +257,23 @@ export function planTown(size, rng) {
     let i = 0;
     for (const { x, y } of list) {
       if (i >= arts.length) return;
-      if (!open(x, y) || !open(x + 1, y) || !open(x, y + 1) || !open(x + 1, y + 1)) continue;
+      if (!openBlock(x, y)) continue;
       for (const [bx, by] of [
         [x, y],
         [x + 1, y],
         [x, y + 1],
         [x + 1, y + 1],
-      ])
+      ]) {
         taken.add(by * size + bx);
-      buildings.push({ id: tileIdAt(x, y), art: arts[i++], poi });
+        cells[by * size + bx] = 'grass';
+      }
+      const edgeward = Math.max(Math.abs(x + 0.5 - c), Math.abs(y + 0.5 - c)) >= core - 0.5;
+      const art = arts[i++];
+      buildings.push({
+        id: tileIdAt(x, y),
+        art: art !== HOME ? art : edgeward ? 'cottage' : 'house',
+        poi,
+      });
     }
   };
 
@@ -230,12 +281,25 @@ export function planTown(size, rng) {
   // crossroads and reach past the core only when it runs out of blocks.
   const nearest = blocks.map((b) => ({ ...b, d: b.d + rng() * 3 })).sort((a, b) => a.d - b.d);
   const wanted = Math.max(3, Math.round((size * size) / 30));
-  const arts = [...shuffle(CORE_BUILDINGS, rng), ...shuffle(EXTRA_BUILDINGS, rng)];
-  while (arts.length < wanted) arts.push(HOUSE);
+  const civic = [rng() < 0.5 ? 'well' : 'fountain', ...(size >= 22 ? ['market', 'town-hall'] : [])];
+  const arts = [...shuffle(CORE_BUILDINGS, rng), ...civic];
+  const extras = Math.max(0, Math.floor((wanted - arts.length) / 2));
+  arts.push(...shuffle(EXTRA_BUILDINGS, rng).slice(0, extras));
+  while (arts.length < wanted) arts.push(HOME);
   place(nearest, arts.slice(0, wanted), 'settlement');
-  if (size >= 14 && rng() < 0.6) {
-    const rim = blocks.filter((b) => b.d > core - 1 && b.d <= core + 2);
-    place(shuffle(rim, rng), ['graveyard'], 'landmark');
+  if (size >= 14) {
+    place(
+      shuffle(
+        blocks.filter((b) => b.river),
+        rng,
+      ),
+      ['watermill'],
+      'settlement',
+    );
+    if (rng() < 0.6) {
+      const rim = blocks.filter((b) => b.d > core - 1 && b.d <= core + 2);
+      place(shuffle(rim, rng), ['graveyard'], 'landmark');
+    }
   }
   const outskirts = blocks.filter((b) => b.d > core + 1);
   place(shuffle(outskirts, rng), new Array(Math.floor(size / 10)).fill('farm'), 'settlement');
@@ -247,12 +311,33 @@ export function planTown(size, rng) {
       if (far && open(x, y) && fbm(noise, x / 4, y / 4, 3) > 0.45) cells[y * size + x] = 'farmland';
     }
   }
-  return { size, cells, rivers, roads, entry, buildings };
+  if (size >= 14) {
+    /** @param {number} x @param {number} y */
+    const fields = (x, y) => {
+      let n = 0;
+      for (let yy = Math.max(0, y - 1); yy <= Math.min(size - 1, y + 2); yy++) {
+        for (let xx = Math.max(0, x - 1); xx <= Math.min(size - 1, x + 2); xx++) {
+          const inside = xx - x >= 0 && xx - x <= 1 && yy - y >= 0 && yy - y <= 1;
+          if (!inside && cells[yy * size + xx] === 'farmland') n++;
+        }
+      }
+      return n;
+    };
+    const farmed = outskirts
+      .filter((b) => openBlock(b.x, b.y))
+      .map((b) => ({ ...b, n: fields(b.x, b.y) + rng() }))
+      .filter((b) => b.n >= 4)
+      .sort((a, b) => b.n - a.n);
+    place(farmed, ['windmill'], 'settlement');
+  }
+  return { size, cells, rivers, roads, entry, buildings, walls };
 }
 
 /**
  * Generate a town from its plan. The streets and the river draw as
- * overlays, with a bridge where a street crosses the river. Each building
+ * overlays, with a bridge where a street crosses the river, and the wall
+ * pieces draw as overlays in place of any street under them. The plaza
+ * takes no street overlay, so the streets open onto the cobbles. Each building
  * marker draws with span 2 over its block, and the covered cells keep their
  * grass under the scaled art.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
@@ -260,13 +345,21 @@ export function planTown(size, rng) {
  */
 export function generateTown(palette, size, rng) {
   const plan = planTown(size, rng);
-  const tiles = terrainTiles(palette, plan, rng, new Set(plan.buildings.map((b) => b.id)));
+  const bare = new Set(plan.buildings.map((b) => b.id));
+  for (let i = 0; i < plan.cells.length; i++) {
+    if (plan.cells[i] === 'plaza') bare.add(tileIdAt(i % size, Math.floor(i / size)));
+  }
+  const tiles = terrainTiles(palette, plan, rng, bare);
   const byId = new Map(tiles.map((t) => [t.id, t]));
   for (const { id, art, poi } of plan.buildings) {
     const tile = /** @type {Tile} */ (byId.get(id));
     tile.imageRef = /** @type {PaletteEntry} */ (palette.get(art)).imageRef;
     tile.span = 2;
     tile.metadata = { ...tile.metadata, poiType: poi };
+  }
+  for (const [id, piece] of plan.walls) {
+    const tile = /** @type {Tile} */ (byId.get(id));
+    tile.overlayRef = /** @type {PaletteEntry} */ (palette.getTownWallPiece(piece)).imageRef;
   }
   return { tiles, entry: plan.entry };
 }

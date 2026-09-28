@@ -7,18 +7,21 @@ Built-in tile art lives under `assets/tiles/<type>/`. Each tile type has its
 own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`,
 `swamp/`, `snow/`, `hills/`, `farmland/`, one folder for each biome of the
 climate model, for example `jungle/` and `deep-water/`, `road/`, `river/`,
-`coast/`, `interior/`, and one folder for each POI marker, for example `settlement/`,
+`coast/`, `plaza/`, `interior/`, `town/` for the town buildings and the
+town wall, and one folder for each POI marker, for example `settlement/`,
 `castle/`, and `tavern/`. `TilePalette` (`src/map/TilePalette.js`) defines
 the catalog and the paths that it expects, so anyone who adds or renames
 files reads `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
-`MARKER_TYPES`, and `INTERIOR_KINDS` in that file first.
+`MARKER_TYPES`, `TOWN_BUILDINGS`, `TOWN_WALL_KINDS`, and `INTERIOR_KINDS`
+in that file first.
 
 ## Terrain variants
 
 Each terrain type has 3 variants, for example `grass-1.svg`, `grass-2.svg`,
 and `grass-3.svg`. Mountain, snow-mountain, and badlands have 5, and taiga
 has 4, because their landforms and trees are large and a range of 3
-repeated layouts shows as rows. `VARIANT_COUNTS` in
+repeated layouts shows as rows. Plaza also has 5, and its variants differ
+only in the worn stones on one shared cobble layout. `VARIANT_COUNTS` in
 `TilePalette.js` sets the count per type. `palette.pickVariant(type, rng)`
 selects one so that adjacent tiles of the same type do not look identical.
 The variants abut
@@ -132,6 +135,25 @@ in the desert but not in the snow. A set of markers with transparent
 backgrounds, drawn as overlays over the terrain, removes this limit. No
 placeholder stands for this set, because it replaces every marker.
 
+## Town pieces
+
+`town/` contains the town buildings (`TOWN_BUILDINGS`): `house`,
+`cottage`, `market`, `well`, `fountain`, `town-hall`, `guildhall`,
+`bakery`, `warehouse`, `stables`, `windmill`, and `watermill`. Each one is
+a marker on the grass background, drawn to stretch over a 2x2 block, and
+the town generator paints it at span 2.
+
+The town wall pieces (`TOWN_WALL_KINDS`) are overlays with a transparent
+background, and `palette.getTownWallPiece(kind)` selects one by kind.
+`wall-h` and `wall-v` are straight runs, and every detail repeats on an
+8-unit period, so a run joins at the tile edges. `gate-h` takes a
+north-south street through an east-west wall, and `gate-v` takes an
+east-west street through a north-south wall. Each gate draws its own copy
+of `road-v` or `road-h`, so it works with or without a road overlay under
+it. Like the interior wall corners, each corner is named for its two open
+edges, so `wall-corner-se` connects south and east and caps the north-west
+corner of a ring.
+
 ## Interior pieces
 
 `interior/` contains building-interior tiles, for example castle halls and
@@ -178,6 +200,8 @@ the app only when its family table names it.
 | `RIVER_KINDS` | The fifteen river connector kinds, two bridges, and two fords |
 | `COAST_KINDS` | The twelve shoreline pieces |
 | `MARKER_TYPES` | The single-image POI markers |
+| `TOWN_BUILDINGS` | The span-2 town buildings |
+| `TOWN_WALL_KINDS` | The eight town wall and gate pieces |
 | `INTERIOR_KINDS` | Each interior piece with its rule meaning |
 
 `addCustom` registers a tile that a GM loads at runtime. A runtime tile is
@@ -192,39 +216,6 @@ these files, so no map draws them. The folder layout matches
 `assets/tiles/`. To finish a placeholder, draw the art, move the file to
 `assets/tiles/<type>/`, and register the type in `TilePalette.js`. Then
 change the mapping in the generator that the table names.
-
-### Town pieces
-
-The town generator in `src/map/GeneratorTown.js` draws every home with the
-`settlement` marker and has no art for a square, a wall, or a well. Each
-building placeholder is a span-2 marker on a grass background, like the
-building markers in [POI markers](#poi-markers). A town building needs a
-place in `CORE_BUILDINGS` or `EXTRA_BUILDINGS` in `GeneratorTown.js`.
-
-| Placeholder | Intended use | Drawn with today |
-| --- | --- | --- |
-| `town/house.svg`, `town/cottage.svg` | Homes in the core and on the outskirts | `settlement` |
-| `town/market.svg` | The market beside the crossroads | nothing |
-| `town/well.svg`, `town/fountain.svg` | The center of a small or a large town | nothing |
-| `town/town-hall.svg`, `town/guildhall.svg` | Civic buildings of a large town | nothing |
-| `town/bakery.svg`, `town/warehouse.svg`, `town/stables.svg` | More shops and trades | nothing |
-| `town/windmill.svg`, `town/watermill.svg` | A mill among the fields, or on the river | `farm` |
-| `town/plaza-1.svg` | Paved terrain for the square at the crossroads | `grass` |
-
-The wall and gate placeholders have transparent backgrounds, because each
-one draws as an overlay over the ground. A walled town needs a ring of
-wall pieces around the core and a gate where each street goes through it.
-
-| Placeholder | Intended use |
-| --- | --- |
-| `town/town-wall-h.svg`, `town/town-wall-v.svg` | A straight run of the town wall |
-| `town/town-gate-h.svg`, `town/town-gate-v.svg` | A gate where a street crosses the wall |
-
-The four corner pieces, `town/town-wall-corner-ne.svg` to
-`town/town-wall-corner-sw.svg`, have finished art in `assets/tiles/town/`
-and no placeholder. Like the interior wall corners, each corner is named for
-its two open edges, so `town-wall-corner-se` connects south and east and caps
-the north-west corner of the ring.
 
 ### Interior pieces
 

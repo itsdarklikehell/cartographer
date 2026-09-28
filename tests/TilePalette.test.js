@@ -27,6 +27,7 @@ test('TilePalette ships with built-in terrain variants', () => {
     glacier: 3,
     'snow-hills': 3,
     'snow-mountain': 5,
+    plaza: 5,
   };
   for (const [type, count] of Object.entries(counts)) {
     assert.equal(
@@ -208,8 +209,12 @@ test('listBuiltins excludes custom entries, and listCustom the built-ins', () =>
 });
 
 test('isOverlayType flags the terrain-crossing overlay types only', () => {
-  for (const type of ['road', 'river', 'coast']) assert.equal(isOverlayType(type), true);
-  for (const type of ['grass', 'poi-town', 'interior']) assert.equal(isOverlayType(type), false);
+  for (const type of ['road', 'river', 'coast', 'town-wall']) {
+    assert.equal(isOverlayType(type), true);
+  }
+  for (const type of ['grass', 'poi-town', 'interior', 'house']) {
+    assert.equal(isOverlayType(type), false);
+  }
 });
 
 test('every built-in entry points at a file that exists', () => {
@@ -223,4 +228,23 @@ test('isTerrainType covers the variant types and custom art only', () => {
   assert.equal(palette.get('deep-water-2')?.label, 'Deep Water 2');
   for (const type of ['grass', 'snow-mountain', 'custom']) assert.ok(isTerrainType(type), type);
   for (const type of ['road', 'inn', 'interior']) assert.ok(!isTerrainType(type), type);
+});
+
+test('TilePalette ships with span-2 town buildings and town wall pieces', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.get('house').imageRef, 'assets/tiles/town/house.svg');
+  assert.equal(palette.get('town-hall').label, 'Town Hall');
+  for (const type of ['cottage', 'market', 'well', 'fountain', 'guildhall', 'bakery']) {
+    assert.equal(palette.get(type)?.type, type);
+  }
+  for (const type of ['warehouse', 'stables', 'windmill', 'watermill']) {
+    assert.equal(palette.get(type)?.imageRef, `assets/tiles/town/${type}.svg`);
+  }
+  assert.equal(palette.listVariants('town-wall').length, 8);
+  assert.equal(
+    palette.getTownWallPiece('wall-corner-se')?.imageRef,
+    'assets/tiles/town/town-wall-corner-se.svg',
+  );
+  assert.equal(palette.getTownWallPiece('gate-v')?.label, 'Town Wall (gate-v)');
+  assert.equal(palette.getTownWallPiece('gate-x'), undefined);
 });
