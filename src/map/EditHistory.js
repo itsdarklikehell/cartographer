@@ -3,6 +3,7 @@
 /** @typedef {import('../types/entities.js').CharacterPlacement} CharacterPlacement */
 /** @typedef {import('../types/entities.js').CreaturePlacement} CreaturePlacement */
 /** @typedef {import('../types/handout.js').HandoutBinding} HandoutBinding */
+/** @typedef {import('../types/quest.js').QuestLinkRef} QuestLinkRef */
 /** @typedef {import('./EntryMemory.js').EntryMemory} EntryMemory */
 
 /**
@@ -25,7 +26,8 @@
  * nodes in `created`, adds the nodes in `removed` back, moves the party to
  * `party`, puts the characters in `recalled` and the creatures in
  * `creatures` back where they stood, binds the handouts in `handouts` back
- * to their nodes and tiles, and restores `entryTiles`.
+ * to their nodes and tiles, puts the quest links in `questLinks` back, and
+ * restores `entryTiles`.
  * @typedef {Object} EditSnapshot
  * @property {MapNode[]} nodes nodes the edit rewrote, as they were
  * @property {MapNode[] | null} after the same nodes as the edit left them,
@@ -41,6 +43,9 @@
  * @property {HandoutBinding[]} handouts handouts the edit made
  *   campaign-wide or took off a tile, with the node and tile each one was
  *   bound to
+ * @property {QuestLinkRef[]} [questLinks] quest links to the nodes the edit
+ *   removed, with their positions. Only a generate action removes nodes and
+ *   fills this.
  * @property {EntryMemory | null} entryTiles the entry memory as it stood, or
  *   null when the edit left it alone. An edit that removes nodes drops their
  *   entries, and undo brings those nodes back.

@@ -14,6 +14,8 @@ import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
 import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
 import { restoreBindings, tileBindingsLost, unbindTiles } from '../handout/Handouts.js';
+import { restoreLinks } from '../quest/QuestLinks.js';
+import { unlinkRemovedNodes } from './questCleanup.js';
 import { refreshLocationPanels } from './locationPanels.js';
 import {
   nodeSnapshot,
@@ -83,8 +85,10 @@ export function createMapAuthoring(app, env) {
    * A tile link to a node that no longer exists is cleared. A rewritten
    * node deleted since the snapshot stays deleted. Any character or creature
    * the edit moved goes back to their own tile, any handout it made
-   * campaign-wide binds to its node again, and the entry memory goes back to
-   * what the edit found. The party moves back when the edit moved it and its
+   * campaign-wide binds to its node again, any quest link it removed comes
+   * back, and the entry memory goes back to what the edit found. A quest
+   * link to a node the edit created goes with that node. The party moves
+   * back when the edit moved it and its
    * node still exists. A view left inside a removed node moves to the first
    * restored node. The panels that filter by location then re-read the state,
    * because a restored location changes which of them show what.
@@ -110,6 +114,11 @@ export function createMapAuthoring(app, env) {
     state.characters = restorePlacements(state.characters, snapshot.recalled);
     state.creatures = restoreCreaturePlacements(state.creatures, snapshot.creatures);
     state.handouts = restoreBindings(state.handouts, snapshot.handouts);
+    // A quest link to a node the undo just removed goes, and a link the edit
+    // took off comes back.
+    unlinkRemovedNodes(app, new Set(snapshot.created));
+    state.quests = restoreLinks(state.quests, snapshot.questLinks ?? []);
+    app.views.questPanel.update();
     if (snapshot.entryTiles) state.entryTiles = snapshot.entryTiles;
     const party = snapshot.party;
     if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);

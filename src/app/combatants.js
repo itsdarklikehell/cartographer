@@ -20,6 +20,7 @@ import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { spellbookIds } from './casterFields.js';
+import { pruneCreatureLinks } from './questCleanup.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -142,7 +143,8 @@ export function findCombatant(app, id) {
 
 /**
  * Refresh every view that shows a creature, after a write to
- * `state.creatures`. Map markers refresh first. That call also rebuilds both
+ * `state.creatures`. The quest links to a deleted creature go first, so
+ * every delete path removes them. Map markers refresh next. That call also rebuilds both
  * Build-rail authoring lists, which show the same node scope. Then the two
  * sidebar panels refresh, then the initiative panel: authoring, moving,
  * spawning, or defeating a creature on the party's tile can start or end a
@@ -154,6 +156,7 @@ export function findCombatant(app, id) {
  * @param {{ panel?: boolean, dirty?: boolean }} [options]
  */
 export function commitCreatures(app, { panel = true, dirty = true } = {}) {
+  pruneCreatureLinks(app);
   app.actions.syncCreatureMarkers();
   if (panel) app.views.encounterPanel.update();
   app.views.npcPanel.update();

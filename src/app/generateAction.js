@@ -24,6 +24,8 @@ import {
 } from '../map/RegenerateNode.js';
 import { creaturePlacementsIn, moveCreature, unplaceFrom } from '../entities/CreatureMap.js';
 import { bindingsIn, tileBindingsLost, unbindFrom, unbindTiles } from '../handout/Handouts.js';
+import { linksIn } from '../quest/QuestLinks.js';
+import { unlinkRemovedNodes } from './questCleanup.js';
 import { refreshLocationPanels } from './locationPanels.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
@@ -161,8 +163,8 @@ export function wireGenerateAction(app, env) {
     // entrance link below. It also empties every location the removed nodes
     // held, and re-lands every character and creature standing in the node
     // itself. Record all of it so the stroke-undo ring can revert it.
-    env.recordEdit(
-      regenerateSnapshot({
+    env.recordEdit({
+      ...regenerateSnapshot({
         node,
         parent: grid.getParent(node),
         created: deeper.map((sub) => sub.id),
@@ -173,17 +175,20 @@ export function wireGenerateAction(app, env) {
         handouts: [...bindingsIn(state.handouts, removedIds), ...lostTiles],
         entryTiles: state.entryTiles,
       }),
-    );
+      questLinks: linksIn(state.quests, removedIds),
+    });
     for (const doomed of removed) {
       if (grid.getNode(doomed.id)) grid.removeNode(doomed.id);
     }
     // Every location the removed nodes held now names a node that is gone,
     // which hides whatever holds it from every panel. A character rejoins
-    // the party, a creature becomes unplaced, and a handout becomes
-    // campaign-wide, the same answers the delete path gives.
+    // the party, a creature becomes unplaced, a handout becomes
+    // campaign-wide, and a quest link goes, the same answers the delete path
+    // gives.
     state.characters = recallFrom(state.characters, removedIds);
     state.creatures = unplaceFrom(state.creatures, removedIds);
     state.handouts = unbindTiles(unbindFrom(state.handouts, removedIds), lostTiles);
+    unlinkRemovedNodes(app, removedIds);
     // Nothing leads to the removed sub-maps any more, so how they were
     // entered no longer describes anything.
     state.entryTiles = forgetEntries(state.entryTiles, removedIds);

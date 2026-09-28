@@ -8,6 +8,7 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
 import { resyncMapViews } from './mapResync.js';
+import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -138,7 +139,8 @@ export function createNodeActions(app, env) {
    * party stands inside the subtree and no parent node survives to land in.
    * Otherwise the party comes out beside the block the node occupied in its
    * parent, split characters inside the subtree rejoin the party, creatures
-   * inside it become unplaced, and handouts bound to it become campaign-wide.
+   * inside it become unplaced, handouts bound to it become campaign-wide,
+   * and quest links to it are removed.
    * @param {string} nodeId
    */
   async function deleteNode(nodeId) {
@@ -174,6 +176,9 @@ export function createNodeActions(app, env) {
     const before = currentLocations();
     const after = locationsAfterDelete(before, doomed, landing ?? before.party);
     applyLocations(before, after);
+    // A quest link to a deleted map goes too. The save-level undo brings
+    // the map and the link back together.
+    unlinkRemovedNodes(app, doomed);
     // The deleted nodes can never be entered again, so the memory of how
     // they were entered goes with them.
     state.entryTiles = forgetEntries(state.entryTiles, doomed);
@@ -198,6 +203,7 @@ export function createNodeActions(app, env) {
    * keeps every tile. Shrinking it asks for confirmation before removing
    * tiles outside the new bounds, and pulls the party, split characters, and
    * placed creatures back inside the bounds if they stood on a removed tile.
+   * A quest link to a removed tile becomes a link to the whole node.
    * @param {string} nodeId
    */
   async function editNode(nodeId) {
@@ -235,6 +241,7 @@ export function createNodeActions(app, env) {
 
     const before = currentLocations();
     applyLocations(before, locationsAfterShrink(before, nodeId, width, height));
+    shrinkNodeLinks(app, nodeId, width, height);
     // Editing the node in view changes its extent or kind, so that view
     // must re-frame and re-filter the palette, and the selected tile can be
     // gone. Editing any other node still redraws the canvas, because the
