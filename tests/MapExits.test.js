@@ -2,18 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   authoringWarning,
-  edgeExitBand,
-  exitBandGeometry,
   exitDescription,
   exitForSide,
   exitForTile,
   exitLabel,
   findExits,
-  hitExitBand,
   isSealedInterior,
   nearestSide,
   stairwayTo,
 } from '../src/map/MapExits.js';
+import { edgeExitBand, exitBandGeometry, hitExitBand } from '../src/map/ExitBands.js';
 import { createTile } from '../src/map/TileGrid.js';
 import { gridTiles } from './helpers/grid.js';
 
@@ -743,4 +741,52 @@ test('band geometry centres on the side when the party is somewhere else', () =>
     }).alongCell,
     3,
   );
+});
+
+test('band geometry takes the traveler cell that the exit records', () => {
+  const grid = node({ id: 'child', name: 'Thornhold', width: 8, height: 5 });
+  const view = { offsetX: 0, offsetY: 0, scale: 1, canvasWidth: 900, canvasHeight: 800 };
+  const geometry = exitBandGeometry(grid, { ...view, partyTileId: '6,1' }, 48, {
+    kind: 'edge',
+    side: 'north',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+    along: 2,
+  });
+  assert.equal(geometry.alongCell, 2);
+});
+
+test('a border crossing names the region across it, or only the border', () => {
+  const crossing = {
+    kind: /** @type {const} */ ('edge'),
+    side: /** @type {const} */ ('east'),
+    targetNodeId: 'east',
+    targetName: 'Eastmarch',
+    crossTileId: '4,1',
+  };
+  assert.equal(exitLabel(crossing), 'Cross into Eastmarch');
+  assert.equal(exitDescription(crossing), 'Cross into Eastmarch, off the east edge of the map');
+  assert.equal(exitLabel({ ...crossing, targetName: '' }), 'Cross the border');
+});
+
+test('an edge exit without a node lookup leads back to the parent', () => {
+  const parent = node({
+    id: 'region',
+    name: 'Coast',
+    width: 2,
+    height: 1,
+    tiles: [
+      createTile('0,0', 'grass.svg', { childNodeId: 'child' }),
+      createTile('1,0', 'grass.svg', { childNodeId: 'other' }),
+    ],
+  });
+  const leaving = node({ id: 'child', name: 'Child', parentId: 'region' });
+  const [exit] = findExits(leaving, parent, null, { at: { x: 5, y: 2 } });
+  assert.deepEqual(exit, {
+    kind: 'edge',
+    side: 'east',
+    targetNodeId: 'region',
+    targetName: 'Coast',
+    along: 2,
+  });
 });

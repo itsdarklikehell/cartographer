@@ -827,6 +827,9 @@ Zooming in uses a tile's `childNodeId` plus
 
 - `edge`: a side of the map the party can walk off, one per side of the
   parent block that touches usable parent terrain. Outdoor children only.
+  An `edge` exit with a `crossTileId` crosses a border into the region
+  beside this one instead of leading back to the parent (see
+  [Border crossing](#border-crossing)).
 - `tile`: a door or a staircase that leads out, with the `tileId` and a
   `via` of `door`, `stairs-up`, or `stairs-down`. Interiors only.
 - `fallback`: no authored way out was found. `findExits` returns this as a
@@ -930,13 +933,50 @@ reads as never having left. The stairway case skips the snap, because the
 parent's staircase *is* a tile of that block, and the snap logic rejects any
 tile from that block for that same reason.
 
+### Border crossing
+
+A painted region usually touches other regions on its parent map, as the
+regions of the example world do. A party that walks off the side of a
+region where another region lies beyond goes straight into that region, and
+does not stop on the parent map in between. `findExits` takes the
+traveler's cell in the node as an `at` option, plus a `nodeById` lookup,
+and `RegionCrossing.crossingFor` decides each side from that cell.
+
+The traveler's coordinate along the side maps back onto the block's extent
+with `projectBack`, the same projection that the return landing uses. A
+painted block has an uneven outline, so `sideCell` finds the block's
+outermost cell in that row or column and steps one cell further out. When
+that parent cell links to another child of the same parent, and that child
+is not an interior, the exit targets the child and records the cell as
+`crossTileId`. An interior does not count, because the party enters a
+structure through its door. Each side decides at the traveler's own row or
+column, so one side can lead into a neighbor region at one point and back
+to the parent at another. `syncExits` runs on every party step, so the
+arrow label changes as the party walks along the side.
+
+`EntryPoint.computeCrossingEntryTile` picks the landing. It projects the
+crossing cell on both axes onto the grid of the new region with
+`projectAlong`, relative to the block that contains the cell, and snaps
+the result through `resolveEntryTile`. A party that crosses near a corner
+of a block lands near the matching corner of the map.
+
+`mapExitTravel.js` does the crossing. It reads the crossing cell again,
+because the GM can relink the cell while the arrow is on screen, and a cell
+that no longer leads to an outdoor sibling only moves the view to the
+parent. The crossing reveals the parent cell, so the players' parent map
+shows where the party went. It then writes the cell into the entry memory
+for the new region, so the exits of that region and a later return to the
+parent read the block the party came in by. A player tab sees the name of
+the region across the border only after that parent cell is revealed. Until
+then the arrow reads "Cross the border".
+
 ### Drawing and taking an exit
 
 `MapView` has an `exits` field, set through `MapCanvas.setExits`, and its
 readers are:
 
-- `MapDecorations` draws an outward chevron and a "Return to {name}" label
-  in the gutter beyond each `edge` exit, and `MapMarkers` draws a small
+- `MapDecorations` draws an outward chevron and a "Return to {name}" or
+  "Cross into {name}" label in the gutter beyond each `edge` exit, and `MapMarkers` draws a small
   chevron badge on each `tile` exit.
 - `MapCanvasPointer` hit-tests the same bands on a click. `MapCanvasKeyboard`
   arms an exit when a cursor key leaves the cursor stopped at a border
@@ -956,13 +996,13 @@ readers are:
   moves focus to the first remaining button, instead of dropping it.
 
 The band's rectangle is computed once, by `exitBandGeometry` plus
-`edgeExitBand`, and both the drawing code and the pointer call it, so the
-arrow the GM sees and the rectangle their click is tested against cannot
-differ. The band is a bounded pill centered on the party's row or column,
-kept within the canvas, so panning the map's border out of view pins the
+`edgeExitBand` in `src/map/ExitBands.js`, and both the drawing code and
+the pointer call it, so the arrow the GM sees and the rectangle their click
+is tested against cannot differ. The band is a bounded pill centered on the
+traveler's row or column (the exit's `along`), kept within the canvas, so panning the map's border out of view pins the
 arrow at the viewport edge instead of scrolling it away.
 
-`mapTravel.js`'s `exitToParent` does the travel, and it moves whoever a
+`mapExitTravel.js`'s `exitToParent` does the travel, and it moves whoever a
 click moves: the whole party for the GM, one character while the
 split-party toggle is on, and no one from a spectator tab, which follows the
 camera out instead. A `tile` exit also stays an ordinary tile to walk onto,

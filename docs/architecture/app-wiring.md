@@ -167,6 +167,9 @@ The gesture layers live beside it, in their own files:
   a toast. A bound character's move does not move the
   party that the location panels filter on, and a Play-mode zoom into a node
   leaves the tile selection and the palette alone.
+- `mapExitTravel.js` handles the ways out of the node in view: a return to
+  the parent node, and a walk across a border into the region beside this
+  one. `mapTravel.js` builds it and passes it the click helpers it shares.
 - `mapHover.js` builds the Play-mode hover tooltip.
 
 ### generateAction.js and nodeActions.js

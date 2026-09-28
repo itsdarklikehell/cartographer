@@ -13,7 +13,7 @@ With Campaign Builder, you can:
     - Each tile carries metadata. You use the metadata to mark major features that players can find and interact with.
     - Groups of tiles form a hierarchy. A world contains regions. A region contains sub-regions, and so on.
     - You can zoom in and out of the different levels of the hierarchy. For example, you can zoom from a region into one sub-region to show its point-of-interest tiles.
-    - The way back out depends on the links that you already drew. You can walk off a sub-region on any side that touches the map above it. An interior area leaves through its outer door or through the staircase that connects it to the level above or below. Build mode warns you when a node has no way in or out.
+    - The way back out depends on the links that you already drew. You can walk off a sub-region on any side that touches the map above it. Where two regions share a border, you walk straight across into the next region, at the matching spot. An interior area leaves through its outer door or through the staircase that connects it to the level above or below. Build mode warns you when a node has no way in or out.
     - You can reveal parts of the map as your party travels. Unexplored areas stay grayed out by the fog of war until your party moves closer.
     - You can track your party's location on the map at all times.
   - Populate the world with creatures, from major enemies with life tracking to friendly and neutral NPCs, all in one list

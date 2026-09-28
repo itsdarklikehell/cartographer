@@ -1,5 +1,5 @@
 import { getTile } from './TileGrid.js';
-import { exitBandGeometry, hitExitBand } from './MapExits.js';
+import { exitBandGeometry, hitExitBand } from './ExitBands.js';
 import {
   screenToTile,
   clampZoom,

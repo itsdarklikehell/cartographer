@@ -130,8 +130,8 @@ the Old King has three levels. The demo comes from one fixed seed, so every
 load gives the same maps and the same furnishings. The party starts in
 Briarwick Vale, and only that region is revealed on the world map. Every
 land tile of the world map leads into its region. To travel to another
-region, the party walks off the edge of its region map onto the world map,
-then enters the next region from there.
+region, the party walks off the edge of its region map where it borders
+that region, and it arrives at the matching spot of the next region.
 
 The story is about King Ostrand, who has risen in his barrow, and about
 Castellan Irenne Vane of Thornhold, who secretly works to free him. The

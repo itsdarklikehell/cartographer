@@ -250,6 +250,11 @@ The Player view does not show these controls.
 3. To leave with the keyboard, press into the border twice. The first press
    lights the arrow, and the second walks out.
 
+If the arrow reads **"Cross into {region}"**, another region lies beyond
+that side of the map. The party then walks straight into that region, at
+the spot that matches where it left. The label follows the party. Walk
+along the side to find the part of the border that leads to each region.
+
 ![Inside a sub-region: a Return to World arrow in the margin on each side that leads back](images/play-mode-exits.png)
 
 ### Stage an encounter

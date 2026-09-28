@@ -64,9 +64,20 @@ export type ExitSide = 'north' | 'east' | 'south' | 'west';
 /** A way out of a node, back to its parent. See MapExits.findExits.
  *  `edge` is walked off one side of an outdoor map. `tile` is a door or a
  *  stairway inside a structure. `fallback` is offered when a node has
- *  neither, so a party is never stranded in a space it walked into. */
+ *  neither, so a party is never stranded in a space it walked into.
+ *  An `edge` exit with a `crossTileId` crosses a border into a sibling
+ *  region instead: its target is that region, and `crossTileId` is the
+ *  parent cell the party crosses into. `along` is the traveler's cell along
+ *  the side, which the band on the map centers on. */
 export type MapExit =
-  | { kind: 'edge'; side: ExitSide; targetNodeId: string; targetName: string }
+  | {
+      kind: 'edge';
+      side: ExitSide;
+      targetNodeId: string;
+      targetName: string;
+      crossTileId?: string;
+      along?: number;
+    }
   | {
       kind: 'tile';
       tileId: string;

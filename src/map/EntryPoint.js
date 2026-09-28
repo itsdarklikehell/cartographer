@@ -2,26 +2,10 @@ import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { blockFor, nearestSide, opensOutward, sideAxis, stairwayTo } from './MapExits.js';
 import { isBlocked, tileKind } from './TileKinds.js';
 import { clamp } from '../util/num.js';
+import { projectAlong, projectBack } from './RegionCrossing.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
 /** @typedef {{ x: number, y: number }} Coords */
-
-/**
- * Map a coordinate along one wall of the region block onto the matching tile
- * range of the child. This action puts the party beside the entry point when
- * the party enters directly at a wall, not at the wall midpoint. The result
- * stays within the child extent.
- * @param {number} p party coordinate along the wall (parent space)
- * @param {number} min region-block extent start along that axis
- * @param {number} max region-block extent end along that axis
- * @param {number} size child node extent along that axis (tiles)
- * @returns {number} child tile index along the wall
- */
-function projectAlong(p, min, max, size) {
-  if (max <= min) return Math.floor((size - 1) / 2);
-  const f = clamp((p - min) / (max - min), 0, 1);
-  return Math.round(f * (size - 1));
-}
 
 /**
  * Choose the tile where the party enters a child node. The choice depends on
@@ -68,23 +52,6 @@ export function computeEntryTile(width, height, block, party) {
     return `${projectAlong(party.x, block.minX, block.maxX, width)},${hy < 0 ? 0 : maxY}`;
   }
   return `${midX},${midY}`;
-}
-
-/**
- * This function is the inverse of projectAlong. The function maps a
- * coordinate along one side of a child map back onto the parent block extent
- * on that axis. This action puts the party beside the point of the block
- * that the party left when the party exits by an edge.
- * @param {number} p coordinate along the side (child space)
- * @param {number} size child node extent along that axis (tiles)
- * @param {number} min region-block extent start along that axis
- * @param {number} max region-block extent end along that axis
- * @returns {number} parent coordinate along the block
- */
-function projectBack(p, size, min, max) {
-  if (size <= 1) return Math.round((min + max) / 2);
-  const f = clamp(p / (size - 1), 0, 1);
-  return Math.round(min + f * (max - min));
 }
 
 /**
@@ -166,6 +133,32 @@ export function computeRegionEntryTile(parent, child, childNodeId, party, throug
   // nearest walkable tile.
   const door = child.kind === 'interior' ? nearestOutwardDoor(child, preferred) : null;
   return door ?? resolveEntryTile(child, preferred);
+}
+
+/**
+ * Choose the tile where the party lands after it walks across a border from
+ * one region into the next (`RegionCrossing.crossingFor`). The parent cell
+ * the party crosses into sits somewhere in the block of the new region. The
+ * function projects that cell on both axes onto the grid of the new region,
+ * so a party that crosses near a corner of the block lands near the matching
+ * corner of the map. The result snaps to a walkable tile.
+ * @param {import('../types/map.js').MapNode} parent the node both regions belong to
+ * @param {import('../types/map.js').MapNode} target the region being entered
+ * @param {string} crossTileId the parent cell the party crosses into
+ * @returns {string} target tile id ("x,y")
+ */
+export function computeCrossingEntryTile(parent, target, crossTileId) {
+  const group = blockFor(parent, target.id, crossTileId);
+  const cell = parseCoords(crossTileId);
+  if (!group || !cell) {
+    return resolveEntryTile(
+      target,
+      tileIdAt(Math.floor(target.width / 2), Math.floor(target.height / 2)),
+    );
+  }
+  const x = projectAlong(cell.x, group.minX, group.maxX, target.width);
+  const y = projectAlong(cell.y, group.minY, group.maxY, target.height);
+  return resolveEntryTile(target, tileIdAt(x, y));
 }
 
 /**

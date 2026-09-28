@@ -1,5 +1,6 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
-import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExits.js';
+import { EXIT_SIDES, exitLabel } from './MapExits.js';
+import { edgeExitBand, exitBandGeometry } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel, labelSize } from './CanvasText.js';
 import { toDisplay } from './TileCoords.js';
@@ -7,7 +8,7 @@ import { toDisplay } from './TileCoords.js';
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 /** @typedef {import('../types/map.js').MapExit} MapExit */
-/** @typedef {import('./MapExits.js').ExitBand} ExitBand */
+/** @typedef {import('./ExitBands.js').ExitBand} ExitBand */
 
 /**
  * Coordinate digits run large: they label a whole row or column, and they draw

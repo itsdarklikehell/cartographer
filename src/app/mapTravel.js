@@ -1,10 +1,6 @@
 import { updateTileMetadata } from '../map/TileGrid.js';
-import { tileIdAt } from '../map/MapGeometry.js';
-import {
-  computeParentReturnTile,
-  computeRegionEntryTile,
-  resolveEntryTile,
-} from '../map/EntryPoint.js';
+import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
+import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { exitForTile, findExits } from '../map/MapExits.js';
 import {
   entryFor,
@@ -21,6 +17,7 @@ import { confirmModal } from '../ui/Modal.js';
 import { meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { createCellHover } from './mapHover.js';
+import { createExitTravel } from './mapExitTravel.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -37,6 +34,12 @@ import { createCellHover } from './mapHover.js';
  */
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
+  const { exitToParent, veilCrossing } = createExitTravel(app, env, {
+    clickSubject,
+    discoverTile,
+    positionOf,
+    refreshLocationPanels,
+  });
 
   /** Landing where a placed creature stands is the introduction. Mark the
    * creature met, and log the meeting once per creature: "encounters" for a
@@ -123,82 +126,22 @@ export function createMapTravel(app, env) {
    * a map is not traveling it, and the arrows are one more thing drawn
    * over the tiles the GM paints. The list is told which parent tile this
    * tab's traveler came in through, so a child that two blocks of the parent
-   * link to reports the sides of the block that traveler is in.
+   * link to reports the sides of the block that traveler is in. The
+   * traveler's cell decides where each edge leads: back to the parent, or
+   * across a border into the region beside this one. A spectator tab reads
+   * the party's cell.
    * @returns {import('../types/map.js').MapExit[]}
    */
   function currentExits() {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
+    const parent = grid.getParent(node);
     const through = entryFor(state.entryTiles, travelerFor(clickSubject()), node.id);
-    return findExits(node, grid.getParent(node), through);
-  }
-
-  /**
-   * Leave the node in view through one of its exits. The character lands
-   * beside the tile in the parent node that the child was entered from
-   * (EntryPoint.computeParentReturnTile). This function mirrors the zoom-in
-   * branch of onCellClick. It moves whoever a click moves: the whole party
-   * for the GM, one character while the split-party toggle is on, and no
-   * one from a spectator tab. A spectator tab only follows the camera out.
-   * @param {import('../types/map.js').MapExit} exit
-   */
-  function exitToParent(exit) {
-    const child = navigator.getCurrentNode();
-    const parent = grid.getParent(child);
-    // The list was computed for a node the view has since left, or for a
-    // parent since deleted. There is nothing to travel to.
-    if (!parent || parent.id !== exit.targetNodeId) return;
-    const gm = isGM(state.role);
-    const subject = clickSubject();
-    if (!gm && !subject) {
-      env.goToNode(parent.id);
-      return;
-    }
-    const from = subject
-      ? characterPosition(subject, partyTracker.getPosition())
-      : partyTracker.getPosition();
-    // Whoever this tab moves must stand in the node being left. A GM
-    // looking into a child node where the party stands elsewhere gets the
-    // camera out of it. The party is not dragged from wherever it actually
-    // stands.
-    if (from.nodeId !== child.id) {
-      env.goToNode(parent.id);
-      return;
-    }
-    const through = entryFor(state.entryTiles, travelerFor(subject), child.id);
-    const landing = computeParentReturnTile(parent, child, exit, from, through);
-    if (subject) {
-      state.characters = moveCharacter(state.characters, subject.id, {
-        nodeId: parent.id,
-        tileId: landing,
-      });
-      // Read the parent node back out of the grid. The character's step
-      // reveals fog around the landing point. The copy above predates any
-      // other write.
-      const fresh = grid.getNode(parent.id) ?? parent;
-      grid.updateNode(revealAround(fresh, landing, partyTracker.revealRadius));
-    } else {
-      partyTracker.moveTo(parent.id, landing); // reveals fog around the landing itself
-      state.characters = recallAll(state.characters);
-      state.entryTiles = forgetCharacterEntries(state.entryTiles);
-    }
-    env.goToNode(parent.id);
-    app.actions.logEvent(
-      'travel',
-      subject
-        ? `${subject.name} returns to ${parent.name}.`
-        : `The party returns to ${parent.name}.`,
+    const here = moverPosition() ?? partyTracker.getPosition();
+    const at = here.nodeId === node.id ? parseCoords(here.tileId) : null;
+    return findExits(node, parent, through, { at, nodeById: (id) => grid.getNode(id) }).map(
+      (exit) => veilCrossing(exit, parent),
     );
-    app.actions.markDirty();
-    refreshLocationPanels();
-    if (subject) {
-      // Re-read the roster. The move above replaced the character object.
-      const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
-      app.actions.maybeTriggerEncounter(
-        characterPosition(moved, partyTracker.getPosition()),
-        subject.name,
-      );
-    } else app.actions.maybeTriggerEncounter();
   }
 
   /**
@@ -285,6 +228,15 @@ export function createMapTravel(app, env) {
   function moverPosition() {
     const subject = clickSubject();
     if (!subject && !isGM(state.role)) return null;
+    return positionOf(subject);
+  }
+
+  /**
+   * Where a character stands, or where the party stands for no character.
+   * @param {import('../types/entities.js').Character | null} subject
+   * @returns {import('../types/map.js').PartyPosition}
+   */
+  function positionOf(subject) {
     return subject
       ? characterPosition(subject, partyTracker.getPosition())
       : partyTracker.getPosition();
@@ -374,9 +326,7 @@ export function createMapTravel(app, env) {
         // A click on the link of a child where they stand only brings the
         // view in. It neither logs an entry nor rewrites the entry memory,
         // because nobody walked through the tile.
-        const at = subject
-          ? characterPosition(subject, partyTracker.getPosition())
-          : partyTracker.getPosition();
+        const at = positionOf(subject);
         if ((gm || subject) && at.nodeId !== child.id) {
           // Check this before the move reveals entry fog. An all-fogged
           // child has never been visited, so stepping in now is its
@@ -434,8 +384,7 @@ export function createMapTravel(app, env) {
         env.syncPartyMarker();
         // The child node has its own ways out. This code path swaps the node
         // itself instead of going through resyncMapViews, so it must draw
-        // the ways out explicitly. Before this fix, walking into a region
-        // left its return arrows undrawn until something else re-synced.
+        // the ways out explicitly.
         env.syncExits();
         refreshLocationPanels();
         if (subject) {
@@ -457,9 +406,7 @@ export function createMapTravel(app, env) {
     // needs that.
     const exit = exitForTile(currentExits(), tile.id);
     if (exit) {
-      const at = subject
-        ? characterPosition(subject, partyTracker.getPosition())
-        : partyTracker.getPosition();
+      const at = positionOf(subject);
       if (at.nodeId === navigator.getCurrentNode().id && at.tileId === tile.id) {
         exitToParent(exit);
         return;
