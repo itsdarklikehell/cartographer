@@ -201,7 +201,10 @@ const chunkCache = new WeakMap();
  * 4 times, and odd edges fall back to 1-wide strips. Chunks whose tiles are
  * all imageless are omitted, since there is nothing to draw. A ragged,
  * non-rectangular group returns no chunks: its bounding box overlaps
- * tiles outside the group, so it keeps per-tile drawing. This is memoized
+ * tiles outside the group, so it keeps per-tile drawing. A group with no
+ * point-of-interest marker returns none either. Such a group is a painted
+ * territory, not a landmark, and a painted field of grass drawn as a few
+ * stretched tiles loses its variants. This is memoized
  * per group against the node's tile list. Treat the result as read only.
  * @param {MapNode} node
  * @param {RegionGroup} group
@@ -221,7 +224,9 @@ export function groupImageChunks(node, group) {
  * @returns {GroupImageChunk[]}
  */
 function computeChunks(node, group) {
-  if (!isFilledRect(group)) return [];
+  if (!isFilledRect(group) || !group.tileIds.some((id) => getTile(node, id)?.metadata.poiType)) {
+    return [];
+  }
   /** @type {GroupImageChunk[]} */
   const chunks = [];
   for (let y = group.minY; y <= group.maxY; y += 2) {

@@ -9,6 +9,13 @@ import {
 } from '../src/map/RegionGroups.js';
 import { fillTiles } from './helpers/grid.js';
 
+/** Give one tile a point-of-interest marker, which makes its group a landmark.
+ * @param {any} node @param {string} id */
+function withMarker(node, id) {
+  const tile = getTile(node, id);
+  return setTile(node, { ...tile, metadata: { ...tile.metadata, poiType: 'landmark' } });
+}
+
 function nodeFromLayout(rows, childNodeIdFor) {
   let node = createMapNode('n', 'Node', null, rows[0].length, rows.length);
   rows.forEach((row, y) => {
@@ -147,8 +154,11 @@ test('groupImageRef skips a member whose id carries no coordinates', () => {
 });
 
 test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own images', () => {
-  const node = fillTiles(createMapNode('n', 'Node', null, 4, 4), (id) =>
-    createTile(id, `forest-${id}.svg`, { childNodeId: 'region' }),
+  const node = withMarker(
+    fillTiles(createMapNode('n', 'Node', null, 4, 4), (id) =>
+      createTile(id, `forest-${id}.svg`, { childNodeId: 'region' }),
+    ),
+    '0,0',
   );
   const chunks = groupImageChunks(node, findRegionGroups(node)[0]);
   assert.equal(chunks.length, 4);
@@ -170,8 +180,11 @@ test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own im
 });
 
 test('groupImageChunks leaves 1-wide strips on odd-sized blocks', () => {
-  const node = fillTiles(createMapNode('n', 'Node', null, 3, 3), (id) =>
-    createTile(id, 'forest.svg', { childNodeId: 'region' }),
+  const node = withMarker(
+    fillTiles(createMapNode('n', 'Node', null, 3, 3), (id) =>
+      createTile(id, 'forest.svg', { childNodeId: 'region' }),
+    ),
+    '0,0',
   );
   const chunks = groupImageChunks(node, findRegionGroups(node)[0]);
   assert.deepEqual(
@@ -183,6 +196,13 @@ test('groupImageChunks leaves 1-wide strips on odd-sized blocks', () => {
       { minX: 2, minY: 2, maxX: 2, maxY: 2 },
     ],
   );
+});
+
+test('groupImageChunks returns nothing for a painted block with no marker', () => {
+  const node = fillTiles(createMapNode('n', 'Node', null, 2, 2), (id) =>
+    createTile(id, 'grass.svg', { childNodeId: 'region' }),
+  );
+  assert.deepEqual(groupImageChunks(node, findRegionGroups(node)[0]), []);
 });
 
 test('groupImageChunks returns nothing for a ragged group', () => {
@@ -234,16 +254,22 @@ test('chunks survive a node object replaced without a tile change', () => {
 });
 
 test('chunks rebuild when a member tile is repainted', () => {
-  let node = nodeFromLayout(
-    [
-      ['R', 'R'],
-      ['R', 'R'],
-    ],
-    (cell) => (cell === 'R' ? 'region' : null),
+  let node = withMarker(
+    nodeFromLayout(
+      [
+        ['R', 'R'],
+        ['R', 'R'],
+      ],
+      (cell) => (cell === 'R' ? 'region' : null),
+    ),
+    '0,0',
   );
   const group = findRegionGroups(node)[0];
   assert.equal(groupImageChunks(node, group)[0].imageRef, 'grass.svg');
-  node = setTile(node, createTile('0,0', 'water.svg', { childNodeId: 'region' }));
+  node = withMarker(
+    setTile(node, createTile('0,0', 'water.svg', { childNodeId: 'region' })),
+    '0,0',
+  );
   const rebuilt = groupImageChunks(node, group);
   assert.equal(rebuilt[0].imageRef, 'water.svg', 'the repainted top-left tile wins');
   // And the rebuilt chunks are then themselves cached against the new list.

@@ -49,9 +49,21 @@ export const INK = {
   badgeFill: '#ede2c8',
   badgeRim: '#2a2114',
 
-  /** A region group's overlay: a white tint, its border, and its name plate. */
-  regionTint: 'rgba(255, 255, 255, 0.12)',
-  regionBorder: 'rgba(255, 255, 255, 0.85)',
+  /**
+   * The colors of the region overlays, one tint and one border per slot of
+   * `RegionOutline.regionSlots`. Six slots cover any map of one-block regions.
+   */
+  regionHues: [
+    { tint: 'rgba(240, 200, 80, 0.16)', border: 'rgba(250, 215, 110, 0.95)' },
+    { tint: 'rgba(80, 210, 200, 0.16)', border: 'rgba(110, 230, 220, 0.95)' },
+    { tint: 'rgba(240, 110, 140, 0.16)', border: 'rgba(250, 140, 165, 0.95)' },
+    { tint: 'rgba(170, 130, 240, 0.16)', border: 'rgba(195, 165, 250, 0.95)' },
+    { tint: 'rgba(110, 170, 250, 0.16)', border: 'rgba(145, 195, 255, 0.95)' },
+    { tint: 'rgba(170, 220, 90, 0.16)', border: 'rgba(195, 235, 125, 0.95)' },
+  ],
+  /** The dark line between a region border and the terrain beside it. */
+  regionRim: 'rgba(20, 16, 10, 0.55)',
+  /** A region's name plate. */
   regionLabelPlate: 'rgba(0, 0, 0, 0.7)',
   regionLabelText: '#fff',
 };

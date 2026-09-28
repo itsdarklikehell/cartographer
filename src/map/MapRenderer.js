@@ -7,7 +7,7 @@ import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { INK } from './CanvasInk.js';
-import { drawPlatedLabel } from './CanvasText.js';
+import { renderRegionOverlays } from './RegionOverlay.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
@@ -16,9 +16,6 @@ export { imageSrcForRef };
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
-
-/** The font size of a region name, in CSS pixels. */
-const REGION_LABEL_PX = 12;
 
 /**
  * The revealed tile ids on a node, memoized on the node object. This relies
@@ -524,74 +521,6 @@ export class MapRenderer {
   /** @param {MapView} view
    * @param {{ revealedIds: Set<string> | null }} frame */
   _renderRegionGroups(view, frame) {
-    const { ctx } = this;
-    // Outside Build mode, a region stays hidden until the party has
-    // discovered at least one of its tiles through the fog of war, so the
-    // overworld does not reveal where every unexplored region sits.
-    const revealedIds = frame.revealedIds;
-    const size = this.tileSize * view.scale;
-    const rect = newBlockRect();
-    for (const group of view.regionGroups) {
-      if (!anyRevealed(group.tileIds, revealedIds)) continue;
-      blockRect(rect, group, view, size);
-      if (!rect.visible) continue;
-      const { x, y, w, h } = rect;
-
-      ctx.save();
-      // The overlay (tint, border, name label) is clipped to the group's
-      // revealed tiles, so a partly-explored region does not trace its
-      // full extent, a differently colored rectangle, through the fog.
-      if (revealedIds) {
-        const clip = new Path2D();
-        // The group carries its members' coordinates alongside their ids,
-        // so this per-frame walk neither re-parses an id nor allocates a
-        // rectangle per tile.
-        for (let i = 0; i < group.tileIds.length; i++) {
-          if (!revealedIds.has(group.tileIds[i])) continue;
-          const cell = group.cells[i];
-          const cx = cellEdge(cell.x, size, view.offsetX);
-          const cy = cellEdge(cell.y, size, view.offsetY);
-          clip.rect(
-            cx,
-            cy,
-            cellEdge(cell.x + 1, size, view.offsetX) - cx,
-            cellEdge(cell.y + 1, size, view.offsetY) - cy,
-          );
-        }
-        ctx.clip(clip);
-      }
-      ctx.fillStyle = INK.regionTint;
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = INK.regionBorder;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-      ctx.restore();
-
-      // The name label draws outside the clip. Once any of the region's
-      // tiles is discovered, its name must read in full, not cut to the
-      // revealed tiles, and not cut to the region's own bounds, which
-      // truncates a long name on a small region.
-      const name = this.getNodeName?.(group.childNodeId);
-      if (name) {
-        // The label reads as body text, not as chrome, and its plate starts at
-        // the group's top-left corner, so the text is inset by the padding.
-        // Its sizes are CSS pixels. At a devicePixelRatio of 2, a 12 px buffer
-        // font shows 6 px tall.
-        const px = view.pixelRatio ?? 1;
-        const padX = 4 * px;
-        const padY = 2 * px;
-        drawPlatedLabel(ctx, name, x + padX, y + padY, {
-          fontSize: Math.round(REGION_LABEL_PX * px),
-          weight: '400',
-          align: 'left',
-          baseline: 'top',
-          plate: 'rect',
-          plateColor: INK.regionLabelPlate,
-          color: INK.regionLabelText,
-          padX,
-          padY,
-        });
-      }
-    }
+    renderRegionOverlays(this.ctx, view, frame.revealedIds, this.tileSize, this.getNodeName);
   }
 }

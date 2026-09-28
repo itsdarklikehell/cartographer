@@ -104,9 +104,25 @@ through `maxY` describe the group's bounding box.
 
 Multi-tile regions need no schema change, because multiple tiles have the
 same `childNodeId` value and the model derives the grouping from that.
-`MapCanvas` recomputes the groups every time a node loads, and draws a tint
-plus an outline over each group's bounding box, with an optional label for
-the region's name through a `getNodeName` callback.
+`MapCanvas` recomputes the groups every time a node loads.
+`src/map/RegionOverlay.js` then draws each group as a tint over its own
+cells, a border along its outline, and the name of the region through a
+`getNodeName` callback. A painted region can have any outline, and its
+bounding box covers cells of the regions beside it, so the overlay never
+draws the box. `groupOutline` in `src/map/RegionOutline.js` lists the cell
+edges that the border follows: each side of a member cell whose neighbor on
+that side is outside the group.
+
+Each region takes a color from `INK.regionHues`. `regionSlots` gives two
+regions that touch two different slots. It takes out the region with the
+fewest neighbors, one at a time, and then colors them in the reverse order,
+so a map in which each region is one block needs at most six colors. The
+border line is twice its drawn width and centered on the cell edge, and the
+clip to the region cells keeps only the inner half. Two regions that share
+an edge then each show their own color on their own side of it. In Play
+mode the clip covers the revealed cells only, and the name sits on the
+first revealed cell in reading order, so a region never shows its extent
+through the fog.
 
 ### Group images
 
@@ -128,8 +144,11 @@ stretched image, so a partially explored block reveals piece by piece and a
 road that runs through a region stays drawn at tile size instead of
 stretched with the landmark art.
 
-Groups that are ragged (not a filled rectangle), and groups on interior
-maps, keep plain per-tile drawing.
+Groups that are ragged (not a filled rectangle), groups with no
+point-of-interest marker, and groups on interior maps keep plain per-tile
+drawing. A group with no marker is a painted territory and not a landmark,
+and its grass or forest drawn as a few stretched tiles loses the variants of
+its art.
 
 ### Spans
 
