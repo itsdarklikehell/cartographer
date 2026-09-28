@@ -226,6 +226,7 @@ export const REGION_STAGES = {
       'farm',
       'A burned farmstead, torched in the goblin raids. The barn door is scored with claw marks far too orderly to be animal.',
     );
+    put(stage, 'farm', farm);
     put(stage, 'goblinScout', besideTile(gen, farm));
     const village = stage.gen.sites.findIndex(
       (s, i) => i !== town && ['village', 'settlement'].includes(s.label),

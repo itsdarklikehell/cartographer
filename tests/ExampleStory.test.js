@@ -1,0 +1,91 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
+import { TilePalette } from '../src/map/TilePalette.js';
+import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { toCaster } from '../src/entities/Caster.js';
+import { buildExampleContent } from '../src/campaign/ExampleContent.js';
+
+const campaign = buildExampleCampaign(new TilePalette());
+
+/** @param {string} id */
+const creature = (id) => {
+  const found = campaign.creatures.find((c) => c.id === id);
+  assert.ok(found, id);
+  return found;
+};
+
+test('every example quest has steps to follow and links to what it involves', () => {
+  const ids = campaign.quests.map((q) => q.id);
+  assert.equal(new Set(ids).size, ids.length, 'duplicate quest ids');
+  for (const q of campaign.quests) {
+    assert.ok(q.objectives.length >= 2, `${q.id} has steps`);
+    assert.ok(q.links.length >= 1, `${q.id} has links`);
+    assert.ok(
+      q.objectives.some((o) => !o.hidden),
+      `${q.id} shows the players at least one step`,
+    );
+    const steps = q.objectives.map((o) => o.id);
+    assert.equal(new Set(steps).size, steps.length, `${q.id} repeats a step id`);
+  }
+});
+
+test('the hidden hand of the story stays hidden from the players', () => {
+  const irenne = creature('castellan-irenne');
+  assert.notEqual(irenne.disposition, 'hostile');
+  assert.doesNotMatch(irenne.role ?? '', /crown|ostrand|pale|cult/i);
+  const hand = campaign.quests.find((q) => q.id === 'the-hand-that-writes');
+  assert.equal(hand?.revealed, false);
+  for (const q of campaign.quests.filter((shown) => shown.revealed)) {
+    for (const o of q.objectives.filter((step) => !step.hidden)) {
+      assert.doesNotMatch(o.text, /irenne|castellan/i, `${q.id}: ${o.text}`);
+    }
+  }
+  for (const c of campaign.creatures) {
+    assert.doesNotMatch(c.role ?? '', /secret|traitor|hidden/i, c.id);
+  }
+});
+
+test('the party knows its own contacts from the start, and nobody else', () => {
+  const known = campaign.creatures.filter((c) => c.met).map((c) => c.id);
+  assert.deepEqual(known.sort(), [
+    'caravan-master-dorn',
+    'castellan-irenne',
+    'corvin-the-smuggler',
+    'lord-aldemar',
+  ]);
+});
+
+test('the undead of the example resist what the rules say, and the dead are trained', () => {
+  assert.deepEqual(creature('barrow-skeleton-1').defenses?.vulnerable, ['bludgeoning']);
+  assert.ok(creature('crypt-shade').defenses?.immune.includes('necrotic'));
+  assert.ok(creature('ostrand').defenses?.immune.includes('poison'));
+  assert.deepEqual(creature('ostrand').proficiencies?.saves, ['STR', 'CON', 'WIS']);
+  for (const c of campaign.creatures) {
+    assert.deepEqual(
+      Object.keys(c.stats).filter((k) => !/^(STR|DEX|CON|INT|WIS|CHA|AC)$/.test(k)),
+      [],
+      c.id,
+    );
+  }
+});
+
+test('every example caster creature knows spells of its own class', () => {
+  const byId = new Map(DEFAULT_SPELLS.map((s) => [s.id, s]));
+  const casters = campaign.creatures.filter((c) => c.spellbook);
+  assert.deepEqual(casters.map((c) => c.id).sort(), ['castellan-irenne', 'pale-sworn-2']);
+  for (const c of casters) {
+    const view = toCaster(c);
+    assert.ok(view.resources.length > 0, `${c.id} has slots`);
+    for (const id of [...(c.spellbook?.cantrips ?? []), ...(c.spellbook?.known ?? [])]) {
+      const spell = byId.get(id);
+      assert.ok(spell, `${c.id}: unknown spell ${id}`);
+      assert.ok(spell.classes?.includes(c.class ?? ''), `${c.id}: ${id} is not a ${c.class} spell`);
+    }
+  }
+});
+
+test('the example content refuses a world that lacks one of its story places', () => {
+  const world = { grid: campaign.grid, places: {} };
+  assert.throws(() => buildExampleContent(world), /no place named start/);
+});
