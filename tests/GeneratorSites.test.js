@@ -1,8 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ArmNetwork } from '../src/map/Autotile.js';
+import { ARMS, ArmNetwork } from '../src/map/Autotile.js';
 import { wildTerrain } from '../src/map/GeneratorGround.js';
-import { connectSites, plantFarmland, planSites, siteCounts } from '../src/map/GeneratorSites.js';
+import {
+  connectSites,
+  plantFarmland,
+  planSites,
+  siteCounts,
+  siteMap,
+} from '../src/map/GeneratorSites.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
 /**
@@ -164,4 +170,136 @@ test('the first settlement of a large map is a city, and some later ones are vil
   assert.deepEqual([...markers].sort(), ['settlement', 'village']);
   const [small] = planSites(meadow(20), mulberry32(1));
   assert.equal(small.marker, 'settlement');
+});
+
+/**
+ * The road cells reachable along road arms from a cell.
+ * @param {ArmNetwork} roads @param {number} x @param {number} y
+ */
+function roadReach(roads, x, y) {
+  const seen = new Set([`${x},${y}`]);
+  const queue = [[x, y]];
+  while (queue.length) {
+    const [cx, cy] = /** @type {number[]} */ (queue.pop());
+    for (const [arm, dx, dy] of ARMS) {
+      const id = `${cx + dx},${cy + dy}`;
+      if (!roads.at(cx, cy).has(arm) || seen.has(id) || !roads.has(cx + dx, cy + dy)) continue;
+      seen.add(id);
+      queue.push([cx + dx, cy + dy]);
+    }
+  }
+  return seen;
+}
+
+/**
+ * Plan and join the sites of a generated terrain, as generateWilds does.
+ * @param {string} archetype @param {number} size @param {number} seed
+ */
+function planned(archetype, size, seed) {
+  const rng = mulberry32(seed);
+  const terrain = wildTerrain(size, archetype, rng);
+  const sites = planSites(terrain, rng);
+  plantFarmland(terrain, sites, rng);
+  return { terrain, sites, ...connectSites(terrain, sites) };
+}
+
+test('the first exit reaches every settlement and the keep', () => {
+  // Highlands large seed 8 put two of its three sites in pockets that no
+  // road reaches from the exit.
+  const { sites, roads, exits } = planned('highlands', 22, 8);
+  const [x, y] = exits[0].split(',').map(Number);
+  const reach = roadReach(roads, x, y);
+  const linked = sites.filter((s) => s.archetype !== 'dungeon');
+  assert.equal(linked.length, 3);
+  for (const site of linked) assert.ok(reach.has(site.tileId), `${site.marker} at ${site.tileId}`);
+});
+
+test('every generated site the roads link is on the network of the first exit', () => {
+  for (const archetype of ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands']) {
+    for (const size of [14, 22, 32]) {
+      for (let seed = 0; seed < 6; seed++) {
+        const label = `${archetype} ${size} ${seed}`;
+        const { sites, roads, exits } = planned(archetype, size, seed);
+        assert.ok(
+          sites.some((s) => s.archetype === 'town'),
+          `${label}: a settlement`,
+        );
+        if (!exits.length) continue;
+        const [x, y] = exits[0].split(',').map(Number);
+        const reach = roadReach(roads, x, y);
+        for (const id of exits) assert.ok(reach.has(id), `${label}: exit ${id} on the network`);
+        for (const site of sites.filter((s) => s.archetype !== 'dungeon')) {
+          assert.ok(reach.has(site.tileId), `${label}: ${site.tileId} reached`);
+        }
+      }
+    }
+  }
+});
+
+test('a small map with no room two cells in keeps its settlement one cell from the border', () => {
+  // Wilderness small seed 2 has water beside every cell two cells in.
+  const { sites } = planned('wilderness', 8, 2);
+  assert.equal(sites.length, 1);
+  const [town] = sites;
+  assert.equal(Math.min(town.x, town.y, 7 - town.x, 7 - town.y), 1);
+  // A map with room only beside water puts its settlement there.
+  const shore = meadow(8);
+  for (let i = 0; i < 64; i++) if (i % 2) shore.cells[i] = 'water';
+  const [wet] = planSites(shore, mulberry32(1));
+  assert.ok(wet, 'a settlement beside the water');
+  assert.equal(shore.cells[wet.y * 8 + wet.x], 'grass');
+});
+
+test('a city beside the sea stays a city and opens into a coast town', () => {
+  // Island huge seed 6 put its first settlement by the sea.
+  const { sites } = planned('island', 32, 6);
+  const [city, ...later] = sites.filter((s) => s.archetype === 'town');
+  assert.equal(city.marker, 'city');
+  assert.equal(city.coast, true);
+  assert.equal(siteMap(city).environ, 'coast');
+  assert.equal(siteMap(city).size, 'large');
+  for (const town of later) {
+    assert.equal(town.marker === 'port', town.coast, `${town.tileId}: a port is on the coast`);
+  }
+  const inland = planSites(meadow(40), mulberry32(1))[0];
+  assert.equal(inland.coast, false);
+  assert.equal(siteMap(inland).environ, 'grassland');
+});
+
+test('a site cut off from the first site gets no road and no exit', () => {
+  const size = 14;
+  const terrain = meadow(size);
+  // A ring of water around 2,2, the site nearest the border.
+  for (let y = 1; y <= 3; y++) {
+    for (let x = 1; x <= 3; x++) if (x !== 2 || y !== 2) terrain.cells[y * size + x] = 'water';
+  }
+  const base = { marker: 'settlement', poi: 'settlement', archetype: 'town' };
+  const sites = /** @type {any} */ ([
+    { ...base, x: 8, y: 8, tileId: '8,8' },
+    { ...base, x: 2, y: 2, tileId: '2,2' },
+  ]);
+  const { roads, exits } = connectSites(terrain, sites);
+  assert.equal(exits.length, 1);
+  assert.ok(roadReach(roads, 8, 8).has(exits[0]), 'the exit leads to the first site');
+  assert.equal(roads.has(2, 2), false);
+  // A first site cut off from the rest keeps them out of its tree.
+  const alone = connectSites(terrain, [sites[1], sites[0]]);
+  assert.deepEqual(alone.exits, [], 'the island site has no border to reach');
+  assert.equal(alone.roads.arms.size, 0);
+  // A site on ground that takes no road has no area and no exit.
+  terrain.cells[1 * size + 1] = 'mountain';
+  const peak = connectSites(terrain, [{ ...sites[0], x: 1, y: 1, tileId: '1,1' }]);
+  assert.deepEqual(peak.exits, []);
+  // Markers can box a site in although its area reaches the border.
+  const dungeon = { ...base, marker: 'dungeon', poi: 'dungeon', archetype: 'dungeon' };
+  const boxed = [
+    { ...base, x: 8, y: 8, tileId: '8,8' },
+    ...ARMS.map(([, dx, dy]) => ({
+      ...dungeon,
+      x: 8 + dx,
+      y: 8 + dy,
+      tileId: `${8 + dx},${8 + dy}`,
+    })),
+  ];
+  assert.deepEqual(connectSites(terrain, /** @type {any} */ (boxed)).exits, []);
 });

@@ -320,14 +320,24 @@ sets how many of each a map gets, from one settlement on a small map to
 five settlements, a keep, and a dungeon on a vast map.
 
 A settlement prefers grass near a river or a lake. A settlement with at
-least four water cells within two cells of it becomes a port. The first
-settlement takes the best spot, and on a map of 32 cells or more it draws
-as a city. Each later settlement draws as a village with a chance of one
-in two. The keep prefers the foot of the hills, and the dungeon stands as far from the
-settlements as it can. No site stands on a river, on a shoreline, or within
-two cells of the border. The marker then hides no overlay, and a road can
-reach the site from every side. Grass around each settlement turns into
-farmland at random.
+least four water cells within two cells of it is on the coast, and its town
+map gets the `coast` environ. The first settlement takes the best spot, and
+on a map of 32 cells or more it draws as a city, on the coast or not. Any
+other settlement on the coast draws as a port, and each later settlement
+inland draws as a village with a chance of one in two. The keep prefers the
+foot of the hills, and the dungeon stands as far from the settlements as it
+can. No site stands on a river, on a shoreline, or within two cells of the
+border. The marker then hides no overlay, and a road can reach the site
+from every side. Grass around each settlement turns into farmland at random.
+
+`roadAreas` in `src/map/GeneratorRoads.js` splits the map into areas that
+roads can join, with bridges over straight river channels. A lake, a
+mountain range, or a river bend can cut off a pocket of land. The
+settlements and the keep all stand in the area with the most room for
+them, so that a road can join them all. The dungeon has no road, so it can
+stand in any area. When no cell keeps the rules above, as on a small map
+crossed by a lake, the sites can stand one cell from the border, and then
+beside the water. A map with any open ground then gets its settlement.
 
 `src/map/GeneratorRoads.js` routes roads with an A* search. Each terrain
 type has a step cost in `ROAD_COST`, and a type that is not in the table,
@@ -341,10 +351,15 @@ rule the search state is a cell plus the direction of entry.
 draw as a ford: each crossing more than three cells from every settlement.
 
 `connectSites` joins the settlements and the keep as a minimum spanning
-tree. Then it runs one road off the map edge, and a map of 32 cells or more
-gets a second exit far from the first. The dungeon gets no road. The first
-exit becomes the entry of the map. A map with no exit, such as an island
-with its whole border under water, enters at the bottom-center border tile.
+tree that grows from the first settlement. A site joins the tree only when
+a road reaches it, so a site that no road can reach gets no road. Then it
+runs one road from the tree off the map edge, and a map of 32 cells or more
+gets a second exit far from the first. So each exit leads to every site in
+the tree. The dungeon gets no road. The first exit becomes the entry of the
+map. When no border cell of the area can take a road, `connectSites` skips
+the exit search, because each search would cover the whole area and fail.
+A map with no exit, such as an island with its whole border under water,
+enters at the bottom-center border tile.
 
 ### Town layout
 

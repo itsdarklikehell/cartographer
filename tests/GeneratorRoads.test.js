@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { ArmNetwork } from '../src/map/Autotile.js';
-import { bridgeAt, distanceTo, layRoad, routeRoad } from '../src/map/GeneratorRoads.js';
+import { bridgeAt, distanceTo, layRoad, roadAreas, routeRoad } from '../src/map/GeneratorRoads.js';
 
 /**
  * A road ground from rows of single-char codes: ~ water, M mountain, T
@@ -110,4 +110,22 @@ test('a turn cost keeps a road straight, and a heading counts the first bend', (
   assert.deepEqual(north[1], [0, 3]);
   const east = /** @type {[number, number][]} */ (routeRoad(straight, [0, 4], isGoal, estimate, 1));
   assert.deepEqual(east[1], [1, 4]);
+});
+
+test('road areas join over bridges and split at water, junctions, and mountains', () => {
+  // Column 2 is a straight river with a junction at row 3 and water below
+  // it. Row 1 has a second channel beside it. Column 4 is mountain.
+  const ground = groundFrom(['..|.M.', '..||M.', '..|.M.', '..+.M.', '..~.M.', '..~.M.']);
+  const areas = roadAreas(ground);
+  /** @param {number} x @param {number} y */
+  const at = (x, y) => areas[y * 6 + x];
+  assert.equal(at(0, 0), 0);
+  assert.equal(at(3, 0), 0, 'a bridge joins the two banks');
+  assert.equal(at(3, 5), 0, 'the east bank is one area');
+  assert.equal(at(2, 0), -1, 'a river cell is in no area');
+  assert.equal(at(4, 0), -1, 'a mountain is in no area');
+  assert.equal(at(5, 0), 1, 'land past the mountains is its own area');
+  // Two channels side by side: a road crosses both in a row.
+  const wide = groundFrom(['.||.', '.||.', '.||.', '.||.']);
+  assert.equal(roadAreas(wide)[3], roadAreas(wide)[0], 'two bridges in a row still join');
 });

@@ -1,7 +1,7 @@
 import { tileIdAt } from './MapGeometry.js';
 import { ArmNetwork } from './Autotile.js';
 import { chebyshev } from './GeneratorGround.js';
-import { distanceTo, layRoad, ROAD_COST, routeRoad } from './GeneratorRoads.js';
+import { distanceTo, layRoad, roadAreas, routeRoad } from './GeneratorRoads.js';
 
 /** @typedef {import('../types/map.js').POIType} POIType */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
@@ -22,10 +22,24 @@ import { distanceTo, layRoad, ROAD_COST, routeRoad } from './GeneratorRoads.js';
  *   marker: string,
  *   poi: POIType,
  *   archetype: string,
+ *   coast?: boolean,
  * }} Site
  * `marker` is the palette id of the marker art. `archetype` is the
  * generator archetype for the place's own map: town, castle, or dungeon.
+ * `coast` marks a settlement beside open water.
  */
+
+/**
+ * The rules a site cell keeps, strictest first, as `[margin, shore]`: the
+ * fewest cells between the site and the border, and whether the site can
+ * stand beside water. `planSites` uses the first rule that leaves room.
+ * @type {ReadonlyArray<readonly [number, boolean]>}
+ */
+const SITE_RULES = [
+  [2, false],
+  [1, false],
+  [1, true],
+];
 
 /**
  * How many of each site a map of this side length gets. A small map holds
@@ -44,20 +58,28 @@ export function siteCounts(size) {
  * Choose the sites of an open-terrain map. A settlement prefers grass near
  * a river or a lake, because marker art sits on a grass background and
  * towns grow beside water. A settlement with at least four water cells
- * within two cells of it becomes a port, so a pond does not make a harbor.
- * The first settlement takes the best spot, and on a map of 32 cells or
- * more it is a city. Each later settlement is a village with a chance of
- * one in two. The keep stands at the foot of the hills when it can, and
- * the dungeon stands as far from every settlement as the map allows. No
- * site sits on a river, a shoreline, or within two cells of the border, so
- * its marker never hides an overlay and a road can reach it from every
- * side.
+ * within two cells of it is on the coast and becomes a port, so a pond does
+ * not make a harbor. The first settlement takes the best spot, and on a map
+ * of 32 cells or more it is a city, on the coast or not. Each later
+ * settlement is a village with a chance of one in two. The keep stands at
+ * the foot of the hills when it can, and the dungeon stands as far from
+ * every settlement as the map allows.
+ *
+ * No site sits on a river, a shoreline, or within two cells of the border,
+ * so its marker never hides an overlay and a road can reach it from every
+ * side. The settlements and the keep stand in the one road area (see
+ * `roadAreas`) with the most room for them, so a road can join them all.
+ * The dungeon has no road and can stand in any area. A map with no room
+ * that keeps these rules, such as a small map crossed by a lake, lets its
+ * sites stand one cell from the border, and then beside the water, so it
+ * still gets its settlement.
  * @param {WildTerrain} terrain
  * @param {() => number} rng
  * @returns {Site[]}
  */
 export function planSites(terrain, rng) {
   const { size, cells, rivers } = terrain;
+  const areas = roadAreas(terrain);
   /** @param {number} x @param {number} y @param {number} r @param {(t: string) => boolean} test */
   const within = (x, y, r, test) => {
     for (let yy = Math.max(0, y - r); yy <= Math.min(size - 1, y + r); yy++) {
@@ -78,29 +100,51 @@ export function planSites(terrain, rng) {
     }
     return count;
   };
-  /** @type {{ x: number, y: number }[]} */
-  const open = [];
-  for (let y = 2; y < size - 2; y++) {
-    for (let x = 2; x < size - 2; x++) {
-      const type = cells[y * size + x];
-      if (!(type in ROAD_COST) || rivers.has(x, y) || within(x, y, 1, wet)) continue;
-      open.push({ x, y });
+  /**
+   * The cells a site can take with a border gap of `margin` cells.
+   * @param {number} margin @param {boolean} shore whether a cell beside water counts
+   */
+  const cellsFor = (margin, shore) => {
+    /** @type {{ x: number, y: number }[]} */
+    const out = [];
+    for (let y = margin; y < size - margin; y++) {
+      for (let x = margin; x < size - margin; x++) {
+        if (areas[y * size + x] !== -1 && (shore || !within(x, y, 1, wet))) out.push({ x, y });
+      }
     }
+    return out;
+  };
+  /** @type {{ x: number, y: number }[]} */
+  let open = [];
+  /** @type {{ x: number, y: number }[]} */
+  let linked = [];
+  for (const [margin, shore] of SITE_RULES) {
+    open = cellsFor(margin, shore);
+    /** @type {Map<number, number>} */
+    const room = new Map();
+    for (const { x, y } of open) {
+      const a = areas[y * size + x];
+      room.set(a, (room.get(a) ?? 0) + 1);
+    }
+    const main = [...room].reduce((best, next) => (next[1] > best[1] ? next : best), [-1, 0])[0];
+    linked = open.filter(({ x, y }) => areas[y * size + x] === main);
+    if (linked.length) break;
   }
   const counts = siteCounts(size);
   /** @type {Site[]} */
   const sites = [];
   const spacing = Math.max(4, Math.round(size / 5));
   /**
-   * Take the best-scoring open cell that keeps `gap` from every site.
+   * Take the best-scoring cell of `from` that keeps `gap` from every site.
    * @param {(x: number, y: number) => number} score
    * @param {number} gap
+   * @param {{ x: number, y: number }[]} [from]
    * @returns {{ x: number, y: number } | null}
    */
-  const take = (score, gap) => {
+  const take = (score, gap, from = linked) => {
     let pick = null;
     let top = -Infinity;
-    for (const cell of open) {
+    for (const cell of from) {
       if (sites.some((s) => chebyshev(s.x, s.y, cell.x, cell.y) < gap)) continue;
       const s = score(cell.x, cell.y) + rng() * 0.5;
       if (s > top) {
@@ -115,9 +159,10 @@ export function planSites(terrain, rng) {
   /**
    * @param {{ x: number, y: number } | null} at
    * @param {string} marker @param {POIType} poi @param {string} archetype
+   * @param {{ coast?: boolean }} [extra]
    */
-  const add = (at, marker, poi, archetype) => {
-    if (at) sites.push({ ...at, tileId: tileIdAt(at.x, at.y), marker, poi, archetype });
+  const add = (at, marker, poi, archetype, extra = {}) => {
+    if (at) sites.push({ ...at, tileId: tileIdAt(at.x, at.y), marker, poi, archetype, ...extra });
   };
 
   for (let i = 0; i < counts.settlements; i++) {
@@ -125,10 +170,10 @@ export function planSites(terrain, rng) {
       (x, y) => grass(x, y) + (rivers.near(x, y, 2) ? 2 : 0) + (within(x, y, 2, wet) ? 1.5 : 0),
       spacing,
     );
-    const port = at !== null && waterNear(at.x, at.y) >= 4;
-    const first = size >= 32 ? 'city' : 'settlement';
+    const coast = at !== null && waterNear(at.x, at.y) >= 4;
     const later = rng() < 0.5 ? 'village' : 'settlement';
-    add(at, port ? 'port' : i === 0 ? first : later, 'settlement', 'town');
+    const marker = i === 0 && size >= 32 ? 'city' : coast ? 'port' : i === 0 ? 'settlement' : later;
+    add(at, marker, 'settlement', 'town', { coast });
   }
   if (counts.keep) {
     const hill = (/** @type {string} */ t) => t === 'hills' || t === 'mountain';
@@ -143,7 +188,7 @@ export function planSites(terrain, rng) {
     const towns = sites.filter((s) => s.archetype === 'town').map((s) => [s.x, s.y]);
     const far = distanceTo(/** @type {[number, number][]} */ (towns));
     add(
-      take((x, y) => grass(x, y) + far(x, y) / 2, 3),
+      take((x, y) => grass(x, y) + far(x, y) / 2, 3, open),
       'dungeon',
       'dungeon',
       'dungeon',
@@ -176,11 +221,12 @@ export function plantFarmland(terrain, sites, rng) {
 /**
  * Lay the roads that join the settlements and the keep, and the roads that
  * leave the map. The sites join as a minimum spanning tree, shortest link
- * first, so every reachable site connects with no redundant road. Then one
- * road runs from the site nearest the border off the map edge, and a map of
- * 32 or more cells gets a second exit on a far part of the border. The
- * dungeon gets no road, because it is hidden. A link that no road can make,
- * for example across a lake, is left out.
+ * first, so every reachable site connects with no redundant road. The tree
+ * grows from the first site, and a site that no road can reach, for
+ * example across a lake, stays out of it. Then one road runs from the tree
+ * site nearest the border off the map edge, and a map of 32 or more cells
+ * gets a second exit on a far part of the border. So every exit leads to
+ * the first site. The dungeon gets no road, because it is hidden.
  * @param {WildTerrain} terrain
  * @param {Site[]} sites
  * @returns {{ roads: ArmNetwork, exits: string[] }} `exits` lists the
@@ -196,53 +242,70 @@ export function connectSites(terrain, sites) {
   /** @type {string[]} */
   const exits = [];
   if (!linked.length) return { roads, exits };
+  const areas = roadAreas(ground);
+  /** @param {Site} s */
+  const areaOf = (s) => areas[s.y * size + s.x];
 
   // Prim's algorithm: grow the tree from the first site by its nearest
-  // outside site each round.
-  const inTree = [linked[0]];
+  // outside site each round. A pair that no road joins is left out, and a
+  // site joins the tree only by a road that exists. A pair in two areas
+  // cannot join, so it skips the search.
+  const inTree = new Set([linked[0]]);
   const rest = linked.slice(1);
-  while (rest.length) {
+  /** @type {Set<string>} */
+  const failed = new Set();
+  for (;;) {
     let bestPair = null;
     let bestDist = Infinity;
     for (const a of inTree) {
       for (const b of rest) {
         const d = chebyshev(a.x, a.y, b.x, b.y);
-        if (d < bestDist) {
+        if (d < bestDist && !failed.has(`${a.tileId} ${b.tileId}`)) {
           bestDist = d;
           bestPair = { a, b };
         }
       }
     }
-    const { a, b } = /** @type {{ a: Site, b: Site }} */ (bestPair);
+    if (!bestPair) break;
+    const { a, b } = bestPair;
+    const path =
+      areaOf(a) === areaOf(b) &&
+      routeRoad(ground, [a.x, a.y], (x, y) => x === b.x && y === b.y, distanceTo([[b.x, b.y]]));
+    if (!path) {
+      failed.add(`${a.tileId} ${b.tileId}`);
+      continue;
+    }
+    layRoad(roads, path);
     rest.splice(rest.indexOf(b), 1);
-    inTree.push(b);
-    const path = routeRoad(
-      ground,
-      [a.x, a.y],
-      (x, y) => x === b.x && y === b.y,
-      distanceTo([[b.x, b.y]]),
-    );
-    if (path) layRoad(roads, path);
+    inTree.add(b);
   }
 
   /** @param {number} x @param {number} y */
   const edgeGap = (x, y) => Math.min(x, y, size - 1 - x, size - 1 - y);
-  /** @param {number} x @param {number} y */
-  const roadable = (x, y) => cells[y * size + x] in ROAD_COST && !rivers.has(x, y);
-  const byEdge = [...linked].sort((p, q) => edgeGap(p.x, p.y) - edgeGap(q.x, q.y));
+  // The exits start from the tree, and end on a border cell in its area.
+  const home = areaOf(linked[0]);
+  /** @type {[number, number][]} */
+  const border = [];
+  for (let i = 0; i < areas.length; i++) {
+    const x = i % size;
+    const y = Math.floor(i / size);
+    if (home !== -1 && areas[i] === home && edgeGap(x, y) === 0) border.push([x, y]);
+  }
+  const byEdge = linked
+    .filter((s) => inTree.has(s))
+    .sort((p, q) => edgeGap(p.x, p.y) - edgeGap(q.x, q.y));
   const wanted = size >= 32 ? 2 : 1;
   for (const site of byEdge) {
     if (exits.length >= wanted) break;
     const firstExit = exits[0]?.split(',').map(Number);
-    const path = routeRoad(
-      ground,
-      [site.x, site.y],
-      (x, y) =>
-        edgeGap(x, y) === 0 &&
-        roadable(x, y) &&
-        (!firstExit || chebyshev(x, y, firstExit[0], firstExit[1]) >= size / 2),
-      edgeGap,
+    const goals = new Set(
+      border
+        .filter(([x, y]) => !firstExit || chebyshev(x, y, firstExit[0], firstExit[1]) >= size / 2)
+        .map(([x, y]) => y * size + x),
     );
+    // With no goal, each search would cover the whole area and fail.
+    if (!goals.size) break;
+    const path = routeRoad(ground, [site.x, site.y], (x, y) => goals.has(y * size + x), edgeGap);
     if (!path) continue;
     layRoad(roads, path);
     const [bx, by] = path[path.length - 1];
@@ -265,7 +328,7 @@ export function siteMap(site) {
     tileIds: [site.tileId],
     archetype: site.archetype,
     kind: town ? 'region' : 'interior',
-    environ: !town ? site.archetype : site.marker === 'port' ? 'coast' : 'grassland',
+    environ: !town ? site.archetype : site.coast ? 'coast' : 'grassland',
     size: site.marker === 'city' ? 'large' : site.marker === 'village' ? 'small' : 'medium',
     label: site.marker,
   };

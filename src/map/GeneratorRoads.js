@@ -83,6 +83,74 @@ export function bridgeAt(rivers, x, y) {
 }
 
 /**
+ * The cost for a road to step onto (x, y) while it moves in direction `d`,
+ * an index in ARMS, or Infinity where the road cannot step. A road enters a
+ * river cell only across a straight channel, and never ends on one.
+ * @param {RoadGround} ground
+ * @param {number} x @param {number} y @param {number} d
+ * @param {boolean} goal whether (x, y) is where the road ends
+ */
+function stepCost(ground, x, y, d, goal) {
+  const { size, cells, rivers, roads } = ground;
+  const axis = riverAxis(rivers, x, y);
+  if (axis === false) return Infinity;
+  if (axis) {
+    // Across the channel only: an east-west move over a north-south river.
+    const vertical = d === 0 || d === 2;
+    if (goal || vertical === (axis === 'v')) return Infinity;
+  }
+  const base = roads.has(x, y) ? ON_ROAD : (ROAD_COST[cells[y * size + x]] ?? Infinity);
+  return axis && !roads.has(x, y) ? base + BRIDGE : base;
+}
+
+/**
+ * Split the cells where a road can end into areas. Two cells share an area
+ * when a road can run from one to the other, over bridges where it needs
+ * them. A river cell is in no area, because a road only crosses it. The
+ * search ignores `blocked`, so a marker does not split an area.
+ * @param {RoadGround} ground
+ * @returns {Int32Array} the area of each cell, indexed `y * size + x`, or
+ *   -1 for a cell where no road can end
+ */
+export function roadAreas(ground) {
+  const { size, rivers } = ground;
+  /** @param {number} x @param {number} y */
+  const inside = (x, y) => x >= 0 && y >= 0 && x < size && y < size;
+  /** @param {number} x @param {number} y */
+  const land = (x, y) => !rivers.has(x, y) && stepCost(ground, x, y, 0, true) < Infinity;
+  const area = new Int32Array(size * size).fill(-1);
+  let count = 0;
+  for (let i = 0; i < area.length; i++) {
+    if (area[i] !== -1 || !land(i % size, Math.floor(i / size))) continue;
+    area[i] = count;
+    const queue = [i];
+    for (let q = 0; q < queue.length; q++) {
+      const x = queue[q] % size;
+      const y = Math.floor(queue[q] / size);
+      for (let d = 0; d < 4; d++) {
+        const [, dx, dy] = ARMS[d];
+        let nx = x + dx;
+        let ny = y + dy;
+        // A bridge takes the road straight on to the cell past the river.
+        while (
+          inside(nx, ny) &&
+          rivers.has(nx, ny) &&
+          stepCost(ground, nx, ny, d, false) < Infinity
+        ) {
+          nx += dx;
+          ny += dy;
+        }
+        if (!inside(nx, ny) || !land(nx, ny) || area[ny * size + nx] !== -1) continue;
+        area[ny * size + nx] = count;
+        queue.push(ny * size + nx);
+      }
+    }
+    count++;
+  }
+  return area;
+}
+
+/**
  * A small binary min-heap of `[priority, value]` pairs.
  * @template T
  */
@@ -150,7 +218,7 @@ class Heap {
  *   when no road can reach a goal
  */
 export function routeRoad(ground, start, isGoal, estimate, heading = 4) {
-  const { size, cells, rivers, roads, blocked = () => false, turn = 0 } = ground;
+  const { size, rivers, blocked = () => false, turn = 0 } = ground;
   const states = size * size * 5;
   const best = new Float64Array(states).fill(Infinity);
   const from = new Int32Array(states).fill(-1);
@@ -177,7 +245,7 @@ export function routeRoad(ground, start, isGoal, estimate, heading = 4) {
       const goal = isGoal(nx, ny);
       if (!goal && blocked(nx, ny)) continue;
       const bend = entry < 4 && d !== entry ? turn : 0;
-      const step = stepCost(nx, ny, d, goal) + bend;
+      const step = stepCost(ground, nx, ny, d, goal) + bend;
       if (step === Infinity) continue;
       const next = (ny * size + nx) * 5 + d;
       const cost = best[state] + step;
@@ -188,22 +256,6 @@ export function routeRoad(ground, start, isGoal, estimate, heading = 4) {
     }
   }
   return null;
-
-  /**
-   * @param {number} x @param {number} y @param {number} d the move direction
-   * @param {boolean} goal
-   */
-  function stepCost(x, y, d, goal) {
-    const axis = riverAxis(rivers, x, y);
-    if (axis === false) return Infinity;
-    if (axis) {
-      // Across the channel only: an east-west move over a north-south river.
-      const vertical = d === 0 || d === 2;
-      if (goal || vertical === (axis === 'v')) return Infinity;
-    }
-    const base = roads.has(x, y) ? ON_ROAD : (ROAD_COST[cells[y * size + x]] ?? Infinity);
-    return axis && !roads.has(x, y) ? base + BRIDGE : base;
-  }
 
   /** @param {number} state @returns {[number, number][]} */
   function unwind(state) {
