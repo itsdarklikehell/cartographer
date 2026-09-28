@@ -1,5 +1,5 @@
 import { iconButton } from './buttons.js';
-import { el } from './dom.js';
+import { append, el } from './dom.js';
 
 /**
  * Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, center on
@@ -10,6 +10,8 @@ import { el } from './dom.js';
  * brush, a hide brush, toggles that make a stroke on the map reveal or
  * hide fog instead of moving the party, and a reveal-whole-node action.
  * The caller owns the active-tool state. `getTool` drives the pressed styling.
+ * If `miniMap` is set, a toggle shows or hides the mini-map of the parent
+ * map. The caller owns that choice too, and `isOpen` drives the pressed state.
  * @param {HTMLElement} container
  * @param {{
  *   onZoomIn: () => void,
@@ -22,6 +24,7 @@ import { el } from './dom.js';
  *     onToolChange: (tool: 'reveal' | 'hide' | null) => void,
  *     onRevealAll: () => void,
  *   },
+ *   miniMap?: { isOpen: () => boolean, onToggle: () => void },
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -47,6 +50,22 @@ export function mountMapControls(container, callbacks) {
   let lastZoom = '';
   /** @type {'reveal' | 'hide' | null | undefined} */
   let lastTool;
+  /** @type {boolean | undefined} */
+  let lastMiniMap;
+
+  /** @param {HTMLButtonElement} btn @param {boolean} pressed */
+  const setPressed = (btn, pressed) => {
+    btn.classList.toggle('map-controls__btn--active', pressed);
+    btn.setAttribute('aria-pressed', String(pressed));
+  };
+
+  const miniMap = callbacks.miniMap;
+  const miniMapToggle = miniMap
+    ? button('minimap', 'Mini-map of the parent map', () => {
+        miniMap.onToggle();
+        update();
+      })
+    : null;
 
   // This runs from the canvas's per-frame view-change hook. Stop before
   // any DOM write when nothing shown here changed. Otherwise a pan
@@ -54,23 +73,24 @@ export function mountMapControls(container, callbacks) {
   function update() {
     const zoom = `${Math.round(callbacks.getZoom() * 100)}%`;
     const active = callbacks.fog?.getTool() ?? null;
-    if (zoom === lastZoom && active === lastTool) return;
+    const miniMapOpen = miniMap?.isOpen();
+    if (zoom === lastZoom && active === lastTool && miniMapOpen === lastMiniMap) return;
     lastZoom = zoom;
     lastTool = active;
+    lastMiniMap = miniMapOpen;
     readout.textContent = zoom;
-    for (const { el: btn, tool } of fogToggles) {
-      btn.classList.toggle('map-controls__btn--active', active === tool);
-      btn.setAttribute('aria-pressed', String(active === tool));
-    }
+    for (const { el: btn, tool } of fogToggles) setPressed(btn, active === tool);
+    if (miniMapToggle) setPressed(miniMapToggle, Boolean(miniMapOpen));
   }
 
-  root.append(
+  append(root, [
     button('plus', 'Zoom in', callbacks.onZoomIn),
     button('minus', 'Zoom out', callbacks.onZoomOut),
     button('fit', 'Fit map to view', callbacks.onFit),
     button('target', 'Center on party', callbacks.onCenter),
+    miniMapToggle,
     readout,
-  );
+  ]);
 
   const fog = callbacks.fog;
   if (fog) {

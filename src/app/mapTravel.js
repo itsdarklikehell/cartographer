@@ -136,12 +136,23 @@ export function createMapTravel(app, env) {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
     const parent = grid.getParent(node);
-    const through = entryFor(state.entryTiles, travelerFor(clickSubject()), node.id);
+    const through = entryThrough();
     const here = moverPosition() ?? partyTracker.getPosition();
     const at = here.nodeId === node.id ? parseCoords(here.tileId) : null;
     return findExits(node, parent, through, { at, nodeById: (id) => grid.getNode(id) }).map(
       (exit) => veilCrossing(exit, parent),
     );
+  }
+
+  /**
+   * The parent tile this tab's traveler entered the node in view through,
+   * or null when no entry is remembered. The exits and the mini-map both use
+   * it to pick the block of a child that two blocks of the parent link to.
+   * @returns {string | null}
+   */
+  function entryThrough() {
+    const nodeId = navigator.getCurrentNode().id;
+    return entryFor(state.entryTiles, travelerFor(clickSubject()), nodeId);
   }
 
   /**
@@ -437,6 +448,7 @@ export function createMapTravel(app, env) {
     discoverTile,
     clickSubject,
     currentExits,
+    entryThrough,
     exitToParent,
     moveOneCharacter,
     onCellClick,

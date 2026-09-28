@@ -1063,3 +1063,33 @@ current node opens every row that `ancestorIds` returns for it. A search
 uses `filterWorldTree`, which keeps each matching node and the path to it.
 Both functions live in `map/WorldTree.js` beside `buildWorldTree` and have
 unit tests.
+
+## The mini-map
+
+The mini-map is the small picture of the parent map in the top-left corner
+of the map. `src/map/MiniMap.js` computes what it shows, and
+`src/ui/MiniMap.js` draws it. `miniMapView(node, parent, position,
+throughTileId)` returns the parent, the block of parent cells that links to
+the node, and the parent cell of the party. It uses `blockFor` with the tile
+the traveler entered through, the same as `findExits`, so a child with two
+blocks in the parent marks the block the party came in by. The result is
+null for the world and for a node that no parent tile links to, and the
+widget hides.
+
+`approximateCell` finds the party's parent cell. It scales each axis of the
+child onto the bounding box of the block with `projectBack`, which the
+border crossing also uses. A painted block can have any outline, so the
+point then moves to the nearest cell of the block. When the party stands on
+the parent map itself, its own cell is the answer.
+
+The widget draws each parent tile's base image and overlays at a few pixels
+per tile, with fog for an unrevealed tile outside Build mode. That pass
+costs about one `drawImage` per tile, so the widget keeps it in an
+offscreen canvas keyed on the parent node object, the fog rule, and the tile
+size. Node objects never change in place, so a new parent object is the
+only way the terrain can change. A party step inside the child then copies
+the cached pixels and draws only the block outline and the party dot.
+
+`syncExits` in `mapWiring.js` calls the widget's `update`, because every
+path that moves the party, changes the node in view, repaints the parent,
+or switches the mode already calls it.

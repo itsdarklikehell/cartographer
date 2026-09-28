@@ -154,6 +154,42 @@ body.mode-build .map-controls__fog {
   background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
 }
 
+/* The mini-map of the parent map, opposite the controls. It takes pointer
+   events, so a click on it never reaches the tile underneath and moves the
+   party. */
+.minimap {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  margin: 0;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 80%, transparent);
+  box-shadow: var(--shadow-2);
+}
+
+.minimap[hidden] {
+  display: none;
+}
+
+.minimap__canvas {
+  display: block;
+  max-width: 11rem;
+  height: auto;
+  border: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
+  border-radius: 2px;
+}
+
+.minimap__caption {
+  max-width: 11rem;
+  padding-top: var(--space-1);
+  overflow: hidden;
+  font-size: var(--text-label);
+  color: var(--overlay-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .map-controls__zoom {
   min-width: 3ch;
   padding: 0 var(--space-1);

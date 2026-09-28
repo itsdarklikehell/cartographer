@@ -34,3 +34,16 @@
     max-height: min(60vh, 32rem);
   }
 }
+
+/* At phone width the map controls span the top of the map, so the mini-map
+   shrinks and moves below them instead of covering the zoom buttons. */
+@media (max-width: 40rem) {
+  .minimap {
+    top: 3.5rem;
+  }
+
+  .minimap__canvas,
+  .minimap__caption {
+    max-width: 6.5rem;
+  }
+}

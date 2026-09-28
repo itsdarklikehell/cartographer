@@ -462,6 +462,22 @@ Hovering a tile in Play mode, with the pointer or with the keyboard cursor,
 names the point of interest and the NPCs on it. This follows the same
 detection range as the markers, so a tile out of range says nothing.
 
+### The mini-map
+
+Inside a sub-region, a small picture of the map one level up sits in the
+top-left corner of the map. A gold outline marks the tiles of that map that
+lead into the sub-region, and a gold dot marks the approximate position of
+the party. The dot scales the party's position in the sub-region onto the
+outlined tiles, so a party at the east edge of a town shows at the east side
+of the town's block. While the party is split, a player tab follows its bound
+character. On the world map, the mini-map is hidden.
+
+The mini-map draws fog the same way as the main map. In Play mode, a tile
+that the party has not seen draws as fog, and in Build mode every tile
+shows. The mini-map button in the map controls shows or hides the mini-map,
+and each browser keeps the choice. A click on the mini-map does nothing, so
+it never moves the party to a tile hidden under it.
+
 ### The difficulty hint
 
 Above the Active encounter rows, the GM sees one line rating the fight on the

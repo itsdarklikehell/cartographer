@@ -12,6 +12,7 @@ import {
   EXPORT_TILE_SIZE,
 } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
+import { miniMapView } from '../map/MiniMap.js';
 import { authoringWarning } from '../map/MapExits.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
@@ -22,6 +23,7 @@ import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountMapControls } from '../ui/MapControls.js';
+import { mountMiniMap } from '../ui/MiniMap.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
@@ -165,6 +167,10 @@ export function wireMapView(app) {
     const exits = travel.currentExits();
     mapCanvas.setExits(exits);
     exitList?.update(exits);
+    // The mini-map marks the same parent block the exits come from, and every
+    // path that can move the party, change the node in view, or repaint the
+    // parent runs this function.
+    miniMap?.update();
     syncBuildWarning();
     // The tree's warning badges answer the same question for every node. A
     // stroke on the node in view can seal or unseal a child node without
@@ -411,6 +417,8 @@ export function wireMapView(app) {
 
   /** @type {{ update: () => void } | null} assigned after mapCanvas exists */
   let mapControls = null;
+  /** @type {ReturnType<typeof mountMiniMap> | null} assigned after mapCanvas exists */
+  let miniMap = null;
 
   const mapCanvas = new MapCanvas(canvasEl, palette, {
     tileSize: 48,
@@ -480,6 +488,18 @@ export function wireMapView(app) {
 
   authoring.wireCanvasDrop(canvasEl);
 
+  // The mini-map follows the same position as the Center button: the party,
+  // or a bound player's own character while the party is split. Build mode
+  // lifts the fog, as the main map does.
+  const shownMiniMap = mountMiniMap(mustGetElement('map-viewport'), {
+    revealAll: () => state.mode === 'build',
+    getView: () => {
+      const node = navigator.getCurrentNode();
+      return miniMapView(node, grid.getParent(node), followedView(), travel.entryThrough());
+    },
+  });
+  miniMap = shownMiniMap;
+
   mapControls = mountMapControls(mustGetElement('map-viewport'), {
     onZoomIn: () => mapCanvas.zoomBy(1.25),
     onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
@@ -516,6 +536,7 @@ export function wireMapView(app) {
         toasts.show(`Revealed all of "${node.name}".`);
       },
     },
+    miniMap: { isOpen: shownMiniMap.isOpen, onToggle: shownMiniMap.toggle },
   });
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.
