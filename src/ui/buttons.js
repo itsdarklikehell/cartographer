@@ -13,7 +13,9 @@ import { setTip } from './Tooltip.js';
  * tag, with or without an x to remove it. segSwitch is a fifth primitive: a
  * segmented group of buttons where only one choice is active. bareButton is
  * a sixth: a control that is a button for the keyboard and the screen reader
- * but wears no button chrome. badge and sectionLabel round the set out.
+ * but wears no button chrome. iconLink and textLink build a real link that
+ * wears the button look, for a control that opens a URL. badge and
+ * sectionLabel round the set out.
  */
 
 /** @typedef {'primary' | 'danger' | 'success'} ButtonVariant */
@@ -36,6 +38,63 @@ export function iconButton(name, ariaLabel, onClick, opts = {}) {
   setTip(button, opts.title ?? ariaLabel);
   button.addEventListener('click', onClick);
   return button;
+}
+
+/**
+ * The options every link builder takes. `newTab` opens the link in a new
+ * browser tab, with `rel="noopener"` so the new page gets no handle on this
+ * one.
+ * @typedef {{ variant?: ButtonVariant, className?: string, title?: string,
+ *   newTab?: boolean }} LinkOptions
+ */
+
+/**
+ * Give a link its destination and its optional new-tab target.
+ * @param {HTMLAnchorElement} link
+ * @param {string} href
+ * @param {LinkOptions} opts
+ * @returns {HTMLAnchorElement}
+ */
+function linkTo(link, href, opts) {
+  link.href = href;
+  if (opts.newTab) setAttrs(link, { target: '_blank', rel: 'noopener' });
+  return link;
+}
+
+/**
+ * An icon-only `btn btn--icon` link. It looks like an `iconButton`, but it
+ * is a real `<a href>`, so a middle-click, a modifier-click, and the
+ * browser's "Open in new tab" menu all work on it. The aria-label rules are
+ * the same as for `iconButton`.
+ * @param {import('./icons.js').IconName} name
+ * @param {string} ariaLabel
+ * @param {string} href
+ * @param {LinkOptions} [opts]
+ * @returns {HTMLAnchorElement}
+ */
+export function iconLink(name, ariaLabel, href, opts = {}) {
+  const classes = ['btn', 'btn--icon', opts.variant ? `btn--${opts.variant}` : '', opts.className];
+  const link = el('a', classNames(classes), icon(name));
+  link.setAttribute('aria-label', ariaLabel);
+  setTip(link, opts.title ?? ariaLabel);
+  return linkTo(link, href, opts);
+}
+
+/**
+ * A text `btn` link, with an optional leading icon: the link form of
+ * `textButton`. `ariaLabel` overrides the accessible name when the visible
+ * label alone is ambiguous.
+ * @param {string} label
+ * @param {string} href
+ * @param {LinkOptions & { icon?: import('./icons.js').IconName, ariaLabel?: string }} [opts]
+ * @returns {HTMLAnchorElement}
+ */
+export function textLink(label, href, opts = {}) {
+  const classes = ['btn', opts.variant ? `btn--${opts.variant}` : '', opts.className];
+  const link = el('a', classNames(classes), opts.icon && icon(opts.icon), label);
+  if (opts.ariaLabel) link.setAttribute('aria-label', opts.ariaLabel);
+  if (opts.title) setTip(link, opts.title);
+  return linkTo(link, href, opts);
 }
 
 /**

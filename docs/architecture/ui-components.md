@@ -415,8 +415,9 @@ also discards what the user typed into a row's input on every refresh.
 
 ### `src/ui/buttons.js`
 
-`src/ui/buttons.js` gives three button builders, a segmented switch, an
-empty-state paragraph, the chip pair, a status badge, and the section label.
+`src/ui/buttons.js` gives three button builders, two link builders, a
+segmented switch, an empty-state paragraph, the chip pair, a status badge,
+and the section label.
 A panel builds no `<button>` element itself. A control that has the
 `btn` presentation is an `iconButton` or a `textButton`. A control that is a
 button for the keyboard but has no button chrome is a `bareButton`, whatever
@@ -431,6 +432,8 @@ goes through the builders in this file.
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
 textButton(label, onClick, opts?)           -> HTMLButtonElement
 bareButton(children, onClick?, opts?)       -> HTMLButtonElement
+iconLink(name, ariaLabel, href, opts?)      -> HTMLAnchorElement
+textLink(label, href, opts?)                -> HTMLAnchorElement
 segSwitch({ ariaLabel, options, value, onChange, className? })
                                             -> { element, getValue, setValue, sync }
 emptyState(message)                         -> HTMLParagraphElement
@@ -460,6 +463,18 @@ presentation back to the surrounding text. The look comes from
 label can nest without a second builder. `onClick` is optional, for a button
 another helper wires: `buildDisclosure` builds its header this way. A control
 whose visible content is not its accessible name passes `opts.ariaLabel`.
+
+`iconLink` and `textLink` build the same `btn` look on an `<a href>`, for a
+control that opens a URL. A real link keeps the middle-click, the
+modifier-click, and the "Open in new tab" menu of the browser, and a
+`<button>` that sets `location` has none of these. The label and tooltip
+rules match `iconButton` and `textButton`. `opts.newTab` adds
+`target="_blank"` with `rel="noopener"`, so the new page gets no handle on
+the app. `.btn` sets `text-decoration: none`, so the link has no underline.
+The Party roster uses both builders: an `iconLink` on each row opens a player
+tab for that character, and a `textLink` below the list opens a spectator
+tab. A test in `tests/uiVocabulary.test.js` fails when a module outside
+`buttons.js` builds an `<a>` through `el`.
 
 Both `btn` builders take `opts.variant`, which maps straight to a `btn--*`
 CSS modifier:
@@ -532,12 +547,13 @@ Every icon is `aria-hidden="true"`, because icons here are decorative by
 definition and the enclosing control owns the accessible name, so
 `iconButton` requires a label.
 
-The 29 names available (`IconName` in `icons.js`):
+The 32 names available (`IconName` in `icons.js`):
 
 ```
 plus  minus  heal  remove  edit  save  export  import  dice  d20  add
-check  chevron  map  fit  sword  shield  clock  flag  scroll  sparkles
-eye  eye-off  lock  give  sun  moon  monitor  warning
+check  chevron  circle  map  fit  target  sword  shield  clock  flag
+scroll  sparkles  eye  eye-off  lock  give  sun  moon  monitor  warning
+external
 ```
 
 An unknown name yields an empty SVG rather than an error, so a typo shows
@@ -1057,7 +1073,7 @@ keep only layout (margins, grid placement) in the component's own class.
 
 | Class | Role |
 | --- | --- |
-| `.btn` + `--primary`/`--danger`/`--success`/`--icon` | every button, built through `buttons.js` |
+| `.btn` + `--primary`/`--danger`/`--success`/`--icon` | every button, and every link with the button look, built through `buttons.js` |
 | `.btn-bare` | the reset for a control that is a button with no button chrome, built through `bareButton` |
 | `.field` | every input, select, and textarea |
 | `.form`, `__row`, `__label`, `__wide`, `__number` | the inline authoring form and its parts, built through `formFields.js` |

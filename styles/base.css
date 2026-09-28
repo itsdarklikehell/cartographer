@@ -323,6 +323,9 @@ body {
   font: inherit;
   font-size: var(--text-label);
   line-height: 1;
+  /* A link built by iconLink or textLink wears the same look, so it drops
+     the browser's link underline. */
+  text-decoration: none;
   cursor: pointer;
   transition:
     background-color var(--transition-fast) ease,

@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -75,6 +75,8 @@ const PATHS = {
   // authored that needs attention.
   warning: ['M12 4L2.5 20h19z', 'M12 10v4', 'M12 17h.01'],
   map: ['M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],
+  // An arrow that leaves a box marks a link that opens a new browser tab.
+  external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5a1 1 0 01-1 1H5a1 1 0 01-1-1V7a1 1 0 011-1h5'],
   eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z', 'M12 15a3 3 0 100-6 3 3 0 000 6z'],
   lock: ['M6 11h12v9H6z', 'M9 11V7a3 3 0 016 0v4'],
   'eye-off': [
