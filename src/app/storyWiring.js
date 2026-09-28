@@ -12,6 +12,7 @@ import {
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestRevealed, toggleQuestStatus } from '../quest/Quests.js';
+import { questDetailCallbacks } from './questDetail.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
@@ -180,6 +181,7 @@ export function wireStory(app) {
       app.actions.markDirty();
     },
     ...questList,
+    ...questDetailCallbacks(app),
     getRole: () => state.role,
   });
 

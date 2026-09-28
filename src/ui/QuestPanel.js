@@ -1,8 +1,10 @@
 import { el } from './dom.js';
 import { groupByStatus, visibleQuests } from '../quest/Quests.js';
+import { objectiveProgress } from '../quest/Objectives.js';
 import { icon } from './icons.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
+import { gmQuestDetail, playerObjectives } from './QuestDetail.js';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -12,19 +14,21 @@ import { mountListPanel } from './listPanel.js';
  * below, each with a toggle-complete, reveal, edit, and delete control, plus
  * a "New quest" control. The panel owns no state. `getQuests` supplies the
  * rows, and every mutation flows back through a callback, matching the other
- * panels. Modals for add, edit, and confirm live in main.js.
+ * panels. Modals for add, edit, and confirm live in the wiring modules.
  *
  * When `getRole` reports a player view, the log is read-only and lists only
- * the revealed quests. A player row has a static status glyph and the title,
- * with no notes, since the notes are the GM's leads and spoilers. The panel
- * omits the add control.
+ * the revealed quests, each as `playerQuestView` gives it. A player row has
+ * a static status glyph, the title, and the objectives that are not hidden.
+ * The copy has no notes, no hidden objectives, and no links, since those
+ * are the GM's leads and spoilers. The panel omits the add control.
  *
- * In a GM tab, a quest's notes start hidden behind a per-row toggle, and the
- * panel scrolls once the list outgrows its room. A long-running campaign
- * collects dozens of quests with a paragraph each, and with every note open
- * the list pushes the rest of the rail off the screen. The set of expanded
- * rows lives in this closure, not in the campaign, so it is per browser and
- * resets with a reload.
+ * In a GM tab, a quest's details start hidden behind a per-row toggle, and
+ * the panel scrolls once the list outgrows its room. The details are the
+ * notes, the objectives with their controls, and the links (see
+ * `QuestDetail.js`). A long-running campaign collects dozens of quests with
+ * a paragraph each, and with every quest open the list pushes the rest of
+ * the rail off the screen. The set of expanded rows lives in this closure,
+ * not in the campaign, so it is per browser and resets with a reload.
  * @param {HTMLElement} container
  * @param {{
  *   getQuests: () => Quest[],
@@ -34,11 +38,12 @@ import { mountListPanel } from './listPanel.js';
  *   onDelete: (id: string) => Promise<boolean> | boolean,
  *   onAdd: () => Promise<Quest | null>,
  *   getRole?: () => ViewRole,
- * }} callbacks
+ *   linkTargets?: () => unknown,
+ * } & import('./QuestDetail.js').QuestDetailCallbacks} callbacks
  * @returns {{ update: () => void }}
  */
 export function mountQuestPanel(container, callbacks) {
-  /** The ids of the quests showing their notes. @type {Set<string>} */
+  /** The ids of the quests showing their details. @type {Set<string>} */
   const expanded = new Set();
 
   return mountListPanel(container, {
@@ -46,6 +51,9 @@ export function mountQuestPanel(container, callbacks) {
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
     // The two status groups start as one flat list. `groupOf` re-splits the
     // list into the Active and Completed sections.
+    // A link chip names its node or creature, which the quest rows do not
+    // describe, so a creature edit repaints the log as well.
+    dependsOn: callbacks.linkTargets,
     getRows: (gm) => {
       const { active, completed } = groupByStatus(visibleQuests(callbacks.getQuests(), gm));
       return [...active, ...completed];
@@ -56,17 +64,19 @@ export function mountQuestPanel(container, callbacks) {
       group: 'quest-panel__group',
       groupHeading: 'quest-panel__group-title',
       rowModifiers: (quest) => [quest.status === 'completed' && 'quest-panel__row--completed'],
+      head: 'quest-panel__head',
       add: 'quest-panel__add',
     },
     buildBody: (quest, ctx) => {
       const done = quest.status === 'completed';
       const title = el('span', 'quest-panel__title', quest.title);
 
-      // A player sees the status glyph and the title, with no control.
+      // A player sees the status glyph, the title, and the shared objectives,
+      // with no control.
       if (!ctx.gm) {
         return [
           el('span', 'quest-panel__status', icon(done ? 'check' : 'circle')),
-          el('div', 'quest-panel__body u-col u-g1', title),
+          el('div', 'quest-panel__body u-col u-g1', title, playerObjectives(quest)),
         ];
       }
 
@@ -83,34 +93,33 @@ export function mountQuestPanel(container, callbacks) {
         quest,
       );
 
-      const open = expanded.has(quest.id);
+      const { done: checked, total } = objectiveProgress(quest.objectives);
       const body = el(
         'div',
         'quest-panel__body u-col u-g1',
         title,
-        // A ternary, not `&&`: an empty string is a legal child that `el`
-        // appends as an empty text node. Absent notes must add nothing.
-        quest.notes && open ? el('span', 'u-muted', quest.notes) : null,
+        total > 0 ? el('span', 'u-muted', `${checked} of ${total} objectives done`) : null,
       );
 
-      // A quest with no notes has nothing to expand, so it gets no toggle.
-      const notesToggle = quest.notes
-        ? ctx.action(
-            {
-              icon: 'chevron',
-              label: open ? `Hide notes for ${quest.title}` : `Show notes for ${quest.title}`,
-              pressed: open,
-              onClick: () => {
-                if (open) expanded.delete(quest.id);
-                else expanded.add(quest.id);
-              },
-            },
-            quest,
-          )
-        : null;
-      if (notesToggle) notesToggle.classList.add('quest-panel__notes-toggle');
+      // The details hold the add controls, so every GM row gets the toggle,
+      // even a quest with no notes or objectives yet.
+      const open = expanded.has(quest.id);
+      const detailsToggle = ctx.action(
+        {
+          icon: 'chevron',
+          label: open ? `Hide details of ${quest.title}` : `Show details of ${quest.title}`,
+          pressed: open,
+          onClick: () => {
+            if (open) expanded.delete(quest.id);
+            else expanded.add(quest.id);
+          },
+        },
+        quest,
+      );
+      detailsToggle.classList.add('quest-panel__notes-toggle');
+      detailsToggle.setAttribute('aria-expanded', String(open));
 
-      return notesToggle ? [toggle, body, notesToggle] : [toggle, body];
+      return [toggle, body, detailsToggle];
     },
     actions: (quest, ctx) =>
       ctx.gm
@@ -132,6 +141,9 @@ export function mountQuestPanel(container, callbacks) {
             },
           ]
         : [],
+    buildExtras: (quest, row, ctx) => {
+      if (ctx.gm && expanded.has(quest.id)) row.appendChild(gmQuestDetail(quest, ctx, callbacks));
+    },
     addButtons: () => [{ label: 'New quest', icon: 'add', onClick: callbacks.onAdd }],
   });
 }

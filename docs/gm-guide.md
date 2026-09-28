@@ -448,6 +448,24 @@ The Handouts panel lists it when the party enters that node.
 3. When the party finishes it, click the complete toggle. The plus becomes a
    checkmark.
 
+### Add objectives and links to a quest
+
+1. Click the chevron on the quest row to show its details.
+2. Click **Objective**, type the step, and click the submit button. Select
+   **GM only** to keep the step off the Player view.
+3. To check off a step, click the ring in front of it.
+4. To change the text or the GM-only flag, click the text of the step.
+5. To reorder the steps, use the up and down arrows. To remove a step, click
+   the remove button.
+6. Click **Link place** to link a map. Leave the column and row blank to link
+   the whole map, or type them to link one tile.
+7. Click **Link creature** to link a creature or an NPC.
+8. To show a linked place on the map, click its chip. A chip for a creature
+   that stands on a map shows that tile.
+
+The Player view shows the steps that are not GM only. It never shows the
+links, the notes, or a GM-only step.
+
 ## Curate the library
 
 Switch to **Library** mode, which has Equipment, Creatures, Spells, and Feats

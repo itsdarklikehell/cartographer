@@ -194,7 +194,10 @@ delete path gives: a character rejoins the party
 (`Handouts.unbindFrom`). A location left on a node that is gone would hide
 its owner from every panel. A handout bound to a tile of the regenerated
 node itself binds to the whole node (`Handouts.tileBindingsLost` and
-`unbindTiles`), because every tile of the node is new.
+`unbindTiles`), because every tile of the node is new. A quest link to a
+removed node is taken off the quest (`questCleanup.unlinkRemovedNodes`). The
+snapshot keeps those links with their positions in `questLinks`, and the
+undo puts them back with `QuestLinks.restoreLinks`.
 
 `regenerateSnapshot` builds the undo record. The stroke-undo ring in
 `EditHistory.js` keeps an `EditSnapshot` per edit: the rewritten nodes as
@@ -487,6 +490,29 @@ The helper owns the rest:
 - appending or replacing the entry
 - marking the campaign dirty
 - confirming a delete by name
+
+The expanded GM row of a quest gets its callbacks from `questDetail.js`.
+These callbacks add, edit, check off, reorder, and remove objectives, and
+add and remove links. Each edit reads the quest again by id before it
+writes, because another tab can change the quest while a dialog is open. A
+place link opens through `centerOnLocation`. A link to a whole map centers
+on the middle tile of that map. A creature link opens on the tile of the
+creature, and a creature on no map has no open action. The creature list
+has no selection hook, so a creature link does not select a row there.
+
+`questCleanup.js` removes the links to targets that are gone.
+`commitCreatures` calls `pruneCreatureLinks` after every creature write, so
+each creature delete path removes its links. A node delete calls
+`unlinkRemovedNodes`, and a node shrink calls `shrinkNodeLinks`. The shrink
+turns a link to a removed tile into a link to the whole node. The
+save-level undo restores a deleted node and its links together, because
+both changes are in the same save.
+
+A player tab draws each quest from `Quests.playerQuestView`. That copy has
+no notes, no links, and no GM-only objectives. The live state on the
+player tab keeps the whole quest. A player patch is a diff against that
+state (see `playerPatches.js`), so a stripped quest in the state would send
+the removal of every hidden objective to the GM tab.
 
 ### libraryWiring.js
 

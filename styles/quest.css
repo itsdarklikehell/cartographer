@@ -1,0 +1,77 @@
+/* ==========================================================================
+   Quest details: the objectives and links under a quest row
+   ========================================================================== */
+
+/* The details line up with the quest title, past the status toggle, so the
+   toggle column stays clear down the whole row. */
+.quest-detail {
+  margin: var(--space-1) 0 0 calc(1.75rem + var(--space-2));
+}
+
+.quest-detail__notes {
+  margin: 0;
+}
+
+.quest-detail__objectives {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.quest-objective {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* The row controls are smaller than the quest's own, so one objective line
+   keeps room for its text on a narrow rail. */
+.quest-objective .btn--icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.2rem;
+}
+
+.quest-objective__text {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.quest-objective--done .quest-objective__text {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+
+/* A player's objective has a check or a ring in place of the toggle. */
+.quest-objective__status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
+.quest-detail__links {
+  flex-wrap: wrap;
+}
+
+.quest-detail__link {
+  font-size: var(--text-label);
+}
+
+.quest-detail__link .btn-bare:hover {
+  text-decoration: underline;
+}
+
+.quest-detail__adds {
+  flex-wrap: wrap;
+}
+
+.quest-detail__add {
+  font-size: var(--text-label);
+}

@@ -272,18 +272,27 @@ export function chip(label, opts = {}) {
 /**
  * A chip with a trailing x that removes it. `removeLabel` names the item
  * removed when the visible label is not the item itself. For example, the
- * conditions bar shows "Poisoned (3)" but removes "Poisoned".
+ * conditions bar shows "Poisoned (3)" but removes "Poisoned". An `onClick`
+ * makes the label a button of its own beside the x, because a button inside
+ * a button is not valid HTML.
  * @param {string} label
  * @param {() => void} onRemove
- * @param {{ className?: string, removeLabel?: string }} [opts]
- * @returns {HTMLSpanElement}
+ * @param {{ className?: string, removeLabel?: string,
+ *   onClick?: (event: MouseEvent) => void, title?: string }} [opts]
+ * @returns {HTMLElement}
  */
 export function removableChip(label, onRemove, opts = {}) {
   const remove = bareButton(['×'], onRemove, {
     className: 'chip__remove',
     ariaLabel: `Remove ${opts.removeLabel ?? label}`,
   });
-  const wrapper = chip(label, opts);
+  const wrapper = opts.onClick
+    ? el(
+        'span',
+        classNames(['chip', opts.className]),
+        bareButton([label], opts.onClick, { title: opts.title }),
+      )
+    : chip(label, { className: opts.className });
   wrapper.append(remove);
   return wrapper;
 }

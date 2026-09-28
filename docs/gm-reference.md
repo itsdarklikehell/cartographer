@@ -71,7 +71,8 @@ these things from the screen:
 
 - the exact HP of a foe (the view shows a health band instead)
 - the notes on a tile
-- handouts and quests that you have not revealed, and the notes of every quest
+- handouts and quests that you have not revealed, and the notes, the links,
+  and the GM-only objectives of every quest
 - a revealed handout for other characters, and a revealed handout for a
   tile where the party does not stand
 - the fogged part of the map
@@ -987,7 +988,7 @@ unequips it.
 | --- | --- |
 | Time | The in-game day and watch, Advance, Short rest, Long rest |
 | NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
-| Quests | Active and completed quests, with an eye toggle. The Player view lists only revealed quests, without their notes |
+| Quests | Active and completed quests, with an eye toggle. The chevron shows the notes, the objectives, and the links to places and creatures. The Player view lists only revealed quests, with the objectives that are not GM only, and without the notes or the links |
 | Handouts | Read-aloud text or lore attached to the campaign, a node, or one tile of a node, with an optional image, an eye toggle, and an optional list of the characters who see it |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
 

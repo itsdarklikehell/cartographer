@@ -106,6 +106,11 @@ starts. A travelogue entry whose timestamp is not a number is
 one example: the panel formats every entry during startup, and an unreadable
 date throws there.
 
+A quest from a save with no `objectives` or `links` field loads with empty
+lists. The quest coercer gives each objective a unique id, because the panel
+keys every objective edit by id. It drops a link that names no node or no
+creature.
+
 `withNodeDefaults` (`map/TileGrid.js`) does the same job for nodes and their
 tiles. It drops any tile it cannot read. `withRepairedParents` then clears a
 `parentId` that names the node itself or a node not in the save, and breaks

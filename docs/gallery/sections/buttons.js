@@ -50,6 +50,8 @@ const ICON_NAMES = /** @type {import('../../../src/ui/icons.js').IconName[]} */ 
   'moon',
   'monitor',
   'warning',
+  'up',
+  'down',
 ]);
 
 /** @type {import('../runtime.js').Section} */

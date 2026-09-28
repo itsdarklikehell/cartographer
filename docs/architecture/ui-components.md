@@ -547,13 +547,13 @@ Every icon is `aria-hidden="true"`, because icons here are decorative by
 definition and the enclosing control owns the accessible name, so
 `iconButton` requires a label.
 
-The 32 names available (`IconName` in `icons.js`):
+The 34 names available (`IconName` in `icons.js`):
 
 ```
 plus  minus  heal  remove  edit  save  export  import  dice  d20  add
 check  chevron  circle  map  fit  target  sword  shield  clock  flag
 scroll  sparkles  eye  eye-off  lock  give  sun  moon  monitor  warning
-external
+external  up  down
 ```
 
 An unknown name yields an empty SVG rather than an error, so a typo shows
