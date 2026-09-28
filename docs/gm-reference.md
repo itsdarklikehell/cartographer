@@ -166,6 +166,14 @@ block. The block is visual only. The covered cells keep their own terrain,
 roads across it stay tile-sized, and fog reveals it piece by piece. A
 scaled stamp places one block per click. Roads always paint at 1x.
 
+A terrain type with several variants, such as grass or mountain, has one
+swatch in the Terrain section. That swatch paints a random variant on each
+cell, so a large area does not repeat one image. Select **Show variants**
+to replace these swatches with one swatch for each variant, and paint an
+exact image. If the active brush is a terrain swatch, the brush stays on
+the same terrain when you change the checkbox. The browser keeps the
+choice.
+
 Roads overlay the terrain under them. Repainting the terrain under a road
 leaves the road on top.
 

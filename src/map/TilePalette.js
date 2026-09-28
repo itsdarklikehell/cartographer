@@ -1,6 +1,13 @@
-import { buildBuiltins } from './TileCatalog.js';
+import { buildBuiltins, isVariantType, titleCase } from './TileCatalog.js';
 
-/** @typedef {{ id: string, type: string, label: string, imageRef: string, custom: boolean }} PaletteEntry */
+/**
+ * A catalog tile or a paint brush. `anyVariant` marks a brush that paints a
+ * random variant of its type on each cell.
+ * @typedef {{ id: string, type: string, label: string, imageRef: string, custom: boolean, anyVariant?: boolean }} PaletteEntry
+ */
+
+/** Id prefix of a random-variant brush. */
+const ANY_PREFIX = 'any:';
 
 /**
  * Holds the built-in tile catalog plus any user-supplied custom tile images,
@@ -70,6 +77,60 @@ export class TilePalette {
     const variants = this.listVariants(type);
     if (variants.length === 0) throw new Error(`No variants registered for type "${type}"`);
     return variants[Math.floor(rng() * variants.length) % variants.length];
+  }
+
+  /**
+   * A brush that paints a random variant of a terrain type. The entry is not
+   * in the catalog. Its id has the `any:` prefix, so it cannot collide with a
+   * real tile id. Its imageRef is the first variant, which the palette shows
+   * as the swatch art. Returns undefined for a type without variants.
+   * @param {string} type
+   * @returns {PaletteEntry | undefined}
+   */
+  anyVariant(type) {
+    if (!isVariantType(type)) return undefined;
+    const [first] = this.listVariants(type);
+    return {
+      id: `${ANY_PREFIX}${type}`,
+      type,
+      label: titleCase(type),
+      imageRef: first.imageRef,
+      custom: false,
+      anyVariant: true,
+    };
+  }
+
+  /**
+   * One random-variant brush for each terrain type with variants, in catalog
+   * order.
+   * @returns {PaletteEntry[]}
+   */
+  listAnyVariants() {
+    const types = new Set([...this.entries.values()].map((e) => e.type));
+    return [...types].flatMap((type) => this.anyVariant(type) ?? []);
+  }
+
+  /**
+   * Look up a brush by id. The id is a catalog id, or the `any:` id of a
+   * random-variant brush. A swatch drag sends this id to the drop target.
+   * @param {string} id
+   * @returns {PaletteEntry | undefined}
+   */
+  brushById(id) {
+    if (id.startsWith(ANY_PREFIX)) return this.anyVariant(id.slice(ANY_PREFIX.length));
+    return this.get(id);
+  }
+
+  /**
+   * The image that one painted cell gets from a brush. A random-variant
+   * brush picks a new variant on each call, so a stroke across several cells
+   * mixes the variants. Any other brush paints its own image.
+   * @param {PaletteEntry} entry
+   * @param {() => number} rng returns a float in [0, 1)
+   * @returns {string}
+   */
+  imageFor(entry, rng) {
+    return entry.anyVariant ? this.pickVariant(entry.type, rng).imageRef : entry.imageRef;
   }
 
   /**

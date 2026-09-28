@@ -111,7 +111,9 @@ in the center, and the palette and tile inspector on the right.
 1. Pick a brush in the **Palette**. Click a section heading to expand
    Terrain, Overlays, Buildings, Interior, or Furnishings.
 2. Left-drag across the map. Every cell the pointer crosses takes the
-   brush. A single click paints one cell.
+   brush. A single click paints one cell. A terrain swatch such as grass
+   gives each cell a random variant of that terrain. To paint one exact
+   variant, select **Show variants** and pick the variant swatch.
 3. To make a landmark dominate its surroundings, set **Size** to 2x or 3x
    before you click. One click then stamps one tile across a 2x2 or 3x3
    block.

@@ -1,8 +1,13 @@
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
+import { checkbox } from './formFields.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
-import { isOverlayType, isTerrainType } from '../map/TileCatalog.js';
+import { isOverlayType, isTerrainType, isVariantType } from '../map/TileCatalog.js';
+import { removeStored, writeStored } from '../storage/Footprint.js';
+
+/** localStorage key of the "Show variants" choice. Absent means off. */
+const SHOW_VARIANTS_KEY = 'campaign-builder:show-variants';
 import { buildDisclosure } from './Disclosure.js';
 import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 
@@ -25,6 +30,12 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * landmarks such as an academy or a keep, and involves no region link. Roads
  * and erasing ignore the scale row.
  *
+ * A terrain type with several variants, such as grass, shows one swatch. That
+ * swatch paints a random variant on each cell, so a painted field does not
+ * repeat one image. The "Show variants" checkbox replaces these swatches with
+ * one swatch for each variant, so the GM can paint an exact image. The choice
+ * persists per browser.
+ *
  * Every tool and swatch exposes its pick through `aria-pressed`, so a screen
  * reader hears which brush is active. Each swatch section is one Tab stop:
  * the arrow keys, Home, and End move focus inside the section grid, and only
@@ -41,15 +52,22 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   /** @type {Brush} */
   let brush = null;
   let scale = 1;
+  let showVariants = localStorage.getItem(SHOW_VARIANTS_KEY) === '1';
+  /** The node kind from the last setKind call. Null shows every kind. */
+  let kind = /** @type {string | null} */ (null);
 
   const root = el('div', 'palette');
   container.appendChild(root);
 
   /** @type {HTMLElement[]} */
   const selectables = [];
-  /** @type {{ el: HTMLElement, type: string }[]} Swatches, tagged with their palette type for kind-filtering. */
+  /**
+   * Swatches, tagged with their palette entry for kind-filtering. `role` is
+   * 'any' for a random-variant swatch, 'variant' for one exact variant, and
+   * 'other' for every other tile.
+   * @type {{ el: HTMLElement, entry: PaletteEntry, role: 'any' | 'variant' | 'other' }[]}
+   */
   const swatchEntries = [];
-  const inspectBtnRef = { el: /** @type {HTMLElement | null} */ (null) };
 
   /**
    * @param {HTMLElement} node
@@ -142,7 +160,6 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   const inspectBtn = toolButton('Inspect', 'edit', null);
   inspectBtn.classList.add('palette__item--active');
   inspectBtn.setAttribute('aria-pressed', 'true');
-  inspectBtnRef.el = inspectBtn;
 
   const regionBtn = toolButton('Region', 'map', 'region');
   const erasePathBtn = toolButton('Erase path', 'remove', 'erase-path');
@@ -180,6 +197,17 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   }
   root.appendChild(scaleRow);
 
+  const variantsToggle = checkbox('Show variants', showVariants, {
+    className: 'palette__variants',
+  });
+  variantsToggle.input.addEventListener('change', () => {
+    showVariants = variantsToggle.input.checked;
+    if (showVariants) writeStored(SHOW_VARIANTS_KEY, '1');
+    else removeStored(SHOW_VARIANTS_KEY);
+    applyVisibility();
+  });
+  root.appendChild(variantsToggle.label);
+
   // Swatches group into collapsible sections, so terrain, overlays (roads,
   // rivers, coasts), buildings, interior pieces, and furnishings do not mix
   // in one grid. Terrain starts open, because it is the most common brush.
@@ -210,24 +238,26 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     sections.set(label, section);
   }
 
-  for (const entry of palette.listAll()) {
+  // Random-variant swatches come first, so they lead the Terrain grid.
+  for (const entry of [...palette.listAnyVariants(), ...palette.listAll()]) {
+    const label = entry.anyVariant ? `${entry.label} (random variant)` : entry.label;
     const img = el('img');
     img.src = `/${entry.imageRef}`;
     img.alt = '';
 
     const swatch = el('button', 'palette__swatch palette__item', img);
     swatch.type = 'button';
-    swatch.setAttribute('aria-label', entry.label);
+    swatch.setAttribute('aria-label', label);
     swatch.draggable = true;
 
     if (tooltip) {
       swatch.addEventListener('pointermove', (event) => {
-        tooltip.show({ title: entry.label, notes: '' }, event.clientX, event.clientY);
+        tooltip.show({ title: label, notes: '' }, event.clientX, event.clientY);
       });
       swatch.addEventListener('pointerleave', () => tooltip.hide());
     } else {
       // No cursor-following tooltip supplied. Fall back to the anchored one.
-      setTip(swatch, entry.label);
+      setTip(swatch, label);
     }
 
     swatch.addEventListener('dragstart', (event) => {
@@ -236,7 +266,8 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     });
 
     bindSelect(swatch, entry);
-    swatchEntries.push({ el: swatch, type: entry.type });
+    const role = entry.anyVariant ? 'any' : isVariantType(entry.type) ? 'variant' : 'other';
+    swatchEntries.push({ el: swatch, entry, role });
     const section = /** @type {NonNullable<ReturnType<typeof sections.get>>} */ (
       sections.get(sectionFor(entry))
     );
@@ -244,35 +275,47 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     section.grid.appendChild(swatch);
   }
   root.appendChild(sectionsEl);
-  syncTabStops();
 
   /**
-   * Filter the swatch grid to the terrain a node kind can use. An interior
-   * shows only interior or custom pieces. A region shows everything else. If
-   * this hides the active brush, fall back to Inspect, so a hidden brush
-   * cannot paint.
-   * @param {string} kind
+   * Show the swatches that the node kind can use and that match the "Show
+   * variants" choice. A random-variant swatch shows only when the choice is
+   * off, and an exact variant only when it is on. A section with nothing
+   * visible hides in full, for example Interior on outdoor nodes, or Terrain,
+   * Roads, and Buildings inside. This leaves no empty disclosure headers.
+   *
+   * A hidden brush cannot paint. If the active swatch hides, the brush moves
+   * to the first visible swatch of the same terrain type, so a toggle of the
+   * checkbox keeps the GM on the same terrain. With no such swatch, for
+   * example after a move into an interior, the brush falls back to Inspect.
    */
-  function setKind(kind) {
-    for (const { el: swatch, type } of swatchEntries) {
-      swatch.hidden = !allowsPaletteType(kind, type);
+  function applyVisibility() {
+    for (const { el: swatch, entry, role } of swatchEntries) {
+      const allowed = kind === null || allowsPaletteType(kind, entry.type);
+      const matches = role === 'other' || (role === 'variant') === showVariants;
+      swatch.hidden = !allowed || !matches;
     }
-    // A section with nothing visible for this kind hides in full, for example
-    // Interior on outdoor nodes, or Terrain, Roads, and Buildings inside. This
-    // leaves no empty disclosure headers.
     for (const { wrap, swatches } of sections.values()) {
       wrap.hidden = swatches.every((swatch) => swatch.hidden);
     }
     syncTabStops();
-    if (
-      brush &&
-      brush !== 'erase' &&
-      brush !== 'erase-path' &&
-      brush !== 'region' &&
-      !allowsPaletteType(kind, brush.type)
-    ) {
-      if (inspectBtnRef.el) select(null, inspectBtnRef.el);
-    }
+    const active = swatchEntries.find((s) => s.el.classList.contains('palette__item--active'));
+    if (!active?.el.hidden) return;
+    const next = swatchEntries.find(
+      (s) => !s.el.hidden && s.role !== 'other' && s.entry.type === active.entry.type,
+    );
+    if (next) select(next.entry, next.el);
+    else select(null, inspectBtn);
+  }
+  applyVisibility();
+
+  /**
+   * Filter the swatch grid to the terrain a node kind can use. An interior
+   * shows only interior or custom pieces. A region shows everything else.
+   * @param {string} nextKind
+   */
+  function setKind(nextKind) {
+    kind = nextKind;
+    applyVisibility();
   }
 
   return { getBrush: () => brush, getScale: () => scale, setKind };

@@ -1,6 +1,7 @@
 import { createMapAuthoring } from '../../src/app/mapAuthoring.js';
 import { TileGrid, createMapNode, createTile } from '../../src/map/TileGrid.js';
 import { MapNavigator } from '../../src/map/MapNavigator.js';
+import { TilePalette } from '../../src/map/TilePalette.js';
 import { fillTiles } from './grid.js';
 import { stubApp } from './app.js';
 
@@ -14,7 +15,8 @@ export const INTERIOR = 'assets/tiles/interior/interior';
  * read. Every derived-state call a gesture makes appends its name to `calls`, so
  * a test asserts what a stroke settled rather than reaching into a canvas.
  */
-export function authoring({ mode = 'build', scale = 1, palette = { get: () => undefined } } = {}) {
+export function authoring({ mode = 'build', scale = 1 } = {}) {
+  const palette = new TilePalette();
   const grid = new TileGrid();
   grid.addNode(
     fillTiles(createMapNode('keep', 'Thornhold Keep', 'world', 4, 4, { kind: 'interior' }), (id) =>
@@ -37,7 +39,7 @@ export function authoring({ mode = 'build', scale = 1, palette = { get: () => un
     grid,
     navigator,
     partyTracker,
-    palette: /** @type {any} */ (palette),
+    palette,
     state: { mode },
     toasts: { show: (/** @type {string} */ message) => toastMessages.push(message) },
   });

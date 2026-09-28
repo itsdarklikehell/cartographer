@@ -25,7 +25,9 @@ repeated layouts shows as rows. Plaza also has 5, and its variants differ
 only in the worn stones on one shared cobble layout. `VARIANT_COUNTS` in
 `TileCatalog.js` sets the count per type. `palette.pickVariant(type, rng)`
 selects one so that adjacent tiles of the same type do not look identical.
-The variants abut
+The Build-mode palette uses it too. Its default terrain swatch for a type
+is a `palette.anyVariant(type)` brush, which picks a new variant for each
+painted cell. The variants abut
 cleanly in the grid under these rules:
 
 - All variants of a type use the same background fill color. `farmland`

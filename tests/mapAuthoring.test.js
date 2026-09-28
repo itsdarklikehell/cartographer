@@ -199,16 +199,11 @@ function dropEvent(tileId, x, y) {
 }
 
 test('dropping a palette swatch on the canvas paints that cell', () => {
-  const { gestures, grid, calls } = authoring({
-    palette: {
-      get: (/** @type {string} */ id) =>
-        id === 'floor-2' ? { type: 'interior', imageRef: `${INTERIOR}-floor-2.svg` } : undefined,
-    },
-  });
+  const { gestures, grid, calls } = authoring();
   const canvas = canvasStub();
   gestures.wireCanvasDrop(/** @type {any} */ (canvas));
   // 48,48 at a 32-pixel tile size is cell 1,1.
-  const event = dropEvent('floor-2', 48, 48);
+  const event = dropEvent('interior-floor-2', 48, 48);
   canvas.fire('drop', event);
   assert.equal(event.prevented, true);
   assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, `${INTERIOR}-floor-2.svg`);
@@ -245,4 +240,26 @@ test('dragover only offers a drop target while authoring', () => {
   const ignored = dropEvent('floor-2', 0, 0);
   playCanvas.fire('dragover', ignored);
   assert.equal(ignored.prevented, false);
+});
+
+test('a random-variant brush picks a variant for each painted cell', (t) => {
+  const { gestures, grid, env, app } = authoring();
+  env.activeBrush = app.palette.anyVariant('plaza');
+  const rolls = [0, 0.99];
+  t.mock.method(Math, 'random', () => rolls.shift());
+  gestures.onStrokeCell(0, 1, null, true);
+  gestures.onStrokeCell(1, 1, null, false);
+  gestures.onStrokeEnd();
+  const node = grid.getNode('keep');
+  assert.equal(getTile(node, '0,1')?.imageRef, 'assets/tiles/plaza/plaza-1.svg');
+  assert.equal(getTile(node, '1,1')?.imageRef, 'assets/tiles/plaza/plaza-5.svg');
+});
+
+test('dropping a random-variant swatch paints one variant of its type', (t) => {
+  const { gestures, grid } = authoring();
+  t.mock.method(Math, 'random', () => 0.5);
+  const canvas = canvasStub();
+  gestures.wireCanvasDrop(/** @type {any} */ (canvas));
+  canvas.fire('drop', dropEvent('any:plaza', 48, 48));
+  assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, 'assets/tiles/plaza/plaza-3.svg');
 });

@@ -48,13 +48,22 @@ const VARIANT_COUNTS = {
 };
 
 /**
+ * Whether a palette type is a built-in terrain type with several variants.
+ * @param {string} type
+ * @returns {boolean}
+ */
+export function isVariantType(type) {
+  return type in VARIANT_COUNTS;
+}
+
+/**
  * Whether a palette type is ground terrain: a type with variants, or a
  * custom image, which a GM paints as terrain.
  * @param {string} type
  * @returns {boolean}
  */
 export function isTerrainType(type) {
-  return type in VARIANT_COUNTS || type === 'custom';
+  return isVariantType(type) || type === 'custom';
 }
 
 /**
@@ -213,7 +222,7 @@ const MARKER_TYPES = [
  * @param {string} type
  * @returns {string}
  */
-function titleCase(type) {
+export function titleCase(type) {
   return type.split('-').map(capitalize).join(' ');
 }
 

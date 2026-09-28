@@ -141,6 +141,11 @@ body.mode-build .app-sidebar {
   justify-content: center;
 }
 
+/* "Show variants" checkbox under the art-size row. */
+.palette__variants {
+  margin-bottom: var(--space-3);
+}
+
 /* Collapsible swatch sections (Terrain / Roads / Buildings / Interior); the
    section list scrolls as a whole rather than each grid individually. */
 .palette__sections {
@@ -151,6 +156,12 @@ body.mode-build .app-sidebar {
      gutter up front and never scroll horizontally. */
   overflow-x: hidden;
   scrollbar-gutter: stable;
+  /* The active swatch outline draws 3px outside the swatch (2px width plus
+     1px offset), and the overflow above clips anything past the padding
+     box. The padding gives the outline room on every side, and the negative
+     margin keeps the grid aligned with the rows above it. */
+  padding: 3px;
+  margin: -3px;
 }
 
 .palette__grid {

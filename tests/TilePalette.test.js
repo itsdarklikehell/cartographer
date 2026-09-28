@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { DOCK_KINDS, isOverlayType, isTerrainType } from '../src/map/TileCatalog.js';
+import { DOCK_KINDS, isOverlayType, isTerrainType, isVariantType } from '../src/map/TileCatalog.js';
 import { kindOf } from '../src/map/TileKinds.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
@@ -251,4 +251,73 @@ test('TilePalette ships with span-2 town buildings and town wall pieces', () => 
     'assets/tiles/town/town-water-gate-h.svg',
   );
   assert.equal(palette.getTownWallPiece('gate-x'), undefined);
+});
+
+test('isVariantType covers the multi-variant terrain types only', () => {
+  assert.equal(isVariantType('grass'), true);
+  assert.equal(isVariantType('snow-mountain'), true);
+  assert.equal(isVariantType('custom'), false);
+  assert.equal(isVariantType('road'), false);
+});
+
+test('anyVariant builds a random-variant brush for a variant type', () => {
+  const palette = new TilePalette();
+  assert.deepEqual(palette.anyVariant('deep-water'), {
+    id: 'any:deep-water',
+    type: 'deep-water',
+    label: 'Deep Water',
+    imageRef: 'assets/tiles/deep-water/deep-water-1.svg',
+    custom: false,
+    anyVariant: true,
+  });
+  assert.equal(palette.anyVariant('road'), undefined);
+  assert.equal(palette.anyVariant('custom'), undefined);
+});
+
+test('listAnyVariants yields one brush per variant type in catalog order', () => {
+  const palette = new TilePalette();
+  const brushes = palette.listAnyVariants();
+  assert.equal(brushes.length, 19);
+  assert.equal(brushes[0].id, 'any:grass');
+  assert.ok(brushes.every((b) => b.anyVariant && isVariantType(b.type)));
+});
+
+test('brushById resolves catalog ids and random-variant ids', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.brushById('grass-2'), palette.get('grass-2'));
+  assert.equal(palette.brushById('any:forest')?.type, 'forest');
+  assert.equal(palette.brushById('any:road'), undefined);
+  assert.equal(palette.brushById('nope'), undefined);
+});
+
+test('imageFor picks a variant per call for a random brush only', () => {
+  const palette = new TilePalette();
+  const brush = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
+    palette.anyVariant('grass')
+  );
+  const rolls = [0, 0.5, 0.99];
+  const rng = () => /** @type {number} */ (rolls.shift());
+  assert.deepEqual(
+    [palette.imageFor(brush, rng), palette.imageFor(brush, rng), palette.imageFor(brush, rng)],
+    [1, 2, 3].map((i) => `assets/tiles/grass/grass-${i}.svg`),
+  );
+  const exact = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
+    palette.get('grass-3')
+  );
+  assert.equal(
+    palette.imageFor(exact, () => 0),
+    'assets/tiles/grass/grass-3.svg',
+  );
+});
+
+test('a custom tile of a variant type joins the random pick', () => {
+  const palette = new TilePalette();
+  palette.addCustom('my-grass', 'My Grass', 'data:image/png;base64,AA', 'grass');
+  const brush = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
+    palette.anyVariant('grass')
+  );
+  assert.equal(
+    palette.imageFor(brush, () => 0.99),
+    'data:image/png;base64,AA',
+  );
 });

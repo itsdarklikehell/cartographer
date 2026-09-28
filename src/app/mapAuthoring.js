@@ -287,7 +287,8 @@ export function createMapAuthoring(app, env) {
       // or 3x size creates overlapping blocks. Only the first cell paints.
       if (scale > 1 && !first) return;
       strokeTouched = true;
-      applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay, scale));
+      const imageRef = palette.imageFor(brush, Math.random);
+      applyToTile(id, (node) => paintTile(node, id, imageRef, overlay, scale));
     } else if (first) {
       // Inspect acts on the pressed cell only. Dragging does not change the
       // selection.
@@ -373,7 +374,7 @@ export function createMapAuthoring(app, env) {
       if (state.mode !== 'build') return;
       event.preventDefault();
       const id = event.dataTransfer?.getData('text/tile-id');
-      const entry = id ? palette.get(id) : undefined;
+      const entry = id ? palette.brushById(id) : undefined;
       if (!entry) return;
       const rect = canvasEl.getBoundingClientRect();
       const buffer = clientToBuffer(
@@ -395,7 +396,8 @@ export function createMapAuthoring(app, env) {
       snapshotEdit(navigator.getCurrentNode());
       const overlay = isOverlayType(entry.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
-      applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
+      const imageRef = palette.imageFor(entry, Math.random);
+      applyToTile(tileId, (node) => paintTile(node, tileId, imageRef, overlay, scale));
       settleAfterStroke();
       finishEdit();
     });
