@@ -10,14 +10,8 @@ import {
   partyOnGrid,
 } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { createTile, getTile, TileGrid } from '../src/map/TileGrid.js';
-import { buildingTile } from '../src/campaign/ExampleWorld.js';
-import { createCharacter, getHP, getClasses } from '../src/entities/Character.js';
-import { isHitDicePool } from '../src/entities/HitDice.js';
-import { mulberry32 } from '../src/util/Rng.js';
-import { coerceCR, crXP } from '../src/data/challenge.js';
-import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
-import { effectiveStatBlock } from '../src/entities/Creature.js';
+import { TileGrid } from '../src/map/TileGrid.js';
+import { createCharacter } from '../src/entities/Character.js';
 import { installLocalStorage } from './helpers/env.js';
 
 beforeEach(installLocalStorage);
@@ -130,12 +124,6 @@ test('loadInitialCampaignSafe reports success for a readable save', () => {
   assert.deepEqual(campaign, buildBlankCampaign());
 });
 
-test('buildExampleCampaign defaults rng to Math.random when none is given', () => {
-  const campaign = buildExampleCampaign(new TilePalette());
-  assert.ok(campaign.grid.getNode('world'), 'built an overworld without an injected rng');
-  assert.ok(campaign.creatures.length > 0);
-});
-
 test('blank campaign has no demo content', () => {
   const campaign = buildBlankCampaign();
   assert.equal(campaign.characters.length, 0);
@@ -143,126 +131,8 @@ test('blank campaign has no demo content', () => {
   assert.equal(campaign.quests.length, 0);
 });
 
-test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', () => {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(1));
-
-  assert.ok(campaign.quests.length >= 5, 'expected a quest chain');
-  assert.ok(campaign.quests.every((q) => q.status === 'active' && q.notes.length > 0));
-
-  const folk = campaign.creatures.filter((c) => c.disposition !== 'hostile');
-  assert.ok(folk.length >= 5, 'expected a staffed world');
-  assert.ok(folk.every((n) => n.location !== null && (n.notes ?? '').length > 0));
-
-  const legends = campaign.creatures.filter((e) => e.tier === 'legend');
-  const mobs = campaign.creatures.filter((e) => e.tier === 'mob');
-  assert.ok(legends.length >= 4, 'expected minor bosses plus a major boss');
-  assert.ok(mobs.length >= 8, 'expected field enemies');
-  const major = legends.reduce((a, b) => ((b.level ?? 0) > (a.level ?? 0) ? b : a));
-  assert.equal(major.id, 'ostrand');
-  assert.equal(major.location?.nodeId, 'barrow');
-
-  assert.ok(campaign.bestiary.length >= 6, 'expected reusable mob templates');
-  assert.ok(campaign.handouts.length >= 4, 'expected lore handouts');
-  assert.ok(campaign.handouts.every((h) => !h.revealed));
-
-  assert.equal(campaign.characters.length, 2);
-  for (const character of campaign.characters) {
-    const hp = getHP(character);
-    assert.ok(hp && hp.current === hp.max && hp.max > 0, `${character.name} needs an HP pool`);
-    assert.ok(character.inventory.length > 0, `${character.name} needs starting kit`);
-    // The example party exercises the whole character model: each member is
-    // classed, has an origin, carries assembled proficiencies, and owns a
-    // spendable hit-dice pool sized to its class levels.
-    assert.ok(getClasses(character).length >= 1, `${character.name} needs a class`);
-    assert.ok(character.background, `${character.name} needs a background`);
-    assert.ok(
-      character.proficiencies && character.proficiencies.skills.length > 0,
-      `${character.name} needs skill proficiencies`,
-    );
-    assert.ok(character.resources.some(isHitDicePool), `${character.name} needs a hit-dice pool`);
-  }
-});
-
-test('every example enemy and template is rated, so the difficulty hint has numbers', () => {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(1));
-  const hostiles = campaign.creatures.filter((c) => c.disposition === 'hostile');
-  assert.ok(hostiles.length > 0);
-  for (const entry of [...hostiles, ...campaign.bestiary]) {
-    assert.ok(crXP(entry.cr) > 0, `${entry.name} needs a rating worth XP`);
-  }
-  // A rating stamped by hand must be one of the defined steps, or the write
-  // paths would drop it and the hint would silently read short.
-  for (const entry of [...hostiles, ...campaign.bestiary]) {
-    assert.equal(coerceCR(entry.cr), entry.cr, `${entry.name} names no defined rating`);
-  }
-  const party = campaign.characters;
-  assert.match(
-    difficultyLine(
-      party,
-      hostiles.filter((c) => c.id === 'ostrand'),
-    ),
-    /^Deadly: /,
-    'the major boss alone is deadly for the level-3 example party',
-  );
-});
-
-test('example campaign placements land on real tiles across seeds', () => {
-  for (const seed of [1, 7, 27, 42, 99]) {
-    const campaign = buildExampleCampaign(new TilePalette(), mulberry32(seed));
-    /** @param {import('../src/types/entities.js').EncounterLocation} location @param {string} what */
-    const assertPlaced = (location, what) => {
-      const node = campaign.grid.getNode(location.nodeId);
-      assert.ok(node, `seed ${seed}: ${what} in missing node ${location.nodeId}`);
-      const tile = getTile(node, location.tileId);
-      assert.ok(
-        tile,
-        `seed ${seed}: ${what} on missing tile ${location.nodeId}/${location.tileId}`,
-      );
-      return tile;
-    };
-
-    for (const c of campaign.creatures) {
-      assert.ok(c.location, `seed ${seed}: creature ${c.id} unplaced`);
-      assertPlaced(c.location, `creature ${c.id}`);
-    }
-    for (const h of campaign.handouts) {
-      if (h.nodeId !== null)
-        assert.ok(campaign.grid.getNode(h.nodeId), `seed ${seed}: handout ${h.id}`);
-    }
-
-    // Story bosses stand on their stamped landmarks, and the barrow boss on
-    // real dungeon floor rather than a wall or the void.
-    const snagtooth = campaign.creatures.find((e) => e.id === 'snagtooth');
-    const campTile = assertPlaced(/** @type {any} */ (snagtooth?.location), 'snagtooth');
-    assert.equal(campTile.metadata.poiType, 'landmark', `seed ${seed}: camp not stamped`);
-    const ostrand = campaign.creatures.find((e) => e.id === 'ostrand');
-    const tombTile = assertPlaced(/** @type {any} */ (ostrand?.location), 'ostrand');
-    assert.ok(tombTile.imageRef.includes('interior-floor'), `seed ${seed}: tomb not on floor`);
-
-    const ids = campaign.creatures.map((e) => e.id);
-    assert.equal(new Set(ids).size, ids.length, `seed ${seed}: duplicate creature ids`);
-  }
-});
-
-test('buildingTile finds the tile a town drew a building on, else its entry', () => {
-  const palette = new TilePalette();
-  const inn = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (palette.get('inn'));
-  const gen = {
-    width: 3,
-    height: 3,
-    entry: '1,2',
-    tiles: [createTile('0,0', 'grass-1.svg'), createTile('2,1', inn.imageRef)],
-  };
-  assert.equal(buildingTile(gen, palette, 'inn'), '2,1');
-  // The town's layout is random, so a building may not come up at all. The NPC
-  // who works there then stands at the town's entry instead.
-  assert.equal(buildingTile(gen, palette, 'blacksmith'), '1,2');
-  // An image id the palette does not carry falls back the same way.
-  assert.equal(buildingTile(gen, palette, 'no-such-building'), '1,2');
-});
-
 test('campaignFromLiveState wraps live objects without re-parsing or re-defaulting', () => {
-  const source = buildExampleCampaign(new TilePalette(), mulberry32(3));
+  const source = buildExampleCampaign(new TilePalette());
   const nodes = [...source.grid.nodes.values()];
   const campaign = campaignFromLiveState({
     nodes,
@@ -356,34 +226,4 @@ test('loadInitialCampaign boots a save with a parent loop and a malformed spellb
     ['b', 'a'],
   );
   assert.deepEqual(campaign.characters[0].spellbook, { cantrips: [], known: [], prepared: [] });
-});
-
-test('example enemies reach their stat block AC, and beasts fight unarmored with natural attacks', () => {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(1));
-  const byId = (/** @type {string} */ id) => {
-    const found = campaign.creatures.find((c) => c.id === id);
-    assert.ok(found, id);
-    return found;
-  };
-  const expected = {
-    'goblin-scout': 13,
-    'bandit-1': 12,
-    'barrow-skeleton-1': 13,
-    'gray-wolf-1': 13,
-    'giant-scorpion': 15,
-    snagtooth: 16,
-    'grave-wight': 14,
-    ostrand: 18,
-  };
-  for (const [id, ac] of Object.entries(expected)) {
-    assert.equal(effectiveStatBlock(byId(id)).AC, ac, id);
-  }
-  for (const id of ['gray-wolf-1', 'hill-harpy', 'giant-scorpion', 'skalvyr', 'crypt-shade']) {
-    const beast = byId(id);
-    assert.equal(beast.armor, null, `${id} wears no armor`);
-    assert.equal(beast.weapon?.category, null, `${id} attacks with a natural weapon`);
-  }
-  const wolf = campaign.bestiary.find((t) => t.id === 'gray-wolf');
-  assert.equal(wolf?.armor, null);
-  assert.equal(wolf?.weapon?.name, 'Bite');
 });

@@ -68,9 +68,9 @@ export function buildBlankCampaign() {
 }
 
 /**
- * The example campaign loads on demand through the "Load example" button. It
- * has a 32x32 overworld and four linked subregions, populated end to end as a
- * playable story.
+ * The example campaign loads on demand through the "Load example" button. Its
+ * world is a generated 48x48 continent of nine regions, each with its own
+ * towns, keeps, dungeons, and caves, populated end to end as a playable story.
  *
  * Goblin raids out of the Northmarch march under the seal of King Ostrand,
  * the risen wight in the Barrow of the Old King. The quest chain runs from
@@ -80,16 +80,15 @@ export function buildBlankCampaign() {
  * Ostrand back in his tomb.
  *
  * Field enemies appear in each biome. Briarwick has NPCs. Handouts, a
- * bestiary, and a two-member party complete the demo. The maps come from
- * ExampleWorld.js. The populace comes from ExampleContent.js. `rng` is
- * injectable so a test run can seed the generated subregions.
+ * bestiary, and the party complete the demo. The maps come from
+ * ExampleWorld.js, from a fixed seed, so every load builds the same campaign.
+ * The populace comes from ExampleContent.js.
  * @param {TilePalette} palette
- * @param {() => number} [rng]
  * @returns {Campaign}
  */
-export function buildExampleCampaign(palette, rng = Math.random) {
-  const world = buildExampleWorld(palette, rng);
-  return { grid: world.grid, ...buildExampleContent(palette, world) };
+export function buildExampleCampaign(palette) {
+  const world = buildExampleWorld(palette);
+  return { grid: world.grid, ...buildExampleContent(world) };
 }
 
 /**

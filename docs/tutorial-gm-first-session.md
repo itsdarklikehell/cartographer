@@ -14,19 +14,21 @@ You need the app open in a browser. The README tells you how to start it.
 1. Click **Load example** in the header.
 2. Confirm the replacement.
 
-The map fills with an overworld: a coastline, roads, forests, and a few
-towns. This campaign has quests, NPCs, enemies, and a party of two
-characters already in it.
+The map shows Briarwick Vale, one region of a generated continent called
+the Marches. The party stands on the road outside the town of Briarwick.
+This campaign has quests, NPCs, enemies, and a party of two characters
+already in it.
 
 ## 2. Look at the world tree
 
 1. Click **Build** in the mode switch.
 2. Read the left rail. This is the world tree.
 
-The top row is the world map, and under it sit the regions and interiors:
-wilderness, the town of Briarwick, the port of Saltmere, a dungeon, and a
-keep. The tree is how the world is built, because a node contains tiles and
-a tile can lead into another node.
+The top row is the world map, the Marches. Under it sit nine regions, and
+under each region sit its towns, keeps, dungeons, and caves. For example,
+Briarwick Vale contains the town of Briarwick, and the Barrowdowns contain
+Thornhold Keep and the Barrow of the Old King. The tree is how the world is
+built, because a node contains tiles and a tile can lead into another node.
 
 3. Click one of the child nodes. The map shows that node instead.
 4. Click the world map row again to come back.

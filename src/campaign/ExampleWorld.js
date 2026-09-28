@@ -1,549 +1,208 @@
-import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
-import { expandTree } from '../map/GeneratorTree.js';
-import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
+import { createMapNode, TileGrid } from '../map/TileGrid.js';
+import { generateNodeTiles } from '../map/MapGenerator.js';
+import { childSeed } from '../map/GeneratorTree.js';
 import { withNodeTiles } from '../map/TileIndex.js';
-import { tileKind } from '../map/TileKinds.js';
-import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
+import { mulberry32 } from '../util/Rng.js';
+import { IdPool, expandSites, noteTile } from './ExampleStaging.js';
+import { REGION_STAGES } from './ExampleRegions.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/map.js').Tile} Tile */
+/** @typedef {import('../map/MapGenerator.js').GeneratedMap} GeneratedMap */
+/** @typedef {import('../map/GeneratorTree.js').TreeNode} TreeNode */
+/** @typedef {import('./ExampleStaging.js').SiteOverride} SiteOverride */
 
 /**
- * One generated subregion's layout, plus the tile ids the story content
- * stands on. The story content picks these tiles from the generated tiles,
- * because layouts are random.
- * @typedef {{ width: number, height: number, tiles: Tile[], entry: string }} GeneratedNode
+ * A spot on the map where the story puts something: a creature, the party,
+ * or a handout.
+ * @typedef {{ nodeId: string, tileId: string }} Place
  */
 
 /**
- * The example world's maps and staged story locations: the overworld grid,
- * the six generated subregions, and the tile ids where the bosses, the
- * pickets, the hermit, and the crypt shade stand.
+ * The example world's maps and the places the story content stands on.
+ * `places` is keyed by a story name, such as `snagtooth` or `start`.
+ * @typedef {{ grid: TileGrid, places: Record<string, Place> }} ExampleWorld
+ */
+
+/**
+ * The seed of the example world. Every map below the world takes its seed
+ * from this one through `GeneratorTree.childSeed`, so the whole campaign,
+ * down to the furnishings of each building, is the same on every load, and
+ * the hand edits below land on known cells. A change to a generator can
+ * move the regions of this seed. The tests then fail on the anchors of
+ * `REGIONS`, and the anchors, the docs, and the screenshots need a new pass.
+ */
+export const WORLD_SEED = 145;
+
+/**
+ * The regions of the example world. The generator splits the continent
+ * into nine regions and chooses the climate of each from its terrain. Each
+ * entry names the region whose block covers `anchor`, a cell on the world
+ * map, and puts the GM note on that cell. The story of each region comes
+ * from `ExampleRegions.REGION_STAGES`.
+ * @type {{ anchor: string, id: string, name: string, notes: string }[]}
+ */
+export const REGIONS = [
+  {
+    anchor: '12,30',
+    id: 'briarwick-vale',
+    name: 'Briarwick Vale',
+    notes:
+      'Farmland and the south road. Briarwick is the market town, and the goblin raids have burned its outlying farms.',
+  },
+  {
+    anchor: '5,15',
+    id: 'saltreach',
+    name: 'The Saltreach',
+    notes:
+      'Wooded coast west of the highlands. Saltmere is its port, and the drowned dead walk its shallows.',
+  },
+  {
+    anchor: '9,8',
+    id: 'northmarch',
+    name: 'The Northmarch',
+    notes:
+      'Old forest in the north-west. Snagtooth camps here, and the Wardstone Circle stands in the north.',
+  },
+  {
+    anchor: '30,4',
+    id: 'rimewold',
+    name: 'The Rimewold',
+    notes: 'Snowfields and taiga in the far north. Winter wolves hunt the passes.',
+  },
+  {
+    anchor: '25,20',
+    id: 'graypeak',
+    name: 'Graypeak Highlands',
+    notes:
+      'The mountain heart of the Marches. Skalvyr nests here, Odo keeps his hermitage, and the Hollowvein mine goes deep.',
+  },
+  {
+    anchor: '40,16',
+    id: 'eastmarch',
+    name: 'The Eastmarch',
+    notes: 'Open grassland in the east. Dorn’s caravan came west from here with its sealed crates.',
+  },
+  {
+    anchor: '25,36',
+    id: 'barrowdowns',
+    name: 'The Barrowdowns',
+    notes:
+      'Hills south of the peaks. Thornhold, the seat of House Vane, keeps watch over the Barrow of the Old King.',
+  },
+  {
+    anchor: '40,33',
+    id: 'mirefen',
+    name: 'The Mirefen',
+    notes: 'Marsh and drowned woods in the south-east. Grelka the mire hag lives at its heart.',
+  },
+  {
+    anchor: '17,43',
+    id: 'ashen-reach',
+    name: 'The Ashen Reach',
+    notes:
+      'Desert at the southern tip. The ruins of the Silver Road, where Ostrand’s tithe caravans died, lie in the sand.',
+  },
+];
+
+/** The region the party starts in. Its block on the world map starts revealed. */
+const START_REGION = 'briarwick-vale';
+
+/**
+ * One region's plan for its story, filled by a stage function of
+ * `ExampleRegions.js`. `overrides` gives the fixed id and choices of each
+ * story site, keyed by site index. `places` collects the spots on the
+ * region map. `after` runs once every sub-map exists, to put people inside
+ * the sub-maps.
  * @typedef {{
- *   grid: TileGrid,
- *   gens: Record<string, GeneratedNode>,
- *   spots: {
- *     campTile: string,
- *     raiderTiles: string[],
- *     eyrieTile: string,
- *     hermitTile: string,
- *     tombTile: string,
- *     wightTile: string,
- *     boneTiles: string[],
- *     shadeTile: string,
- *     lordTile: string,
- *   },
- * }} ExampleWorld
+ *   regionId: string,
+ *   gen: GeneratedMap,
+ *   palette: TilePalette,
+ *   overrides: Map<number, SiteOverride>,
+ *   places: Record<string, Place>,
+ *   after: ((node: (id: string) => TreeNode) => void)[],
+ * }} RegionStage
  */
 
-/** The example overworld is a WORLD_SIZE x WORLD_SIZE grid. */
-const WORLD_SIZE = 32;
-
 /**
- * The shoreline column for each row: the ocean reaches inland to this x
- * value. The edge changes down the map. A narrow strand sits in the north, a
- * deep bay sits mid-map where Saltmere stands, a headland juts west below
- * the bay, and a cove sits in the south. This shape uses the straight,
- * outer-corner, and inner-corner shoreline pieces instead of one straight
- * line.
- * @param {number} y
- * @returns {number}
- */
-function coastEdgeX(y) {
-  if (y <= 3) return 2;
-  if (y <= 7) return 3;
-  if (y <= 9) return 4;
-  if (y <= 15) return 5;
-  if (y <= 17) return 3;
-  if (y <= 21) return 1;
-  if (y <= 25) return 2;
-  return 3;
-}
-
-/**
- * Terrain type for an example-world cell. The function uses hand-shaped
- * features, not noise, so the map always shows the same geography: an ocean
- * along the west edge with a bay and a headland, a broad forest across the
- * north, snowfields over the northeastern peaks, a mountain range down the
- * east edge with foothills below it, a lake in the southwest, farmland
- * around Briarwick, a marsh in the southern lowlands, and badlands in the
- * far southeast corner, on a grass base.
- * @param {number} x @param {number} y
- * @returns {string}
- */
-function exampleTerrain(x, y) {
-  if (x <= coastEdgeX(y)) return 'water';
-  if (y <= 5 && x >= 24) return 'snow';
-  if (y <= 8 && x <= 20 && (y <= 6 || x >= 3)) return 'forest';
-  if (x >= 26 && y <= 20) return 'mountain';
-  if (x >= 21 && x <= 25 && y >= 9 && y <= 15) return 'hills';
-  if (((x - 6) / 4) ** 2 + ((y - 24) / 3) ** 2 <= 1) return 'water';
-  if (x >= 8 && x <= 15 && y >= 19 && y <= 22) return 'farmland';
-  if (y >= 27 && x >= 13 && x <= 22) return 'swamp';
-  if (x >= 25 && y >= 27) return 'desert';
-  return 'grass';
-}
-
-/** The example world's river runs south down this column, then bends west. */
-const RIVER_X = 19;
-/** The row the river follows west from its bend to drain into the lake. */
-const RIVER_BEND_Y = 25;
-/** The row the tributary follows west out of the foothills to join the river. */
-const TRIB_Y = 12;
-
-/** Coordinates of a tile in this file's hand-written maps. All of these maps use
- * grid ids, so an id that does not parse is a typo, not a case to handle.
- * @param {string} id @returns {[number, number]} */
-function tileXY(id) {
-  const { x, y } = /** @type {{ x: number, y: number }} */ (parseCoords(id));
-  return [x, y];
-}
-
-/**
- * Manhattan distance between two tile ids.
- * @param {string} a @param {string} b
- * @returns {number}
- */
-function tileDistance(a, b) {
-  const [ax, ay] = tileXY(a);
-  const [bx, by] = tileXY(b);
-  return Math.abs(ax - bx) + Math.abs(ay - by);
-}
-
-/**
- * A picker for staging story content on a generated map. Each call returns
- * the unused candidate tile farthest from the node's entry, and keeps at
- * least `gap` tiles between picks while possible, so bosses and landmarks
- * land deep in the layout instead of at the door. If a degenerate layout has
- * no candidates at all, the picker returns the entry tile.
- * @param {GeneratedNode} gen
- * @param {(tile: Tile) => boolean} ok
- * @param {number} [gap]
- * @returns {() => string}
- */
-function makeSpotPicker(gen, ok, gap = 3) {
-  const candidates = gen.tiles
-    .filter(ok)
-    .map((t) => t.id)
-    .sort((a, b) => tileDistance(b, gen.entry) - tileDistance(a, gen.entry));
-  /** @type {string[]} */
-  const used = [];
-  return () => {
-    const spaced = candidates.find(
-      (id) => !used.includes(id) && used.every((u) => tileDistance(u, id) >= gap),
-    );
-    const next = spaced ?? candidates.find((id) => !used.includes(id)) ?? gen.entry;
-    used.push(next);
-    return next;
-  };
-}
-
-/**
- * Open wilderness ground: bare grass or forest with no overlay and no marker,
- * so stamped story landmarks never displace water, rivers, or generated POIs.
- * @param {Tile} t
- * @returns {boolean}
- */
-function isOpenGround(t) {
-  return !t.overlayRef && !t.metadata.poiType && /\/(grass|forest)\//.test(t.imageRef);
-}
-
-/**
- * Bare dungeon floor, not stairs, doors, or walls, where an encounter can
- * stand.
- * @param {Tile} t
- * @returns {boolean}
- */
-function isBareFloor(t) {
-  return tileKind(t) === 'floor';
-}
-
-/**
- * Replace a generated tile's art with a POI marker, so a story encounter has
- * a visible anchor: a camp for the raiders, a cave mouth for the wyvern, and
- * more.
- * @param {GeneratedNode} gen @param {TilePalette} palette
- * @param {string} tileId @param {string} imageId @param {string} notes
- */
-function stampMarker(gen, palette, tileId, imageId, notes) {
-  const tile = gen.tiles.find((t) => t.id === tileId);
-  const ref = palette.get(imageId)?.imageRef;
-  if (!tile || !ref) return;
-  tile.imageRef = ref;
-  tile.overlayRef = null;
-  tile.metadata = { ...tile.metadata, poiType: 'landmark', notes };
-}
-
-/**
- * The tile a generated town drew a given building on, for placing the NPC who
- * works there. If that building did not come up, the function falls back to
- * the town's entry.
- * @param {GeneratedNode} gen @param {TilePalette} palette
- * @param {string} imageId
- * @returns {string}
- */
-export function buildingTile(gen, palette, imageId) {
-  const ref = palette.get(imageId)?.imageRef;
-  return gen.tiles.find((t) => t.imageRef === ref)?.id ?? gen.entry;
-}
-
-/**
- * Build the example campaign's maps: the hand-shaped 32x32 overworld with its
- * roads, river, coastline, and linked entrance blocks, plus the six
- * generated subregions (two wilderness regions, two towns, the dungeon, and
- * the keep). Story locations (boss lairs, pickets, the hermitage) stand
- * staged onto the generated tiles. Content that populates these locations
- * lives in ExampleContent.js.
+ * Build the example campaign's maps: the generated world with its nine
+ * regions, each region with its towns, keeps, dungeons, and caves, and the
+ * buildings of the two story towns. The story places come from the stage
+ * functions of `ExampleRegions.js`. Content that populates the places lives
+ * in ExampleContent.js.
  * @param {TilePalette} palette
- * @param {() => number} [rng]
  * @returns {ExampleWorld}
  */
-export function buildExampleWorld(palette, rng = Math.random) {
-  const grid = new TileGrid();
+export function buildExampleWorld(palette) {
+  const world = generateNodeTiles(
+    palette,
+    { archetype: 'world', size: 'vast' },
+    mulberry32(WORLD_SEED),
+  );
+  const ids = new IdPool();
+  ids.take('world');
+  /** @type {Record<string, Place>} */
+  const places = {};
+  /** @type {TreeNode[]} */
+  const nodes = [];
 
-  // Linked entrance blocks on the overworld: 4x4 for the two wilderness
-  // regions (drawn as four scaled 2x2 images), 2x2 for Briarwick, and a
-  // single marker tile each for the dungeon interior, the port town of
-  // Saltmere, and the keep of Thornhold. Each block sits inside matching
-  // terrain, so the overview hints at what is inside. Briarwick's block
-  // carries a settlement POI marker, so the scaled block art reads as a town.
-  /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType, notes?: string } }>} */
-  const links = {};
-  for (let y = 2; y <= 5; y++)
-    for (let x = 4; x <= 7; x++) links[tileIdAt(x, y)] = { nodeId: 'northmarch' };
-  for (let y = 7; y <= 10; y++)
-    for (let x = 26; x <= 29; x++) links[tileIdAt(x, y)] = { nodeId: 'graypeak' };
-  for (const [x, y] of [
-    [11, 23],
-    [12, 23],
-    [11, 24],
-    [12, 24],
-  ])
-    links[tileIdAt(x, y)] = { nodeId: 'briarwick' };
-  links['12,23'].poi = {
-    tileId: '12,23',
-    imageId: 'settlement',
-    poiType: 'settlement',
-    notes:
-      "Briarwick, a farming town on the south road. The Waystation inn is the region's clearing-house for news.",
-  };
-  links['22,10'] = {
-    nodeId: 'barrow',
-    poi: {
-      tileId: '22,10',
-      imageId: 'dungeon',
-      poiType: 'dungeon',
-      notes: 'The Barrow of the Old King. Warded shut for four hundred years; the ward is failing.',
-    },
-  };
-  links['6,12'] = {
-    nodeId: 'saltmere',
-    poi: {
-      tileId: '6,12',
-      imageId: 'port',
-      poiType: 'settlement',
-      notes:
-        'Saltmere, a fishing port on the bay. Half its trade is honest; the harbormaster keeps count of the other half.',
-    },
-  };
-  links['24,13'] = {
-    nodeId: 'thornhold',
-    poi: {
-      tileId: '24,13',
-      imageId: 'castle',
-      poiType: 'landmark',
-      notes:
-        "Thornhold, seat of House Vane, the last line sworn to the Marches. Its crypt keeps the ledger of Ostrand's sealing.",
-    },
-  };
+  world.sites.forEach((site, i) => {
+    const region = REGIONS.find((r) => site.tileIds.includes(r.anchor));
+    if (!region) throw new Error(`World region ${i} has no entry in REGIONS.`);
+    const id = ids.take(region.id);
+    const tiles = new Set(site.tileIds);
+    world.tiles = world.tiles.map((t) =>
+      tiles.has(t.id) ? { ...t, childNodeId: id, revealed: region.id === START_REGION } : t,
+    );
+    noteTile(world, region.anchor, region.notes);
 
-  // Visible overworld landmarks with GM notes. These landmarks give the
-  // world map things to investigate between the linked regions.
-  /** @type {Record<string, { imageId: string, notes: string }>} */
-  const worldPOIs = {
-    '9,12': {
-      imageId: 'ruins',
-      notes:
-        "The shell of an old watchtower from Ostrand's reign. A pale crown is carved over the fallen door.",
-    },
-    '14,24': {
-      imageId: 'graveyard',
-      notes: "Briarwick's burial ground. Three graves stand open — dug out from the inside.",
-    },
-    '21,11': {
-      imageId: 'mine',
-      notes:
-        'The Hollowvein, the silver mine that crowned Ostrand. Abandoned mid-shift: tools downed, lamps left burning, and a knocking from below that answers when spoken to.',
-    },
-    '12,4': {
-      imageId: 'standing-stones',
-      notes:
-        'The Wardstone Circle, where the first ward over the barrow was sworn. Four stones stand, one lies toppled, and the moss will not grow on the fallen one.',
-    },
-    '9,20': {
-      imageId: 'farm',
-      notes:
-        "Hedda's steading, the largest working farm on the south road. Sells provisions, hears everything the field hands hear.",
-    },
-    '14,20': {
-      imageId: 'farm',
-      notes:
-        'A burned farmstead, torched in the goblin raids. The barn door is scored with claw marks far too orderly to be animal.',
-    },
-  };
-
-  // Shape the terrain first so the coastline helpers can widen the water and
-  // pick shoreline overlays before any tiles are stamped.
-  /** @type {string[]} */
-  const cells = [];
-  for (let y = 0; y < WORLD_SIZE; y++) {
-    for (let x = 0; x < WORLD_SIZE; x++) cells.push(exampleTerrain(x, y));
-  }
-  const smoothed = smoothCoastline(cells, WORLD_SIZE, WORLD_SIZE);
-  const coast = coastOverlays(smoothed, WORLD_SIZE, WORLD_SIZE);
-  /** @param {number} x @param {number} y */
-  const terrainAt = (x, y) => smoothed[y * WORLD_SIZE + x];
-
-  let world = createMapNode('world', 'World', null, WORLD_SIZE, WORLD_SIZE);
-  const last = WORLD_SIZE - 1;
-  for (let y = 0; y < WORLD_SIZE; y++) {
-    for (let x = 0; x < WORLD_SIZE; x++) {
-      const id = tileIdAt(x, y);
-      const link = links[id];
-
-      // Roads and the river run as overlays over the terrain base, so they
-      // read as features laid on the land instead of replacing it. end-*
-      // names the tile's open edge. The westmost road tile connects to the
-      // road on its east, so it takes end-e, and the far edge takes the
-      // opposite value.
-      //
-      // An east-west road crosses the map at y=16, starting past the ocean
-      // shore. A branch at x=12 tees off south to end just above Briarwick's
-      // block. Another branch at x=6 tees off north to Saltmere's gate.
-      //
-      // The river flows from the north edge, gathers a tributary out of the
-      // foothills at y=12, passes under the highway on a bridge, then bends
-      // west below Briarwick to drain into the lake. Its mouth tile stacks
-      // the channel over the shoreline overlay.
-      const onHighway = y === 16 && x >= 4;
-      const onBranch = x === 12 && y > 16 && y <= 22;
-      const onPortRoad = x === 6 && y >= 13 && y < 16;
-      const onRiver =
-        (x === RIVER_X && y <= RIVER_BEND_Y) || (y === RIVER_BEND_Y && x >= 10 && x < RIVER_X);
-      const onTributary = y === TRIB_Y && x > RIVER_X && x <= 25;
-      if (!link && (onHighway || onBranch || onPortRoad || onRiver || onTributary)) {
-        const overlay =
-          onRiver || onTributary
-            ? palette.getRiverPiece(
-                x === RIVER_X
-                  ? y === 16
-                    ? 'bridge-h'
-                    : y === TRIB_Y
-                      ? 'tee-e'
-                      : y === RIVER_BEND_Y
-                        ? 'corner-nw'
-                        : 'v'
-                  : onTributary
-                    ? x === 25
-                      ? 'end-w'
-                      : 'h'
-                    : 'h',
-              )
-            : onHighway
-              ? palette.getRoadPiece(
-                  x === 4
-                    ? 'end-e'
-                    : x === last
-                      ? 'end-w'
-                      : x === 12
-                        ? 'tee-s'
-                        : x === 6
-                          ? 'tee-n'
-                          : 'h',
-                )
-              : onPortRoad
-                ? palette.getRoadPiece(y === 13 ? 'end-s' : 'v')
-                : palette.getRoadPiece(y === 22 ? 'end-n' : 'v');
-        if (!overlay) continue;
-        const shoreline = coast.get(id);
-        const shore = shoreline ? palette.getCoastPiece(shoreline) : null;
-        const refs = shore ? [shore.imageRef, overlay.imageRef] : overlay.imageRef;
-        const base = palette.pickVariant(terrainAt(x, y), rng);
-        world = setTile(world, createTile(id, base.imageRef, { overlayRef: refs }));
-        continue;
-      }
-
-      if (link?.poi) {
-        const marker = palette.get(link.poi.imageId);
-        if (!marker) continue;
-        const tile = createTile(id, marker.imageRef, { childNodeId: link.nodeId });
-        tile.metadata = {
-          ...tile.metadata,
-          poiType: link.poi.poiType,
-          discoverable: true,
-          notes: link.poi.notes ?? '',
-        };
-        world = setTile(world, tile);
-        continue;
-      }
-
-      const worldPOI = worldPOIs[id];
-      if (worldPOI && !link) {
-        const marker = palette.get(worldPOI.imageId);
-        if (marker) {
-          const tile = createTile(id, marker.imageRef);
-          tile.metadata = { ...tile.metadata, poiType: 'landmark', notes: worldPOI.notes };
-          world = setTile(world, tile);
-          continue;
-        }
-      }
-
-      const terrain = link
-        ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId]
-        : terrainAt(x, y);
-      /** @type {Partial<import('../types/map.js').Tile>} */
-      const opts = link ? { childNodeId: link.nodeId } : {};
-      const shoreline = !link && coast.get(id);
-      if (shoreline) opts.overlayRef = palette.getCoastPiece(shoreline)?.imageRef ?? null;
-      const entry = palette.pickVariant(terrain ?? 'grass', rng);
-      world = setTile(world, createTile(id, entry.imageRef, opts));
+    const seed = childSeed(WORLD_SEED, i);
+    const gen = generateNodeTiles(
+      palette,
+      { archetype: site.archetype, size: site.size, environ: site.environ },
+      mulberry32(seed),
+    );
+    /** @type {RegionStage} */
+    const stage = { regionId: id, gen, palette, overrides: new Map(), places, after: [] };
+    REGION_STAGES[id]?.(stage);
+    const below = expandSites(palette, { id, gen, seed }, stage.overrides, ids);
+    const top = {
+      id,
+      parentId: 'world',
+      name: region.name,
+      kind: site.kind,
+      environ: site.environ,
+      width: gen.width,
+      height: gen.height,
+      tiles: gen.tiles,
+      entry: gen.entry,
+    };
+    nodes.push(top, ...below.nodes);
+    const byId = new Map([top, ...below.nodes].map((n) => [n.id, n]));
+    for (const fn of stage.after) {
+      fn((nodeId) => {
+        const node = byId.get(nodeId);
+        if (!node) throw new Error(`The example has no node ${nodeId}.`);
+        return node;
+      });
+    }
+  });
+  for (const region of REGIONS) {
+    if (!nodes.some((n) => n.id === region.id)) {
+      throw new Error(`No world region covers the anchor of ${region.id}.`);
     }
   }
-  grid.addNode(world);
 
-  // Subregion maps come from the same generators the Build tab's "Generate"
-  // action uses, so the demo shows every archetype: two wilderness regions,
-  // two towns, a dungeon interior, and a castle interior. The layouts are
-  // random for each load. Story content inside them (the boss lairs, the
-  // hermit's shelter, NPC posts) stands staged onto the generated tiles
-  // after generation, not at fixed coordinates.
-  const regions = [
-    {
-      id: 'northmarch',
-      name: 'Northmarch Region',
-      kind: /** @type {const} */ ('region'),
-      archetype: 'wilderness',
-    },
-    {
-      id: 'graypeak',
-      name: 'Graypeak Highlands',
-      kind: /** @type {const} */ ('region'),
-      archetype: 'highlands',
-    },
-    {
-      id: 'briarwick',
-      name: 'Briarwick',
-      kind: /** @type {const} */ ('region'),
-      archetype: 'town',
-    },
-    {
-      id: 'saltmere',
-      name: 'Saltmere',
-      kind: /** @type {const} */ ('region'),
-      archetype: 'town',
-    },
-    {
-      id: 'barrow',
-      name: 'Barrow of the Old King',
-      kind: /** @type {const} */ ('interior'),
-      archetype: 'dungeon',
-    },
-    {
-      id: 'thornhold',
-      name: 'Thornhold Keep',
-      kind: /** @type {const} */ ('interior'),
-      archetype: 'castle',
-    },
-  ];
-  // Each map comes from the same tree the Generate action builds, with no
-  // optional sub-maps, so the keep gets its upper floor and its dungeon and
-  // every staircase leads to a real level.
-  /** @type {Record<string, GeneratedNode>} */
-  const gens = {};
-  /** @type {import('../map/GeneratorTree.js').TreeNode[]} */
-  const below = [];
-  for (const { id, name, kind, archetype } of regions) {
-    let n = 0;
-    const tree = expandTree(
-      palette,
-      { id, name, kind, environ: null, archetype, size: 'medium' },
-      { seed: Math.floor(rng() * 2 ** 32), depth: 0 },
-      () => `${id}-${++n}`,
-    );
-    gens[id] = tree.nodes[0];
-    below.push(...tree.nodes.slice(1));
-  }
-
-  // Northmarch: the raiders' camp, deep in the forest, with Snagtooth at it
-  // and two raiders picketed between the camp and the way in.
-  const northSpots = makeSpotPicker(gens.northmarch, isOpenGround);
-  const campTile = northSpots();
-  stampMarker(
-    gens.northmarch,
-    palette,
-    campTile,
-    'camp',
-    "Snagtooth's raiding camp. Too orderly for goblins: dug latrines, posted watches, written orders.",
+  const grid = new TileGrid();
+  grid.addNode(
+    withNodeTiles(
+      createMapNode('world', 'The Marches', null, world.width, world.height),
+      world.tiles,
+    ),
   );
-  const raiderTiles = [northSpots(), northSpots()];
-
-  // Graypeak: Skalvyr's eyrie on the high ground, and Odo's hermitage pinned
-  // beneath it.
-  const graySpots = makeSpotPicker(gens.graypeak, isOpenGround, 4);
-  const eyrieTile = graySpots();
-  stampMarker(
-    gens.graypeak,
-    palette,
-    eyrieTile,
-    'cave-entrance',
-    "Skalvyr's eyrie. Gnawed livestock bones on the scree; the wyvern circles anything that moves below.",
-  );
-  const hermitTile = graySpots();
-  stampMarker(
-    gens.graypeak,
-    palette,
-    hermitTile,
-    'ruins',
-    "Odo's hermitage, built into a fallen shrine. The warding key hangs at his belt.",
-  );
-
-  // The barrow: King Ostrand at the deepest chamber, his wight seneschal one
-  // room out, and skeleton pickets between the door and the tomb.
-  const barrowSpots = makeSpotPicker(gens.barrow, isBareFloor);
-  const tombTile = barrowSpots();
-  const wightTile = barrowSpots();
-  const boneTiles = [barrowSpots(), barrowSpots()];
-
-  // Thornhold: the crypt shade on the hall floor farthest from the gate, and
-  // the lord holding court a few tiles off.
-  const thornSpots = makeSpotPicker(gens.thornhold, isBareFloor);
-  const shadeTile = thornSpots();
-  const lordTile = thornSpots();
-
-  for (const { id, name, kind } of regions) {
-    const gen = gens[id];
-    const node = createMapNode(id, name, 'world', gen.width, gen.height, { kind });
-    grid.addNode(withNodeTiles(node, gen.tiles));
-  }
-  for (const sub of below) {
-    const { id, name, parentId, width, height, kind, environ } = sub;
+  for (const { id, name, parentId, width, height, kind, environ, tiles } of nodes) {
     const node = createMapNode(id, name, parentId, width, height, { kind, environ });
-    grid.addNode(withNodeTiles(node, sub.tiles));
+    grid.addNode(withNodeTiles(node, tiles));
   }
-
-  return {
-    grid,
-    gens,
-    spots: {
-      campTile,
-      raiderTiles,
-      eyrieTile,
-      hermitTile,
-      tombTile,
-      wightTile,
-      boneTiles,
-      shadeTile,
-      lordTile,
-    },
-  };
+  return { grid, places };
 }

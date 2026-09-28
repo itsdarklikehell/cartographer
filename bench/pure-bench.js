@@ -58,7 +58,7 @@ function filledNode(size) {
   return withNodeTiles(node, gen.tiles);
 }
 
-const example = buildExampleCampaign(palette, mulberry32(1));
+const example = buildExampleCampaign(palette);
 const exampleState = buildState(example);
 const exampleJson = serialize(exampleState);
 const large = filledNode('large');
@@ -74,7 +74,7 @@ const cases = [
   measure('generateNodeTiles town large', () =>
     generateNodeTiles(palette, { archetype: 'town', size: 'large' }, mulberry32(1)),
   ),
-  measure('buildExampleCampaign', () => buildExampleCampaign(palette, mulberry32(1)), 5),
+  measure('buildExampleCampaign', () => buildExampleCampaign(palette), 5),
   measure('buildState + serialize', () => serialize(buildState(example)), 10),
   measure('deserialize', () => deserialize(exampleJson, {}), 10),
   measure('revealAround radius 3', () => revealAround(large, large.tiles[40].id, 3), 200),

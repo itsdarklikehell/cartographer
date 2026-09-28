@@ -354,7 +354,7 @@ export function renderGuide(data) {
       </div>
       <p class="caption">
         Measured at build time by running the real packing functions over
-        <code>buildExampleCampaign</code> with seed ${measured.seed}. Layers 1 and 2 are measured
+        <code>buildExampleCampaign</code>. Layers 1 and 2 are measured
         with the generic <code>packEntity</code> against the same defaults the loader restores.
         <code>serialize</code> uses the specialized tile packer and comes out at
         ${num(measured.serialized)} characters. On the densest node

@@ -122,13 +122,19 @@ There is no server and no account.
 
 ## The example campaign
 
-Load example replaces the campaign with a complete demo. It has a 32x32
-overworld with a bay coastline. Four outdoor sub-regions sit on it: two
-wilderness regions, the farming town of Briarwick, and the port of
-Saltmere. A dungeon interior and a castle keep sit under it. The campaign
-ships an eleven-quest chain, two staffed towns of NPCs, field enemies in
-every biome, minor bosses and a major boss, lore handouts, a bestiary of
-reusable mob templates, and a two-member party with kit and spell slots.
+Load example replaces the campaign with a complete demo. Its world map is
+a 48x48 continent from the world generator, split into nine regions. Each
+region has its own towns, keep, dungeon, and caves, and the buildings of
+Briarwick and the port of Saltmere have furnished interiors. The Barrow of
+the Old King has three levels. The demo comes from one fixed seed, so every
+load gives the same maps and the same furnishings. The party starts in
+Briarwick Vale, and only that region is revealed on the world map. Every
+land tile of the world map leads into its region. To travel to another
+region, the party walks off the edge of its region map onto the world map,
+then enters the next region from there. The campaign ships an
+eleven-quest chain, two staffed towns of NPCs, field enemies in every
+biome, minor bosses and a major boss, lore handouts, a bestiary of reusable
+mob templates, and a two-member party with kit and spell slots.
 
 ## Build mode
 

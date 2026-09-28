@@ -14,7 +14,6 @@
 import { TilePalette } from '../src/map/TilePalette.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { buildState, serialize } from '../src/storage/SaveManager.js';
-import { mulberry32 } from '../src/util/Rng.js';
 
 export const SAVE_KEY = 'campaign-builder:save';
 
@@ -22,11 +21,10 @@ export const SAVE_KEY = 'campaign-builder:save';
  * The example campaign as a save string, with the party standing on the tile
  * of its first encounter. Returns null when the example campaign holds no
  * placed encounter.
- * @param {number} [seed]
  * @returns {string | null}
  */
-export function exampleSaveOnEncounter(seed = 1) {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(seed));
+export function exampleSaveOnEncounter() {
+  const campaign = buildExampleCampaign(new TilePalette());
   const placed = campaign.creatures.find(
     (c) => c.disposition === 'hostile' && c.location?.nodeId && c.location?.tileId,
   );

@@ -7,9 +7,7 @@ import { createCreature, defaultEnemyGear } from '../entities/Creature.js';
 import { enemyArmor } from '../entities/EquipmentPresets.js';
 import { createClock } from '../time/GameClock.js';
 import { defaultEnemyStats } from '../entities/Modifiers.js';
-import { buildingTile } from './ExampleWorld.js';
 
-/** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
@@ -273,57 +271,64 @@ function exampleParty() {
 }
 
 /**
+ * A lookup of the story places of the example world. A name that the world
+ * did not place throws, so a typo fails the build instead of leaving a
+ * creature nowhere.
+ * @param {ExampleWorld} world
+ * @returns {(name: string) => import('./ExampleWorld.js').Place}
+ */
+function placer(world) {
+  return (name) => {
+    const place = world.places[name];
+    if (!place) throw new Error(`The example world has no place named ${name}.`);
+    return { ...place };
+  };
+}
+
+/**
  * Everything that populates the example world: the party, placed enemies,
  * the quest chain, the NPCs of Briarwick, Saltmere, and Thornhold, handouts,
  * and the bestiary. It takes the built maps, so NPCs and bosses land on the
- * staged story tiles. Generated layouts are random for each load. The maps
- * come from ExampleWorld.js. Campaigns.js combines the two halves.
- * @param {TilePalette} palette
+ * story places that ExampleRegions.js chose. The maps come from
+ * ExampleWorld.js. Campaigns.js combines the two halves.
  * @param {ExampleWorld} world
  * @returns {Omit<import('./Campaigns.js').Campaign, 'grid'>}
  */
-export function buildExampleContent(palette, world) {
-  const { gens, spots } = world;
-  const {
-    campTile,
-    raiderTiles,
-    eyrieTile,
-    hermitTile,
-    tombTile,
-    wightTile,
-    boneTiles,
-    shadeTile,
-    lordTile,
-  } = spots;
+export function buildExampleContent(world) {
+  const at = placer(world);
+  /** @param {string} name @returns {[string, string]} */
+  const spot = (name) => {
+    const { nodeId, tileId } = at(name);
+    return [nodeId, tileId];
+  };
   return {
-    party: { nodeId: 'world', tileId: '16,16' },
+    party: at('start'),
     // Nobody has traveled yet, so no child has been entered through a tile.
     entryTiles: {},
     characters: exampleParty(),
     creatures: [
       // Field enemies on the overworld, one type for each biome.
-      mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, 'world', '18,15', GOBLIN),
-      mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, 'world', '24,16', WOLF, BITE),
-      mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, 'world', '25,17', WOLF, BITE),
-      mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, 'world', '11,18', BANDIT),
-      mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, 'world', '13,20', BANDIT),
-      mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, 'world', '16,28', ZOMBIE, SLAM),
-      mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, 'world', '19,29', ZOMBIE, SLAM),
-      mob('hill-harpy', 'Harpy', 24, 2, 1, 'world', '23,12', HARPY, CLAWS),
-      mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, 'world', '27,29', SCORPION, PINCER),
-      mob('winter-wolf', 'Winter Wolf', 34, 3, 3, 'world', '26,3', WINTER_WOLF, GREAT_BITE),
+      mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, ...spot('goblinScout'), GOBLIN),
+      mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, ...spot('wolf1'), WOLF, BITE),
+      mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, ...spot('wolf2'), WOLF, BITE),
+      mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, ...spot('bandit1'), BANDIT),
+      mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, ...spot('bandit2'), BANDIT),
+      mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, ...spot('bogZombie1'), ZOMBIE, SLAM),
+      mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, ...spot('bogZombie2'), ZOMBIE, SLAM),
+      mob('hill-harpy', 'Harpy', 24, 2, 1, ...spot('harpy'), HARPY, CLAWS),
+      mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, ...spot('scorpion'), SCORPION, PINCER),
+      mob('winter-wolf', 'Winter Wolf', 34, 3, 3, ...spot('winterWolf'), WINTER_WOLF, GREAT_BITE),
       // The bay: drowned dead walk the shallows below Saltmere, and
       // something knocks in the abandoned silver mine.
-      mob('drowned-watchman-1', 'Drowned Watchman', 22, 2, 0.5, 'world', '6,10', DROWNED, SLAM),
-      mob('drowned-watchman-2', 'Drowned Watchman', 22, 2, 0.5, 'world', '7,14', DROWNED, SLAM),
+      mob('drowned-watchman-1', 'Drowned Watchman', 22, 2, 0.5, ...spot('drowned1'), DROWNED, SLAM),
+      mob('drowned-watchman-2', 'Drowned Watchman', 22, 2, 0.5, ...spot('drowned2'), DROWNED, SLAM),
       mob(
         'hollowvein-knocker',
         'The Knocker in the Vein',
         30,
         3,
         2,
-        'world',
-        '21,11',
+        ...spot('knocker'),
         {
           AC: 14,
           Speed: 30,
@@ -338,26 +343,24 @@ export function buildExampleContent(palette, world) {
         45,
         4,
         3,
-        'world',
-        '20,29',
+        ...spot('grelka'),
         {
           AC: 15,
           Speed: 30,
         },
         natural('Claws', 2, 8, 'slashing'),
       ),
-      mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[0], GOBLIN),
-      mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[1], GOBLIN),
+      mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, ...spot('raider1'), GOBLIN),
+      mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, ...spot('raider2'), GOBLIN),
       // Chain Mail, the legend default below level 5, gives AC 16.
-      legend('snagtooth', 'Chieftain Snagtooth', 36, 3, 1, 'northmarch', campTile, { Speed: 30 }),
+      legend('snagtooth', 'Chieftain Snagtooth', 36, 3, 1, ...spot('snagtooth'), { Speed: 30 }),
       legend(
         'skalvyr',
         'Skalvyr the Wyvern',
         68,
         5,
         6,
-        'graypeak',
-        eyrieTile,
+        ...spot('skalvyr'),
         {
           AC: 16,
           Speed: 20,
@@ -366,8 +369,8 @@ export function buildExampleContent(palette, world) {
         natural('Stinger', 2, 6, 'piercing'),
       ),
       // The barrow: pickets, the seneschal, and the major boss at the tomb.
-      mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[0], SKELETON),
-      mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[1], SKELETON),
+      mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, ...spot('skeleton1'), SKELETON),
+      mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, ...spot('skeleton2'), SKELETON),
       // Studded Leather at DEX 14 gives AC 14.
       legend(
         'grave-wight',
@@ -375,8 +378,7 @@ export function buildExampleContent(palette, world) {
         45,
         4,
         3,
-        'barrow',
-        wightTile,
+        ...spot('wight'),
         { DEX: 14, AC: 12, Speed: 30 },
         { armor: enemyArmor('Studded Leather') },
       ),
@@ -388,8 +390,7 @@ export function buildExampleContent(palette, world) {
         40,
         4,
         3,
-        'thornhold',
-        shadeTile,
+        ...spot('shade'),
         {
           AC: 14,
           Speed: 30,
@@ -397,7 +398,7 @@ export function buildExampleContent(palette, world) {
         natural('Withering Touch', 2, 6, 'necrotic'),
       ),
       // Plate, the legend default from level 5, gives AC 18.
-      legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, 'barrow', tombTile, { Speed: 30 }),
+      legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, ...spot('ostrand'), { Speed: 30 }),
       // The people of the Marches share the same list as the field enemies.
       person('caravan-master-dorn', 'Dorn', {
         role: 'Caravan master, stranded at the crossroads',
@@ -405,7 +406,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Blunt and impatient. Pays for road news, and points anyone who looks capable at Bram in Briarwick.',
         stats: { STR: 12, CON: 14, CHA: 12 },
-        location: { nodeId: 'world', tileId: '15,16' },
+        location: at('dorn'),
       }),
       person('innkeeper-bram', 'Bram', {
         role: 'Innkeeper, the Waystation at Briarwick',
@@ -413,7 +414,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Knows every road north and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo.',
         stats: { INT: 12, WIS: 14, CHA: 13 },
-        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'inn') },
+        location: at('bram'),
       }),
       person('reeve-maera', 'Reeve Maera', {
         role: 'Reeve of Briarwick',
@@ -421,10 +422,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Keeps the shire records. Recognizes the pale crown as King Ostrand's seal — and knows the barrow was warded shut for a reason.",
         stats: { INT: 14, WIS: 15, CHA: 12 },
-        location: {
-          nodeId: 'briarwick',
-          tileId: `${Math.floor(gens.briarwick.width / 2)},${Math.floor(gens.briarwick.height / 2)}`,
-        },
+        location: at('maera'),
       }),
       person('sella-the-smith', 'Sella', {
         role: 'Blacksmith of Briarwick',
@@ -432,10 +430,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken — but only from Hollowvein silver, and the mine stands abandoned.',
         stats: { STR: 15, CON: 14 },
-        location: {
-          nodeId: 'briarwick',
-          tileId: buildingTile(gens.briarwick, palette, 'blacksmith'),
-        },
+        location: at('sella'),
       }),
       person('sister-alwyn', 'Sister Alwyn', {
         role: 'Priestess of the Dawn, Briarwick temple',
@@ -443,7 +438,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Blesses weapons against the risen dead once the party learns what walks in the barrow. Quietly terrified of the open graves.',
         stats: { INT: 12, WIS: 16, CHA: 14 },
-        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'temple') },
+        location: at('alwyn'),
       }),
       person('hermit-odo', 'Odo', {
         role: 'Hermit, keeper of the warding key',
@@ -451,7 +446,7 @@ export function buildExampleContent(palette, world) {
         notes:
           "Half-deaf and stubborn. Won't leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.",
         stats: { CON: 13, INT: 13, WIS: 16 },
-        location: { nodeId: 'graypeak', tileId: hermitTile },
+        location: at('odo'),
       }),
       person('harbormaster-petra', 'Harbormaster Petra', {
         role: 'Harbormaster of Saltmere',
@@ -459,10 +454,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Runs the port and taxes what Corvin thinks she cannot see. Pays a bounty on the drowned dead and keeps the tide-log that shows they walk up-current from the river mouth.',
         stats: { STR: 12, WIS: 14, CHA: 13 },
-        location: {
-          nodeId: 'saltmere',
-          tileId: `${Math.floor(gens.saltmere.width / 2)},${Math.floor(gens.saltmere.height / 2)}`,
-        },
+        location: at('petra'),
       }),
       person('corvin-the-smuggler', 'Corvin', {
         role: 'Smuggler, working out of the Saltmere taproom',
@@ -470,10 +462,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Sells anything, including his chart of the coast. Refuses cargo bound near the barrow and will say why for coin: his last crew there came back one man short, and the man came back anyway.',
         stats: { DEX: 15, INT: 13, CHA: 14 },
-        location: {
-          nodeId: 'saltmere',
-          tileId: buildingTile(gens.saltmere, palette, 'tavern'),
-        },
+        location: at('corvin'),
       }),
       person('lord-aldemar', 'Lord Aldemar Vane', {
         role: 'Lord of Thornhold, heir to the wardens',
@@ -484,7 +473,7 @@ export function buildExampleContent(palette, world) {
         // A hostile story figure rather than a fight, but the difficulty hint
         // counts every hostile creature, so he carries the rating of a noble.
         cr: 0.125,
-        location: { nodeId: 'thornhold', tileId: lordTile },
+        location: at('aldemar'),
       }),
       person('farmer-hedda', 'Hedda', {
         role: 'Farmer, the big steading on the south road',
@@ -492,7 +481,7 @@ export function buildExampleContent(palette, world) {
         notes:
           'Sells provisions and knows every field hand between Briarwick and the coast. Saw the burned farm the night it went up: the raiders worked in silence, in files, to a drum nobody was beating.',
         stats: { CON: 14, WIS: 13 },
-        location: { nodeId: 'world', tileId: '9,20' },
+        location: at('hedda'),
       }),
     ],
     travelog: [],

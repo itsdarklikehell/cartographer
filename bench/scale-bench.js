@@ -63,7 +63,7 @@ const palette = new TilePalette();
  */
 function scaledCampaign(extraNodes, extraCreatures) {
   const rng = mulberry32(11);
-  const campaign = buildExampleCampaign(palette, rng);
+  const campaign = buildExampleCampaign(palette);
   const archetypes = ['wilderness', 'town', 'dungeon'];
   for (let i = 0; i < extraNodes; i++) {
     const archetype = archetypes[i % archetypes.length];

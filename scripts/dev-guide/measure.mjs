@@ -2,7 +2,8 @@
  * Save-size measurement for the developer guide.
  *
  * The numbers come from running the real packing functions over the real
- * example campaign, with a fixed seed so the figure is stable between runs.
+ * example campaign. The example is built from a fixed seed, so the figure is
+ * stable between runs.
  * Nothing here restates a measurement taken by hand.
  */
 import { TilePalette } from '../../src/map/TilePalette.js';
@@ -15,7 +16,6 @@ import { withTileDefaults } from '../../src/map/TileGrid.js';
 import { withDefaults as withCharacterDefaults } from '../../src/entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../../src/entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../../src/handout/Handouts.js';
-import { mulberry32 } from '../../src/util/Rng.js';
 import { PartyTracker } from '../../src/party/PartyTracker.js';
 
 const ENTITY_DEFAULTS = {
@@ -24,10 +24,8 @@ const ENTITY_DEFAULTS = {
   handouts: withHandoutDefaults,
 };
 
-const SEED = 1;
-
 export function measureSave() {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(SEED));
+  const campaign = buildExampleCampaign(new TilePalette());
   const state = buildState(campaign);
 
   const tilesPacked = {
@@ -57,7 +55,6 @@ export function measureSave() {
   ];
 
   return {
-    seed: SEED,
     nodes: state.nodes.length,
     tiles: state.nodes.reduce((sum, node) => sum + node.tiles.length, 0),
     stages,
@@ -67,7 +64,7 @@ export function measureSave() {
 
 /** The reveal radius the party tracker uses when nothing overrides it. */
 export function measureRevealRadius() {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(SEED));
+  const campaign = buildExampleCampaign(new TilePalette());
   return new PartyTracker(campaign.grid, campaign.party).revealRadius;
 }
 
@@ -77,7 +74,7 @@ export function measureRevealRadius() {
  * repository.
  */
 export function measureDensestNode() {
-  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(SEED));
+  const campaign = buildExampleCampaign(new TilePalette());
   const state = buildState(campaign);
 
   let best = null;
