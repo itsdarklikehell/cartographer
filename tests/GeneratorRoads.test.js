@@ -89,3 +89,25 @@ test('blocked cells stop a road, but a goal cell is never blocked', () => {
   const far = reach([2, 2]);
   assert.equal(routeRoad(ground, [0, 0], far.isGoal, far.estimate), null);
 });
+
+test('a turn cost keeps a road straight, and a heading counts the first bend', () => {
+  const ground = groundFrom(['.....', '.....', '.....', '.....', '.....']);
+  const { isGoal, estimate } = reach([4, 0]);
+  /** @param {[number, number][]} path */
+  const bends = (path) =>
+    path.slice(2).filter(([x, y], i) => {
+      const [ax, ay] = path[i];
+      return x - ax !== 0 && y - ay !== 0;
+    }).length;
+  const straight = { ...ground, turn: 0.6 };
+  const path = /** @type {[number, number][]} */ (routeRoad(straight, [0, 4], isGoal, estimate));
+  assert.equal(bends(path), 1, 'one bend on the way to the far corner');
+  // Heading north (index 0), the road leaves north first: its second cell is
+  // straight above the start.
+  const north = /** @type {[number, number][]} */ (
+    routeRoad(straight, [0, 4], isGoal, estimate, 0)
+  );
+  assert.deepEqual(north[1], [0, 3]);
+  const east = /** @type {[number, number][]} */ (routeRoad(straight, [0, 4], isGoal, estimate, 1));
+  assert.deepEqual(east[1], [1, 4]);
+});

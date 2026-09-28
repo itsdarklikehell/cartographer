@@ -140,28 +140,6 @@ test('town buildings draw as non-overlapping 2x2 span blocks clear of the paths'
   }
 });
 
-test('town runs a bridged river past the crossroads', () => {
-  for (const seed of [7, 13, 40]) {
-    const gen = generateNodeTiles(
-      palette,
-      { kind: 'region', archetype: 'town', size: 'medium' },
-      mulberry32(seed),
-    );
-    const river = gen.tiles.filter((t) => t.overlayRef?.includes('/river/'));
-    assert.equal(
-      river.length,
-      GENERATOR_SIZES.medium,
-      `seed ${seed}: river spans the map north-south`,
-    );
-    const bridges = river.filter((t) => t.overlayRef.includes('bridge-h'));
-    assert.equal(bridges.length, 1, `seed ${seed}: exactly one bridge where the road crosses`);
-    assert.ok(
-      !river.some((t) => t.metadata.poiType),
-      `seed ${seed}: no building sits in the channel`,
-    );
-  }
-});
-
 test('wilderness places a river, coastlines around water, and landmark POIs', () => {
   let sawCoast = false;
   for (const seed of [1, 2, 3, 4, 5]) {

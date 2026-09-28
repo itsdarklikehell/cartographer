@@ -332,6 +332,38 @@ gets a second exit far from the first. The dungeon gets no road. The first
 exit becomes the entry of the map. A map with no exit, such as an island
 with its whole border under water, enters at the bottom-center border tile.
 
+### Town layout
+
+`planTown` in `src/map/GeneratorTown.js` plans a town with no tiles, and
+`generateTown` draws the plan with `terrainTiles`, the same function that
+draws the outdoor maps. The core of the town is the square of cells within
+about three tenths of the map side from the central crossroads.
+
+A town has a river with a chance of three in five. `townRiver` runs it from
+one edge to the opposite edge, at least two cells from the center row and
+column. The river moves one cell to the side at random, but never on two
+rows in a row. So each bend has a straight channel beside it, and a bridge
+fits on a straight channel.
+
+The streets use `routeRoad` with a `turn` cost of 0.6 for each bend, so a
+street on open grass runs straight. The `heading` argument counts the first
+step too, so a street that starts on the map edge goes straight into the
+map. The first street runs from the south edge to the crossroads, and its
+border cell is the entry. Each later street runs from another edge to the
+nearest street. A town of 14 cells or more has three ways out, and one of
+22 cells or more has four. Then about one lane for each five cells of map
+side runs from open ground in the core to the nearest street.
+
+Each building fills a 2x2 block of open ground beside a street and draws
+with span 2. The core set (inn, tavern, blacksmith, general store, and
+temple) takes the blocks nearest the crossroads, so the example campaign
+finds its innkeeper, smith, and priest in each medium town. The other
+building markers come next, and then homes, until the town has one
+building for each thirty cells of map area. A town of 14 cells or more
+gets a graveyard at the edge of the core, with a chance of three in five.
+Outside the core, one farm for each ten cells of map side takes a block,
+and noise turns patches of the open ground into farmland.
+
 ### Interior layouts
 
 Each interior generator carves a flat array of cell codes: void, floor,

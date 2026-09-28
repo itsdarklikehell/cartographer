@@ -95,7 +95,8 @@ export function wildTerrain(size, archetype, rng) {
  * the bridge piece draws in place of both. Cells in `bare` get no overlay,
  * because a marker covers them and an overlay would draw over its art.
  * @param {TilePalette} palette
- * @param {WildTerrain} terrain
+ * @param {Pick<WildTerrain, 'size' | 'cells' | 'rivers' | 'roads'>} terrain the town
+ *   generator passes only these fields
  * @param {() => number} rng
  * @param {ReadonlySet<string>} [bare] tile ids that take no overlay
  * @returns {Tile[]}

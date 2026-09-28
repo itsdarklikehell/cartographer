@@ -45,9 +45,13 @@ const BRIDGE = 4;
  *   rivers: ArmNetwork,
  *   roads: ArmNetwork,
  *   blocked?: (x: number, y: number) => boolean,
+ *   turn?: number,
  * }} RoadGround
  * `cells` is the drawn terrain type per cell. `blocked` marks cells a road
  * cannot pass through, such as marker tiles. A goal cell is never blocked.
+ * `turn` is an extra cost for each change of direction. It defaults to 0.
+ * A town street uses it, so that a street on open grass runs straight with
+ * few bends, where the cheapest path alone can zigzag.
  */
 
 /**
@@ -133,21 +137,25 @@ class Heap {
  * `estimate` gives a lower bound on the steps left from a cell, which keeps
  * the search aimed at the goal. The search state is a cell plus the
  * direction the road entered it, because a road on a bridge must leave in
- * the direction it came from.
+ * the direction it came from. `heading` is the index in ARMS of the
+ * direction the road already moves at `start`. With a `turn` cost, the road
+ * then pays for a bend at its first step too, so a street that starts on the
+ * map edge heads straight into the map.
  * @param {RoadGround} ground
  * @param {[number, number]} start
  * @param {(x: number, y: number) => boolean} isGoal
  * @param {(x: number, y: number) => number} estimate
+ * @param {number} [heading] 0 to 3, or 4 for no heading
  * @returns {[number, number][] | null} the cells from start to goal, or null
  *   when no road can reach a goal
  */
-export function routeRoad(ground, start, isGoal, estimate) {
-  const { size, cells, rivers, roads, blocked = () => false } = ground;
+export function routeRoad(ground, start, isGoal, estimate, heading = 4) {
+  const { size, cells, rivers, roads, blocked = () => false, turn = 0 } = ground;
   const states = size * size * 5;
   const best = new Float64Array(states).fill(Infinity);
   const from = new Int32Array(states).fill(-1);
-  // State index: cell * 5 + entry direction, with 4 meaning "the start".
-  const startState = (start[1] * size + start[0]) * 5 + 4;
+  // State index: cell * 5 + entry direction, with 4 meaning "no direction".
+  const startState = (start[1] * size + start[0]) * 5 + heading;
   best[startState] = 0;
   /** @type {Heap<number>} */
   const open = new Heap();
@@ -168,7 +176,8 @@ export function routeRoad(ground, start, isGoal, estimate) {
       if (nx < 0 || ny < 0 || nx >= size || ny >= size) continue;
       const goal = isGoal(nx, ny);
       if (!goal && blocked(nx, ny)) continue;
-      const step = stepCost(nx, ny, d, goal);
+      const bend = entry < 4 && d !== entry ? turn : 0;
+      const step = stepCost(nx, ny, d, goal) + bend;
       if (step === Infinity) continue;
       const next = (ny * size + nx) * 5 + d;
       const cost = best[state] + step;

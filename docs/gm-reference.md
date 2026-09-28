@@ -195,7 +195,8 @@ The Generate card fills the current node with a generated layout.
 The dialog previews the exact layout before it stamps anything. Every
 generated layout can reach its parent map. A dungeon or a cave gets an
 entrance tunnel with a door on the map edge. A castle or a building gets a
-door in the south wall. A town gets roads that run edge to edge. When nothing on the parent
+door in the south wall. A town gets a street from the south edge, and more
+streets to other edges. When nothing on the parent
 map links to the node, generation places an entrance tile near the center
 of the parent and reports where.
 
@@ -212,6 +213,13 @@ settlement beside open water is a port. A large map adds a keep, and a
 medium map or larger adds a hidden dungeon far from the settlements. Roads
 join the settlements and the keep, cross rivers on bridges, and leave the
 map at one edge, or at two edges on a huge or vast map.
+
+A town has a core of streets and buildings around a central crossroads.
+The inn, the tavern, the blacksmith, the general store, and the temple
+stand nearest the crossroads. A larger town adds the other shops and
+homes, and some towns have a graveyard. Farms and fields lie outside the
+core. Some towns have a river, and the streets cross it on bridges. A
+small town has two ways out, a medium town three, and a larger town four.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined
 by corridors, with some round rooms and more than one way through. A cave

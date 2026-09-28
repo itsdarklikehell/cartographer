@@ -217,6 +217,33 @@ transparent backgrounds, drawn as overlays over the terrain, removes this
 limit. No placeholder stands for this set, because it replaces every
 marker.
 
+### Town pieces
+
+The town generator in `src/map/GeneratorTown.js` draws every home with the
+`settlement` marker and has no art for a square, a wall, or a well. Each
+building placeholder is a span-2 marker on a grass background, like the
+building markers in [POI markers](#poi-markers). A town building needs a
+place in `CORE_BUILDINGS` or `EXTRA_BUILDINGS` in `GeneratorTown.js`.
+
+| Placeholder | Intended use | Drawn with today |
+| --- | --- | --- |
+| `town/house.svg`, `town/cottage.svg` | Homes in the core and on the outskirts | `settlement` |
+| `town/market.svg` | The market beside the crossroads | nothing |
+| `town/well.svg`, `town/fountain.svg` | The center of a small or a large town | nothing |
+| `town/town-hall.svg`, `town/guildhall.svg` | Civic buildings of a large town | nothing |
+| `town/bakery.svg`, `town/warehouse.svg`, `town/stables.svg` | More shops and trades | nothing |
+| `town/windmill.svg`, `town/watermill.svg` | A mill among the fields, or on the river | `farm` |
+| `town/plaza-1.svg` | Paved terrain for the square at the crossroads | `grass` |
+
+The wall and gate placeholders have transparent backgrounds, because each
+one draws as an overlay over the ground. A walled town needs a ring of
+wall pieces around the core and a gate where each street goes through it.
+
+| Placeholder | Intended use |
+| --- | --- |
+| `town/town-wall-h.svg`, `town/town-wall-v.svg` | A straight run of the town wall |
+| `town/town-gate-h.svg`, `town/town-gate-v.svg` | A gate where a street crosses the wall |
+
 ### Interior pieces
 
 The cave, dungeon, castle, and building generators in `src/map/` draw with
