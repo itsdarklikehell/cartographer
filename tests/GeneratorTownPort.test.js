@@ -114,7 +114,7 @@ test('townRiver takes the axis that a port asks for', () => {
 });
 
 test('a port has its sea on its side, a land entry, and every building in reach', () => {
-  const walled = new Set();
+  let walled = 0;
   let rivers = 0;
   for (const [size, seeds] of [
     [8, 100],
@@ -145,7 +145,7 @@ test('a port has its sea on its side, a land entry, and every building in reach'
         assert.ok(!(out[sea] && plan.roads.at(x, y).has(/** @type {any} */ (sea))), at);
       }
       for (const id of plan.walls.keys()) assert.ok(!nearSea(plan, ...xy(id)), `${at}: wall`);
-      if (plan.walls.size) walled.add(size);
+      if (plan.walls.size) walled++;
       // The river runs into the sea, and no channel lies under the water.
       for (const id of plan.rivers.arms.keys()) {
         const [x, y] = xy(id);
@@ -185,7 +185,7 @@ test('a port has its sea on its side, a land entry, and every building in reach'
     }
   }
   assert.ok(rivers > 50, `ports with a river: ${rivers}`);
-  assert.ok(walled.size > 0, 'a large port can still get a wall');
+  assert.ok(walled >= 20 && walled <= 40, `large ports walled: ${walled} of 60`);
 });
 
 test('a generated port draws its sea as water tiles with a shoreline', () => {

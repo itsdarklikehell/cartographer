@@ -453,11 +453,16 @@ wall after the streets and before the buildings, so no building covers the
 wall. `wallRing` refuses a ring where a street or the river meets a
 corner, runs along the wall, or turns on it, because a gate piece takes
 only a straight street and a water gate piece takes only a straight river.
-It also refuses a ring where a street crosses the wall on a bridge, and a
-ring that meets the sea or its shore, because the wall piece would draw
-over the shoreline. A town whose streets, river, or sea fit no ring gets no
-wall. The sea of a port takes the ground of the outer rings, so most ports
-under 48 cells get no wall. `generateTown` draws each wall
+It also refuses a ring where a street crosses the wall on a bridge. No
+wall piece goes on the sea or its shore, because the piece would draw over
+the shoreline. The sea of a port covers the ground of the outer rings in
+most ports under 48 cells, so a ring of a port that meets the shore opens
+on the sea side. `openRing` drops the side of the ring that faces the sea
+and runs the two sides beside it on toward the sea, up to the cell before
+the shore. The sea then closes the town on that side. Over seeds 1 to
+2000, ports of 22 and 32 cells get a wall 49% and 50% of the time, and
+inland towns 50% and 52%. A town whose streets, river, or sea fit no ring
+gets no wall. `generateTown` draws each wall
 piece as the overlay of its cell, and a gate piece replaces the street
 overlay under it, because the gate art draws its own street. A water gate
 replaces the river overlay in the same way.

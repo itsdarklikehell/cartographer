@@ -267,8 +267,9 @@ the town, and a new link never goes on it. A gate is open ground.
 The town map of a port has the sea along its north, east, or west edge,
 with a sandy shore. The party still enters by the street from the south
 edge. No street leaves into the sea, so a large port has three ways out. A
-river in a port flows into the sea. A small port has no river, and most
-ports get no wall, because the sea takes the ground that the wall needs.
+river in a port flows into the sea. A small port has no river. A large
+port gets a wall as often as an inland town. The wall of a port is open
+on the sea side, and its two ends stop at the shore.
 A port has no docks or piers.
 
 The four interior archetypes differ in layout. A dungeon has rooms joined

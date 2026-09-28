@@ -73,10 +73,61 @@ test('a wall ring refuses a street at a corner, along the wall, or on a bridge',
   assert.equal(wallRing(bridge, 11, 8), null);
 });
 
-test('a wall ring refuses the sea and its shore', () => {
+test('a wall ring refuses the sea and its shore in a town with no sea side', () => {
   const port = { ...crossTown(), sea: (/** @type {number} */ x) => x <= 3 };
   assert.equal(wallRing(port, 11, 8), null, 'the west side of the ring is on the shore');
   assert.equal(wallRing(port, 11, 7)?.size, 56, 'a smaller ring keeps clear of it');
+});
+
+/**
+ * The cross town as a port with its sea on the west, where `wet` marks the
+ * cells of the sea and its shore.
+ * @param {(x: number, y: number) => boolean} [wet]
+ */
+function westPort(wet = (x) => x <= 3) {
+  return { ...crossTown(), sea: wet, side: /** @type {const} */ ('w') };
+}
+
+test('a port wall opens on the sea side and runs to the shore', () => {
+  const walls = /** @type {Map<string, string>} */ (wallRing(westPort(), 11, 8));
+  assert.equal(walls.size, 47, 'the far side and two sides that reach the shore');
+  assert.equal(walls.get('19,3'), 'wall-corner-sw');
+  assert.equal(walls.get('19,19'), 'wall-corner-nw');
+  assert.equal(walls.get('19,11'), 'gate-v');
+  assert.equal(walls.get('11,3'), 'gate-h');
+  assert.equal(walls.get('4,3'), 'wall-h', 'the side ends one cell before the shore');
+  assert.equal(walls.get('4,19'), 'wall-h');
+  assert.ok(![...walls.keys()].some((id) => id.startsWith('3,')), 'no wall on the shore');
+  assert.equal(walls.get('3,11'), undefined, 'no wall faces the sea');
+  // A ring clear of the sea stays closed.
+  assert.equal(wallRing(westPort(), 11, 7)?.size, 56);
+  // The same port with its sea on the north runs its sides north.
+  const north = {
+    ...crossTown(),
+    sea: (_x = 0, y = 0) => y <= 3,
+    side: /** @type {const} */ ('n'),
+  };
+  const up = /** @type {Map<string, string>} */ (wallRing(north, 11, 8));
+  assert.equal(up.get('3,19'), 'wall-corner-ne');
+  assert.equal(up.get('3,4'), 'wall-v');
+  assert.equal(up.get('11,19'), 'gate-h');
+  assert.equal(up.get('3,11'), 'gate-v');
+});
+
+test('a port wall refuses a far side on the shore, a side with no shore, or a bad street', () => {
+  const far = westPort((x, y) => x <= 3 || (x === 19 && y === 10));
+  assert.equal(wallRing(far, 11, 8), null, 'the far side meets the shore');
+  const corner = westPort((x, y) => x <= 3 || (x === 19 && y === 3));
+  assert.equal(wallRing(corner, 11, 8), null, 'a far corner meets the shore');
+  const pond = westPort((x, y) => x === 3 && y === 11);
+  assert.equal(wallRing(pond, 11, 8), null, 'the sides reach the border first');
+  const along = westPort();
+  along.roads.join(5, 3, 'e');
+  assert.equal(wallRing(along, 11, 8), null, 'a street along a side');
+  const bent = westPort();
+  bent.roads.join(20, 5, 'w');
+  bent.roads.join(19, 5, 's');
+  assert.equal(wallRing(bent, 11, 8), null, 'a street that turns on the far side');
 });
 
 test('wallRadii lists the rings a large town tries, clear of the map border', () => {

@@ -274,7 +274,7 @@ export function planTown(size, rng, environ) {
   };
   const roads = new ArmNetwork();
   const entry = layStreets({ size, cells, rivers, roads, turn: TURN }, c, core, rng, sea);
-  const walls = planWall({ size, roads, rivers, sea: shore }, c, core, rng);
+  const walls = planWall({ size, roads, rivers, sea: shore, side: sea ?? undefined }, c, core, rng);
   const square = size >= 32 ? 2 : 1;
   /** @param {number} x @param {number} y */
   const paved = (x, y) => Math.max(Math.abs(x - c), Math.abs(y - c)) <= square && !rivers.has(x, y);
