@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 71. Each shipped spell has rules that the
+319 spells, and the app ships 86. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -22,11 +22,11 @@ The paladin also has one spell of its own, Destructive Wave.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Mage Armor, False Life, Heroism |
-| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid |
-| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste |
-| 4th | Ice Storm, Blight, Phantasmal Killer |
-| 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
+| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
+| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
+| 4th | Ice Storm, Blight, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
+| 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |
 | 8th | Power Word Stun, Sunburst |
@@ -216,10 +216,16 @@ or take actions until after its next turn. The GM skips that turn.
 
 ### Spells described in prose
 
-Three built-in spells have the `utility` effect kind: Light, Lesser
-Restoration, and Counterspell. Their rules exist only as text in the
-description of each spell, and the GM applies them. They are in the list
-because a GM notices when a spell this common is missing.
+Eighteen built-in spells have the `utility` effect kind. Their rules exist
+only as text in the description of each spell, and the GM applies them.
+Light, Lesser Restoration, and Counterspell are in the list because a GM
+notices when a spell this common is missing.
+
+The other fifteen are in `src/data/spells/utility.js`: Detect Magic,
+Disguise Self, Jump, Silent Image, Speak with Animals, Alter Self,
+Levitate, Bestow Curse, Slow, Speak with Dead, Arcane Eye, Compulsion,
+Confusion, Polymorph, and Conjure Elemental. The eldritch invocations of a
+warlock cast most of them.
 
 ### Partial rules
 
@@ -248,7 +254,9 @@ apply.
 
 ### Movement and turn control
 
-Examples: Slow, Banishment, Command, Dominate Person, and Confusion.
+Examples: Banishment, Command, and Dominate Person. Slow and Confusion ship
+as prose entries (see [Spells described in prose](#spells-described-in-prose)),
+and their rules need the mechanics below.
 
 A failed save can add a condition chip, and this part works. Hold Person,
 Hold Monster, Blindness/Deafness, Fear, and Sunburst all ship. The other
@@ -304,7 +312,7 @@ The app does not have these parts:
 
 ### Exploration and social spells
 
-Examples: Detect Magic, Identify, Charm Person, Suggestion, Divination, and
+Examples: Identify, Charm Person, Suggestion, Divination, and
 teleportation.
 
 These spells have rules that exist only as text, so they work as `utility`
