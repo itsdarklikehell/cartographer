@@ -813,7 +813,7 @@ path. Both controls grey out from `historyDepth` when that direction is
 empty.
 
 The storage layout uses one key for each record: an index at
-`campaign-builder:history` that contains `{ version, log, deltas, cursor, snapshots }`, and
+`campaign-builder:history` that contains `{ version, log, deltas, cursor, snapshots, baseMark }`, and
 one `campaign-builder:history:d<seq>` for each record. A step is therefore
 one small `setItem` call, instead of a rewrite of the whole log. Measured on
 the example campaign, fifty party steps cost 27,304 bytes of log, where a
@@ -821,13 +821,28 @@ ring of ten full snapshots costs 699,980 bytes for ten steps, and a save
 writes 70,488 bytes where the ring writes 139,996.
 
 The log also serves cross-tab adoption. A tab calls
-`historyPosition()` to get a token for the delta that its live state
-reflects. The tab records this token each time its live state matches the
-persisted save. When another tab saves, the follower calls
-`planAdoption(held)`. The answer is the head delta's ops when the save is
-exactly one delta ahead of the held position, `current` when nothing moved,
-and `full` in every other case, where the follower then takes the ordinary
-load path. The follower calls `planAdoption` on the `storage` event of the
+`historyPosition()` to get a token for the log position that its live state
+reflects. The tab records this token and the save mark each time its live
+state matches the persisted save. When another tab saves, the follower calls
+`planAdoption(held, heldMark)`, which walks the log from the held position
+to the cursor. A walk forward returns the ops of each record on the way,
+for saves and redos, and a walk back returns each record's ops inverted,
+for undos. The follower applies the lists one at a time, because `applyOps`
+groups the ops of one list by kind. The answer is `current` when nothing
+moved. It is `full` when the walk is longer than `ADOPTION_WALK` (8)
+records or meets a snapshot or an unreadable record, and the follower then
+takes the ordinary load path.
+
+A tab that loaded its save before the log began has no position. A save
+that starts a new log stores the save mark of the save it diffed against
+as `baseMark`, and a follower whose held mark equals it walks from position
+0. The mark applies only while the first record is still sequence number 0,
+so a trim or a snapshot swap at the front retires it. The saving tab reads
+the mark a second time before its write. When another tab's save changed
+the mark after the cached save string was read, the new log stores no
+`baseMark`, because the mark no longer names that string.
+
+The follower calls `planAdoption` on the `storage` event of the
 save mark (`campaign-builder:save-mark`), not of the campaign key. Every save,
 undo, and redo writes the mark last. The browser delivers one event per
 write in write order, and at the campaign key's event the follower still

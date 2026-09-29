@@ -135,13 +135,15 @@ the other tab's change.
 The adoption tries the recorded delta first. Every save writes its exact
 edit as a delta beside the campaign (see the history log in
 [Persistence](persistence.md)), and `externalSaves.js` remembers the history
-position of its live state. When an external save is exactly one delta ahead
-of that position, `HistoryLog.planAdoption` returns the ops, and the tab
-applies them to its own state with `HistoryLog.applyHistoryOps` without
-reading the whole save again. `applyOps` copies only along the op paths, so
-every node and entity outside the edit keeps its identity and the adoption
-costs the size of the edit. Every other case (a position gap, an undo, a
-cleared log, or a failed apply) takes the full load path through
+position and save mark of its live state. When the log walks from that
+position to the stored one in at most eight delta records, forward across
+saves and redos or back across undos, `HistoryLog.planAdoption` returns the
+ops of each record. The tab applies them to its own state with
+`HistoryLog.applyHistoryOps` and does not read the whole save again.
+`applyOps` copies only along the op paths, so every node and entity outside
+the edits keeps its identity and the adoption costs the size of the edits.
+Every other case (a longer walk, a snapshot record, a cleared log, or a
+failed apply) takes the full load path through
 `Campaigns.loadInitialCampaign`. After either path, the tab passes its live
 state to `HistoryLog.adoptPersisted`, so its own next save diffs against the
 objects it holds. After a full load, the history cache otherwise keeps the

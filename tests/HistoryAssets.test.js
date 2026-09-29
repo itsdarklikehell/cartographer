@@ -105,7 +105,7 @@ test('a follower applies an image delta to its live state with the payload', () 
   saveCampaign(world([note, map]));
   const plan = planAdoption(held);
   assert.equal(plan.kind, 'delta');
-  const next = /** @type {any} */ (applyHistoryOps(live, /** @type {any} */ (plan).ops));
+  const next = /** @type {any} */ (applyHistoryOps(live, /** @type {any} */ (plan).steps[0]));
   assert.equal(next.handouts[1].image, PHOTO);
   assert.equal(next.nodes[0], live.nodes[0], 'an untouched node keeps its identity');
 });

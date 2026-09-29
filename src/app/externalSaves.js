@@ -78,23 +78,26 @@ export function wireExternalSaves(app, { isDirty, setDirty, buildCurrentState, p
   let syncPromptOpen = false;
 
   /**
-   * Adopt an external save by applying its recorded delta to the live state
+   * Adopt an external save by applying its recorded deltas to the live state
    * instead of re-reading the whole save. Every save writes its exact edit
    * as a delta beside the campaign, and `applyHistoryOps` copies only along the
-   * op paths, so every node and entity the edit did not touch keeps its
+   * op paths, so every node and entity the edits did not touch keeps its
    * identity by construction. The map caches stay warm, and the reconcile
    * inside `rehydrateCampaign` returns each untouched object at the first
-   * comparison. This runs only when this tab's held state is exactly the
-   * delta's base. Everything else answers false, and the caller re-reads
-   * the whole save.
+   * comparison. This runs only when the log walks from this tab's held
+   * state to the stored one (`planAdoption`). Everything else answers false,
+   * and the caller re-reads the whole save.
    * @returns {boolean}
    */
   function adoptByDelta() {
-    const plan = planAdoption(heldPosition);
+    const plan = planAdoption(heldPosition, heldMark);
     if (plan.kind === 'current') return true;
     if (plan.kind !== 'delta') return false;
     try {
-      const next = applyHistoryOps(buildCurrentState(), plan.ops);
+      const next = plan.steps.reduce(
+        (state, ops) => applyHistoryOps(state, ops),
+        buildCurrentState(),
+      );
       rehydrateCampaign(app, campaignFromLiveState(next));
       return true;
     } catch (error) {

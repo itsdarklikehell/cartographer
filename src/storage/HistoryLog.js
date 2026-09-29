@@ -8,13 +8,14 @@
  * Storage layout: one key per record, so a push is one small write.
  *
  * - `campaign-builder:history`: the index,
- *   `{ version, log, deltas, cursor, snapshots }`. `deltas` is the ordered
- *   list of sequence numbers. `cursor` is how many of them the persisted
- *   save currently reflects. Deltas past the cursor are the redo tail.
- *   `snapshots` lists the sequence numbers whose record is a snapshot, so
- *   the byte budget of `HistoryBudget.js` can tell the two kinds apart from
- *   the footprint ledger alone. An index without it counts every record as
- *   a delta.
+ *   `{ version, log, deltas, cursor, snapshots, baseMark }`. `deltas` is the
+ *   ordered list of sequence numbers. `cursor` is how many of them the
+ *   persisted save currently reflects. Deltas past the cursor are the redo
+ *   tail. `snapshots` lists the sequence numbers whose record is a snapshot,
+ *   so the byte budget of `HistoryBudget.js` can tell the two kinds apart
+ *   from the footprint ledger alone. An index without it counts every record
+ *   as a delta. `baseMark` is the save mark of the save that the log's first
+ *   record (sequence number 0) applies to, or null when it is not known.
  * - `campaign-builder:history:d<seq>`: one record. A delta record is
  *   `delta:` followed by a `JSON.stringify`d list of ops. A snapshot record
  *   is `snapshot:` followed by the stored save string on the other side of
@@ -92,7 +93,7 @@ import { newestSnapshot, olderSnapshotRoom, recordsToDrop, snapshotFits } from '
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
-/** @typedef {{ version: number, log: string, deltas: number[], cursor: number, snapshots: number[] }} HistoryIndex */
+/** @typedef {{ version: number, log: string, deltas: number[], cursor: number, snapshots: number[], baseMark: string | null }} HistoryIndex */
 /** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
 /** @typedef {{ ops: DiffOp[] } | { snapshot: string }} HistoryRecord */
 
@@ -125,7 +126,21 @@ export const HISTORY_KEY = 'campaign-builder:history';
 export const HISTORY_BYTE_CAP = 512 * 1024;
 
 /** @type {HistoryIndex} */
-const EMPTY_INDEX = { version: CURRENT_VERSION, log: '', deltas: [], cursor: 0, snapshots: [] };
+const EMPTY_INDEX = {
+  version: CURRENT_VERSION,
+  log: '',
+  deltas: [],
+  cursor: 0,
+  snapshots: [],
+  baseMark: null,
+};
+
+/**
+ * The most records that `planAdoption` walks. Each record costs the follower
+ * one `applyOps` pass, so a long walk costs more than the full read it
+ * replaces.
+ */
+export const ADOPTION_WALK = 8;
 
 /**
  * A random id for a fresh log. Sequence numbers restart at zero after
@@ -251,7 +266,8 @@ function readIndex() {
   const snapshots = Array.isArray(record.snapshots)
     ? record.snapshots.filter((seq) => deltas.includes(seq))
     : [];
-  return { version: CURRENT_VERSION, log, deltas, cursor, snapshots };
+  const baseMark = typeof record.baseMark === 'string' ? record.baseMark : null;
+  return { version: CURRENT_VERSION, log, deltas, cursor, snapshots, baseMark };
 }
 
 /**
@@ -501,10 +517,16 @@ export function applyHistoryOps(state, ops) {
  * states whether a full origin cost the GM depth beyond the ordinary cap.
  * A record larger than the whole cap stays as the only step, because
  * `trimToCap` always keeps the newest record.
+ *
+ * A step that starts a new log stores `baseMark` in the index. A follower
+ * that loaded the save before the log began has no position, and the mark
+ * tells `planAdoption` that it holds the state the first record applies to.
  * @param {string} record
+ * @param {string | null} baseMark the save mark of the save this step diffed
+ *   against, or null when it is not known
  * @returns {HistoryResult}
  */
-function recordStep(record) {
+function recordStep(record, baseMark) {
   const index = readIndex();
   const seq = nextSeq(index);
   let tail = index.deltas.slice(index.cursor);
@@ -541,7 +563,14 @@ function recordStep(record) {
   // The index write happens last. An index that names a key that was never
   // written describes a history step that cannot be applied. An unnamed key
   // is only unused data.
-  const next = { version: CURRENT_VERSION, log, deltas: kept, cursor: kept.length, snapshots };
+  const next = {
+    version: CURRENT_VERSION,
+    log,
+    deltas: kept,
+    cursor: kept.length,
+    snapshots,
+    baseMark: index.log ? index.baseMark : baseMark,
+  };
   if (!writeIndex(next)) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
@@ -608,6 +637,10 @@ export function saveCampaign(state) {
   const before = lastPersisted();
   // `lastPersisted` leaves the cache on the string it parsed.
   const record = before && cached ? stepRecord(before, cached.raw, state) : null;
+  // A second read of the mark proves that the cached string is the save
+  // that this mark was written with. A save from another tab that landed
+  // between the reads of `lastPersisted` changed the mark.
+  const baseMark = cached?.mark != null && readSaveMark() === cached.mark ? cached.mark : null;
   // A record that names an image keeps it in the table. The retention scan
   // of this save runs before the record is written, so it waits for the next
   // save, which finds the record.
@@ -621,7 +654,7 @@ export function saveCampaign(state) {
   };
   const save = writeCampaign(state, { keepPrevious, makeRoom });
   if (!save.ok) return { ...save, history: { ok: !dropped, evictedAll: dropped }, mark: null };
-  const history = record ? recordStep(record) : { ok: true, evictedAll: false };
+  const history = record ? recordStep(record, baseMark) : { ok: true, evictedAll: false };
   const mark = markSave();
   return { ...save, history: dropped ? { ...history, evictedAll: true } : history, mark };
 }
@@ -731,16 +764,40 @@ function swapSnapshot(index, at, direction, snapshot) {
 }
 
 /**
- * The position of the delta at `at` in this log, as an opaque token, or null
- * when `at` sits before the first delta. The token pairs the log id with the
- * sequence number, so a position outlives nothing: a cleared and restarted
- * log reuses sequence numbers but never the id.
+ * The position at `at` in this log, as an opaque token, or null when the log
+ * is empty. The token pairs the log id with the sequence number of the
+ * record before the position, or with `^` and the first record's number at
+ * position 0. A cleared and restarted log reuses sequence numbers but never
+ * the id, so a token from the old log matches nothing. A record dropped from
+ * the front changes the token of position 0, because the old base state is
+ * no longer reachable.
  * @param {HistoryIndex} index
  * @param {number} at a cursor value: how many deltas the position reflects
  * @returns {string | null}
  */
 function positionToken(index, at) {
-  return at > 0 ? `${index.log}:${index.deltas[at - 1]}` : null;
+  if (at > 0) return `${index.log}:${index.deltas[at - 1]}`;
+  return index.deltas.length ? `${index.log}:^${index.deltas[0]}` : null;
+}
+
+/**
+ * The cursor value of the state a tab holds, or -1 when the log does not
+ * name it. A tab with no position loaded its save before the log began.
+ * When its save mark is the log's `baseMark` and the first record is still
+ * sequence number 0, it holds the state that record applies to.
+ * @param {HistoryIndex} index
+ * @param {string | null} held
+ * @param {string | null} heldMark
+ * @returns {number}
+ */
+function heldAt(index, held, heldMark) {
+  if (held === null) {
+    return heldMark !== null && heldMark === index.baseMark && index.deltas[0] === 0 ? 0 : -1;
+  }
+  for (let at = 0; at <= index.deltas.length; at += 1) {
+    if (positionToken(index, at) === held) return at;
+  }
+  return -1;
 }
 
 /**
@@ -759,29 +816,41 @@ export function historyPosition() {
  * How a tab holding the state recorded at `held` can adopt the save another
  * tab just wrote.
  *
- * `delta` comes back only when the persisted save is exactly one recorded
- * delta ahead of `held`: the cursor sits at the head, the delta before the
- * head is the one the tab holds, and the head delta itself is readable. The
- * ops then carry the held state to the persisted one. This also covers a
- * redo, and a save made from an undone cursor, because both leave the held
- * position one behind the head.
+ * `delta` comes back when the log walks from the held position to the
+ * cursor in at most `ADOPTION_WALK` delta records. Each entry of `steps` is
+ * the ops of one record, in walk order. A walk forward covers saves and
+ * redos, and a walk back covers undos, with each record's ops inverted. A
+ * save made from an undone cursor drops the redo tail and appends, so a tab
+ * that holds a position before the cursor walks forward. Apply the steps one
+ * at a time, because `applyOps` groups the ops of one list by kind and does
+ * not apply them in list order.
  *
  * `current` means the persisted save is the state the tab already holds.
  *
- * Everything else is `full`: a null or foreign position, a gap of more than
- * one delta, a cursor away from the head (an undo), an empty or cleared log,
- * or an unreadable delta record. The caller then re-reads the whole save.
+ * Everything else is `full`: a position that the log does not name, a walk
+ * longer than `ADOPTION_WALK`, a snapshot record or an unreadable record in
+ * the walk, or an empty or cleared log. The caller then re-reads the whole
+ * save.
  * @param {string | null} held
- * @returns {{ kind: 'current' | 'full' } | { kind: 'delta', ops: DiffOp[] }}
+ * @param {string | null} [heldMark] the save mark of the save the tab holds
+ * @returns {{ kind: 'current' | 'full' } | { kind: 'delta', steps: DiffOp[][] }}
  */
-export function planAdoption(held) {
+export function planAdoption(held, heldMark = null) {
   const index = readIndex();
-  const len = index.deltas.length;
-  if (held === null || index.cursor !== len || len === 0) return { kind: 'full' };
-  if (held === positionToken(index, len)) return { kind: 'current' };
-  if (len < 2 || held !== positionToken(index, len - 1)) return { kind: 'full' };
-  const ops = readDelta(index.deltas[len - 1]);
-  return ops ? { kind: 'delta', ops } : { kind: 'full' };
+  const from = heldAt(index, held, heldMark);
+  if (from < 0) return { kind: 'full' };
+  const { cursor } = index;
+  if (from === cursor) return { kind: 'current' };
+  if (Math.abs(cursor - from) > ADOPTION_WALK) return { kind: 'full' };
+  const forward = cursor > from;
+  /** @type {DiffOp[][]} */
+  const steps = [];
+  for (let at = from; at !== cursor; at += forward ? 1 : -1) {
+    const ops = readDelta(index.deltas[forward ? at : at - 1]);
+    if (!ops) return { kind: 'full' };
+    steps.push(forward ? ops : invertOps(ops));
+  }
+  return { kind: 'delta', steps };
 }
 
 /**
