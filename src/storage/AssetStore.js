@@ -1,6 +1,11 @@
 /**
  * The image payloads of a stored campaign, kept in their own localStorage
- * key.
+ * key, and the retention rule that every store of the payloads uses.
+ *
+ * The browser keeps the payloads in IndexedDB (`AssetMirror.js`). This
+ * module keeps them in localStorage only when IndexedDB is missing or does
+ * not open, and in the unit tests that install no backend. The boot moves a
+ * table found under `ASSETS_KEY` into IndexedDB.
  *
  * `Assets.js` hoists every inline `data:` URL into one content-keyed
  * `assets` table, so a save holds each distinct image once. This is not
@@ -102,7 +107,7 @@ export function loadAssetTable(key = ASSETS_KEY) {
  * @param {Set<string>} skip keys whose stored value does not count
  * @returns {string[]}
  */
-function otherStoredStrings(skip) {
+export function otherStoredStrings(skip) {
   /** @type {string[]} */
   const values = [];
   for (let i = 0; i < localStorage.length; i += 1) {
@@ -154,7 +159,7 @@ function sortedJoin(values) {
 }
 
 /** Every key name on the origin. Names are cheap to read; values are not. */
-function storedKeyNames() {
+export function storedKeyNames() {
   /** @type {Set<string>} */
   const names = new Set();
   for (let i = 0; i < localStorage.length; i += 1) {

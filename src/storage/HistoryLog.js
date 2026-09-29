@@ -78,7 +78,8 @@ import {
   trySaveToLocalStorage,
   writeSaveMark,
 } from './SaveManager.js';
-import { detachAssets, loadAssetTable } from './AssetStore.js';
+import { detachAssets } from './AssetStore.js';
+import { mirrorActive, storedAssetTable } from './AssetMirror.js';
 import { clamp } from '../util/num.js';
 import {
   QUOTA_BYTES,
@@ -152,15 +153,19 @@ let cached = null;
 
 /**
  * Write a campaign with `trySaveToLocalStorage`, and cache it on success.
- * The save mark goes first, so for the time between this write and the new
- * mark no tab reads the old mark as proof that nothing moved.
+ * The save mark goes right before the campaign write, so for the time
+ * between this write and the new mark no tab reads the old mark as proof
+ * that nothing moved. A save that waits on an image put writes nothing and
+ * keeps the mark.
  * @param {CampaignState} state
  * @param {Parameters<typeof trySaveToLocalStorage>[2]} [options]
  * @returns {ReturnType<typeof trySaveToLocalStorage>}
  */
 function writeCampaign(state, options) {
-  clearSaveMark();
-  const save = trySaveToLocalStorage(state, STORAGE_KEY, options);
+  const save = trySaveToLocalStorage(state, STORAGE_KEY, {
+    ...options,
+    beforeWrite: clearSaveMark,
+  });
   if (save.ok) cached = { raw: save.json, state, mark: null };
   return save;
 }
@@ -331,7 +336,7 @@ export function loadPersistedCampaign() {
     cached.mark = mark;
     return cached.state;
   }
-  const state = deserialize(raw, loadAssetTable());
+  const state = deserialize(raw, storedAssetTable());
   cached = { raw, state, mark };
   return state;
 }
@@ -444,7 +449,8 @@ function stepRecord(before, beforeRaw, after) {
  * True when browser storage has room for the undo snapshot of a step that
  * replaces the stored campaign with `next` (New, Load example, Import). The
  * estimate counts the new save in place of the old one, the images that
- * `next` adds to the image table, every other key outside the log, and the
+ * `next` adds to the localStorage image table (none when IndexedDB keeps
+ * the images, per `AssetMirror.js`), every other key outside the log, and the
  * snapshot. Every other record of the log can drop to make room, so they do
  * not count. With nothing stored, the step records no snapshot and loses
  * nothing. The estimate uses `QUOTA_BYTES`, and a browser that allows more
@@ -458,8 +464,8 @@ export function replaceIsUndoable(next) {
   // The pack caches keep this work for the real save that follows.
   const { state, assets } = detachAssets(packState(next));
   const saveLength = JSON.stringify(state).length;
-  const entries = Object.entries(assets);
-  const table = entries.length ? loadAssetTable() : {};
+  const entries = mirrorActive() ? [] : Object.entries(assets);
+  const table = entries.length ? storedAssetTable() : {};
   let added = 0;
   for (const [key, payload] of entries) {
     // A key and a payload cost their length plus quotes, a colon, and a comma.
@@ -486,7 +492,7 @@ export function replaceIsUndoable(next) {
 export function applyHistoryOps(state, ops) {
   const next = applyOps(state, expandOps(ops));
   if (!opsNameAssets(ops)) return next;
-  return /** @type {T} */ (restoreAssets({ ...next, assets: loadAssetTable() }));
+  return /** @type {T} */ (restoreAssets({ ...next, assets: storedAssetTable() }));
 }
 
 /**
@@ -591,6 +597,10 @@ function dropForSave() {
  * `mark` is the save mark written after the save, or null when the save or
  * the mark write failed. A tab keeps it to tell a later write from another
  * tab apart without reading the save string.
+ *
+ * A result with `pending` wrote and recorded nothing, because the save
+ * adds an image whose IndexedDB put has not committed. The caller saves
+ * again once the promise settles.
  * @param {CampaignState} state
  * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
  */
@@ -689,7 +699,7 @@ function swapSnapshot(index, at, direction, snapshot) {
   /** @type {CampaignState} */
   let restored;
   try {
-    restored = deserialize(snapshot, loadAssetTable());
+    restored = deserialize(snapshot, storedAssetTable());
   } catch {
     clearHistoryLog();
     return null;

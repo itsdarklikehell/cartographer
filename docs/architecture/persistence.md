@@ -4,9 +4,9 @@
 
 A campaign lives in the browser's localStorage, whose limit of about 5 MB per
 origin drove almost every decision in `src/storage/`: saves are packed
-tightly, the undo history stores small deltas instead of full snapshots, and
-image payloads stay in their own section so that one large picture cannot
-take down the whole map.
+tightly, and the undo history stores small deltas instead of full snapshots.
+Image payloads live apart from the campaign, in IndexedDB, so that large
+pictures cannot fill the localStorage quota or take down the whole map.
 
 ## The save pipeline
 
@@ -26,12 +26,12 @@ take down the whole map.
       v
   packed state ---- JSON.stringify ----> one string
       |                                        |
-      |  localStorage path                     |  export path
+      |  browser storage path                  |  export path
       v                                        v
-  detachAssets: payloads to their          downloadCampaignFile: one
-  own key, campaign string to its          self-contained JSON file,
-  own key, one history delta appended      with the custom library
-                                           attached as a `library` field
+  detachAssets: payloads to                downloadCampaignFile: one
+  IndexedDB, campaign string to            self-contained JSON file,
+  its localStorage key, one history        with the custom library
+  delta appended                           attached as a `library` field
                                            (storage/CampaignFile.js)
 ```
 
@@ -63,14 +63,16 @@ passes the `Campaign` as it stands.
 
 Thin wrappers surround these pure functions: `trySaveToLocalStorage`,
 `loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. These
-wrappers are the only code that touches the real browser APIs: `localStorage`,
-`Blob`, and `FileReader`. The save wrapper reports its result instead of
+wrappers and the image store (`AssetMirror.js` over `IndexedDbAssets.js`)
+are the only code that touches the real browser APIs: `localStorage`,
+`indexedDB`, `Blob`, and `FileReader`. The save wrapper reports its result instead of
 throwing an error, so a quota failure reaches the GM instead of appearing as
 a successful save.
 
-The save wrapper also reports the footprint of the whole origin, because
-the save, the history deltas, the image sidecar, and the library share one
-quota. `storage/Footprint.js` keeps a ledger from key to stored length, so
+The save wrapper also reports the localStorage footprint of the whole
+origin, because the save, the history deltas, and the library share one
+quota. The images count toward it only on the localStorage fallback that
+[the image store](#the-image-store) describes. `storage/Footprint.js` keeps a ledger from key to stored length, so
 this check does not read every stored value after each save. Every
 localStorage write in the app goes through `writeStored` and `removeStored`,
 which record it in the ledger. The theme switch and the onboarding overlay
@@ -344,41 +346,108 @@ The table follows these rules:
   tab apply such a step through `HistoryLog.applyHistoryOps`, which resolves
   the keys with `restoreAssets` and the stored table, the step a load runs.
 
-### The localStorage split
+### The image store
 
-In localStorage, the assets table does not travel inside the save at all.
-`storage/AssetStore.js` keeps it under its own key
-(`campaign-builder:assets`). `trySaveToLocalStorage` splits the table off the
-packed state with `detachAssets`. It writes the payloads first, then writes
-the campaign, and reports the two results separately as `ok` and `assetsOk`.
+In browser storage, the assets table does not travel inside the save at
+all. `trySaveToLocalStorage` splits the table off the packed state with
+`detachAssets`, writes the payloads to IndexedDB through
+`storage/AssetMirror.js`, and writes the campaign string to its localStorage
+key. It reports the two results separately as `ok` and `assetsOk`.
 
-This split lets structure and blobs fail independently, so a full origin
-costs the GM a handout picture instead of the whole map, and a history
-snapshot never includes a picture that it did not change.
+Images are the only stored data with no bound that the app sets. One
+compressed handout is about 59,000 characters, which is 118 KB of the
+roughly 5 MB that localStorage gives an origin, so about twenty handouts or
+custom tiles fill half of it. IndexedDB gets a share of the disk instead.
+The campaign string, the undo log, and the save mark stay in localStorage,
+because cross-tab sync runs on its `storage` event, and IndexedDB has no
+such event.
 
-The write order (payloads first) makes the failure recoverable. A campaign
-that references a payload missing from the sidecar renders the placeholder
-that the renderer already draws. The reverse order
-can instead persist structure that references nothing. The write order also
-settles the cross-tab case, because a follower acts only after the
-campaign key is written, and by then the payloads are already stored.
+The split also lets structure and blobs fail independently, so a failed
+image write costs the GM a handout picture instead of the whole map, and a
+history snapshot never includes a picture that it did not change.
 
-Only the localStorage path splits the table out. `downloadState` still
+`AssetMirror.js` talks to an `AssetBackend` (`src/types/storage.ts`): an
+asynchronous key-value store with `getAll`, `getMany`, `putMany`, and
+`deleteMany`. The browser uses `storage/IndexedDbAssets.js`, a thin layer
+over one object store. The unit tests use the `Map` store of
+`storage/AssetBackend.js`, so no test needs a fake IndexedDB.
+
+#### The in-memory copy
+
+`AssetMirror.js` keeps a copy of every payload that the backend has
+committed. `openAssetMirror` fills it with one `getAll()`, and after that
+every reader stays synchronous: `deserialize`, the undo log, and the
+retention scan read `storedAssetTable()`. A key enters the copy only after
+its put commits.
+
+#### Write order
+
+A save whose payloads are all in the copy writes the campaign at once. A
+save that adds a payload writes nothing and returns `pending`, the promise
+of the put (`stageAssets`). The caller saves again when the promise
+settles, and that save finds the payload committed. A follower tab adopts
+a save on its `storage` event and looks up every key the save names, so a
+campaign written before its payload commits shows that follower a missing
+picture.
+
+A put that fails makes the next save write the campaign without the
+payload, with `assetsOk` false, and the save after that tries the put
+again.
+
+The first stored image also asks the browser to keep the origin's storage
+under disk pressure (`navigator.storage.persist()`). Firefox shows a
+permission prompt for it, so the request waits for a GM action and never
+runs at boot. A refusal changes nothing else.
+
+#### The localStorage fallback
+
+When IndexedDB is missing or does not open within three seconds (an older
+Firefox private window, or a blocked or corrupted database), the payloads
+stay in localStorage, under their own key (`campaign-builder:assets`), and
+`storage/AssetStore.js` keeps them. On this path the payload write is
+synchronous. It runs before the campaign write, so a follower that wakes on
+the campaign key finds the payloads already stored. When the campaign write
+fails on a full origin and `makeRoom` frees space, a failed payload write
+runs again first, so the freed space goes to the images. The unit tests
+that install no backend run this path.
+
+#### Moving the localStorage table
+
+The first boot with IndexedDB moves the table under `campaign-builder:assets`
+into IndexedDB (`openAssetMirror`). It puts every payload that IndexedDB does
+not contain yet, and removes the localStorage key only after that put commits.
+Two tabs can boot at once, so each reads the localStorage key before it
+reads IndexedDB. A tab that finds no key then reads IndexedDB after the
+other tab's put, and a tab that finds the key puts the same payloads again,
+which changes nothing. The key is removed only when it still contains the
+string the tab read. A put that fails keeps the key, and the tab stays on
+the localStorage fallback.
+
+#### Reading the stored table
+
+Only the path to IndexedDB splits the table out. `downloadState` still
 serializes the whole save, so an exported campaign is one self-contained
 document. Import needs no special handling, because the persist-then-reload
 path hands the inline payloads straight back to the same writer.
 
 The optional second argument to `deserialize` is the read half. It supplies
 payloads that the string does not contain, and a table inside the string takes
-priority over it. Its only two callers are the two readers of a stored
-string: `loadFromLocalStorage` and the cache that `HistoryLog` keeps of the
-last persisted state.
+priority over it. Its callers are the readers of a stored string:
+`loadFromLocalStorage`, and the cache that `HistoryLog` keeps of the last
+persisted state.
+
+#### Retention
 
 Retention spans every stored string, not only the current save. A payload is
 deleted exactly when the last state that references it becomes unreachable.
 These references are collected by matching `asset:` keys against the raw
 text (`referencedAssetKeys`, in `Assets.js`, beside the key alphabet it
-matches), instead of by walking parsed state.
+matches), instead of by walking parsed state. `pruneMirror` removes a
+payload from the copy at once and from IndexedDB in the background. A
+delete that fails leaves a payload that nothing references, and the first
+scan after the next boot removes it. A later put of the same key runs after
+the delete, because IndexedDB runs the transactions of one connection in
+order.
 
 A delta record that names a key lands after the scan of its own save, so
 `saveCampaign` passes `keepPrevious` for it, the same as for a snapshot
@@ -393,29 +462,34 @@ state walk cannot see it without decoding first. The scan is skipped completely 
 nothing to keep, which is true of every campaign that has never had an
 image.
 
-The scan is also skipped when it cannot change anything. `persistAssets`
-remembers the table string it last wrote, the keys that save referenced,
-and the names of every stored key at that time. A reference can only go
-away when the save stops naming a key or a stored string disappears, so the
-next save scans only when its references differ, a stored key is gone (the
-history log dropped a record), the table on the origin is not the one this
-tab wrote, or a payload differs under a known key. A key that appears, as
-every save adds one history delta, does not trigger a scan. After a scan,
-the table is written only when the kept table differs from the stored one.
-Without these checks, one picture in the campaign makes every autosave parse
-the table, read every other stored string, and write the table back
-unchanged.
+The scan is also skipped when it cannot change anything. Both stores
+remember the keys the last scanned save referenced and the names of every
+stored key at that time. A reference can only go away when the save stops
+naming a key or a stored string disappears, so the next save scans only
+when its references differ, a stored key is gone (the history log dropped a
+record), or the table changed since the scan. A key that appears, as every
+save adds one history delta, does not trigger a scan. Without these checks,
+one picture in the campaign makes every autosave read every other stored
+string.
 
-The table string itself is read only when it can differ from the one this
-tab wrote. `storeAssets` and `persistAssets` compare the length that the
-`Footprint.js` ledger records for the key with the length this tab wrote,
-and `Footprint.externalWriteSerial` tells them whether a `storage` event
-from another tab has touched the key since. When both match, they use the
-remembered string, because a `getItem` of a table with eight photos copies
-about 2M characters. A write from another tab whose event has not arrived
-yet can slip past this check. `storeAssets` therefore merges new payloads
-into a freshly read table, and a scan that `persistAssets` runs reads the
-table fresh too.
+On the localStorage fallback, the table string itself is read only when it
+can differ from the one this tab wrote. `storeAssets` and `persistAssets`
+compare the length that the `Footprint.js` ledger records for the key with
+the length this tab wrote, and `Footprint.externalWriteSerial` tells them
+whether a `storage` event from another tab has touched the key since. When
+both match, they use the remembered string, because a `getItem` of a table
+with eight photos copies about 2M characters. A write from another tab
+whose event has not arrived yet can slip past this check. `storeAssets`
+therefore merges new payloads into a freshly read table, and a scan that
+`persistAssets` runs reads the table fresh too. After a scan, the table is
+written only when the kept table differs from the stored one.
+
+Each tab's copy knows only the keys it read or wrote. A tab never deletes a
+key that it has not seen, so a payload that another tab has just committed
+stays until a tab that knows it finds it unreferenced. A copy can still name
+a key that another tab deleted. Such a key had no reference in any stored
+string, including the undo log, so this needs the same image to leave the
+whole undo history and come back in the other tab within one session.
 
 ## Packing layer 4: the tile codec
 

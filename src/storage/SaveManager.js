@@ -7,7 +7,8 @@ import {
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
-import { detachAssets, loadAssetTable, persistAssets, storeAssets } from './AssetStore.js';
+import { detachAssets, persistAssets, storeAssets } from './AssetStore.js';
+import { mirrorActive, pruneMirror, stageAssets, storedAssetTable } from './AssetMirror.js';
 import { createEntityPacker } from './EntityPack.js';
 import { restoreGear, tabulateGear } from './GearTable.js';
 import { restoreStrings, tabulateStrings } from './StringTable.js';
@@ -32,6 +33,11 @@ import {
 } from './RecordCoercion.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
+/**
+ * The outcome of `trySaveToLocalStorage`. `pending` is present only when
+ * the save waits on an image put and wrote nothing.
+ * @typedef {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number, json: string, pending?: Promise<boolean> }} SaveResult
+ */
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 
@@ -360,8 +366,9 @@ function entities(key, value) {
  * best-effort basis.
  *
  * `assets` supplies payloads the string does not carry. This is how the
- * localStorage form is read: `AssetStore.js` keeps the table under its own
- * key, so only the two readers of a stored string pass this argument. A
+ * stored form is read: the payloads live apart from the campaign string
+ * (`AssetMirror.storedAssetTable`), so only the readers of a stored string
+ * pass this argument. A
  * table inside the string wins over it, so an exported file, which is
  * always self-contained, is unaffected.
  * @param {string} json
@@ -447,9 +454,10 @@ export function toTileGrid(state) {
 
 /**
  * Warn when stored data approaches the localStorage origin quota of about 5
- * MB. This leaves headroom for the history log and the image sidecar,
- * which share the same quota. localStorage stores UTF-16 code units, so the
- * byte cost of a string is twice its length.
+ * MB. This leaves headroom for the history log, which shares the same
+ * quota, and for the image table when IndexedDB is not in use.
+ * localStorage stores UTF-16 code units, so the byte cost of a string is
+ * twice its length.
  */
 export const QUOTA_WARN_BYTES = 3 * 1024 * 1024;
 
@@ -501,15 +509,23 @@ export function localStorageFootprint() {
  * know the new save's size net of the old one it replaces, and the warning
  * concerns the next write either way.
  *
- * Image payloads go to their own key first, then the campaign, so
- * structure and blobs fail independently. `assetsOk` false leaves the GM a
- * saved map with a missing picture. One blob stored inside the campaign
- * string costs the GM both the map and the picture. Writing the
- * payloads first makes that the only failure shape, because the reverse
- * order can store structure that references nothing. It also settles the
- * cross-tab race: a follower tab wakes on the campaign key, and by then
- * the payloads are already stored. `bytes` measures the payload-free save.
- * Only `footprint` speaks to the quota, and it counts every key.
+ * Image payloads are stored before the campaign, so structure and blobs
+ * fail independently. `assetsOk` false leaves the GM a saved map with a
+ * missing picture. One blob stored inside the campaign string costs the GM
+ * both the map and the picture. The payloads go first because the reverse
+ * order can store structure that references nothing, and a follower tab
+ * that adopts that campaign looks up a key that is not stored yet. `bytes`
+ * measures the payload-free save. Only `footprint` speaks to the quota,
+ * and it counts every localStorage key.
+ *
+ * The payloads go to IndexedDB when `AssetMirror.js` has a backend, and to
+ * their own localStorage key (`AssetStore.js`) otherwise. An IndexedDB put
+ * is asynchronous. When the save adds a payload that is not committed yet,
+ * this function writes nothing and returns `pending`, the promise of that
+ * put. The caller saves again once it settles, and that save finds the
+ * payload committed and writes the campaign. A put that fails makes the
+ * next save write the campaign with `assetsOk` false. A page that closes
+ * while a put is pending keeps its previous save.
  *
  * `json` is the string that was written, or that the code attempted to
  * write. `HistoryLog.js` caches the state it just stored against this
@@ -528,48 +544,58 @@ export function localStorageFootprint() {
  * before the snapshot key exists to reference them, and an undo restores a
  * campaign with missing pictures.
  *
+ * `beforeWrite` runs right before the first campaign write, and not for a
+ * pending save. `HistoryLog.js` removes the save mark there.
+ *
  * `makeRoom` runs when the campaign write fails. It removes data that the
  * caller can spare and returns true when it removed something. The write
  * then runs again with the same string, so a retry does not pack the
  * campaign again. `HistoryLog.saveCampaign` passes a function that drops
  * undo steps, because a campaign that exists only in memory is a worse
- * loss than undo depth.
+ * loss than undo depth. On the localStorage path, a payload write that
+ * failed runs again first, so the freed room goes to the images.
  * @param {CampaignState} state
  * @param {string} [key]
- * @param {{ keepPrevious?: boolean, makeRoom?: () => boolean }} [options]
- * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number, json: string }}
+ * @param {{ keepPrevious?: boolean, makeRoom?: () => boolean, beforeWrite?: () => void }} [options]
+ * @returns {SaveResult}
  */
 export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options = {}) {
   const { state: detached, assets } = detachAssets(packState(state));
   const json = JSON.stringify(detached);
   const bytes = saveByteSize(json);
-  let assetsOk = storeAssets(assets);
+  const mirrored = mirrorActive();
+  /** @param {boolean} ok @param {boolean} assetsOk @returns {SaveResult} */
+  const result = (ok, assetsOk) => {
+    const footprint = localStorageFootprint();
+    return { ok, assetsOk, nearQuota: !ok || isNearQuota(footprint), bytes, footprint, json };
+  };
+  let assetsOk = true;
+  if (mirrored) {
+    const staged = stageAssets(assets);
+    if (staged.pending)
+      return { ...result(false, true), nearQuota: false, pending: staged.pending };
+    assetsOk = staged.assetsOk;
+  } else {
+    assetsOk = storeAssets(assets);
+  }
+  options.beforeWrite?.();
   for (;;) {
     try {
       writeStored(key, json);
       break;
     } catch {
-      if (!options.makeRoom?.()) {
-        return {
-          ok: false,
-          assetsOk,
-          nearQuota: true,
-          bytes,
-          footprint: localStorageFootprint(),
-          json,
-        };
-      }
-      // The images failed on the same full origin. The freed space goes
-      // to them first, for the order that the comment above gives.
-      if (!assetsOk) assetsOk = storeAssets(assets);
+      if (!options.makeRoom?.()) return result(false, assetsOk);
+      if (!mirrored && !assetsOk) assetsOk = storeAssets(assets);
     }
   }
   // The replaced save is gone from `key` now. When the caller still needs
   // its images, the scan waits for the next save, which finds the snapshot
   // record that references them.
-  if (!options.keepPrevious) assetsOk = persistAssets(assets, json) && assetsOk;
-  const footprint = localStorageFootprint();
-  return { ok: true, assetsOk, nearQuota: isNearQuota(footprint), bytes, footprint, json };
+  if (!options.keepPrevious) {
+    if (mirrored) pruneMirror(json);
+    else assetsOk = persistAssets(assets, json) && assetsOk;
+  }
+  return result(true, assetsOk);
 }
 
 /**
@@ -578,7 +604,7 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options 
  */
 export function loadFromLocalStorage(key = DEFAULT_STORAGE_KEY) {
   const json = localStorage.getItem(key);
-  return json ? deserialize(json, loadAssetTable()) : null;
+  return json ? deserialize(json, storedAssetTable()) : null;
 }
 
 /**

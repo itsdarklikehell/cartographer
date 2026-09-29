@@ -2,8 +2,9 @@
  * A ledger of what each localStorage key costs, so the quota check after a
  * save does not read every stored value again.
  *
- * The save, the history deltas, the image sidecar, the custom library, and
- * the lock and preference flags share one origin quota of about 5 MB.
+ * The save, the history deltas, the custom library, and the lock and
+ * preference flags share one origin quota of about 5 MB. The image table
+ * joins them only when IndexedDB is not in use (`AssetMirror.js`).
  * `trySaveToLocalStorage` measures the whole footprint after every write,
  * and `HistoryLog.trimToCap` measures every delta again in the same save.
  * Near the warning threshold that copied several megabytes of strings per

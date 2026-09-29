@@ -93,3 +93,24 @@ export interface CampaignState {
 export interface CampaignSource extends Partial<Omit<CampaignState, 'nodes' | 'version'>> {
   grid: TileGrid;
 }
+
+/** Image payloads by asset key, as `Assets.hoistAssets` writes them. */
+export type AssetTable = Record<string, string>;
+
+/**
+ * A key-value store for image payloads (`storage/AssetMirror.js`). The
+ * browser uses IndexedDB (`storage/IndexedDbAssets.js`), and the unit tests
+ * use the memory store of `storage/AssetBackend.js`. A promise resolves once
+ * the change is committed, so another tab can read it, and rejects when the
+ * store refuses it.
+ */
+export interface AssetBackend {
+  /** Every stored payload. */
+  getAll(): Promise<AssetTable>;
+  /** The stored payloads of these keys. A key with no payload is left out. */
+  getMany(keys: string[]): Promise<AssetTable>;
+  /** Store these payloads in one transaction. */
+  putMany(entries: [string, string][]): Promise<void>;
+  /** Remove these keys in one transaction. */
+  deleteMany(keys: string[]): Promise<void>;
+}
