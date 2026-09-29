@@ -287,8 +287,9 @@ export function wireEncounters(app) {
         { disposition: 'hostile', level: 1 },
       ),
     onAddFromTemplate: () => addFromLibrary(app),
-    onClearDefeated: () => clearDefeated(app),
-    defeatedCount: () => clearableDefeated(state.creatures, current()).length,
+    onClearDefeated: () => clearDefeated(app, app.navigator.getCurrentNode().id),
+    defeatedCount: () =>
+      clearableDefeated(state.creatures, current(), app.navigator.getCurrentNode().id).length,
     onEdit: (creature) => creatureForm(app, creature, null),
     onDelete: (creature) => deleteCreature(app, creature),
     // Persist base stat edits from the Build rail's chips. The Play panel

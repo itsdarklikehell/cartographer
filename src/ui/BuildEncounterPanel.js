@@ -23,9 +23,8 @@ import { describeTile } from '../map/TileCoords.js';
  *
  * This panel owns no roster state. getEncounters supplies the rows, already
  * scoped by the caller to the viewed node. Every change flows back through a
- * callback. `defeatedCount` counts the defeated foes of the whole campaign,
- * not only this node, and the Clear defeated button shows while it is above
- * zero.
+ * callback. `defeatedCount` counts the defeated foes placed in the viewed
+ * node, and the Clear defeated button shows while it is above zero.
  * @param {HTMLElement} container
  * @param {{
  *   getEncounters: () => Encounter[],
@@ -118,7 +117,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
     },
     // The button to spawn from a saved template, from the campaign bestiary
     // or the library, sits beside New encounter. Authoring belongs to the Build rail.
-    // Clear defeated removes the downed foes of every node in one step.
+    // Clear defeated removes the downed foes of the viewed node in one step.
     addButtons: () => [
       { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd },
       callbacks.onAddFromTemplate

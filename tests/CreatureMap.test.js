@@ -223,20 +223,27 @@ test('unplaceFrom returns the same roster when no creature stands there', () => 
   assert.equal(unplaceFrom(roster, new Set()), roster);
 });
 
-test('clearableDefeated lists downed hostiles outside a running fight', () => {
-  const foe = (id, options = {}) =>
-    createCreature(id, 'Goblin', { disposition: 'hostile', ...options });
+test('clearableDefeated lists downed hostiles of one node outside a running fight', () => {
+  const foe = (id, nodeId) => placed(id, nodeId, '0,0', { disposition: 'hostile' });
   const down = (c) => applyDamage(c, c.maxHP);
   const roster = [
-    down(foe('g1')),
-    foe('g2'),
-    down(foe('g3')),
-    down(createCreature('n1', 'Ferryman')),
+    down(foe('g1', 'n1')),
+    foe('g2', 'n1'),
+    down(foe('g3', 'n1')),
+    down(placed('ferryman', 'n1', '0,0')),
+    down(foe('g4', 'n2')),
+    down(createCreature('g5', 'Goblin', { disposition: 'hostile' })),
   ];
   const ids = (list) => list.map((c) => c.id);
-  assert.deepEqual(ids(clearableDefeated(roster, null)), ['g1', 'g3']);
+  assert.deepEqual(ids(clearableDefeated(roster, null, 'n1')), ['g1', 'g3']);
+  assert.deepEqual(ids(clearableDefeated(roster, null, 'n2')), ['g4'], 'another map');
+  assert.deepEqual(ids(clearableDefeated(roster, null, 'n3')), [], 'a map with no foes');
   const combat = { order: [{ id: 'g3' }] };
-  assert.deepEqual(ids(clearableDefeated(roster, combat)), ['g1'], 'a foe in the fight stays');
+  assert.deepEqual(
+    ids(clearableDefeated(roster, combat, 'n1')),
+    ['g1'],
+    'a foe in the fight stays',
+  );
 });
 
 test('nameTally counts repeated names in first-seen order', () => {

@@ -525,8 +525,9 @@ as defeated, not deleted.
 
 A defeated foe stays in the campaign until you remove it. The **Clear
 defeated** button in the Build rail's Encounters card shows the count of hostile
-creatures at 0 HP across every map. It asks once, then removes all of them,
-except a foe in the order of a running fight. The removal also takes the foes
+creatures at 0 HP placed on the map in view. It asks once, then removes all of
+them, except a foe in the order of a running fight. Foes on other maps and
+unplaced foes stay. The removal also takes the foes
 off any quest links, and one travelogue note names the foes by count, for
 example "Cleared 4 defeated foes: Goblin x3, Wolf." Undo brings them back.
 

@@ -117,9 +117,10 @@ so a character and a creature never convert into each other.
 
 A defeated creature stays in `state.creatures` until the GM removes it. Each
 defeated foe costs the save about 500 characters, and every save packs it.
-`CreatureMap.clearableDefeated` picks the hostile creatures at 0 HP that no
-running fight lists, and `app/creatureForm.js`'s `clearDefeated` removes
-them after one confirm. It writes through `commitCreatures`, the same path
+`CreatureMap.clearableDefeated` picks the hostile creatures at 0 HP placed
+in one node that no running fight lists. The Build rail passes it the node
+in view, and `app/creatureForm.js`'s `clearDefeated` removes them after one
+confirm. It writes through `commitCreatures`, the same path
 as a single delete, so `pruneCreatureLinks` takes their quest links off. The
 travelogue note it writes uses `nameTally` ("Goblin x3, Wolf"), and the
 campaign keeps no other record of the removed foes. A foe in the order of a

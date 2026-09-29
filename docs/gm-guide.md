@@ -289,10 +289,11 @@ not change it.
 
 ### Clear defeated foes
 
-1. Switch to **Build** mode and open the **Encounters** card in the right
-   rail.
+1. Switch to **Build** mode and view the map that has the defeated foes.
+   Open the **Encounters** card in the right rail.
 2. Click **Clear defeated (N)**. N counts the hostile creatures at 0 HP on
-   every map. The button shows only while N is above zero.
+   this map. The button shows only while N is above zero. Foes on other maps
+   and unplaced foes stay.
 3. Confirm. The foes leave the campaign, and the travelogue records a note
    that names them. A foe in a fight that is still open stays until you end
    the fight.

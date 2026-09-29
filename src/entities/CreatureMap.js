@@ -243,17 +243,23 @@ export function formatLocation(location, getNodeName) {
 
 /**
  * The foes that the Clear defeated action removes: hostile creatures at 0 HP
- * that no running fight lists. A foe in the order of a running fight stays,
- * because the fight still draws its chip and counts its experience points
- * when it ends. This function is pure.
+ * placed in the node `nodeId` that no running fight lists. A foe on another
+ * map or with no location stays. A foe in the order of a running fight also
+ * stays, because the fight still draws its chip and counts its experience
+ * points when it ends. This function is pure.
  * @param {Creature[]} creatures
  * @param {{ order: { id: string }[] } | null} combat
+ * @param {string} nodeId
  * @returns {Creature[]}
  */
-export function clearableDefeated(creatures, combat) {
+export function clearableDefeated(creatures, combat, nodeId) {
   const fighting = new Set(combat?.order.map((p) => p.id));
   return creatures.filter(
-    (c) => c.disposition === 'hostile' && isDefeated(c) && !fighting.has(c.id),
+    (c) =>
+      c.disposition === 'hostile' &&
+      c.location?.nodeId === nodeId &&
+      isDefeated(c) &&
+      !fighting.has(c.id),
   );
 }
 

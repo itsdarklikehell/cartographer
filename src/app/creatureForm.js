@@ -120,23 +120,26 @@ export async function deleteCreature(app, creature) {
 }
 
 /**
- * Remove every defeated foe outside a running fight, after one confirm. The
- * removal goes through `commitCreatures`, as a single delete does, so quest
- * links to the removed foes go too. One travelogue line names what went,
- * and Undo brings the foes back. Resolves to true if foes were removed.
+ * Remove the defeated foes placed in the node `nodeId` that no running fight
+ * lists, after one confirm. The removal goes through `commitCreatures`, as a
+ * single delete does, so quest links to the removed foes go too. One
+ * travelogue line names what went, and Undo brings the foes back. Resolves
+ * to true if foes were removed.
  * @param {AppContext} app
+ * @param {string} nodeId
  * @returns {Promise<boolean>}
  */
-export async function clearDefeated(app) {
+export async function clearDefeated(app, nodeId) {
   const { state } = app;
-  const gone = clearableDefeated(state.creatures, state.combat);
+  const gone = clearableDefeated(state.creatures, state.combat, nodeId);
   if (gone.length === 0) return false;
   const noun = gone.length === 1 ? 'foe' : 'foes';
   const tally = nameTally(gone);
-  const ok = await confirmModal(
-    `Remove ${gone.length} defeated ${noun} from the campaign? ${tally}.`,
-    { title: 'Clear defeated', variant: 'danger', confirmLabel: 'Remove' },
-  );
+  const ok = await confirmModal(`Remove ${gone.length} defeated ${noun} from this map? ${tally}.`, {
+    title: 'Clear defeated',
+    variant: 'danger',
+    confirmLabel: 'Remove',
+  });
   if (!ok) return false;
   const ids = new Set(gone.map((c) => c.id));
   state.creatures = state.creatures.filter((c) => !ids.has(c.id));
