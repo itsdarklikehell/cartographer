@@ -397,6 +397,9 @@ Authoring adds tiles, and fog reveals only increase and are never reclaimed.
      "revealed":true},                        is implicit in its position
     ...                                fog:   revealed as its own run-length
   ]                                           stream (alternating run lengths)
+                                       links: distinct childNodeId values, and
+                                              linkCells, a run-length stream
+                                              of indices into links
                                        tiles: only the leftovers, keyed by id
 ```
 
@@ -410,6 +413,12 @@ reveal is a disc, and run-lengths compress a disc almost perfectly. Exploring
 that whole field costs 15 more characters in the encoded form, where the
 per-cell form adds 25,600.
 
+`links` and `linkCells` state the region links the same way. The generators
+link every tile of a region's block to that region, so a link repeats over
+hundreds of tiles in a few rows of runs. A save with links in the leftover
+records still reads, because the decoder uses the link stream only when a
+node has `links`.
+
 The palette writes each ref in a short form (`storage/TileRefs.js`). Each
 built-in palette id equals the base name of its file, so the palette stores
 `snow-3` for `assets/tiles/snow/snow-3.svg`, and the decoder reads the id
@@ -419,7 +428,7 @@ catalog pass through both ways, and so does every path in a save that
 stores full paths. A bare live ref that reads as a palette id gets a `=`
 prefix, so a hand-edited ref `grass-1` does not come back as a path.
 
-On the example campaign, the encoded node list is 227,327 characters, where
+On the example campaign, the encoded node list is 165,192 characters, where
 the same nodes in the per-cell form cost 1,506,124.
 
 The codec never loses data, because it refuses any node that it cannot
@@ -432,16 +441,18 @@ represent and writes whatever it does not represent out of line:
   per-cell form, instead of being forced into the grid. Nodes that are sparse
   but still gridded (interiors often are this way, and `barrow` is 94 tiles
   in a 14x14) encode through a reserved `-1` index that means "no tile here".
-- **The leftover list is built by deleting the four fields that the codec
+- **The leftover list is built by deleting the fields that the codec
   represents itself**, exactly as `packTile` does. As a result, a `Tile`
-  member added later rides out of line, instead of being dropped.
+  member added later stays in the leftover record, instead of being dropped.
+  A `childNodeId` that is not a string stays there too.
 
 The codec also follows these rules:
 
-- The palette is built by row-major traversal, instead of by `tiles` array
-  order, because `isExternalSaveEvent` compares raw strings, and a palette in
-  array order would make an unchanged campaign re-serialize to a different
-  string and read as another tab's save.
+- Each palette is built by row-major traversal, instead of by `tiles` array
+  order, because the cross-tab write check (`storageMovedOn`) compares raw
+  save strings, and a palette in array order would make an unchanged
+  campaign re-serialize to a different string and read as another tab's
+  save.
 - Decoding degrades instead of throwing an error. An unreadable palette
   entry skips its cell, and an unreadable run ends the stream. Import
   persists what it reads before it reloads, so an error thrown here produces

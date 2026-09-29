@@ -1,6 +1,7 @@
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
 import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
+import { EMPTY, expandFog, expandIndexRuns, fogRuns, indexRuns } from './RunLength.js';
 
 /**
  * Positional encoding for the tiles of a node. This is the on-disk form. It
@@ -19,7 +20,7 @@ import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
  * that fog never removes. This makes the node list the part of the save
  * worth encoding, not trimming.
  *
- * The encoded node replaces `tiles` with four fields:
+ * The encoded node replaces `tiles` with these fields:
  *   - `refs`   the distinct art entries, stated one time. An entry is a bare
  *              `imageRef` string, or the pair `[imageRef, overlayRef]` when
  *              the tile has an overlay. An overlay is a ref or a stack in
@@ -33,7 +34,11 @@ import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
  *              starting with an unrevealed run. The codec keeps this separate
  *              from the terrain data because play changes only this field,
  *              and a reveal covers a disc-shaped area, so run-length
- *              encoding works well for it.
+ *              encoding works well for it. Absent when nothing is revealed.
+ *   - `links`  the distinct `childNodeId` values, and `linkCells`, the index
+ *              of each position into `links` in the form of `cells`. A
+ *              region link covers a whole block of tiles, so one run states
+ *              a row of the block. Both are absent when no tile has a link.
  *   - `tiles`  the fields that remain, keyed by tile id. The codec omits this
  *              field when it is empty.
  *
@@ -41,26 +46,16 @@ import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
  * per node: when the positional assumption does not provably hold, the codec
  * leaves the node exactly as the tile packing produced it, because non-grid
  * tile ids are legitimate. Second, the codec never picks the fields it
- * carries by name. It deletes the four fields it represents itself and keeps
- * the remainder. This way, a `Tile` member added later survives a save even
- * when this module does not know about it, the same way `packTile` works.
+ * keeps by name. It deletes the fields it represents itself and keeps the
+ * remainder. This way, a `Tile` member added later stays in a save even when
+ * this module does not know about it, the same way `packTile` works.
  *
  * Like a packed tile, an encoded node exists only inside the serialized
- * string. Nothing in memory can hold one: the renderer reads `tile.metadata`
- * without a check, so `decodeNodeTiles` must run on load before any
- * validation.
+ * string. Nothing in memory can have one: the renderer reads `tile.metadata`
+ * without a check, so `decodeNodeTiles` runs on load before any validation.
+ * An encoded node depends on nothing outside itself, so one node decodes
+ * alone.
  */
-
-/**
- * The run length at which `[index, count]` becomes shorter than the same run
- * written as bare numbers. `[3,2]` is six characters. `3,3` is four
- * characters. A run of two makes a randomly varied terrain field larger. A
- * run of three is the point where the pair form stops losing.
- */
-const RUN_MIN = 3;
-
-/** The reserved `cells` index that means no tile is at this position. */
-const EMPTY = -1;
 
 /**
  * The value of `text[start, end)` read as a canonical decimal integer, or -1
@@ -161,96 +156,64 @@ function layOut(node, width, height) {
 }
 
 /**
- * The run-length index stream for a laid-out node, and the palette that the
- * stream indexes. The codec drops a trailing run of empty cells instead of
- * writing it. This run is most of the stream for a sparse interior.
+ * A palette of distinct values, indexed in first-seen order, and the index
+ * of each position. A position with no value gets `EMPTY`.
+ * @template T
  * @param {(Record<string, any> | null)[]} slots
- * @returns {{ refs: (string | [string, unknown])[], cells: (number | [number, number])[] }}
+ * @param {(tile: Record<string, any>) => T | undefined} valueOf the value of
+ *   a tile, or undefined for none
+ * @param {(value: T) => string} keyOf the palette key of a value
+ * @returns {{ palette: T[], indices: Int32Array }}
  */
-function encodeCells(slots) {
-  /** @type {(string | [string, unknown])[]} */
-  const refs = [];
-  // Two lookups, one per entry form. A bare entry is keyed by its own
-  // `imageRef` string, so the common case builds no key at all. A pair is
-  // keyed by its JSON text. Keeping the two apart means an `imageRef` that
-  // happens to look like JSON can never share a palette slot with a pair.
+function paletteOf(slots, valueOf, keyOf) {
+  /** @type {T[]} */
+  const palette = [];
   /** @type {Map<string, number>} */
-  const bareIndex = new Map();
-  /** @type {Map<string, number>} */
-  const pairIndex = new Map();
-  /** @type {(number | [number, number])[]} */
-  const cells = [];
-  let runIndex = EMPTY;
-  let runCount = 0;
-  const flush = () => {
-    if (runCount >= RUN_MIN) cells.push([runIndex, runCount]);
-    else for (let n = 0; n < runCount; n += 1) cells.push(runIndex);
-  };
-  for (const tile of slots) {
-    let index = EMPTY;
-    if (tile) {
-      const entry = artEntry(tile);
-      const byKey = typeof entry === 'string' ? bareIndex : pairIndex;
-      const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
-      const seen = byKey.get(key);
-      if (seen === undefined) {
-        index = refs.length;
-        refs.push(entry);
-        byKey.set(key, index);
-      } else {
-        index = seen;
-      }
+  const seen = new Map();
+  const indices = new Int32Array(slots.length).fill(EMPTY);
+  for (let pos = 0; pos < slots.length; pos += 1) {
+    const tile = slots[pos];
+    const value = tile ? valueOf(tile) : undefined;
+    if (value === undefined) continue;
+    const key = keyOf(value);
+    let index = seen.get(key);
+    if (index === undefined) {
+      index = palette.length;
+      palette.push(value);
+      seen.set(key, index);
     }
-    if (runCount && index === runIndex) {
-      runCount += 1;
-      continue;
-    }
-    if (runCount) flush();
-    runIndex = index;
-    runCount = 1;
+    indices[pos] = index;
   }
-  // A trailing empty run carries no information. The decoder can infer it
-  // from the end of the stream.
-  if (runCount && runIndex !== EMPTY) flush();
-  return { refs, cells };
+  return { palette, indices };
 }
 
 /**
- * The `revealed` field as alternating run lengths, starting with an
- * unrevealed run, or an empty list when nothing is revealed. The codec drops
- * a trailing unrevealed run. The decoder defaults every unstated position to
- * fogged.
- * @param {(Record<string, any> | null)[]} slots
- * @returns {number[]}
+ * The palette key of an art entry. A bare entry is keyed by its own string,
+ * so the common case builds no key at all. A pair is keyed by its JSON text,
+ * which starts with `[`. The `\u0000` prefix of a bare key keeps a bare ref
+ * that looks like the JSON of a pair out of that pair's palette slot.
+ * @param {string | [string, unknown]} entry
+ * @returns {string}
  */
-function encodeFog(slots) {
-  /** @type {number[]} */
-  const runs = [];
-  let value = false;
-  let count = 0;
-  let any = false;
-  for (const tile of slots) {
-    const bit = tile !== null && tile.revealed === true;
-    if (bit === value) {
-      count += 1;
-    } else {
-      runs.push(count);
-      value = bit;
-      count = 1;
-    }
-    if (bit) any = true;
-  }
-  if (!any) return [];
-  if (value) runs.push(count);
-  return runs;
+function artKey(entry) {
+  return typeof entry === 'string' ? `\u0000${entry}` : JSON.stringify(entry);
+}
+
+/**
+ * The region link of a tile, or undefined when it has none. A link that is
+ * not a string stays in the leftover record, the same as an unknown field.
+ * @param {Record<string, any>} tile
+ * @returns {string | undefined}
+ */
+function linkOf(tile) {
+  return typeof tile.childNodeId === 'string' ? tile.childNodeId : undefined;
 }
 
 /**
  * The fields of a packed tile that the codec does not represent itself,
- * keyed by id: `metadata`, `childNodeId`, `span`, and any field a later
- * `Tile` member adds. The codec builds this list by deletion, not by naming
- * the fields to keep, so a field unknown to this module is carried, not
- * dropped.
+ * keyed by id: `metadata`, `span`, and any field a later `Tile` member adds.
+ * The codec builds this list by deletion, not by naming the fields to keep,
+ * so a field unknown to this module stays in the save.
  * @param {(Record<string, any> | null)[]} slots
  * @returns {Record<string, any>[]}
  */
@@ -259,12 +222,14 @@ function encodeLeftovers(slots) {
   const leftovers = [];
   for (const tile of slots) {
     if (!tile) continue;
-    // Most tiles carry nothing but the fields the codec owns. Count those
-    // fields first, and copy the tile only when it holds something else.
+    // Most tiles have nothing but the fields the codec owns. Count those
+    // fields first, and copy the tile only when it has something else.
     // `layOut` has already checked that `id` and `imageRef` are present.
     let owned = 2;
     if ('overlayRef' in tile) owned += 1;
     if ('revealed' in tile) owned += 1;
+    const link = linkOf(tile) !== undefined;
+    if (link) owned += 1;
     if (Object.keys(tile).length === owned) continue;
     /** @type {Record<string, any>} */
     const rest = { ...tile };
@@ -272,6 +237,7 @@ function encodeLeftovers(slots) {
     delete rest.imageRef;
     delete rest.overlayRef;
     delete rest.revealed;
+    if (link) delete rest.childNodeId;
     if (Object.keys(rest).length) leftovers.push({ id: tile.id, ...rest });
   }
   return leftovers;
@@ -281,12 +247,11 @@ function encodeLeftovers(slots) {
  * A packed node in its positional form, or the node unchanged when it does
  * not qualify. This function is pure: it never changes the node passed in.
  *
- * The codec builds the palette by row-major traversal, not by the order of
+ * The codec builds each palette by row-major traversal, not by the order of
  * the `tiles` array, so the output does not depend on the order that tile
- * mutations leave the array in. This matters for more than tidiness. The
- * undo ring skips a snapshot that is byte-identical to the newest one, and
- * the cross-tab watcher compares raw strings. Because of this, re-serializing
- * an unchanged campaign must produce the same string.
+ * mutations leave the array in. The undo log skips a save string equal to
+ * the one before it, and the cross-tab follower compares raw strings, so a
+ * palette in array order makes an unchanged campaign read as a new save.
  * @param {Record<string, any>} node a node whose tiles are already packed
  * @returns {Record<string, any>}
  */
@@ -297,62 +262,25 @@ export function encodeNodeTiles(node) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return node;
   const slots = layOut(node, width, height);
   if (!slots) return node;
-  const { refs, cells } = encodeCells(slots);
-  const fog = encodeFog(slots);
+  const art = paletteOf(slots, artEntry, artKey);
+  const links = paletteOf(slots, linkOf, (id) => id);
+  const fog = fogRuns(slots.map((tile) => tile !== null && tile.revealed === true));
   const leftovers = encodeLeftovers(slots);
   /** @type {Record<string, any>} */
   const encoded = { ...node };
   // The codec deletes this field, then adds it back only when needed. This
   // puts the leftovers at the end of the record, and a node with no
-  // leftovers carries no `tiles` key.
+  // leftovers has no `tiles` key.
   delete encoded.tiles;
-  encoded.refs = refs;
-  encoded.cells = cells;
+  encoded.refs = art.palette;
+  encoded.cells = indexRuns(art.indices);
   if (fog.length) encoded.fog = fog;
+  if (links.palette.length) {
+    encoded.links = links.palette;
+    encoded.linkCells = indexRuns(links.indices);
+  }
   if (leftovers.length) encoded.tiles = leftovers;
   return encoded;
-}
-
-/**
- * The revealed bit for each position, read from an alternating run-length
- * stream. The function stops at the first unreadable run instead of
- * throwing an error. A corrupt fog stream costs the GM some revealed ground,
- * not the entire load.
- * @param {unknown} fog
- * @param {number} size
- * @returns {Uint8Array}
- */
-function decodeFog(fog, size) {
-  const bits = new Uint8Array(size);
-  if (!Array.isArray(fog)) return bits;
-  let pos = 0;
-  let revealed = false;
-  for (const run of fog) {
-    if (typeof run !== 'number' || !Number.isFinite(run) || run < 0) break;
-    const end = Math.min(size, pos + Math.floor(run));
-    if (revealed) bits.fill(1, pos, end);
-    pos = end;
-    revealed = !revealed;
-    if (pos >= size) break;
-  }
-  return bits;
-}
-
-/**
- * One `cells` element as an index and a run length, or null when the element
- * is neither a bare index nor an `[index, count]` pair.
- * @param {unknown} element
- * @returns {{ index: number, count: number } | null}
- */
-function readRun(element) {
-  if (typeof element === 'number' && Number.isFinite(element)) {
-    return { index: Math.trunc(element), count: 1 };
-  }
-  if (!Array.isArray(element)) return null;
-  const [index, count] = element;
-  if (typeof index !== 'number' || !Number.isFinite(index)) return null;
-  if (typeof count !== 'number' || !Number.isFinite(count)) return null;
-  return { index: Math.trunc(index), count: Math.max(0, Math.trunc(count)) };
 }
 
 /**
@@ -371,10 +299,22 @@ function leftoversById(tiles) {
 }
 
 /**
+ * The link palette and index of each position, or null when the node has no
+ * link stream. A save that keeps links in the leftover records has none.
+ * @param {Record<string, any>} node
+ * @param {number} size
+ * @returns {{ links: unknown[], at: Int32Array } | null}
+ */
+function linkStream(node, size) {
+  if (!Array.isArray(node.links)) return null;
+  return { links: node.links, at: expandIndexRuns(node.linkCells, size) };
+}
+
+/**
  * A node read back out of its positional form, or the node unchanged when it
  * is not in that form. The function checks for a `cells` array to decide, so
- * a save written before this encoding existed passes through unchanged. This
- * function is pure.
+ * a node in the per-tile form passes through unchanged. This function is
+ * pure.
  *
  * The tiles this function returns are still packed: their default-valued
  * fields stay omitted. The load path's existing tile-defaults step fills
@@ -394,44 +334,47 @@ export function decodeNodeTiles(node) {
   delete decoded.refs;
   delete decoded.cells;
   delete decoded.fog;
+  delete decoded.links;
+  delete decoded.linkCells;
   const leftovers = leftoversById(node.tiles);
   const size = gridSize(node);
-  const width = size ? node.width : 0;
   if (!size) {
     // The codec cannot place a tile without usable dimensions. Keep the
-    // leftovers, which carry their own ids, instead of dropping the node's
+    // leftovers, which have their own ids, instead of dropping the node's
     // tiles outright.
     decoded.tiles = [...leftovers.values()];
     return decoded;
   }
+  const width = node.width;
   const refs = Array.isArray(node.refs) ? node.refs.map(liveEntry) : [];
-  const revealed = decodeFog(node.fog, size);
+  const art = expandIndexRuns(node.cells, size);
+  const revealed = expandFog(node.fog, size);
+  const links = linkStream(node, size);
   /** @type {Record<string, any>[]} */
   const tiles = [];
-  let pos = 0;
-  for (const element of node.cells) {
-    const run = readRun(element);
-    if (!run) break;
-    for (let n = 0; n < run.count && pos < size; n += 1, pos += 1) {
-      const entry = refs[run.index];
-      if (!entry) continue;
-      const x = pos % width;
-      const id = tileIdAt(x, (pos - x) / width);
-      const extra = leftovers.get(id);
-      /** @type {Record<string, any>} */
-      const tile = extra ? { ...extra } : {};
-      // Assign these fields after the leftovers so the codec's own fields
-      // win. A hand-edited save cannot make a leftover record contradict
-      // the palette or the fog stream.
-      tile.id = id;
-      tile.imageRef = entry.imageRef;
-      if (entry.overlay == null) delete tile.overlayRef;
-      else tile.overlayRef = entry.overlay;
-      if (revealed[pos]) tile.revealed = true;
-      else delete tile.revealed;
-      tiles.push(tile);
+  for (let pos = 0; pos < size; pos += 1) {
+    const entry = refs[art[pos]];
+    if (!entry) continue;
+    const x = pos % width;
+    const id = tileIdAt(x, (pos - x) / width);
+    const extra = leftovers.get(id);
+    /** @type {Record<string, any>} */
+    const tile = extra ? { ...extra } : {};
+    // Assign these fields after the leftovers so the codec's own fields
+    // win. A hand-edited save cannot make a leftover record contradict
+    // the palettes or the fog stream.
+    tile.id = id;
+    tile.imageRef = entry.imageRef;
+    if (entry.overlay == null) delete tile.overlayRef;
+    else tile.overlayRef = entry.overlay;
+    if (revealed[pos]) tile.revealed = true;
+    else delete tile.revealed;
+    if (links) {
+      const link = links.links[links.at[pos]];
+      if (typeof link === 'string') tile.childNodeId = link;
+      else delete tile.childNodeId;
     }
-    if (pos >= size) break;
+    tiles.push(tile);
   }
   decoded.tiles = tiles;
   return decoded;

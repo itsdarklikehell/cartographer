@@ -54,7 +54,15 @@ function roundTrip(node) {
   const byId = (/** @type {Record<string, any>[]} */ tiles) =>
     [...tiles].sort((a, b) => String(a.id).localeCompare(String(b.id)));
   assert.deepEqual(byId(decoded.tiles), byId(node.tiles), 'tiles round trip');
-  const { tiles: _tiles, refs: _refs, cells: _cells, fog: _fog, ...encodedRest } = encoded;
+  const {
+    tiles: _tiles,
+    refs: _refs,
+    cells: _cells,
+    fog: _fog,
+    links: _links,
+    linkCells: _linkCells,
+    ...encodedRest
+  } = encoded;
   const { tiles: _decodedTiles, ...decodedRest } = decoded;
   assert.deepEqual(decodedRest, encodedRest, 'every other node field round trips');
   return encoded;
@@ -110,7 +118,7 @@ test('overlays are part of the palette entry, as a ref and as a stack', () => {
   assert.deepEqual(encoded.cells, [0, 1, 2, 1], 'the repeated overlay reuses its entry');
 });
 
-test('metadata, childNodeId, span, and unknown fields ride out of line', () => {
+test('metadata, span, and unknown fields stay out of line', () => {
   const node = makeNode({
     width: 4,
     height: 1,
@@ -129,9 +137,68 @@ test('metadata, childNodeId, span, and unknown fields ride out of line', () => {
   assert.deepEqual(encoded.cells, [[0, 4]], 'out-of-line fields do not split the art run');
   assert.deepEqual(encoded.tiles, [
     { id: '1,0', metadata: { poiType: 'shop', discoverable: true, discovered: true, notes: 'hi' } },
-    { id: '2,0', childNodeId: 'child', span: 2 },
+    { id: '2,0', span: 2 },
     { id: '3,0', futureField: { deep: [1, 2] } },
   ]);
+  assert.deepEqual(encoded.links, ['child']);
+  assert.deepEqual(encoded.linkCells, [-1, -1, 0]);
+});
+
+test('region links are a palette and a run-length stream', () => {
+  const node = makeNode({
+    width: 4,
+    height: 2,
+    tiles: gridTiles(4, 2, (id) =>
+      tile(id, 'a', id.endsWith(',1') ? { childNodeId: id < '2' ? 'west' : 'east' } : {}),
+    ),
+  });
+  const encoded = roundTrip(node);
+  assert.deepEqual(encoded.links, ['west', 'east']);
+  assert.deepEqual(encoded.linkCells, [[-1, 4], 0, 0, 1, 1]);
+  assert.equal('tiles' in encoded, false, 'a link alone leaves no per-tile record');
+  // A node with no link has no link fields.
+  const plain = encodeNodeTiles(makeNode({ tiles: [tile('0,0', 'a')] }));
+  assert.equal('links' in plain, false);
+  assert.equal('linkCells' in plain, false);
+});
+
+test('a link that is not a string stays in the leftover record', () => {
+  const encoded = roundTrip(makeNode({ tiles: [tile('0,0', 'a', { childNodeId: 7 })] }));
+  assert.equal('links' in encoded, false);
+  assert.deepEqual(encoded.tiles, [{ id: '0,0', childNodeId: 7 }]);
+});
+
+test('a save with links in the leftover records still reads them', () => {
+  const decoded = decodeNodeTiles({
+    ...makeNode({ width: 2, height: 1 }),
+    refs: ['a'],
+    cells: [0, 0],
+    tiles: [{ id: '1,0', childNodeId: 'old' }],
+  });
+  assert.deepEqual(decoded.tiles, [
+    { id: '0,0', imageRef: 'a' },
+    { id: '1,0', childNodeId: 'old', imageRef: 'a' },
+  ]);
+});
+
+test('the link stream wins over a leftover link, and a bad stream degrades', () => {
+  const base = { ...makeNode({ width: 3, height: 1 }), refs: ['a'], cells: [[0, 3]] };
+  const decoded = decodeNodeTiles({
+    ...base,
+    links: ['c', 5],
+    linkCells: [0, 1, 'x'],
+    tiles: [
+      { id: '0,0', childNodeId: 'stale' },
+      { id: '2,0', childNodeId: 'stale' },
+    ],
+  });
+  assert.deepEqual(
+    decoded.tiles.map((/** @type {any} */ t) => t.childNodeId),
+    ['c', undefined, undefined],
+    'a non-string palette entry and an unreadable run both read as no link',
+  );
+  assert.equal('links' in decoded, false);
+  assert.equal('linkCells' in decoded, false);
 });
 
 test('fog is its own stream, starting unrevealed and dropping the trailing run', () => {
@@ -228,6 +295,16 @@ test('a malformed encoded node degrades instead of throwing', () => {
   const base = { id: 'n', name: 'n', parentId: null, width: 2, height: 2, kind: 'region' };
   // An unreadable palette skips every cell rather than inventing tiles.
   assert.deepEqual(decodeNodeTiles({ ...base, refs: 'nope', cells: [0, 0] }).tiles, []);
+  // A palette entry whose base ref is not a string skips its cells.
+  assert.deepEqual(
+    decodeNodeTiles({ ...base, refs: [5, [6, 'o'], 'a'], cells: [0, 1, 2] }).tiles.map((t) => t.id),
+    ['0,1'],
+  );
+  // A grid past MAX_GRID_CELLS keeps only the out-of-line records.
+  assert.deepEqual(
+    decodeNodeTiles({ ...base, width: 2000, height: 2000, refs: ['a'], cells: [0] }).tiles,
+    [],
+  );
   // An index with no palette entry skips only that cell.
   assert.deepEqual(
     decodeNodeTiles({ ...base, refs: ['a'], cells: [5, 0] }).tiles.map((t) => t.id),
