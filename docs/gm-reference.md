@@ -2,206 +2,285 @@
 
 *Reference. For the steps of a task, read the [GM guide](gm-guide.md).*
 
-This reference assumes no knowledge of the code.
+This reference describes every mode, panel, control, and game rule of the
+app. It assumes no knowledge of the code. Each section starts with what the
+area is for, then lists its controls in a table, then gives its rules and
+limits.
 
-If a control named here does not show, look at the mode switch and the role
-switch first. Most of the app depends on these two settings.
+If a control named here does not show, check the mode switch and the role
+switch first. Most controls depend on these two settings.
 
 ## Modes
 
-The mode switch sits in the header. It changes the whole layout.
+The mode switch in the header sets the whole layout. Its options are Play,
+Build, and Library. Only a GM tab shows the mode switch.
 
 | Mode | Layout | Purpose |
 | --- | --- | --- |
-| Build | World-tree rail, editable map, palette and tile inspector | Author the world: maps, points of interest, regions, staged encounters |
-| Play | Map with a session sidebar | Run a session: party movement, fog, encounters, combat |
-| Library | No map. Four tabs of templates | Curate the reusable templates that feed the preset pickers |
+| Play | The map, the Party and Dice Tray cards and the character detail card below the map, and a sidebar of session panels | Run a session: party movement, fog, encounters, and combat |
+| Build | The World tree rail, the editable map, and the Build rail with the Paint, Tile, and Encounters tabs | Author the world: maps, points of interest, regions, and staged creatures |
+| Library | No map. Four tabs of templates | Curate the reusable templates that the preset pickers offer |
 
-Combat replaces the Play layout while a fight is open. The map and its
-panels step aside, and the fight takes the full width.
+While a fight is open, the combat screen replaces the Play layout and takes
+the full width. See [Combat screen](#combat-screen).
 
 ## Roles
 
-The role switch sits beside the mode switch. The header labels it Viewer,
-with GM and Player as its options.
+The role switch sits at the right end of the header. Its accessible name is
+Viewer, and its options are GM and Player.
 
 | Role | Sees | Can change |
 | --- | --- | --- |
-| GM | Exact enemy HP, tile notes, the whole map | Everything |
-| Player | Enemy health as a band (Unharmed, Bloodied, Down), no tile notes, the fog-revealed map only | Nothing, unless the tab is bound to a character |
+| GM | Exact foe HP, tile notes, the whole map, and every quest, handout, and NPC | Everything |
+| Player | Foe health as a band (Unharmed, Bloodied, Down), the fog-revealed map, and only what the GM revealed | Nothing, unless the tab is bound to a character |
 
-The role is per browser tab. Only one tab at a time has the GM view.
-While a GM tab is open, every other tab of the same origin opens as a
-Player tab and stays that way. The claim expires about 15 seconds after the
-GM tab closes or crashes. The claim stops two tabs from editing the
-campaign at the same time by accident, but it is not a security control. See
+A Player tab hides the mode switch, the Campaign, History, and Transfer
+buttons, the fog controls, the Time panel buttons, and the party-split
+switch.
+
+The role applies to one browser tab. Only one tab at a time can hold the GM
+view. While a GM tab is open, every other tab of the same origin opens as a
+Player tab and stays a Player tab.
+
+The GM claim expires 15 seconds after the GM tab closes or crashes. The
+claim stops two tabs from editing the campaign at the same time by
+accident. It is not a security control. See
 [Limits of the Player view](#limits-of-the-player-view).
 
 Every save in the GM tab, including an autosave, reaches the other tabs. A
-Play-mode tab takes the change without a reload, so it keeps its scroll
+Play-mode tab applies the change without a reload, so it keeps its scroll
 position, its open panel, and its map zoom and pan.
 
 ### Player tab options
 
 | Option | Effect |
 | --- | --- |
-| `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. It shows the GM view again only after the parameter is removed from the URL |
-| The padlock beside the role switch | Same lock, set from inside the tab. To undo it, close the tab or drop the URL parameter |
-| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. In a GM tab, the open-tab icon on each row of the Party roster opens a player tab for that character, and the Spectator tab button below the roster opens one for no character |
-| The "Playing as" dropdown in the Party panel | Same binding, set from inside the tab |
+| `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. The tab shows the GM view again only after you remove the parameter from the URL |
+| The padlock beside the role switch | Locks the tab to the Player view after a confirmation. The padlock shows only in a Player tab. The lock lasts until you close the tab |
+| `?character=<id>` on the URL | Binds the tab to one character. The id is the name of the character in lower case, with hyphens in place of spaces |
+| The Playing as dropdown in the Party card | Sets the same binding from inside the tab |
 
-A bound tab can spend spell slots and other resources, add and clear
-conditions, and use, give away, or discard what its character carries. A
-bound tab cannot edit base attributes (stats, XP, Bonus HP, Base AC), add
-an inventory item, or touch another character. An unbound Player tab is a
-spectator.
+In a GM tab, the Party card has two links that open Player tabs. See
+[Party roster](#party-roster).
 
-Recovery of a resource is a GM action, so a player can spend a slot but
-cannot restore one, and HP steppers are GM-only for the same reason.
+### Bound and spectator tabs
 
-A binding is exclusive, under the same claim-and-expire rule as the GM
-view. The GM tab ignores bindings and can edit everyone. A roll from a
-bound tab is logged under the character's name. A roll from a spectator tab
-stays anonymous.
+A bound tab plays one character. An unbound Player tab is a spectator.
+
+| Action | Bound tab | Spectator tab |
+| --- | --- | --- |
+| Spend a spell slot or another resource | Own character | No |
+| Restore a spell slot or another resource | No | No |
+| Add or clear a condition chip | Own character | No |
+| Use, give away, or discard a carried item | Own character | No |
+| Add an inventory item | No | No |
+| Edit stats, XP, Bonus HP, or Base AC | No | No |
+| Change HP with the steppers | No | No |
+| Roll a save or a skill from the sheet | Own character | No |
+| Move a token | Own character, while the party is split | No |
+| Name on a roll in the log | The character name | "A player" |
+
+Recovery of a resource is a GM action. For this reason, a player can spend a
+slot but cannot restore one, and the HP steppers are GM-only.
+
+A binding is exclusive, and it uses the same claim-and-expire rule as the
+GM view. The GM tab ignores bindings and can edit every character.
 
 ### Limits of the Player view
 
 The Player view is a display setting on the same browser data. It hides
-these things from the screen:
+these items from the screen:
 
 - the exact HP of a foe (the view shows a health band instead)
 - the notes on a tile
-- handouts and quests that you have not revealed, and the notes, the links,
-  and the GM-only objectives of every quest
-- a revealed handout for other characters, and a revealed handout for a
-  tile where the party does not stand
+- the handouts and quests that you have not revealed
+- the notes, the links, and the GM-only objectives of every quest
+- a revealed handout that is for other characters, or for a tile where the
+  party does not stand
 - the fogged part of the map
 - the Campaign, History, and Transfer buttons and the mode switch
 
-It does not protect any of them. Every tab of the same browser reads the
-same saved campaign from the storage of that browser. A person at that
-browser can open the developer tools and read the whole save, including
-every item in the list above. A partly revealed map is drawn in full and
-then covered by fog, so the hidden art is also in the browser. The same
-person can remove `?role=player` from the URL to leave the Player view.
-The GM claim is a plain record in the same storage, and any tab of the
-same origin can overwrite it. The claim stops two tabs from editing the
-campaign at the same time by accident. It does not stop a determined
-player.
+The Player view does not protect any of these items. Every tab of the same
+browser reads the same saved campaign from the storage of that browser. A
+person at that browser can open the developer tools and read the whole
+save, including every item in the list above.
+
+The app draws a partly revealed map in full and then covers it with fog, so
+the hidden art is also in the browser. The same person can remove
+`?role=player` from the URL to leave the Player view.
+
+The GM claim is a plain record in the same storage, and any tab of the same
+origin can overwrite it. The claim stops two tabs from editing the campaign
+at the same time by accident. It does not stop a determined player.
 
 Put a Player tab only on hardware that you control. A second screen on the
-GM laptop, or a laptop that you own and place on the table, are both
-fine. If the campaign contains text that you do not want a player to read, do not give
-that player the address on their own device.
+GM laptop is safe, and so is a laptop that you own and place on the table.
+If the campaign contains text that a player must not read, do not give that
+player the address on their own device.
 
 ## Theme
 
-The theme switch (monitor, sun, moon) sets the light or dark scheme for the
-whole UI. The default, System, follows the operating system. The app stores
-the choice per browser, so a dark GM laptop and a light table display can
-run at the same time.
+The theme switch sets the light or dark color scheme for the whole UI. Its
+options are System (a monitor icon), Light (a sun), and Dark (a moon).
+
+| Option | Effect |
+| --- | --- |
+| System | Follows the setting of the operating system. This is the default |
+| Light | Always light |
+| Dark | Always dark |
+
+The app stores the choice per browser. A dark GM laptop and a light table
+display can run at the same time.
 
 ## Campaign controls
+
+The header buttons create, save, and move the whole campaign. They show in
+a GM tab only.
 
 | Control | What it does |
 | --- | --- |
 | New | Resets to the blank campaign after a confirmation |
-| Load example | Replaces the campaign with the demo campaign after a confirmation |
-| Import | Loads a campaign from a `.json` file, after a confirmation when the current campaign is not blank. If the file includes library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
-| Save | Writes the campaign to the local storage of the browser |
+| Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
+| Save | Writes the campaign to the local storage of the browser. The label reads "Save •" while changes are unsaved |
+| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. If changes are unsaved, the app asks first, because the step discards them |
 | Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
-| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. Asks first when there are unsaved changes, which the step discards |
+| Import | Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
 
-The app does not save on its own except through autosave, which runs after
-you pause editing. The Save button reads "Save •" while changes are
-unsaved. The undo history covers many steps, but not an unlimited number. A
-save from a stepped-back position discards what was left to redo.
+A save from a stepped-back position discards the steps that were left to
+redo.
 
-When browser storage is full, a save drops the oldest undo steps to make
-room for the campaign, and a notice says so. When the save fails even with
-no undo steps left, an error notice appears once, and autosave does not try
-again until you make another change.
+New, Load example, and Import each keep a copy of the campaign that they
+replace, as one undo step. If browser storage has no room for the copy, the
+confirmation says that Undo may not restore the current campaign. To keep a
+copy in that case, export the campaign first.
 
-New, Load example, and Import keep a copy of the campaign they replace as
-one undo step. That step stays until the undo history of later edits
-fills up. When browser storage has no room for the copy, the confirm says that
-Undo may not be able to restore the current campaign. Export the campaign
-first to keep a copy.
+### Autosave
+
+The app saves on its own only through autosave.
+
+| Parameter | Value |
+| --- | --- |
+| Quiet time before an autosave | 10 seconds with no edit |
+| Longest time that edits stay unsaved during nonstop editing | 120 seconds |
+
+### Storage
 
 Everything lives in the storage of one browser, under one origin. There is
-no server and no account. The campaign and the undo history share the
-local storage limit of about 5 MB, and the tooltip of the Save button shows
-how much of it they use. Handout pictures and custom tile images are stored
-apart, in the browser's IndexedDB, which gets a share of the disk, so they
-do not count toward that limit. The first stored image can make the browser
-ask whether the site may keep its data. The answer changes nothing in the
-app. When a browser cannot open IndexedDB, as in some private windows, the
-images go into local storage and count toward the limit.
+no server and no account.
 
-When the browser does not store an image, the save still stores the map and
-everything else, and a notice says that the pictures were not stored. The
+| Store | Contents | Limit |
+| --- | --- | --- |
+| Local storage | The campaign, the undo history, and the preference flags | About 5 MB for the origin. The tooltip of the Save button shows how much is in use |
+| Undo history in local storage | The edits since earlier saves | 512 KB for edit steps. A copy kept by New, Load example, or Import counts against the room that is left instead |
+| IndexedDB | Handout pictures and custom tile images | A share of the disk, set by the browser. It does not count toward the local storage limit |
+
+When local storage is full, a save drops the oldest undo steps to make room
+for the campaign, and a notice says so. If the save still fails with no
+undo steps left, an error notice shows once. Autosave then does not try
+again until you make another change.
+
+The first stored image can make the browser ask whether the site can keep
+its data. The answer has no effect on the app. If a browser cannot open
+IndexedDB, as in some private windows, the images go into local storage and
+count toward its limit.
+
+If the browser does not store an image, the save still stores the map and
+everything else. A notice says that the pictures were not stored, and the
 next save tries the image again.
 
 ### Campaign size limits
 
 The app loads at most 10,000 map areas and 2,000,000 tiles in all. A
-campaign that passes a limit loads shortened: the areas past the first
-10,000 are left out, and the areas past the tile limit load with no tiles.
+campaign that is over a limit loads shortened. The app leaves out the areas
+past the first 10,000, and the areas past the tile limit load with no tiles.
 
-| When | What happens |
+| Situation | What happens |
 | --- | --- |
-| Import of a file that passes a limit | A prompt says what will not load. Import the shortened map stores it, and Cancel keeps the current campaign. The file is not changed |
-| Start with a stored campaign that passes a limit | A prompt says what did not load, and saving is paused, so the full campaign stays stored. Keep the shortened map turns saving back on. Keep saving paused leaves autosave off for the session |
-| Save while saving is paused | A prompt asks first. Save the shortened map stores it and turns saving back on |
+| Import of a file that is over a limit | A prompt says what does not load. **Import the shortened map** stores the shortened map, and Cancel keeps the current campaign. The file does not change |
+| Start with a stored campaign that is over a limit | A prompt says what did not load, and saving pauses, so the full campaign stays stored. **Keep the shortened map** turns saving back on. **Keep saving paused** leaves autosave off for the session |
+| Save while saving is paused | A prompt asks first. **Save the shortened map** stores it and turns saving back on |
 
 ## The example campaign
 
-Load example replaces the campaign with a complete demo. Its world map is
-a 48x48 continent from the world generator, split into nine regions. Each
-region has its own towns, keep, dungeon, and caves, and the buildings of
-Briarwick and the port of Saltmere have furnished interiors. The Barrow of
-the Old King has three levels. The demo comes from one fixed seed, so every
-load gives the same maps and the same furnishings. The party starts in
-Briarwick Vale, and only that region is revealed on the world map. Every
-land tile of the world map leads into its region. To travel to another
-region, the party walks off the edge of its region map where it borders
-that region, and it arrives at the matching spot of the next region.
+Load example replaces the campaign with a complete demo. The demo comes
+from one fixed seed, so every load gives the same maps and the same
+furnishings.
 
-The story is about King Ostrand, who has risen in his barrow, and about
-Castellan Irenne Vane of Thornhold, who secretly works to free him. The
-campaign ships sixteen quests: nine that lead to the barrow and seven side
-quests. Each side quest gives a clue about the Castellan or a tool for the
-fight in the barrow. Quest steps that would give away the Castellan are
-hidden from the players until the GM shows them, and her secret is only in
-GM notes. Briarwick has a staffed inn, smithy, and temple, and Saltmere has
-its smuggler and its harbormaster. The party already knows four contacts:
-Dorn, Corvin, Lord Aldemar, and the Castellan. The campaign also has field
-enemies in every biome, minor bosses and a major boss, and a bestiary of
-reusable mob templates. The undead and beasts have their damage
-resistances and trained saves, and the Castellan and one of her cultists
-cast spells.
+| Part | Contents |
+| --- | --- |
+| World map | The Marches, a 48x48 continent from the world generator, split into nine regions |
+| Map areas | 115 in all. Each region has its own towns, keep, dungeon, and caves |
+| Interiors | Furnished buildings in Briarwick and in the port of Saltmere. The Barrow of the Old King has three levels |
+| Party | Four level-4 characters: Ser Aldric, Mirelle, Wren Tallowby, and Brannoc Hollowell |
+| Quests | Sixteen: nine that lead to the barrow and seven side quests |
+| Handouts | Sixteen. Twelve start hidden, and four are personal letters |
+| People | Eleven NPCs, including a staffed inn, smithy, and temple in Briarwick, and a smuggler and a harbormaster in Saltmere |
+| Foes | Field enemies in every biome, minor bosses, a major boss, and a bestiary of ten reusable templates |
 
-Twelve of the sixteen handouts start hidden, and most of them sit on the
-tile where the party finds them. The other four are personal letters. Each
-character starts with one letter, and only the player tab of that character
-shows it. The party has four level-4 characters. It shows a feat, an
-ability score increase, the Expertise of the Rogue, the Arcane Trickster
-and Eldritch Knight subclasses, and a fighter who multiclasses into wizard.
+The party starts in Briarwick Vale, and only that region is revealed on the
+world map. Every land tile of the world map leads into its region. To
+travel to another region, the party walks off the edge of its region map
+where that region borders the next one. The party arrives at the matching
+spot of the next region.
+
+The story is about King Ostrand, who has risen in his barrow. Castellan
+Irenne Vane of Thornhold secretly works to free him. Each side quest gives
+a clue about the Castellan or a tool for the fight in the barrow.
+
+The quest steps that would expose the Castellan stay hidden from the
+players until you reveal them. Her secret is only in GM notes. The party
+already knows four contacts: Dorn, Corvin, Lord Aldemar, and the Castellan.
+
+Most hidden handouts sit on the tile where the party finds them. Each
+character starts with one personal letter, and only the player tab of that
+character shows it.
+
+The party shows these character features:
+
+- a feat and an ability score increase
+- the Expertise of the Rogue
+- the Arcane Trickster and Eldritch Knight subclasses
+- a fighter who multiclasses into wizard
+
+The undead and beasts have damage resistances and trained saves. The
+Castellan and one of her cultists cast spells.
 
 ## Build mode
+
+Build mode is where you author the world. The World tree rail is on the
+left, the map is in the center, and the Build rail is on the right.
+
+| Build rail tab | Cards |
+| --- | --- |
+| Paint | Generate, Tools, and Palette |
+| Tile | The tile inspector for the selected cell |
+| Encounters | Two subtabs: Mobs for foes, and NPCs for friendly and neutral people |
 
 ### Node kinds
 
 The world is a tree of nodes. The top node is the world map. Regions and
-interiors hang beneath it.
+interiors sit beneath it.
 
 | Kind | Palette it gets |
 | --- | --- |
 | Region | The full terrain, road, river, coast, and building palette |
 | Interior | Interior pieces and furnishings only: floors, walls, doors, stairs, and furniture |
 
-A node also has a free-text environment tag, for example grassland,
-forest, shop, or temple. The tag is description only.
+### Node settings
+
+**Add a child** and **Edit settings** in the World tree open the same
+fields.
+
+| Field | Default | Values |
+| --- | --- | --- |
+| Name | New region | Any text |
+| Width (tiles) | 6 | 1 or more |
+| Height (tiles) | 6 | 1 or more |
+| Kind | Region | Region or Interior |
+| Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags |
+
+The environment tag is a description only. It has no effect on painting,
+generation, or rules.
 
 ### World tree
 
@@ -212,619 +291,999 @@ view when the page scrolls.
 | Control | What it does |
 | --- | --- |
 | Chevron | Opens or closes the nodes under a row |
-| Find a place | Shows only the nodes whose names contain the text, and the rows above them. It appears when the world has 12 or more nodes. Escape clears it |
-| Row name | Build: opens that map. Play: offers to teleport the party there |
-| Actions button (three dots) | Build only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu |
+| Find a place | Shows only the nodes whose names contain the text, and the rows above them. It shows when the world has 12 or more nodes. Escape clears it |
+| Row name | In Build mode, opens that map. In Play mode, see [Play layout](#play-layout) |
+| Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu |
 
-A branch is closed when the tree first shows it, except the top node and
-the rows above the current map. When the map in view changes, the tree
-opens the rows above it and scrolls to its row.
+A branch is closed when the tree first shows it. The exceptions are the top
+node and the rows above the current map. When the map in view changes, the
+tree opens the rows above it and scrolls to its row.
 
 ### Palette tools
 
-| Tool | What a drag does |
+The Palette card has four tool buttons and five sections of swatches. A
+click on a swatch picks it as the brush, and a drag paints it on every cell
+that the pointer crosses.
+
+| Tool | What a click or drag does |
 | --- | --- |
-| Brush | Paints the selected terrain, road, or marker on every cell the pointer crosses |
-| Erase | Clears cells back to empty |
-| Inspect | Selects one cell and opens it in the tile inspector |
-| Region | Links every cell the pointer crosses to the child node in **Paint region**, and moves a cell out of any other region. It skips site entrances. |
+| Inspect | Selects one cell and opens it in the Tile tab. This is the starting tool |
+| Region | Links every cell that the pointer crosses to the node in **Paint region**, and moves the cell out of any other region. It skips site entrances and says how many it skipped |
+| Erase path | Removes the road or path overlay of a cell. The terrain, the metadata, and the region link stay |
+| Erase tile | Clears the whole cell back to empty |
+
+| Swatch section | Contents |
+| --- | --- |
+| Terrain | Ground types. This section opens by default |
+| Overlays | Roads, paths, and rivers |
+| Buildings | Settlement and site markers |
+| Interior | Floors, walls, doors, and stairs |
+| Furnishings | Furniture and decoration |
 
 The Size row (1x, 2x, 3x) sets how large the next painted tile draws. At 2x
 or 3x, one click stamps one tile whose image stretches across a 2x2 or 3x3
-block. The block is visual only. The covered cells keep their own terrain,
-roads across it stay tile-sized, and fog reveals it piece by piece. A
-scaled stamp places one block per click. Roads always paint at 1x.
+block. A scaled stamp places one block per click, and roads always paint at
+1x.
+
+The block is visual only. The covered cells keep their own terrain, roads
+across the block stay tile-sized, and fog reveals the block cell by cell.
 
 A terrain type with several variants, such as grass or mountain, has one
 swatch in the Terrain section. That swatch mixes the variants, so a large
-area does not repeat one image. The variant of a cell comes from its
-position on the map, so the same cell always gets the same variant from
-this swatch. Select **Show variants**
-to replace these swatches with one swatch for each variant, and paint an
-exact image. If the active brush is a terrain swatch, the brush stays on
-the same terrain when you change the checkbox. The browser keeps the
-choice.
+area does not repeat one image. The position of a cell on the map sets its
+variant, so the same cell always gets the same variant from this swatch.
 
-Roads overlay the terrain under them. Repainting the terrain under a road
-leaves the road on top.
+To paint one exact image, select **Show variants**. The swatches then show
+one swatch for each variant. If the active brush is a terrain swatch, the
+brush stays on the same terrain when you change the checkbox. The browser
+keeps the choice.
 
-The Tools card has Undo stroke and Export PNG. Undo stroke reverts the
-last edit, where a whole drag, a region link, or a generation each count as
-one edit. It reverts only the cells and fields that the edit changed, so
-fog that the party revealed and notes written after the edit stay. A tile
-link to a node that was deleted after the edit comes back as no link. This
-history is separate from the header Undo and Redo, and it ends at a page
-reload. Export PNG downloads the current map at 64 pixels
-per tile, with fog ignored. A map too large for that size comes out at a
-smaller size, and the app names the size it used. A map that no size fits
-is refused.
+Roads overlay the terrain under them. If you repaint the terrain under a
+road, the road stays on top.
+
+### Tools card
+
+| Control | What it does |
+| --- | --- |
+| Undo stroke | Reverts the last edit. A whole drag, a region link, and a generation each count as one edit |
+| Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored |
+
+Undo stroke reverts only the cells and fields that the edit changed. Fog
+that the party revealed and notes written after the edit stay. A tile link
+to a node that was deleted after the edit comes back as no link.
+
+The stroke history is separate from the header Undo and Redo. It has no
+redo, and it ends when the page reloads.
+
+If a map is too large for 64 pixels per tile, Export PNG uses a smaller
+size and names the size it used. If no size fits, the app refuses the
+export.
 
 ### Tile inspector fields
 
+The inspector heading names the selected cell, for example "Column 11, row 11". Columns and rows count from 1, the same as the numbers along the map edges.
+
 | Field | Meaning |
 | --- | --- |
-| POI type | The point-of-interest marker on the tile |
-| Discoverable | The POI stays hidden until the party steps onto its tile, or walks through it into the sub-map it links to |
+| POI type | The point-of-interest marker on the tile. None is the default |
+| Discoverable | The point of interest stays hidden until the party steps onto its tile, or walks through the tile into the sub-map that it links to |
 | Notes | Text for the GM. The GM sees it on hover in Play mode. The Player view does not show it, but the text is in the saved campaign |
-| Zooms into | The child node that this tile leads to |
+| Zooms into | The child node that this tile leads to. Nothing is the default |
 | Set party start here | Places the spawn tile of the party |
 | New handout on this tile | Opens the new-handout dialog with this tile as its place |
 
+### Tile menu
+
+In a GM tab in Build mode, a right-click on a map cell selects the cell and
+opens the tile menu, if the pointer did not drag. Shift+F10 or the Menu key opens the same menu at the
+keyboard cursor.
+
+| Item | What it does |
+| --- | --- |
+| New foe here | Opens the creature dialog as a level-1 hostile on this cell |
+| New NPC here | Opens the creature dialog as an unleveled neutral on this cell |
+| Edit (name) | Opens the creature dialog for a creature that already stands on this cell. One item shows for each creature |
+
 ### Map generation
 
-The Generate card fills the current node with a generated layout.
+The Generate card fills the current node with a generated layout. The
+dialog shows a preview of the exact layout before it changes anything.
 
-| Field | Values |
+| Field | Default | Values |
+| --- | --- | --- |
+| Archetype | The first in the list | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
+| Size | medium | small (8x8), medium (14x14), large (22x22), huge (32x32), or vast (48x48) |
+| Levels | 1 | For a dungeon or a cave only: 1 to 10. A stack has at most 10 levels, so a deeper level allows fewer |
+| Sub-maps | None | For a region archetype only: None, One level down, or Every level |
+| Seed | A random number | The number that reproduces the layout. **Reroll** picks a new seed |
+
+#### Links to the parent map
+
+Every generated layout can reach its parent map.
+
+| Archetype | Way in |
 | --- | --- |
-| Archetype | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
-| Size | small (8 x 8), medium (14 x 14), large (22 x 22), huge (32 x 32), or vast (48 x 48) |
-| Seed | The number that reproduces the layout |
-| Levels | For a dungeon or a cave, how many levels to create, from 1 to 10. A stack has at most 10 levels, so a deeper level allows fewer |
-| Sub-maps | For a region archetype, which places on the map also get maps of their own: none, one level down, or every level |
+| Dungeon or cave | An entrance tunnel with a door on the map edge |
+| Castle or building | A door in the south wall |
+| Town | A street from the south edge, and more streets to other edges |
 
-The dialog previews the exact layout before it stamps anything. Every
-generated layout can reach its parent map. A dungeon or a cave gets an
-entrance tunnel with a door on the map edge. A castle or a building gets a
-door in the south wall. A town gets a street from the south edge, and more
-streets to other edges. When nothing on the parent
-map links to the node, generation places an entrance tile near the center
-of the parent and reports where. When a parent tile already links to the
-node, the tile stays where it is, and its marker changes to the marker of
-the new archetype, for example from a dungeon to a cave entrance. The art
-of a particular place, such as an inn, stays when the new archetype has the
-same point-of-interest type. A wilderness takes no marker, so its old marker
-becomes grass.
+If nothing on the parent map links to the node, generation places an
+entrance tile near the center of the parent and reports where. If a parent
+tile already links to the node, the tile stays where it is. Its marker
+changes to the marker of the new archetype, for example from a dungeon
+entrance to a cave entrance.
+
+The art of a particular place, such as an inn, stays if the new archetype
+has the same point-of-interest type. A wilderness takes no marker, so its
+old marker becomes grass.
+
+#### Names after regeneration
 
 A region block on a world map has no marker, and the name of the region is
-its label on the world map. When a generated name follows the pattern of
-another archetype, the node takes the pattern of the new archetype with the
-same word. For example, "The Ashford Hills" regenerated as a desert becomes
-"The Ashford Sands", and "The Crypt of Dunholt" regenerated as a cave
-becomes "Dunholt Caves". A name that you typed, a name of one word, and the
-name of a building or of a level in a stack do not change. Undo restores
-the old name.
+its label on the world map. If a generated name follows the pattern of an
+archetype, the node takes the pattern of the new archetype with the same
+word.
 
-The tiles on the parent map that link to a regenerated wilderness,
-highlands, frontier, desert, or wetlands take the ground of that climate.
-For example, a region block regenerated as highlands becomes mostly hills
-and mountains. Water, coast tiles, points of interest, and tiles that link
-to another map keep their art, and a river keeps its course. Each tile
-keeps its fog state and its notes. A block that already reads as the new
-climate keeps its art. A region regenerated as a town, an island, or a
-world keeps its ground and gets no marker, because the world generator
-places no settlements. Undo restores the old tiles.
+For example, "The Ashford Hills" regenerated as a desert becomes "The
+Ashford Sands". "The Crypt of Dunholt" regenerated as a cave becomes
+"Dunholt Caves".
 
-The six outdoor archetypes differ in climate. Wilderness is temperate, with
-grass, forest, lakes, and some hills. Highlands have ranges of hills and
-mountains. Frontier is cold, with snow and snowy forest. Desert is hot and
-dry. Wetlands have lakes, swamp, and many rivers. An island has sea around
-the whole border. In each of them the north edge is colder than the south
-edge, rivers run down from the hills to water or to the map edge, and
-landmarks such as ruins, mines, and camps stand on open ground. An oasis
-stands only in the desert, a lighthouse only near open water, and a
-watchtower usually beside a road. The climate also gives jungle, savanna,
-taiga, glacier, badlands, snowy hills and peaks, volcanic peaks, and deep
-sea, each with its own tiles.
+These names do not change: a name that you typed, a name of one word, the
+name of a building, and the name of a level in a stack. Undo restores the
+old name.
 
-An outdoor map also gets settlements, with farmland around them. A
-settlement beside open water is a port. On a huge or vast map the first
-settlement is a city, and on any map some of the later settlements are
-villages. A large map adds a keep, and a medium map or larger adds a hidden
-dungeon far from the settlements. Roads join the settlements and the keep
-and leave the map at one edge, or at two edges on a huge or vast map. A
-road crosses a river on a bridge near a settlement and on a ford farther
-out.
+#### Parent tiles after regeneration
+
+The parent tiles that link to a regenerated wilderness, highlands,
+frontier, desert, or wetlands take the ground of that climate. For example,
+a region block regenerated as highlands becomes mostly hills and mountains.
+
+These parent tiles keep their art: water, coast tiles, points of interest,
+and tiles that link to another map. A river keeps its course, and a block
+that already reads as the new climate keeps its art. Each tile keeps its
+fog state and its notes.
+
+A region regenerated as a town, an island, or a world keeps its ground and
+gets no marker, because the world generator places no settlements. Undo
+restores the old tiles.
+
+#### Outdoor archetypes
+
+The six outdoor archetypes differ in climate.
+
+| Archetype | Terrain |
+| --- | --- |
+| Wilderness | Temperate: grass, forest, lakes, and some hills |
+| Highlands | Ranges of hills and mountains |
+| Frontier | Cold: snow and snowy forest |
+| Desert | Hot and dry |
+| Wetlands | Lakes, swamp, and many rivers |
+| Island | Land with sea around the whole border |
+
+In each outdoor archetype, the north edge is colder than the south edge.
+Rivers run down from the hills to water or to the map edge. Landmarks such
+as ruins, mines, and camps stand on open ground.
+
+An oasis stands only in the desert, and a lighthouse only near open water. A
+watchtower usually stands beside a road. The climate can also give jungle,
+savanna, taiga, glacier, badlands, snowy hills and peaks, volcanic peaks,
+and deep sea, each with its own tiles.
+
+An outdoor map also gets settlements, with farmland around them.
+
+| Map size | Settlements and sites |
+| --- | --- |
+| Any | Settlements. Some later settlements are villages, and a settlement beside open water is a port |
+| Medium or larger | A hidden dungeon far from the settlements |
+| Large or larger | A keep |
+| Huge or vast | The first settlement is a city |
+
+Roads join the settlements and the keep. The roads leave the map at one
+edge, or at two edges on a huge or vast map. A road crosses a river on a
+bridge near a settlement and on a ford farther out.
+
+#### Towns
 
 A town has a core of streets and buildings around a central crossroads.
 The inn, the tavern, the blacksmith, the general store, and the temple
 stand nearest the crossroads, around a cobbled plaza. A well or a fountain
-stands near them, and a large town adds a market and a town hall. A larger
-town then adds other shops and trades, houses near the center, and
+stands near them, and a large town adds a market and a town hall.
+
+A larger town then adds other shops and trades, houses near the center, and
 cottages near the edge. Farms and fields lie outside the core, with a
-windmill among the fields. Some towns have a graveyard. Some towns have a
-river, and the streets cross it on bridges, with a watermill on its bank.
-A small town has two ways out, a medium town three, and a larger town
-four. About one large town in two gets a stone wall with a gate on each
-street. The river goes under the wall through a water gate. Like an
-interior wall, the town wall is never where the party lands when it enters
-the town, and a new link never goes on it. A gate is open ground.
+windmill among the fields. Some towns have a graveyard.
+
+Some towns have a river. The streets cross it on bridges, and a watermill
+stands on its bank.
+
+| Town size | Ways out |
+| --- | --- |
+| Small | 2 |
+| Medium | 3 |
+| Large or larger | 4 |
+
+About one large town in two gets a stone wall, with a gate on each street
+and a water gate where the river passes. A gate is open ground. The party
+never lands on the town wall when it enters the town, and a new link never
+goes on the wall.
+
+#### Ports
 
 The town map of a port has the sea along its north, east, or west edge,
 with a sandy shore. The party still enters by the street from the south
-edge. No street leaves into the sea, so a large port has three ways out. A
-river in a port flows into the sea. A small port has no river. A large
-port gets a wall as often as an inland town. The wall of a port is open
-on the sea side, and its two ends stop at the shore.
-A port has one pier, or two on a large, huge, or vast map. Each pier
-starts at a timber quay on a straight part of the shore and runs straight
-out over the sea to a pier head. A street links each quay to the other
-streets of the town. The party can walk out along a pier to its head.
+edge. No street leaves into the sea, so a large port has three ways out.
 
-The four interior archetypes differ in layout. A dungeon has rooms joined
-by corridors, with some round rooms and more than one way through. A cave
-has winding caverns of uneven width, with rough rock walls, pools, and a
-cave mouth on the border. A castle splits into halls and chambers behind a
-wall ring. Its stairs up lead to an upper floor of chambers, and its stairs
-down lead to a dungeon level beneath the keep. Its largest room is a great hall with a
-throne and pillars. A building splits into a few small rooms and has no
-stairs. About one building in three has a trapdoor down to a small cellar.
-The room behind the door of a house has a hearth and a table. The other rooms
-of a castle or a house are bedrooms, dining rooms, libraries,
-storerooms, chapels in a castle, or empty rooms. A town building takes
-its furnishings from what it is. An inn has more bedrooms, a temple has an
-altar and pillars, a barracks has rows of beds, a shop has a counter and
-stock, an academy has bookshelves, and a warehouse has barrels and chests. A dungeon has pillars in
-some large rooms, and a dungeon or a cave has rubble. The bottom level
-keeps a chest on the floor cell farthest from the way in.
+A river in a port flows into the sea, and a small port has no river. A large
+port gets a wall as often as an inland town. The wall of a port is open on
+the sea side, and its two ends stop at the shore.
 
-A pillar, a table, a bed, and a bookshelf are obstacles. Like a wall, an
-obstacle is never where the party lands when it enters a map, and a new
-link never goes on one. The party enters an interior on the outer door
-nearest the side it comes from. In an interior with no outer door, the
-party lands on the nearest floor. A generated map never puts an obstacle
-beside a door or a staircase, or where it cuts off part of the floor. A
-generated staircase or trapdoor never sits directly inside a door, and the
-party never has to cross one to reach the rest of the floor. A trapdoor
-leads down like stairs down. A generated building links its trapdoor to
-its cellar. On a map that you paint, link the trapdoor to the level below,
-and that level returns through its stairs up.
+A port has one pier, or two on a large, huge, or vast map. Each pier starts
+at a timber quay on a straight part of the shore and runs straight out to a
+pier head. A street links each quay to the other streets, and the party can
+walk out to the pier head.
 
-Each level of a multi-level dungeon or cave becomes a child node. The first
-level has no stairs up, because its door is the way in. The stairs down of
-one level lead to the stairs up of the level below. The stairs down
-stand as far from the stairs up as the level allows. The bottom level has
-no stairs down.
+#### Interior archetypes
 
-When you generate a node that its parent reaches by a staircase, the node
+The four interior archetypes differ in layout.
+
+| Archetype | Layout |
+| --- | --- |
+| Dungeon | Rooms joined by corridors, with some round rooms and more than one way through. Some large rooms have pillars |
+| Cave | Winding caverns of uneven width, with rough rock walls, pools, and a cave mouth on the border |
+| Castle | Halls and chambers behind a wall ring. The largest room is a great hall with a throne and pillars. Stairs up lead to an upper floor of chambers, and stairs down lead to a dungeon level beneath the keep |
+| Building | A few small rooms and no stairs. About one building in three has a trapdoor down to a small cellar |
+
+A dungeon or a cave has rubble. The bottom level keeps a chest on the floor
+cell farthest from the way in.
+
+The room behind the door of a house has a hearth and a table. The other
+rooms of a castle or a house are bedrooms, dining rooms, libraries,
+storerooms, or empty rooms, and a castle can also have chapels.
+
+A town building takes its furnishings from what it is.
+
+| Building | Furnishings |
+| --- | --- |
+| Inn | More bedrooms |
+| Temple | An altar and pillars |
+| Barracks | Rows of beds |
+| Shop | A counter and stock |
+| Academy | Bookshelves |
+| Warehouse | Barrels and chests |
+
+#### Obstacles, doors, and stairs
+
+A pillar, a table, a bed, and a bookshelf are obstacles. The party never
+lands on an obstacle or a wall when it enters a map, and a new link never
+goes on one.
+
+The party enters an interior on the outer door nearest the side that it
+comes from. In an interior with no outer door, the party lands on the
+nearest floor.
+
+A generated map never puts an obstacle beside a door or a staircase, or
+where it cuts off part of the floor. A generated staircase or trapdoor
+never sits directly inside a door. The party never has to cross a staircase
+or a trapdoor to reach the rest of the floor.
+
+A trapdoor leads down like stairs down. A generated building links its
+trapdoor to its cellar. On a map that you paint, link the trapdoor to the
+level below, and that level returns through its stairs up.
+
+#### Level stacks
+
+Each level of a multi-level dungeon or cave becomes a child node.
+
+- The first level has no stairs up, because its door is the way in.
+- The stairs down of one level lead to the stairs up of the level below.
+- The stairs down stand as far from the stairs up as the level allows.
+- The bottom level has no stairs down.
+
+If you generate a node that its parent reaches by a staircase, the node
 keeps the staircase back. A level below its parent gets stairs up where the
-first level has its door, and the dialog offers a dungeon, a cave, or a
-cellar. A floor above its parent offers the upper floor alone. The new
-levels below a regenerated level take the name of the top of the stack, for
-example "Ashford Barrow (level 3)".
+first level has its door. A floor above its parent offers the upper floor
+alone.
+
+The new levels below a regenerated level take the name of the top of the
+stack, for example "Ashford Barrow (level 3)".
+
+#### Worlds
 
 A world is a continent in a sea, split into up to nine regions. Each region
-is a block of land tiles that all link to one large region map. The terrain
-of the block sets the archetype of that map. Mountains and hills make
-highlands, snow makes a frontier, sand makes a desert, swamp makes
-wetlands, and other land makes wilderness. A small island is in no region.
+is a block of land tiles that all link to one large region map. A small
+island is in no region.
+
+The terrain of a block sets the archetype of its region map.
+
+| Block terrain | Region archetype |
+| --- | --- |
+| Mountains and hills | Highlands |
+| Snow | Frontier |
+| Sand | Desert |
+| Swamp | Wetlands |
+| Other land | Wilderness |
+
 A world has rivers but no roads or settlements, because each region gets
 those on its own map.
 
-The Sub-maps field shows for every region archetype. It sets
-which places on the new map get maps of their own:
+#### Sub-maps
 
-- **None** changes the map alone.
-- **One level down** also gives each place on the map its own map. The
-  places are the regions of a world, the settlements, keep, dungeon, cave
-  entrances, mines, and ruins of an outdoor map, and the buildings of a
-  town.
-- **Every level** also gives the places on those maps their own maps, down
-  to the buildings of each town.
+The Sub-maps field shows for every region archetype. It sets which places
+on the new map get maps of their own.
 
-Each sub-map gets a generated name. Its layout comes from its own seed,
-which comes from the seed of the map above it. The preview then stays the
-same with every Sub-maps choice. A dungeon or a cave sub-map gets one to three levels. All
-four cells of a town building link to its inside. A well, a fountain, a
-market, and a graveyard have no inside. One generation creates at most 300
-sub-maps. A place past that limit keeps its marker with no link, and the
-message after the generation counts those places. One undo removes the new
-map and every new sub-map.
+| Value | Effect |
+| --- | --- |
+| None | Changes the map alone |
+| One level down | Also gives each place on the map its own map |
+| Every level | Also gives the places on those maps their own maps, down to the buildings of each town |
 
-Generation makes the levels of a dungeon or a cave, the upper floor and
-the dungeons of a castle, and the cellar under a trapdoor with every
-Sub-maps choice. A generated staircase or trapdoor always leads to a real
-map.
+The places are the regions of a world, the buildings of a town, and these
+sites of an outdoor map: settlements, the keep, the dungeon, cave entrances,
+mines, and ruins. A well, a fountain, a market, and a graveyard have no
+inside. All four cells of a town building link to its inside.
+
+Each sub-map gets a generated name and its own seed. The seed comes from
+the seed of the map above it, so the preview is the same for every Sub-maps
+value. A dungeon or a cave sub-map gets one to three levels.
+
+One generation creates at most 300 sub-maps. A place past that limit keeps
+its marker with no link, and the message after the generation counts those
+places. One undo removes the new map and every new sub-map.
+
+Generation always makes these maps, whatever the Sub-maps value:
+
+- the levels of a dungeon or a cave
+- the upper floor and the dungeon of a castle
+- the cellar under a trapdoor
+
+So a generated staircase or trapdoor always leads to a real map.
 
 ### Link warnings
 
 Build mode shows a warning above the tool tabs when the node in view has no
-way in or out. The world tree marks each node that has a problem with a
+way in or no way out. The World tree marks each node with a problem with a
 warning triangle. A closed branch shows a triangle and the number of nodes
 inside it that have a warning.
 
 | Warning | Meaning |
 | --- | --- |
 | Nothing leads here | No tile on the parent map links to this node |
-| No way out | The node is linked, but has no outer door, no usable staircase, and no painted parent tile beside its block |
+| No way out | The node is linked, but it has no outer door, no usable staircase, and no painted parent tile beside its block |
 
-Neither problem strands a party, because a node without an authored way out
-offers a plain "Return to {parent}" button.
+Neither problem strands a party. A node without an authored way out offers
+a plain "Return to (parent)" button.
+
+### Encounters tab
+
+The Encounters tab of the Build rail stages creatures on the map in view.
+The Mobs subtab lists foes, and the NPCs subtab lists friendly and neutral
+people.
+
+| Control | What it does |
+| --- | --- |
+| New encounter | Opens the creature dialog for a new foe |
+| From bestiary | Opens the Bestiary dialog. Pick a template, then spawn a full-health copy at a map and tile, or delete a campaign template |
+| Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
+| Edit, Delete on a row | Edits or deletes that creature |
+
+The Bestiary lists the campaign templates and the hostile templates of the
+library. The spawn location defaults to the selected cell of the map in
+view.
+
+A defeated foe stays in the campaign until you remove it. **Clear
+defeated** counts the hostile creatures at 0 HP that stand on the map in
+view. It removes all of them, except a foe in the order of a running fight.
+
+Clear defeated leaves foes on other maps and unplaced foes. It also takes
+the removed foes off any quest links, and one travelogue note counts them,
+for example "Cleared 4 defeated foes: Goblin x3, Wolf." Undo brings them
+back.
 
 ## Play mode
 
-The sidebar has three tabs of session panels.
+Play mode is where you run a session.
 
-| Tab | Panels |
+### Play layout
+
+| Area | Contents |
 | --- | --- |
-| Session | World, Time, Party, Encounters, Initiative |
-| Story | Quests, NPCs, Handouts |
-| Log | The travelogue |
+| Above the map | The breadcrumb trail. A click on a crumb, except the last, opens that map |
+| Map | The current map, the map controls, the mini-map, and the ways out |
+| Below the map | The Party card, the Dice Tray, and the character detail card |
+| Sidebar | Three tabs of session panels |
 
-Hide panels collapses the sidebar and gives the map the full width.
+| Sidebar tab | Panels |
+| --- | --- |
+| Session | World, Time, Encounters, and Initiative |
+| Story | Quests, NPCs, and Handouts |
+| Log | Travelogue |
+
+**Hide panels** collapses the sidebar and gives the map the full width.
+
+The World panel shows the node tree. A GM sees every node, and a player
+sees only the nodes that the party discovered. A discovered node has at
+least one revealed tile, or it is where the party stands.
+
+A click on a row name in the World panel opens that map in a Player tab.
+In a GM tab, it offers to teleport the party there, and **Teleport** moves
+the party.
+
+### Map controls
+
+The map controls sit in a row over the map.
+
+| Control | What it does |
+| --- | --- |
+| Zoom in, Zoom out | Change the zoom one step |
+| Fit map to view | Fits the whole map in the viewport |
+| Center on party | Brings the party back into view at the current zoom |
+| Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice |
+| Zoom readout | Shows the zoom as a percentage |
+| Reveal fog (brush) | GM only. Picks up the reveal brush. A click or Enter on a tile reveals it |
+| Hide fog (brush) | GM only. Picks up the hide brush. A click or Enter on a tile hides it |
+| Reveal whole area | GM only. Reveals every tile of the map in view |
+
+While a fog brush is picked up, a click paints fog instead of moving the
+party. A second click on the same brush button, or Escape, puts the brush
+down. A change of mode or of map also puts the brush down.
+
+When a map opens, the view fits the whole map. If the map is too large to
+show at a readable size, the view centers on the party instead. In a Player
+tab, it centers on the bound character. The view then follows the party
+until you pan or zoom.
+
+A switch to Play mode opens the node where the party stands.
 
 ### Party movement
 
-A click on a tile, or Enter on the keyboard cursor, moves the party there
-when a walk leads to it from the tile of the party. The walk steps to the
-four sides of each tile. A wall or an obstacle stops it, and a gate or a
-door lets it through. So a town wall, the walls of an interior, and
-furniture such as a table block the walk. An empty cell lets the walk
-through, so a gap in a map that you paint does not block a move. When no walk leads
-to the tile, the GM's tab asks before it moves the party there anyway, so
-you can still put the party past a wall. A player tab does not move the
-token, and it shows a message. The walk of a player goes through revealed
-tiles only, so an empty cell stops it.
+A click on a tile, or Enter on the keyboard cursor, moves the party there.
+Only one kind of tab moves anyone.
 
-The check applies to a move inside the map in view. The exit buttons, a
-teleport from the World panel, and the Place action of a character do not
+| Tab | Party together | Party split |
+| --- | --- | --- |
+| GM | Moves the party | Moves the character selected in the Party card, or the party if no character is selected |
+| Bound Player tab | Moves nobody | Moves its own character |
+| Spectator | Moves nobody | Moves nobody |
+
+A click on a tile that links to a sub-map enters the sub-map. The party
+lands at the edge that it came from, and the travelogue logs the entry. A
+first entry is logged as a discovery.
+
+The move needs a walk from the tile of the party. The walk steps to the
+four sides of each tile.
+
+- A wall or an obstacle stops the walk. So a town wall, the walls of an
+  interior, and furniture such as a table block it.
+- A gate or a door lets the walk through.
+- An empty cell lets the walk through, so a gap in a painted map does not
+  block a move.
+- A player walk goes through revealed tiles only, so an empty cell stops it.
+
+If no walk leads to the tile, a GM tab asks before it moves the party
+there anyway. So you can still put the party past a wall. A player tab does
+not move the token, and it shows a message.
+
+The walk check applies only to a move inside the map in view. The ways
+out, a teleport from the World panel, and the Place on map button do not
 check for a walk.
+
+A player tab ignores clicks on a fogged tile. A player cannot move a token
+into the fog or open the sub-map behind it.
+
+### Ways out of a map
+
+Inside a sub-map, the edges and tiles that lead back to the parent map show
+return arrows. A click on an arrow travels.
+
+| Kind | Where it shows | Where it leads |
+| --- | --- | --- |
+| Edge | A side of an outdoor sub-map that touches painted tiles on the parent map | Back to the parent tile that the party crossed. If another region of the same parent map borders that side, the party crosses into that region at the matching spot |
+| Tile | An outer door, or a staircase with no link, in an interior | Back to the parent level |
+| Fallback | A node with neither kind | A plain "Return to (parent)" button |
+
+An exit arrow that the mini-map would cover moves along its side of the map
+until it is clear.
+
+### Party splitting
+
+The **Allow splitting the party** checkbox in the Party card lets each
+character stand on its own tile. The switch is off by default, and it is
+GM-only.
+
+| State | Effect |
+| --- | --- |
+| Off | Every character moves with the party marker. No character tokens or name labels show |
+| On | Each character can stand on its own tile, shown by a gold token. The Party card shows a Place on map button on each row |
+
+**Place on map** opens a dialog with a map and a tile, or **With the
+party**. A placed character reveals fog around its tile.
+
+When you clear the checkbox, a **Regroup the party** dialog asks where to
+gather everyone. The party then teleports to the position of the character
+that you pick. If you cancel, the party stays split.
 
 ### Map markers and ranges
 
 | Marker | Meaning |
 | --- | --- |
-| Gold token | A character, when party splitting is on |
+| Gold token | A character, while the party is split |
 | Red diamond, upper right of a tile | A live encounter |
 | Blue circle, upper left of a tile | A placed NPC |
 | Gold outline | A revealed point of interest |
 
-Movement reveals fog in a radius around the new position, and a revealed
-tile stays revealed. A player tab ignores clicks on a fogged tile, so a
-player cannot move a token into the fog or open the sub-map behind it. An encounter marker and an NPC
-marker appear at detection range, which is twice the fog reveal radius. The Nearby
-encounters tab lists encounters within four times the reveal radius.
+| Range | Distance from the party (tiles) | What it sets |
+| --- | --- | --- |
+| Fog reveal radius | 2 | The radius that movement reveals. A revealed tile stays revealed |
+| Detection range | 4 (twice the reveal radius) | The range at which encounter, NPC, and point-of-interest markers show |
+| Nearby range | 8 (four times the reveal radius) | The range of the GM lists of nearby encounters and NPCs |
 
-Hovering a tile in Play mode, with the pointer or with the keyboard cursor,
-names the point of interest and the NPCs on it. This follows the same
-detection range as the markers, so a tile out of range says nothing.
+A hover on a tile in Play mode names the point of interest and the NPCs on
+it. The keyboard cursor does the same. The hover uses the detection range,
+so a tile out of range says nothing.
 
 ### The mini-map
 
 Inside a sub-region, a small picture of the map one level up sits in the
-top-left corner of the map. A gold outline marks the tiles of that map that
-lead into the sub-region, and a gold dot marks the approximate position of
-the party. The dot scales the party's position in the sub-region onto the
-outlined tiles, so a party at the east edge of a town shows at the east side
-of the town's block. While the party is split, a player tab follows its bound
-character. On the world map, the mini-map is hidden.
+top-left corner of the map. On the world map, the mini-map is hidden.
+
+| Element | Meaning |
+| --- | --- |
+| Gold outline | The tiles of the parent map that lead into this sub-region |
+| Gold dot | The approximate position of the party |
+
+The dot scales the position of the party in the sub-region onto the
+outlined tiles. So a party at the east edge of a town shows at the east
+side of the block of that town. While the party is split, a Player tab
+follows its bound character.
 
 The mini-map draws fog the same way as the main map. In Play mode, a tile
-that the party has not seen draws as fog, and in Build mode every tile
-shows. The mini-map button in the map controls shows or hides the mini-map,
-and each browser keeps the choice. A click on the mini-map does nothing, so
-it never moves the party to a tile hidden under it. An exit arrow that the
-mini-map would cover moves along its side of the map until it is clear.
+that the party has not seen draws as fog. In Build mode, every tile shows.
+
+A click on the mini-map does nothing, so it never moves the party to a tile
+hidden under it.
+
+### Encounters panel
+
+The Encounters panel in the Session tab has two tabs.
+
+| Tab | GM tab lists | Player tab lists |
+| --- | --- | --- |
+| Active encounter | Every live creature on the tile of the party, of any disposition | The same creatures |
+| Nearby encounters | The hostile creatures within the nearby range, on the node of the party, plus unplaced ones | The hostile creatures on revealed tiles of the node of the party, plus unplaced ones that the party walked into |
+
+A GM tab also shows these controls:
+
+| Control | What it does |
+| --- | --- |
+| Start combat | Opens the combat setup for everyone on the tile of the party |
+| New encounter | Opens the creature dialog for a new foe |
+| From bestiary | Opens the Bestiary dialog |
+| Save as a bestiary template, on a row | Stores that creature as a campaign template |
 
 ### The difficulty hint
 
-Above the Active encounter rows, the GM sees one line rating the fight on the
-party's tile, for example "Hard: 1200 XP against party thresholds easy 300,
-medium 600, hard 900, deadly 1600". The first number is what the hostile
-creatures are worth together, counting a crowd for more than the sum of its
-parts and adjusting for a party smaller than three or larger than five. The four
-labeled numbers after it are the party's budgets for each band, summed over the
-levels of the living characters. A
-dead character buys no budget and does not count toward the party size. The
-band names the highest budget the fight reaches. The line hides when no living
-character remains, because there is no budget to rate against.
+Above the Active encounter rows, the GM sees one line that rates the fight
+on the tile of the party. For example: "Hard: 1200 XP against party
+thresholds easy 300, medium 600, hard 900, deadly 1600".
 
-The line is a hint that blocks nothing and awards no experience points. A foe
-with no challenge rating is worth nothing in this sum, so the line says how many
-such foes it counted. The real fight is then harder than the total, though the
-crowd multiplier such foes raise can also push the rated foes' worth the other
-way. Players never see the line.
-
-### Encounter fields
-
-| Field | Meaning |
+| Part | Meaning |
 | --- | --- |
-| Name | The name shown in the panel and the log |
-| Max HP | The full health pool |
-| Level | Drives the default stat block |
-| Tier | mob for rank and file, legend for an above-normal enemy |
-| Challenge rating | The 5e rating, or Unrated. It sets the proficiency bonus the enemy rolls with |
-| Save proficiencies | The saving throws the enemy is trained in |
-| Skill proficiencies | The skills the enemy is trained in |
-| Resistant to, Vulnerable to, Immune to | The damage types the enemy takes half, double, or no damage from |
-| Weapon, Armor | Gear from the library. None leaves the enemy unarmed or unarmored |
-| Map, Tile | Where the encounter stands |
+| Band | Trivial, Easy, Medium, Hard, or Deadly. The band names the highest threshold that the adjusted total reaches. Under the easy threshold is Trivial |
+| XP total | The adjusted worth of the hostile creatures |
+| Thresholds | The easy, medium, hard, and deadly budgets, summed over the levels of the living characters |
+| Unrated count | Shows when foes have no challenge rating, for example "2 unrated foes count for no XP" |
 
-The six ability scores plus AC are the only stats an enemy has. A
-legend always out-stats a level-matched mob. The Build chip for AC reads
-"Base AC", which is the AC without armor: 10 plus the DEX modifier by default,
-or higher for natural armor or a shield. Worn armor replaces the 10 + DEX part
-with its own base AC and the DEX modifier its weight allows. Light armor adds
-all of the DEX modifier, medium armor adds at most +2, and heavy armor adds
-none. A DEX 16 enemy in Plate has AC 18. The Play chip and the combat card
-show the AC with armor. A defeated encounter is styled
-as defeated, not deleted.
+The adjusted total is the sum of the XP of each foe, times a multiplier for
+the number of foes.
 
-A defeated foe stays in the campaign until you remove it. The **Clear
-defeated** button in the Build rail's Encounters card shows the count of hostile
-creatures at 0 HP placed on the map in view. It asks once, then removes all of
-them, except a foe in the order of a running fight. Foes on other maps and
-unplaced foes stay. The removal also takes the foes
-off any quest links, and one travelogue note names the foes by count, for
-example "Cleared 4 defeated foes: Goblin x3, Wolf." Undo brings them back.
+| Foes | Multiplier |
+| --- | --- |
+| 1 | x1 |
+| 2 | x1.5 |
+| 3 to 6 | x2 |
+| 7 to 10 | x2.5 |
+| 11 to 14 | x3 |
+| 15 or more | x4 |
 
-The Encounters and NPCs panels print what the enemy is trained in, with the bonus it rolls in each,
-for example "Saves DEX +4 | Skills Stealth +6". The app works each bonus out
-from the ability score, the challenge rating, and any exhaustion, so there is no
-number to type. An unrated enemy takes its proficiency bonus from its level
-instead, and from +2 when it has no level. A save that a spell calls for uses
-the same bonus, so the cast dialog asks only for the DC.
+A party of one or two characters moves one step up this ladder, and a party
+of six or more moves one step down. The ladder ends at x0.5 and x5.
 
-In Play mode, a click on a stat chip applies a timed adjustment, for
-example +2 STR for 3 rounds, shown as "STR 14->16 (3r)". The adjustment
-ticks down as combat rounds pass, and combat math uses the adjusted value
-while it lasts. In Build mode, the same chips set base values.
+A dead character adds no budget and does not count toward the party size.
+The line hides when no living character remains, because there is no
+budget to rate against.
+
+The line is a hint only. It blocks nothing, it awards no XP, and players
+never see it.
+
+A foe with no challenge rating is worth nothing in the sum, but it still
+counts toward the number of foes. The missing worth makes the total too
+low, and the higher multiplier on the rated foes can make it too high.
+
+### Creature fields
+
+The creature dialog defines a foe or an NPC. The same dialog opens from
+Build mode, from Play mode, and from the tile menu.
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| Name | Empty | The name shown in the panels and the log |
+| Role / faction | Empty | A short description, such as "blacksmith" |
+| Disposition | Neutral. Hostile for **New encounter** and **New foe here** | Hostile, neutral, or friendly. A hostile creature is a foe |
+| Max HP | 4 | The full health pool |
+| Notes | Empty | Text for the GM. The Player view does not show it |
+| Level (blank for none) | Blank. 1 for **New encounter** and **New foe here** | Sets the default stat block |
+| Tier | Mob | Mob for rank and file, Legend for an above-normal enemy. A legend always has higher stats than a mob of the same level |
+| Challenge rating | Unrated | The 5e rating, from 0 to 30. It sets the proficiency bonus that the creature rolls with, and its XP |
+| Save proficiencies | None | The saving throws that the creature is trained in |
+| Skill proficiencies | None | The skills that the creature is trained in |
+| Weapon | None (unarmed) | A weapon from the library |
+| Armor | None (unarmored) | Armor from the library |
+| Resistant to, Vulnerable to, Immune to | None | The damage types that the creature takes half, double, or no damage from |
+| Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
+| Caster level | Blank | The level that sets the spell slots of the creature |
+| Spells | None | The spells that the creature knows |
+| Location (map), Column, Row | The selected cell | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere |
+
+The caster class list also offers "Fighter (Eldritch Knight)" and "Rogue
+(Arcane Trickster)". For these two, a caster level below 3 saves as 3,
+because these subclasses cast from level 3.
+
+The six ability scores plus AC are the only stats that a creature has.
+
+The Build chip for AC reads "Base AC". This is the AC without armor: 10
+plus the DEX modifier by default, or higher for natural armor or a shield.
+The Play chip and the combat card show the AC with armor.
+
+Worn armor replaces the 10 + DEX part with its own base AC and the part of
+the DEX modifier that its weight allows. See [Armor class](#armor-class).
+For example, a DEX 16 creature in Plate has AC 18.
+
+The Encounters and NPCs panels show each trained save and skill with its
+bonus, for example "Saves DEX +4 | Skills Stealth +6". The app calculates
+each bonus from the ability score, the challenge rating, and any
+exhaustion, so there is no number to type.
+
+An unrated creature takes its proficiency bonus from its level. With no
+level, the bonus is +2. A save that a spell calls for uses the same bonus,
+so the cast dialog asks only for the DC.
+
+A defeated encounter shows as defeated in the lists. The app does not
+delete it.
+
+### Stat chips
+
+In Play mode, a click on a stat chip of a creature applies a timed
+adjustment, for example +2 STR for 3 rounds. The chip then reads "STR
+14->16 (3r)".
+
+The adjustment counts down as combat rounds pass, and combat math uses the
+adjusted value while it lasts. In Build mode, the same chips set base
+values.
 
 ### Combat screen
+
+The combat screen runs one fight at the full width of the page.
 
 | Area | Contents |
 | --- | --- |
 | Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, damage and heal steppers, and the loadout |
-| Center | The board: one card per combatant, with HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for it |
-| Right column | The combat log, with the dice tray docked beneath it |
+| Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
+| Right column | The combat log, with the dice tray docked below it |
 | Bottom | The turn ribbon: one chip per combatant in initiative order |
 
-The current turn is ringed in the ribbon. A foe chip shows a sword. A
-defeated combatant is struck through. A combatant that cannot act, such as a
-stunned one, takes a dashed edge on both its ribbon chip and its board card,
-which marks it apart from a defeat: it is still in the fight, and only its
-turn is gone. A click on a chip inspects that combatant without advancing the
-turn.
+| Ribbon or card mark | Meaning |
+| --- | --- |
+| Ring | The current turn |
+| Sword on a chip | A foe |
+| Strike-through | A defeated combatant |
+| Dashed edge | A combatant that cannot act, such as a stunned one. It is still in the fight, and only its turn is lost |
 
-A player card shows spells and slots to its own bound tab, another player's
-card shows armor and weapons only, and a foe card shows no loadout at all
-except to the GM tab.
+A click on a ribbon chip inspects that combatant without a change of turn.
 
-Back to map leaves the screen without ending the fight. The Initiative card
-in the sidebar shows the round and has Open combat. Only the GM can click
-End combat. While a hostile creature still stands, End combat asks first.
-After a victory, it offers the experience points of the defeated foes,
-split evenly among the characters still alive and rounded down. A foe with
-no challenge rating is worth nothing, and you can change the amount or
-cancel. A fight also ends when the party walks off the tile, or when
-the last creature staged there is deleted.
+| Viewer | Loadout shown on a card |
+| --- | --- |
+| GM tab | Every loadout |
+| Bound tab, own card | Armor, weapons, spells, and slots |
+| Bound tab, another player card | Armor and weapons only |
+| Any Player tab, foe card | No loadout |
+
+| Control | Who | What it does |
+| --- | --- | --- |
+| Back to map | Everyone | Leaves the screen without an end to the fight. The Initiative card in the sidebar shows the round and has **Open combat** |
+| End combat | GM only | Ends the fight. While a hostile creature still stands, the app asks first |
+
+After a victory, End combat offers the XP of the defeated foes. The XP is
+split evenly among the living characters and rounded down. A foe with no
+challenge rating is worth nothing. You can change the amount or cancel.
+
+A fight also ends when the party walks off the tile, or when you delete the
+last creature staged there.
+
+### Combat setup
+
+**Start combat** opens the setup dialog. It lists everyone on the tile of
+the party. Hostile creatures line up as foes, and friendly and neutral
+creatures line up with the party.
+
+| Control | What it does |
+| --- | --- |
+| Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
+| Roll initiative | Rolls for every row at once |
+| Start combat | Starts the fight in the listed order |
+
+For the initiative rules, see [Initiative](#initiative).
+
+### Attack dialog
+
+A weapon button in the action bar opens the attack dialog.
+
+| Field | Default | Meaning |
+| --- | --- | --- |
+| Defender | The card picked on the board, or the first defender | The target, shown with its AC |
+| Roll | Auto (from conditions) | Auto, Normal, Advantage, or Disadvantage. A value other than Auto overrides the condition chips |
+| Target cover | None | None, Half cover (+2 AC), or Three-quarters cover (+5 AC) |
+| Range | Normal | For a ranged or thrown weapon. Long range takes disadvantage |
+| Wield two-handed | Off | For a versatile weapon. Uses the two-handed damage dice |
+| Sneak Attack (+Nd6) | Off | For an attacker with the feature that has not used it this turn |
+| Ignore action cost | Off | Shows when the turn cannot pay for the swing. Swings anyway |
+| Situational modifiers | Closed | Bonus dice (d4 to d12) and flat bonuses for the attack and the damage |
 
 ### Action, bonus action, and reaction
 
 The Actions heading on the combat screen shows three pips: Action, Bonus
-action, and Reaction. A pip is struck through once the turn spent it. A
+action, and Reaction. A pip is struck through after the turn spends it. A
 combatant with Extra Attack also shows how many swings are left.
 
-- A weapon swing spends the Attack action. Extra Attack banks its extra swings,
-  so a Fighter of 5th level swings twice for one action.
-- A cast spends what the casting time of the spell names: an action, a bonus
-  action, or a reaction.
-- The whole turn comes back when the turn of that combatant begins again. The
-  reaction comes back there too, not at the top of the round.
-- A combatant the turn order steps past, because it is down or cannot act,
-  keeps whatever it spent.
+| What | Cost |
+| --- | --- |
+| A weapon swing | The Attack action. Extra Attack banks the extra swings, so a Fighter of 5th level swings twice for one action |
+| A cast | What the casting time of the spell names: an action, a bonus action, or a reaction |
+| An off-hand swing | The bonus action |
+| An opportunity attack | The reaction |
 
-The pips report and never block a button, so a swing or a cast the turn cannot
-pay for is refused in its dialog instead, and the dialog offers an "Ignore action
-cost" box that goes ahead anyway. Use it for a rule the app does not model.
+The whole turn comes back when the turn of that combatant starts again. The
+reaction comes back at the same time, not at the top of the round. A
+combatant that the turn order steps past, because it is down or cannot act,
+keeps what it spent.
 
-A casting time longer than a turn, such as a ten-minute ritual, is refused in a
-fight for the same reason and offers the same box.
+The pips never block a button. Instead, the dialog refuses a swing or a
+cast that the turn cannot pay for. The dialog then offers an **Ignore
+action cost** box that goes ahead anyway. Use the box for a rule that the
+app does not model.
+
+A casting time longer than a turn, such as a ten-minute ritual, is refused
+in a fight in the same way, and it offers the same box.
 
 ### Two-weapon fighting
 
-A character with two light melee weapons equipped, a dagger and a shortsword for
-example, gets an "Off-hand (bonus action)" group in the action bar. The group
-appears after the character takes its Attack action, and only while the bonus
-action is unspent. Both weapons are offered, and you pick the one the second
-hand swings.
+A character with two light melee weapons equipped gets an **Off-hand
+(bonus action)** group in the action bar. An example is a dagger and a
+shortsword. The group shows after the character takes its Attack action,
+and only while the bonus action is unspent.
 
-The off-hand swing rolls to hit like any other attack. Its damage gets no
-ability bonus, which is the 5e rule. A negative ability modifier still applies,
-so a weak character swings weakly with either hand. The combat log marks the
-swing "off-hand".
+The group offers both weapons, and you pick the one that the second hand
+swings. The off-hand swing rolls to hit like any other attack.
+
+Its damage gets no ability bonus, which is the 5e rule. A negative ability
+modifier still applies. The combat log marks the swing "off-hand".
 
 ### Reactions and opportunity attacks
 
-A reaction is taken between the turns of its owner, so its controls are on the
-board card, not in the action bar. A card shows a "Reaction" row when all of
-this is true: the card is not the current turn, you can act for that combatant,
-the combatant can still act, and its reaction is unspent. The row has one
-button per melee weapon for an opportunity attack, and one button per spell that
-casts as a reaction, such as Shield.
+A reaction happens between the turns of its owner, so its controls are on
+the board card, not in the action bar. A card shows a Reaction row when all
+of these conditions are true:
 
-The app does not watch for a trigger. It tracks no distance between tokens, so it
-cannot see a creature leave the reach of another. You call the trigger at the
-table and press the button.
+- The card is not the current turn.
+- You can act for that combatant.
+- The combatant can still act.
+- Its reaction is unspent.
 
-An opportunity attack rolls like a normal swing and keeps its ability bonus on
-damage. It spends the reaction, and the log marks it "opportunity attack". Its
-defender starts as the combatant taking the turn, because that is who the
-reaction interrupts. A card you picked on the board overrides that. A reaction
-spell opens the usual cast dialog and spends the reaction instead of the action.
+The row has one button per melee weapon for an opportunity attack. It also
+has one button per spell that casts as a reaction, such as Shield.
 
-The reaction comes back at the start of the turn of its owner, not at the top of
-the round.
+The app does not watch for a trigger. It tracks no distance between tokens,
+so it cannot see a creature leave the reach of another. You call the
+trigger at the table and press the button.
+
+An opportunity attack rolls like a normal swing and keeps its ability bonus
+on damage. It spends the reaction, and the log marks it "opportunity
+attack".
+
+Its defender starts as the combatant that takes the turn, because that is
+who the reaction interrupts. A card that you pick on the board overrides
+that. A reaction spell opens the usual cast dialog and spends the reaction
+instead of the action.
 
 ### Cover and Sneak Attack
 
-Both of these are your call in the attack dialog. The app tracks no distance
-between tokens and no line of sight, so it cannot see a wall, a barrel, or where
-the rogue stands.
+You decide both of these in the attack dialog. The app tracks no distance
+between tokens and no line of sight, so it cannot see a wall, a barrel, or
+where the rogue stands.
 
-The "Target cover" select sits beside the roll mode. Half cover adds 2 to the AC
-of the target for that swing, and three-quarters cover adds 5. The log prints
-both numbers, such as `vs AC 12 (10 half cover +2)`, so the reason for the change
-is on the record. Total cover is not offered: a target in total cover cannot be
-attacked, so no roll happens. Cover in 5e also adds the same bonus to Dexterity
-saving throws, and the cast dialog does not apply that. Fold it into the save
-bonus you type for a foe, or into the roll mode for a character.
+Half cover adds 2 to the AC of the target for that swing, and three-quarters
+cover adds 5. The log prints both numbers, such as `vs AC 12 (10 half
+cover +2)`.
 
-A "Sneak Attack" box appears when the attacker has the feature and has not used
-it this turn. The label states the dice, such as `Sneak Attack (+2d6)`. The count
-comes from the level in the class that granted the feature. The dice are d6, they
-take the damage type of the weapon, and a critical hit doubles them. The damage
-line of the log names them.
+Total cover is not offered, because a target in total cover cannot be
+attacked. Cover in 5e also adds its bonus to Dexterity saving throws, and
+the cast dialog does not apply that. Add it to the save bonus that you type
+for a foe, or pick a roll mode for a character.
 
-The 5e condition for the dice is advantage on the attack, or an ally next to the
-target. The app checks neither, so the box is where you state that the condition
-was met. The once-per-turn limit is tracked: the box is gone for the rest of the
-turn after the dice land, and it returns on the next turn, whoever takes it. A
-rogue that spent the dice on its own swing can spend them again on an
-opportunity attack, which is the 5e reading of once per turn. A miss leaves the
-box, because Sneak Attack applies only on a hit.
+The Sneak Attack box shows when the attacker has the feature and has not
+used it this turn. The label states the dice, such as `Sneak Attack
+(+2d6)`. The level in the class that granted the feature sets the count.
+
+The Sneak Attack dice are d6, they take the damage type of the weapon, and
+a critical hit doubles them. The damage line of the log names them.
+
+The 5e condition for the dice is advantage on the attack, or an ally next
+to the target. The app checks neither, so the box is where you state that
+the condition was met.
+
+The app tracks the once-per-turn limit. After the dice land, the box is gone
+for the rest of the turn, and it comes back on the next turn of any
+combatant. So a rogue that spent the dice on its own swing can spend them
+again on an opportunity attack, which is the 5e reading of once per turn. A
+miss leaves the box, because Sneak Attack applies only on a hit.
 
 ### Combat rules
 
-Attack rolls follow 5e without change.
+The app follows the 5e rules for the rolls in this section.
+
+#### Attack rolls
 
 - The roll is 1d20, plus the ability modifier of the weapon, plus the
   proficiency bonus of the attacker, against the AC of the defender.
-- A character adds the proficiency bonus only when its proficiency lists cover
-  the weapon, by category or by name. Without that, the roll takes the ability
-  modifier alone, and the log says "not proficient". A creature is always
-  proficient with its own weapon, the way a 5e stat block is.
-- STR modifies a melee weapon, DEX modifies a ranged weapon, and a finesse
+- A character adds the proficiency bonus only when its proficiency lists
+  cover the weapon, by category or by name. Otherwise, the roll takes the
+  ability modifier alone, and the log says "not proficient".
+- A creature is always proficient with its own weapon, like a 5e stat
+  block.
+- STR modifies a melee weapon, and DEX modifies a ranged weapon. A finesse
   weapon uses the higher of the two.
-- A versatile weapon offers a "Wield two-handed" box in the attack dialog. The
-  box swaps the damage dice for the two-handed dice.
-- A ranged or thrown weapon offers a Range field in the attack dialog. A shot
-  at long range takes disadvantage, which folds in with the condition chips.
-  A mode you pick in the Roll field still beats it.
-- A thrown melee weapon, such as a dagger, lists Melee first and the two throw
-  distances after it. The throws count as ranged attacks, so a prone defender
-  is harder to hit with them and easier to hit with the melee swing.
-- Armor the character is not trained for gives disadvantage on every attack
-  roll, the same as on its STR and DEX checks and saves.
+- A shot at long range takes disadvantage, which combines with the
+  condition chips. A Roll value other than Auto still overrides it.
+- A thrown melee weapon, such as a dagger, lists Melee first and the two
+  throw distances after it. The throws count as ranged attacks. So a prone
+  defender is harder to hit with a throw and easier to hit with a melee
+  swing.
+- Armor that the character is not trained for gives disadvantage on every
+  attack roll.
 - A natural 20 hits whatever the AC is, and every damage die rolls twice.
 - A natural 1 always misses.
-- On a hit, the damage dice roll with the ability modifier folded into the
-  base term. Proficiency never adds to damage.
+- On a hit, the damage dice roll with the ability modifier added.
+  Proficiency never adds to damage.
 
-The app applies the damage to the defender. An encounter loses HP on the
-spot, and a defeat is logged. A character loses bonus HP first, then real
-HP. An NPC loses HP the way an encounter does.
+#### Damage and damage defenses
 
-A weapon or spell hit checks the damage defenses of the defender first. An
-immunity takes a damage type to 0, a resistance halves it, and a
-vulnerability doubles it, each rounded down. Each damage type in the hit
-changes on its own. A successful save against a spell that deals half damage
-halves first, and the defenses apply after that. A character resists the
-damage types of its race, such as fire for a tiefling. A foe takes its three
-lists from the enemy form. The log names each defense that changed the
-damage, with the amount taken. The Damage button on the combat screen and on
-the panels deals the typed amount with no damage type, so no defense applies
-to it.
+The app applies the damage to the defender. An encounter or an NPC loses HP
+at once, and the log records a defeat. A character loses bonus HP first,
+then real HP.
 
-A party character at 0 HP is dying, not dead. It gets a death-save tracker on
-the combat screen and on its sheet, and the Unconscious chip.
+A weapon or spell hit checks the damage defenses of the defender first.
 
-- The save is 1d20 against DC 10, with no ability modifier and no proficiency.
-  A Bless chip still adds its die.
-- Three successes stabilize. The character stays at 0 HP and unconscious, and
-  rolls no more saves. The Stabilize button does the same thing without a roll.
-- Three failures kill. The app says so and changes nothing else, so what
-  happens next is yours to decide.
-- A natural 20 wakes the character at 1 HP. A natural 1 counts as two failures.
-- Any damage while at 0 HP is an automatic failure, with no roll. A critical
-  hit counts as two. Damage on a stable character starts the saves again.
-- Damage left over past 0 HP that is at least the HP maximum kills outright.
-  A 12 HP character hit for 24 dies, and so does a character at 0 HP hit for
-  12. Bonus HP soaks the hit first.
-- The hit that drops the character to 0 HP costs no failure. Any healing above
-  0 HP clears the tracker, a dead one included. The app has no revival spell,
-  so in this app any heal above 0 HP brings a dead character back, and you
-  decide when that is allowed. Healing from the combat screen, from the
-  sheet's HP stepper, from a spell, and from a rest all count.
-- The roll is a button rather than an automatic step, so nobody rolls for the
-  player at the turn advance.
+| Defense | Effect, rounded down |
+| --- | --- |
+| Immunity | The damage type goes to 0 |
+| Resistance | The damage type is halved |
+| Vulnerability | The damage type is doubled |
+
+Each damage type in the hit changes separately. For a spell with half
+damage on a successful save, the save halves first, and the defenses apply
+after that.
+
+A character resists the damage types of its race, such as fire for a
+tiefling. A creature takes its three lists from the creature dialog. The
+log names each defense that changed the damage, with the amount taken.
+
+The Damage button on the combat screen and on the panels deals the typed
+amount with no damage type. No defense applies to it.
+
+#### Death saves
+
+A party character at 0 HP is dying, not dead. It gets a death-save tracker
+on the combat screen and on its sheet, and the Unconscious chip.
+
+- The save is 1d20 against DC 10, with no ability modifier and no
+  proficiency. A Bless chip still adds its die.
+- Three successes stabilize the character. It stays at 0 HP and
+  unconscious, and it rolls no more saves. The Stabilize button does the
+  same thing without a roll.
+- Three failures kill the character. The app says so and changes nothing
+  else, so you decide what happens next.
+- A natural 20 wakes the character at 1 HP. A natural 1 counts as two
+  failures.
+- Any damage at 0 HP is an automatic failure, with no roll. A critical hit
+  counts as two failures. Damage on a stable character starts the saves
+  again.
+- If the damage left over past 0 HP is at least the HP maximum, the
+  character dies at once. A 12 HP character hit for 24 dies, and so does a
+  character at 0 HP hit for 12. Bonus HP absorbs the hit first.
+- The hit that drops the character to 0 HP costs no failure.
+- Any healing above 0 HP clears the tracker, including a dead one. The app
+  has no revival spell, so any heal above 0 HP brings a dead character
+  back. You decide when that is allowed.
+- Healing from the combat screen, from the HP stepper of the sheet, from a
+  spell, and from a rest all count.
+- The roll is a button, not an automatic step, so nobody rolls for the
+  player when the turn advances.
 
 An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
+#### Initiative
+
 Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
-default initiative value is 10 plus the modifier. Roll initiative fills every
-row at once. On a tie, the combatant with the higher DEX modifier goes first,
-and then the name decides.
+default initiative value is 10 plus the modifier. On a tie, the combatant
+with the higher DEX modifier goes first, and then the name decides.
 
-Initiative is a Dexterity check, and it rolls as one. A condition chip that
-slants ability checks slants it, so a poisoned or frightened combatant rolls two
-d20s and keeps the lower one. Armor that the character is not trained for does
-the same. Exhaustion takes 2 off the total for each level. The log line says
-what happened to each roll: `Initiative rolled: Ser Aldric 17, Mirelle 6 (at
-disadvantage (dropped 15), Poisoned disadvantage).` Every value stays editable
-before you press Start combat, so you can still override any of it.
+Initiative is a Dexterity check, and it rolls as one.
 
-Armor class follows 5e as well.
+- A condition chip that affects ability checks affects initiative. So a
+  poisoned or frightened combatant rolls two d20s and keeps the lower one.
+- Armor that the character is not trained for does the same.
+- Exhaustion takes 2 off the total for each level.
+
+The log line says what happened to each roll, for example: `Initiative
+rolled: Ser Aldric 17, Mirelle 6 (at disadvantage (dropped 15), Poisoned
+disadvantage).` Every value stays editable until you press Start combat.
+
+A creature that a spell summons into a running fight rolls a plain d20 plus
+its DEX modifier, with no condition or armor effect. You can edit the value
+afterward.
+
+#### Armor class
 
 | Source | Effect on AC |
 | --- | --- |
 | Body armor | Its base AC replaces the unarmored baseline |
 | Light armor | Adds the full DEX modifier |
-| Medium armor | Caps the DEX modifier at +2 |
-| Heavy armor | Ignores DEX |
-| Shield | Its own flat bonus, which is +2 unless you change it |
+| Medium armor | Adds the DEX modifier, at most +2 |
+| Heavy armor | Adds no DEX modifier |
+| Shield | Its own flat bonus, which is +2 by default |
 | Other equipped items | Their own flat AC bonus |
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
-| Unarmored Barbarian | 10 plus DEX plus CON, if that beats the line above |
-| Unarmored Monk | 10 plus DEX plus WIS, if that beats the line above |
+| Unarmored Barbarian | 10 plus DEX plus CON, if that is higher than the line above |
+| Unarmored Monk | 10 plus DEX plus WIS, if that is higher than the line above |
 
-A Barbarian keeps its unarmored defense while carrying a shield. A Monk loses
-it, but the shield still adds its bonus. Either one loses the formula the
-moment it puts on body armor.
+A Barbarian keeps its unarmored defense while it carries a shield. A Monk
+loses it, but the shield still adds its bonus. Both lose the formula when
+they put on body armor.
 
-Body armor has two more 5e traits. Noisy armor gives the wearer
-disadvantage on every Stealth check, and the Stealth row on the sheet is
-marked "dis" when it applies. Armor that needs a Strength score the wearer
-does not have costs 10 feet of walking speed, and the speed badge beside AC
-says which piece is to blame. The Strength checked includes what equipped
-items add, so a ring of Strength can lift a character over the line. Both
-traits come with the armor presets. Armor already in a saved campaign has
-neither until you pick its preset again or set the fields by hand.
+Body armor has two more 5e traits.
 
-Armor proficiency follows 5e as well. A character that wears armor its
-proficiency lists do not cover pays for it in these places. A shield counts
-as its own entry in the armor list.
+| Trait | Effect |
+| --- | --- |
+| Stealth | The wearer has disadvantage on every Stealth check. The Stealth row on the sheet shows "dis" |
+| Min STR | If the Strength of the wearer is lower, the wearer loses 10 feet of walking speed. The speed badge beside AC names the armor. The Strength check includes what equipped items add |
+
+Both traits come with the armor presets. Armor already in a saved campaign
+has neither trait until you pick its preset again or set the fields by
+hand.
+
+#### Armor proficiency
+
+A character that wears armor its proficiency lists do not cover takes these
+penalties. A shield counts as its own entry in the armor list.
 
 - Every STR and DEX save or check from the sheet rolls at disadvantage. The
-  slant folds in with the condition chips, so an advantage chip cancels it.
-  The log says "not proficient" and names the worn piece.
-- Every weapon attack rolls at disadvantage, because an attack rolls off STR
-  or DEX whatever the weapon is. The slant folds in the same way.
+  log says "not proficient" and names the armor.
+- Every weapon attack rolls at disadvantage, because every attack uses STR
+  or DEX.
 - The character cannot cast a spell. The refusal names the armor and spends
-  nothing. The cast dialog offers an "Ignore armor" box, which casts anyway,
-  for a table that waives the rule.
-- A spell that forces a STR or DEX save catches the wearer too: the target
-  rolls that save at disadvantage.
+  nothing. The cast dialog offers an **Ignore armor** box, which casts
+  anyway.
+- A spell that forces a STR or DEX save makes the wearer roll that save at
+  disadvantage.
 
-The AC of the armor still applies. Wearing armor untrained changes rolls,
-not the armor itself. A creature has no proficiency lists and never pays
-this penalty.
+These penalties combine with the condition chips, so an advantage chip
+cancels them. The AC of the armor still applies. A creature has no
+proficiency lists and never takes these penalties.
 
-Timed conditions tick down at the start of each round and expire on their
-own.
+#### Conditions
 
-Eleven condition names have rules. The app applies them wherever the roll is
-thrown: a weapon attack, a spell attack, a spell save, and a save or a check
-rolled from the character sheet.
+Eleven condition names have rules. The app applies them to every roll that
+they affect: a weapon attack, a spell attack, a spell save, and a save or a
+check rolled from the character sheet.
 
 | Condition | What it does |
 | --- | --- |
@@ -832,195 +1291,367 @@ rolled from the character sheet.
 | Frightened | Attacks and ability checks at disadvantage |
 | Incapacitated | Loses its turn |
 | Invisible | Attacks with advantage. Attacks against it have disadvantage |
-| Paralyzed | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
-| Petrified | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
+| Paralyzed | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves at once |
+| Petrified | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves at once |
 | Poisoned | Attacks and ability checks at disadvantage |
-| Prone | Attacks at disadvantage. Melee attacks against it have advantage, ranged attacks disadvantage |
+| Prone | Attacks at disadvantage. Melee attacks against it have advantage, and ranged attacks against it have disadvantage |
 | Restrained | Attacks at disadvantage. Attacks against it have advantage. DEX saves at disadvantage |
-| Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
-| Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
+| Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves at once |
+| Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves at once |
 
-A caster, party character or foe, that takes a condition that makes it lose
-its turn also loses concentration, and the conditions its spell put on other
-creatures end. A foe caster rolls a CON save to keep its spell when it takes
-damage, and loses the spell at 0 HP.
+A chip that you type matches a row when it spells one of the names above.
+Case does not matter. Any other chip has no rule.
+
+Charmed, Deafened, and Grappled have no rule. They need a relationship
+between two combatants, or movement, and the app has neither. Decide their
+effects at the table.
+
+Timed conditions count down at the start of each round and end on their
+own.
+
+A combatant that loses its turn keeps its place in the initiative order.
+**Next turn** steps past it without a message. A save that fails at once
+never reaches the dice, and the log names the chip that failed it.
 
 A spell such as Hold Person lets its target repeat the save at the end of
 each of its turns. A target that loses its turn still has that turn end, so
 Next turn rolls the save as it steps past the target. A success ends the
-condition, and the target still loses the turn it was held for.
+condition, but the target still loses the turn that it was held for.
 
-Charmed, Deafened, and Grappled have no rule, because they need a relationship
-between two combatants or they need movement, and the app has neither, so
-adjudicate them by hand. A chip that you type yourself matches a row when it
-spells one of the names above, and case does not matter. Any other chip has no
-rule.
+NPCs have condition chips too. The chips sit on the row of the NPC in the
+NPCs panel of the Story tab, and on its card in the fight. The NPC list of
+the Build rail is for authoring and shows no chips.
 
-Exhaustion is not in the list, because it is a level from 0 to 6 rather than a
-chip, and the app stores it as its own number. Each level takes 2 off every d20 test and 5
-feet off the walking speed. The penalty reaches the saving throws and the skills
-on the sheet, the passive Perception score, an attack with a weapon or a spell,
-and a death save. The log names the level and the number it took off.
+#### Advantage and disadvantage
 
-A row of six pips sets the level. The row is on the character sheet under the
-chips. It is also on each creature row, in the Encounters and the Story panels.
-Only you can click the pips, because the sixth pip kills, so a player on a
-bound tab sees the row and cannot change it. Click a pip to set the level to that pip. Click the pip of the current level to
-take one level off. The top line of the character sheet names the level as well,
-beside AC and speed. Long rest, in the Time panel, takes one level off each
-character. A creature does not rest, so a creature keeps its level until you set
-it.
+Advantage and disadvantage from any number of sources combine by the 5e
+rule. If both are present, the roll is normal. Otherwise, the one kind that
+is present applies.
 
-The sixth level kills. A character gets three failed death saves and goes
-unconscious, and the log says the character died of exhaustion. The HP number
-stays where it was, because exhaustion kills without damage. A creature goes to 0
-HP and drops out of the fight, the same as a killing blow. A revive undoes the
-fatal level as well. A heal that brings a character or a creature back takes the
-level from 6 down to 5, so nothing stands up dead.
+Chips on both sides of an attack count. The log names every chip that
+affected the roll, including the ones that cancelled.
 
-A creature's saving throw against a spell is a number you type into the cast
-dialog, so it gets no penalty on its own and you subtract the penalty as you
-type it.
-A spell save DC is not a d20 test, and exhaustion does not lower it.
+A roll that no chip affects uses the d20 mode of the dice tray. A roll that
+a chip affects does not change the d20 mode. The mode changes only when you
+click it.
 
-Advantage and disadvantage from any number of sources fold by the 5e rule: if
-both are present the roll goes straight, and otherwise the one kind present
-wins. Chips on both sides of an attack count, and the log names every chip that
-slanted the roll, including the ones that cancelled. A roll that no chip
-touches still honors the dice tray's own advantage toggle. A slanted roll
-does not move the toggle: the toggle changes only when you click it.
+#### Exhaustion
 
-A combatant that loses its turn keeps its place in the initiative order. Next
-turn steps past it and says nothing. A save that fails outright never reaches
-the dice, and the log names the chip that failed it.
+Exhaustion is a level from 0 to 6, not a chip, and the app stores it as its
+own number.
 
-NPCs have condition chips as well. The chips sit on the NPC's row in the Story
-tab's NPC panel and on its card in the fight. The Build rail's NPC list is for
-authoring and shows none.
+| Effect per level | Where it applies |
+| --- | --- |
+| -2 on every d20 test | The saving throws and skills on the sheet, passive Perception, weapon and spell attacks, initiative, and death saves |
+| -5 feet of walking speed | The speed badge on the sheet |
+
+The log names the level and the number that it took off. A spell save DC
+is not a d20 test, so exhaustion does not lower it.
+
+The saving throw of a creature against a spell is a number that you type
+into the cast dialog. The app does not apply exhaustion to it, so subtract
+the penalty as you type it.
+
+A row of six pips sets the level. The row is on the character sheet under
+the chips, and on each creature row in the Encounters and NPCs panels. The
+top line of the character sheet also names the level, beside AC and speed.
+
+| Action | Result |
+| --- | --- |
+| Click a pip | Sets the level to that pip |
+| Click the pip of the current level | Takes one level off |
+| Long rest | Takes one level off each character. A creature does not rest, so it keeps its level until you change it |
+
+Only a GM can click the pips, because the sixth pip kills. A player on a
+bound tab sees the row but cannot change it.
+
+The sixth level kills.
+
+- A character gets three failed death saves and goes unconscious. The log
+  says that the character died of exhaustion. The HP number stays where it
+  was, because exhaustion kills without damage.
+- A creature goes to 0 HP and drops out of the fight, the same as a killing
+  blow.
+- A heal that brings a character or a creature back also takes the level
+  from 6 down to 5.
+
+## Spellcasting
+
+Spells come from the Spells tab of the library. A character learns and
+prepares them in the Spellbook tab, and casts them from the action bar in
+a fight or from the sheet outside one.
+
+### Spellbook tab
+
+The Spellbook tab of the character detail card lists every spell that the
+class of the character can learn, grouped by spell level. It also lists
+any spell that the character knows from another source.
+
+| Element | Meaning |
+| --- | --- |
+| Heading | The caster classes, the prepared count against the limit (for a class that prepares), and the cantrip count against the limit |
+| Known badge | The character knows the spell |
+| Prepared badge | The character prepared the spell |
+| Spell row | Opens the spell detail, with Learn, Prepare, Unprepare, and Forget |
+
+A multiclass caster picks the class that a new spell records under. The
+list offers the caster classes whose spell list has the spell. If no class
+has it, the list offers every caster class. A spectator sees the details
+but no actions.
+
+### Cast dialog
+
+| Field | Shows for | Meaning |
+| --- | --- | --- |
+| Cast at level | A leveled spell | The slot level to spend. Only levels with an unspent slot show |
+| Cast as ritual (10 minutes longer) | A ritual spell, for a Bard, Cleric, Druid, or Wizard | Casts at the spell level and spends no slot. The slot picker hides while the box is ticked |
+| Target or Recipient | A spell with one target | The creature that the spell affects |
+| Targets | A spell with more than one target | Up to the cap of the spell. An upcast spell such as Hold Person reaches one more creature per level |
+| Projectile allocation | A spell with several projectiles | How many projectiles go to each target. The total follows the slot level |
+| Attack roll | An attack spell | Normal, Advantage, or Disadvantage |
+| Save DC | A save spell | Starts at 8 plus the proficiency bonus plus the spell ability modifier |
+| Save roll | A save spell | Normal, Advantage, or Disadvantage |
+| Ignore components | A spell with a material component | Casts without a check of the inventory. The label adds "(not carried)" when the character lacks the component |
+| Ignore armor | A caster in untrained armor | Casts anyway |
+| Ignore action cost | A turn that already spent the cost | Casts anyway |
+
+The spell attack bonus is the proficiency bonus plus the spell ability
+modifier, minus any exhaustion penalty.
+
+The app refuses a cast for these reasons, in this order, and spends nothing
+on a refusal:
+
+1. A material component is missing. A component with a cost, or one that
+   the spell destroys, must be the item itself. Any other component is
+   covered by a component pouch or a focus.
+2. The caster wears armor that it is not trained for.
+3. The turn cannot pay the action cost, or the casting time is longer than
+   one turn.
+
+Only a character has an inventory, so a creature is never asked for a
+component. A cast that consumes its component removes the item from the
+inventory.
+
+### Concentration
+
+A caster, character or creature, keeps at most one concentration spell. A
+new concentration spell ends the old one.
+
+| Event | Result |
+| --- | --- |
+| Damage | A CON save against DC 10 or half the damage, whichever is higher. A failure ends the spell |
+| A condition that loses the turn | Ends the spell |
+| 0 HP for a creature | Ends the spell |
+| The duration runs out | Ends the spell |
+| Drop control | Ends the spell |
+
+When a concentration spell ends, the conditions that it put on other
+creatures end, and the creatures that it summoned leave.
+
+### Summons
+
+A summoning spell puts creatures from a library template on the tile of
+the party, at full health. The built-in example is Conjure Animals, which
+brings four Wolf creatures. If the library has no template with the name
+that the spell gives, the cast dialog refuses the spell.
+
+The side that a summon fights on is the disposition of its template. A
+hostile template fights the party. To summon an ally, write a friendly
+template in the library.
+
+If a fight is running, the summons join the initiative order. See
+[Initiative](#initiative). The end of the spell removes the creatures
+that it brought.
 
 ## Characters
 
-The Party roster creates, selects, and deletes characters. The selected
-character scopes the Character sheet and the Inventory panel.
+### Party roster
 
-In a GM tab, each roster row has an open-tab icon, an arrow that leaves a
-box. It opens a Player tab bound to that character in a new browser tab.
-The **Spectator tab** button below the roster opens a Player tab bound to no
-character. Both are ordinary links, so a middle-click or the browser's
-"Open in new tab" menu works on them too.
+The Party card lists the characters. The selected character sets what the
+character detail card shows.
+
+| Control | Who | What it does |
+| --- | --- | --- |
+| Row name | Everyone | Selects the character |
+| Edit HP and AC (pencil) | GM | Opens the HP and AC dialog |
+| Grant XP (sparkle) | GM | Grants XP to that character alone. The default is 100 |
+| Open player tab (arrow out of a box) | GM | Opens a Player tab bound to that character in a new browser tab |
+| Place on map | GM, while the party is split | Moves that character. See [Party splitting](#party-splitting) |
+| Delete | GM | Deletes the character |
+| New character | GM | Opens character creation |
+| Award Party XP | GM | Grants the same XP to every character. The default is 100 per character |
+| Spectator tab | GM | Opens a Player tab bound to no character |
+| Allow splitting the party | GM | See [Party splitting](#party-splitting) |
+| Playing as | Player tab | Binds the tab to a character |
+
+Open player tab and Spectator tab are ordinary links. So a middle-click or
+the "Open in new tab" menu of the browser also works on them.
+
+| HP and AC field | Meaning |
+| --- | --- |
+| Max HP | Overrides the calculated maximum, and lowers current HP to fit |
+| Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them |
+| Unarmored base AC | The unarmored baseline, normally 10 |
+
+### Character detail card
+
+The character detail card below the map has four tabs.
+
+| Tab | Contents |
+| --- | --- |
+| Character | The character sheet |
+| Equipment | The nine equipment slots |
+| Inventory | The item list |
+| Spellbook | The spells that the character can learn, knows, and prepared. See [Spellbook tab](#spellbook-tab) |
 
 ### Sheet contents
 
-The collapsed card shows the name, the race, a full-width HP bar with
-damage and heal steppers, and, for a caster, one pip group per spell level.
-A filled pip is an unspent slot. A click spends or restores it.
+The collapsed sheet shows the name, the race, a full-width HP bar with
+damage and heal steppers, and one pip group per spell level for a caster. A
+filled pip is an unspent slot. A click spends or restores it.
 
-The expanded card adds the ability scores with their modifiers, the XP
-award control, custom resource pools, the Progression block, the hit-dice
-pool, and the class features unlocked by level.
+The expanded sheet adds these items:
 
-It also lists the six saving throws and the 18 skills with what each one
-adds. A dot in front of the name says how trained the character is: hollow
-for untrained, solid for proficient, and ringed for expertise, which doubles
-the proficiency bonus. Passive Perception sits under the skills. It is 10
-plus the Perception bonus, the score to compare a hidden thing against when
-nobody says they are looking.
+- the ability scores with their modifiers
+- the XP award control
+- custom resource pools
+- the Progression block
+- the hit-dice pool
+- the class features unlocked by level
+- the six saving throws and the 18 skills, with the bonus of each
+- passive Perception
+- the Conditions block
+
+A dot in front of each save or skill shows how trained the character is.
+
+| Dot | Training |
+| --- | --- |
+| Hollow | Untrained |
+| Solid | Proficient |
+| Ringed | Expertise, which doubles the proficiency bonus |
+
+Passive Perception is 10 plus the Perception bonus. Compare it against a
+hidden thing when nobody says they are looking.
 
 A click on a save or a skill rolls it. The dice tray opens with the d20 and
-the whole bonus, and the session log breaks the number down: the ability
+the whole bonus. The log shows the parts of the number: the ability
 modifier, the proficiency or expertise, and any condition chip that adds to
-the roll, such as Bless on a save or Guidance on a check. Guidance and
-Resistance add to one roll only, so the first check or save they change
-removes their chip. A spell in the Library marks this with One roll only. The
-roll has no DC, so nothing judges it and you read the total against whatever you had in
-mind. The tray's advantage and disadvantage toggle applies, and the log names the die it
-threw away. A player on a bound tab rolls their own character. A spectator sees
-the numbers and cannot roll.
+the roll.
 
-The Conditions block shows the chips, the held spell with its Drop control,
-and, while the character is at 0 HP, the death-save tracker with its Roll and
-Stabilize controls. The tracker shows the same pips and the same words as the
-combat screen.
+Guidance and Resistance add to one roll only. The first check or save that
+they change removes their chip. In the Library, the spell form marks this
+kind of spell with **One roll only**.
+
+The roll has no DC, so nothing judges it. Compare the total against the DC
+that you have in mind. The d20 mode of the dice tray applies, and the log
+names the die that it dropped.
+
+The Conditions block shows the chips and the held spell with its Drop
+control. While the character is at 0 HP, it also shows the death-save
+tracker with its Roll and Stabilize controls. The tracker shows the same
+pips and words as the combat screen.
 
 Expertise doubles the proficiency bonus for a skill. The Expertise features
 of the Rogue and the Bard grant it. When such a feature unlocks, a prompt
-offers the proficient skills, and the picks show in the class-features list
-with a Change button. An unclaimed grant waits in the Progression block as a
-pending feature choice with a Choose button. The Set expertise button is a
-hand grant with no maximum, for a subclass or homebrew feature that the
-class catalog does not model.
+offers the proficient skills.
 
-The four fields below are not on the sheet. Each row of the Party roster
-has two GM buttons: the pencil opens the HP and AC dialog, and the
-sparkle grants XP to that character alone. The sheet reports the results in
-its HP bar and its banner.
-
-| Field | Who can set it | Meaning |
-| --- | --- | --- |
-| Max HP | GM | Overrides the derived maximum and lowers current HP to fit |
-| Bonus HP | GM | Temporary points on top of intrinsic HP. Damage drains it first, and healing never refills it |
-| Base AC | GM | The unarmored baseline, normally 10 |
-| XP | GM | The roster row grants it to one character. Award Party XP below the roster grants the same amount to every character at once |
+The picks show in the class features list with a Change button. An
+unclaimed grant waits in the Progression block as a pending feature choice
+with a Choose button. The **Set expertise** button is a manual grant with
+no maximum, for a subclass or homebrew feature that the class catalog does
+not model.
 
 ### Creation and progression
 
 Creation picks a class, a race, and a background, and offers the skill
-choices of the class. From these three choices the sheet assembles the
+choices of the class. From these three choices, the sheet assembles the
 proficiencies: saving throws, skills, weapons, armor, tools, and languages.
 Every list stays editable afterward.
 
-The class fixes the hit die, and the class with its subclass fixes the
-caster type. Max HP derives from the hit die plus the CON modifier per
-level. Spell slots follow the 5e table,
-and a multiclass character combines its casting classes on the
-combined-caster-level table. A classless character still works. Its HP then
-follows a flat growth curve, and it gains no proficiencies.
+The class sets the hit die, and the class with its subclass sets the caster
+type. Max HP comes from the hit die plus the CON modifier per level.
 
-A character's total XP follows the SRD table. It reaches level 2 at 300,
-level 5 at 6,500, level 11 at 85,000, and level 20 at 355,000. The sheet
-header shows the total against the start of the next level. A character
-made at a higher level starts at the XP where that level begins.
+Spell slots follow the 5e table. A multiclass character combines its
+casting classes on the combined-caster-level table.
 
-Enough XP does not level a classed character on its own. Each earned level
-waits as a pending level that the GM assigns to a class, either the current
-class or a new one. The proficiency bonus follows the assigned class levels,
-so a pending level does not raise it until the GM assigns it. An
-assignment grows HP by the hit die of that class, adds a hit die, and
-advances spell slots. A newly unlocked spell level arrives full, and an
-already spent slot stays spent. An ASI level leaves a pending choice: +2
-across one or two abilities, capped at 20, or a feat by name. Both choices
-are undoable from the same block. The feat list shows a built-in feat that the
-character does not qualify for, such as Grappler for a STR 8 Wizard, as
-disabled and names its prerequisite. The prerequisite of a feat that you
-wrote in the library is display text, and you enforce it.
+A character with no class still works. Its HP then follows a flat growth
+curve, and it gains no proficiencies.
 
-A class feature with choices, such as the Rogue's Expertise, prompts
+The total XP of a character follows the SRD table.
+
+| Level | XP |
+| --- | --- |
+| 2 | 300 |
+| 3 | 900 |
+| 4 | 2,700 |
+| 5 | 6,500 |
+| 11 | 85,000 |
+| 20 | 355,000 |
+
+The sheet header shows the total against the start of the next level. A
+character made at a higher level starts at the XP where that level begins.
+
+Enough XP does not level a character with a class on its own. Each earned
+level waits as a pending level. The GM assigns it to a class, either the
+current class or a new one.
+
+The proficiency bonus follows the assigned class levels. So a pending level
+does not raise the bonus until the GM assigns it.
+
+An assignment does these things:
+
+- It grows HP by the hit die of that class.
+- It adds a hit die.
+- It advances the spell slots. A new spell level arrives full, and a slot
+  already spent stays spent.
+- On an ability score improvement level, it leaves a pending choice: +2
+  across one or two abilities, up to 20, or a feat by name.
+
+Both choices can be undone from the same block. The feat list shows a
+built-in feat that the character does not qualify for as disabled, and it
+names the prerequisite. An example is Grappler for a STR 8 Wizard. The
+prerequisite of a feat that you wrote in the library is display text only,
+so you enforce it.
+
+A class feature with choices, such as the Expertise of the Rogue, prompts
 when its level is assigned. A choice with only one possible pick applies
 with no prompt. A cancel keeps the grant pending, and the Choose button in
 the Progression block offers it again.
 
-The hit-dice pool is spendable. A short rest spends a die to heal the roll
-plus the CON modifier. A long rest restores half of the total hit dice, at
-least one, with the largest dice first. Fighter 3 / Wizard 3 with every die
-spent gets three dice back.
+The hit-dice pool can be spent.
+
+| Rest | Hit dice |
+| --- | --- |
+| Short rest | Spend a die to heal the roll plus the CON modifier |
+| Long rest | Restores half of the total hit dice, at least one, largest dice first. For example, Fighter 3 / Wizard 3 with every die spent gets three dice back |
 
 ### Subclasses
 
-A class can take a subclass from its subclass level: level 1 for the
-Cleric, Sorcerer, and Warlock, level 2 for the Druid and Wizard, and level 3
-for the other classes. The Progression block shows a Choose button for each
-class at that level, and a Change button after the pick. The assignment of
-the subclass level also asks for the pick. Only the GM can set a subclass.
+A class can take a subclass from its subclass level.
+
+| Subclass level | Classes |
+| --- | --- |
+| 1 | Cleric, Sorcerer, Warlock |
+| 2 | Druid, Wizard |
+| 3 | Barbarian, Bard, Fighter, Monk, Paladin, Ranger, Rogue |
+
+The Progression block shows a Choose button for each class at that level,
+and a Change button after the pick. The assignment of the subclass level
+also asks for the pick. Only the GM can set a subclass.
 
 The list offers the SRD subclass of each class. The Fighter also offers the
-Eldritch Knight, and the Rogue also offers the Arcane Trickster. **Other…**
-stores any typed name, and **None** clears the subclass. A typed name that
-matches a listed subclass stores as the listed name. A subclass that is not
-on the list has no rules effect.
+Eldritch Knight, and the Rogue also offers the Arcane Trickster.
 
-The Eldritch Knight and the Arcane Trickster cast spells. Each learns from
-the wizard list with INT, as a known caster with no rituals. The slots follow
-the third-caster table below, and the learning cap is the top slot level.
+| List item | Effect |
+| --- | --- |
+| A listed subclass | Stores that subclass and applies its rules |
+| Other… | Stores any typed name. A typed name that matches a listed subclass stores as the listed name. A name that is not on the list has no rules effect |
+| None | Clears the subclass |
+
+The Eldritch Knight and the Arcane Trickster cast spells. Each one learns
+from the wizard list with INT, as a known caster with no rituals. The slots
+follow the third-caster table below, and a spell can be no higher than the
+top slot level.
 
 | Class level | Slots | Top spell level |
 | --- | --- | --- |
@@ -1032,12 +1663,15 @@ the third-caster table below, and the learning cap is the top slot level.
 | 16 to 18 | 4 × 1st, 3 × 2nd, 3 × 3rd | 3rd |
 | 19 to 20 | 4 × 1st, 3 × 2nd, 3 × 3rd, 1 × 4th | 4th |
 
-The Eldritch Knight knows 2 cantrips, and 3 from level 10. The Arcane
-Trickster knows 3 cantrips, and 4 from level 10. In a multiclass, each of
-these subclasses adds a third of its class level to the combined caster
-level. A class with no slots yet at its own level does not join the combined
-table, so a Fighter 4 (Eldritch Knight) / Paladin 1 keeps the Eldritch
-Knight slots.
+| Subclass | Cantrips |
+| --- | --- |
+| Eldritch Knight | 2, and 3 from level 10 |
+| Arcane Trickster | 3, and 4 from level 10 |
+
+In a multiclass, each of these subclasses adds a third of its class level
+to the combined caster level. A class with no slots yet at its own level
+does not join the combined table. So a Fighter 4 (Eldritch Knight) /
+Paladin 1 keeps the Eldritch Knight slots.
 
 A change away from a casting subclass removes its slots, and it removes the
 spells that the character learned under that class. A later change back
@@ -1046,70 +1680,159 @@ level cannot move to a new class.
 
 The app does not enforce these subclass rules, so you enforce them:
 
-- The spell schools of each subclass (abjuration and evocation for the
-  Eldritch Knight, enchantment and illusion for the Arcane Trickster), with
-  their free picks from any school.
+- The spell schools of each subclass, with their free picks from any
+  school. The Eldritch Knight uses abjuration and evocation, and the Arcane
+  Trickster uses enchantment and illusion.
 - The number of spells that each subclass knows. No known caster has this
   limit in the app.
 - Mage Hand as one of the Arcane Trickster cantrips.
 
-In the creature dialogs, the caster class list also offers "Fighter
-(Eldritch Knight)" and "Rogue (Arcane Trickster)". A caster level below 3
-saves as 3, because these subclasses cast from level 3.
-
 ### Inventory and equipment
 
-The panel has two tabs. Equipment has nine slots: Helmet, Armor, Gloves,
-Greaves, Main hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists
-only the items that its slot accepts. One item fills as many slots as its
-quantity, so a single ring goes on one hand and a pair of daggers can fill
-both. A two-handed weapon in the main hand takes the off hand off, and the Off
-hand picker stays closed until the weapon comes out of the main hand.
-Inventory has the item list, with a
-search box over names and descriptions, a type filter, and one collapsible
-heading per item type.
+The Equipment tab has nine slots: Helmet, Armor, Gloves, Greaves, Main
+hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists only the
+items that its slot accepts.
+
+| Slot | Accepts |
+| --- | --- |
+| Helmet | helmet |
+| Armor | armor |
+| Gloves | gloves |
+| Greaves | greaves |
+| Main hand | weapon |
+| Off hand | shield or weapon |
+| Ranged | bow |
+| Ring 1, Ring 2 | ring |
+
+One item fills as many slots as its quantity. So a single ring goes on one
+hand, and a pair of daggers can fill both hands. A two-handed weapon in the
+main hand empties the off hand. The Off hand picker stays closed until the
+weapon comes out of the main hand.
+
+The Inventory tab has the item list, a search box over names and
+descriptions, a type filter, and one collapsible heading per item type.
 
 | Item field | Values |
 | --- | --- |
-| Type | gear, weapon, armor, helmet, gloves, greaves, shield, bow, ring, consumable |
+| Type | gear, weapon, armor, helmet, gloves, greaves, shield, bow, ring, or consumable. Gear and consumables cannot be equipped |
 | Description | Free text |
 | Damage roll | Structured dice terms: a base roll plus optional permanent riders |
 | Category | simple, martial, or none for a natural weapon such as a bite |
 | Kind | melee (STR) or ranged (DEX) |
-| Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, loading |
-| Range | Normal and long range in feet, for a ranged or thrown weapon. A blank or unreadable field takes 80/320 for a ranged weapon and 20/60 for a melee one, and the long range never saves shorter than the normal one |
-| Two-handed damage | The alternate dice of a versatile weapon |
+| Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, and loading |
+| Range | Normal and long range in feet, for a ranged or thrown weapon. A blank or unreadable field takes 80/320 for a ranged weapon and 20/60 for a melee weapon. The long range never saves shorter than the normal range |
+| Two-handed damage | The other dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |
-| Min STR | For body armor: the Strength score it needs. 0 for none |
+| Min STR | For body armor: the Strength score that it needs. 0 means none |
 | Stealth | For body armor: tick it to give the wearer disadvantage on Stealth |
-| AC bonus | A flat bonus on any other equippable. A shield uses this field too, and it starts at +2 |
-| Ability buff | For example +2 STR, applied while equipped |
+| AC bonus | A flat bonus on any other item that can be equipped. A shield uses this field too, and it starts at +2 |
+| Ability buff | For example +2 STR, applied while the item is equipped |
 
 Only the GM adds an item. A player uses, gives away, and discards what the
-character carries. A consumable gets a use-one control down to its last
-charge. Anything else gets a drop-one control while it is stacked. The
-discard button takes the whole stack, and confirms first when the stack
-has more than one item.
+character carries.
+
+| Control | Shows for | What it does |
+| --- | --- | --- |
+| Use one | A consumable | Uses one charge, down to the last one |
+| Drop one | Any other stacked item | Removes one from the stack |
+| Discard | Every item | Removes the whole stack. Asks first when the stack has more than one item |
 
 An edit keeps the item equipped, because it is the same item. A type change
-that its slot cannot accept takes the item off. Removing the last of a stack
-unequips it.
+that its slot cannot accept takes the item off. When the last of a stack is
+removed, the item comes off.
 
 ## Time, story, and dice
 
-| Panel | Contents |
+### Time and rests
+
+The Time panel shows the in-game day and watch, for example "Day 3, Dusk".
+A day has six watches: Dawn, Morning, Midday, Afternoon, Dusk, and Night.
+Only a GM tab shows the buttons.
+
+| Button | Time passed | Effect |
+| --- | --- | --- |
+| Advance | One watch | None beyond the time |
+| Short rest | One watch | Restores half of each custom resource and refills pact slots. Restores no HP, because in 5e only spent hit dice heal on a short rest |
+| Long rest | Until the next Dawn, at least two watches | Restores HP and every resource, refills the spell slots, and takes one level of exhaustion off each character |
+
+| Unit | Length |
 | --- | --- |
-| Time | The in-game day and watch, Advance, Short rest, Long rest |
-| NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
-| Quests | Active and completed quests, with an eye toggle. The chevron shows the notes, the objectives, and the links to places and creatures. The Player view lists only revealed quests, with the objectives that are not GM only, and without the notes or the links |
-| Handouts | Read-aloud text or lore attached to the campaign, a node, or one tile of a node, with an optional image, an eye toggle, and an optional list of the characters who see it |
-| Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first. It keeps the newest 200 entries, and during a fight it also keeps every line of that fight, up to 1,000 entries in all |
+| Round | 6 seconds |
+| Watch | 4 hours, or 2,400 rounds |
+
+When time passes, every condition, timed stat change, and concentration
+with a round count loses that many rounds. One that runs out ends. So Bless
+cast between fights is gone after a rest, while an effect that lasts 8
+hours still has 4 hours left after one watch.
+
+A rest that lifts a dying character above 0 HP clears the death-save
+tracker. A character that is already dead keeps its exhaustion level.
+
+### Quests
+
+The Quests panel in the Story tab lists active and completed quests.
+
+| Control | What it does |
+| --- | --- |
+| New quest | Opens the quest dialog, with Title and Notes |
+| Status mark | Completes or reopens the quest |
+| Eye | Reveals the quest to players, or hides it again |
+| Chevron | Shows or hides the notes, the objectives, and the links |
+| Edit, Delete | Edits or deletes the quest |
+| Objective | Adds an objective |
+| Link place | Links the quest to a map place |
+| Link creature | Links the quest to a creature |
+
+Each objective has controls to mark it done, to hide it from players or
+show it, to move it up or down, and to remove it. A click on a link chip
+shows the linked place on the map.
+
+The Player view lists only revealed quests. It shows the objectives that
+are not hidden, and it hides the notes and the links.
+
+### NPCs
+
+The NPCs panel in the Story tab lists the friendly and neutral creatures
+near the party. Each row shows a disposition badge, the location, and the
+chips.
+
+| Viewer | Lists |
+| --- | --- |
+| GM tab | The NPCs on the node of the party within the nearby range, plus unplaced NPCs. A placed NPC that the party has not met shows "not yet met" |
+| Player tab | Unplaced NPCs, plus the placed NPCs on the node of the party that the party has met |
+
+The party meets a placed NPC when it lands on the tile of that NPC. The
+meeting writes one travelogue line. If you move the NPC, it counts as not
+met until the party lands on its new tile.
+
+An NPC stands on any map at a column and a row, or it stays unplaced. An
+unplaced NPC appears everywhere. Columns and rows count from 1, the same as
+the numbers along the map edges.
+
+The notes of an NPC are GM-only. The Player view lists the NPC with its
+role and disposition, without its notes.
+
+### Handouts
+
+A handout is read-aloud text or lore, with an optional picture.
+
+| Field | Meaning |
+| --- | --- |
+| Title | The name of the handout |
+| Read-aloud / lore | The text |
+| Image (optional) | A picture. When you edit a handout, leave the field empty to keep the current picture |
+| Shows at | Everywhere (campaign-wide), anywhere in one node, or one tile of one node |
+| Only for (none checked: every player) | The characters who see the handout |
+
+A handout starts hidden. The eye toggle reveals it to players or hides it
+again.
 
 The GM sees every handout of the node where the party stands. A line under
-a row names the tile of the handout and the characters who see it. A player
-tab lists a handout only when all of these conditions are true:
+each row names the tile of the handout and the characters who see it.
+
+A Player tab lists a handout only when all of these conditions are true:
 
 - The GM revealed it.
 - It is campaign-wide, or bound to the node of the party, or bound to the
@@ -1117,57 +1840,77 @@ tab lists a handout only when all of these conditions are true:
 - It has no chosen characters, or the tab plays one of them. A spectator
   tab never lists a handout that has chosen characters.
 
-An erase stroke, a shrink of the node, or a regeneration of the node can
+An erase stroke, a smaller node size, or a regeneration of the node can
 remove the tile of a handout. The handout then binds to the whole node. An
 undo of the erase or the regeneration binds it to its tile again.
 
-A short rest restores half of each custom resource and refills pact slots.
-It restores no HP, because in 5e only spent hit dice heal on a short rest.
-A long rest restores HP and every resource, refills the spell slots, and
-takes one level of exhaustion off each character. A rest that lifts a dying
-character above 0 HP clears the death-save tracker. A character that is already dead keeps its
-level.
+### Travelogue
 
-A watch is four hours, or 2,400 combat rounds. Advance and a short rest each
-pass one watch, and a long rest passes the watches until Dawn, at least two.
-Every condition, timed stat change, and concentration with a round count
-loses that many rounds, and one that runs out ends. When a concentration
-ends, the conditions its spell put on other creatures end with it. Bless cast
-between fights is gone after a rest, while an effect that lasts 8 hours still
-has 4 hours left after one watch.
+The Travelogue in the Log tab records events automatically, newest first.
+Each entry shows its local time.
 
-An NPC sits on any map at a column and row, or stays unplaced, in which
-case it appears everywhere. Columns and rows count from 1, the same as the
-numbers along the map edges. The panel lists the NPCs at the current
-location of the party. The notes of an NPC are GM-only. The Player view
-lists the NPC with its role and disposition and without its notes.
+| Entry kind | Examples |
+| --- | --- |
+| Travel | Region entry, discovery, teleports, and regrouping |
+| Combat | Defeats, lost concentration, ended conditions, and the lines of a fight |
+| Rest | Short and long rests |
+| Roll | Every dice tray roll, with the name of the roller |
+| Note | Meetings, cleared foes, the end of a concentration spell, and other notices |
 
-The Dice Tray collapses to a d20 icon. The full tray sets a count per die
-type (d4 to d100) and a flat modifier with plus and minus steppers. The
-tray parses no text expressions. The result shows each face and the total,
-and the last eight rolls stay listed with timestamps. The history lasts for
-the current session only.
+| Limit | Value |
+| --- | --- |
+| Entries kept | The newest 200 |
+| Entries kept while a fight runs | Every line of the fight, up to 1,000 entries in all |
+
+**Clear log** deletes every entry after a confirmation.
+
+### Dice tray
+
+The Dice Tray collapses to a d20 icon. The full tray builds a roll from
+steppers, and it does not read typed dice expressions.
+
+| Control | Values |
+| --- | --- |
+| Die counts | A plus and minus counter for each of d4, d6, d8, d10, d12, d20, and d100 |
+| Modifier | A flat number, set with plus and minus steppers |
+| d20 mode | Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
+| Target | An optional number to meet or beat. Each roll then reports success or failure |
+| Roll | Rolls the selection |
+
+The tray shows the latest result, with each face and the total. Every roll
+also goes into the Travelogue under the name of the roller. The name is
+"The GM" for a GM tab, the character name for a bound tab, and "A player"
+for a spectator tab.
+
+An attack or a check from the app loads the tray and rolls it. A roll that
+names its own mode uses that mode for one roll only, and it leaves the d20
+mode as it was.
 
 ## The library
 
-Library mode has four tabs.
+Library mode curates the templates that the preset pickers offer. It has
+four tabs.
 
 | Tab | Contents |
 | --- | --- |
-| Equipment | Every weapon, armor, gear item, and consumable the item form offers, across five category subtabs |
-| Creatures | Stock enemies and townsfolk, across two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, pre-filled |
-| Spells | The spell catalog the spellbook picks from, grouped by spell level |
-| Feats | The feat catalog that the level-up feat choice offers |
+| Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
+| Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 54 built-in spells |
+| Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
-An edit to a built-in default stores an override. The row gains a
-"customized" badge and a revert button. A new entry gets a "custom"
-badge and a delete button. A custom entry overrides a default when the
-names match. For equipment, the name and the type both have to match.
+| Row badge | Meaning | Row control |
+| --- | --- | --- |
+| customized | You edited a built-in default, and the app stores an override | Revert |
+| custom | You added a new entry | Delete |
+
+A custom entry overrides a default with the same name. For equipment, the
+name and the type must both match. An edit that changes the disposition of
+a creature moves the entry to the other subtab.
 
 Customizations live outside the campaign. New and Load example replace the
-campaign and never touch the library. A campaign export bundles the
-customizations, and a campaign import offers to restore them (see the
-header controls table).
+campaign and never change the library. A campaign export bundles the
+customizations, and a campaign import offers to restore them. See
+[Campaign controls](#campaign-controls).
 
 | Library file control | What it does |
 | --- | --- |
@@ -1175,9 +1918,9 @@ header controls table).
 | Import | Loads an exported file into this browser, and replaces the customizations after a confirmation |
 | Reset | Removes all customizations and restores the built-in defaults |
 
-The app loads `library/campaign-library.json` from the project directory at
-startup when the browser has no customizations. The merged lists apply at
-once everywhere the presets are read.
+At startup, if the browser has no customizations, the app loads
+`library/campaign-library.json` from the project directory. The merged
+lists apply at once everywhere that the app reads the presets.
 
 ## Keyboard control
 
@@ -1187,52 +1930,51 @@ Press `?` anywhere for the shortcut reference.
 | --- | --- |
 | ? | Show the shortcut reference |
 | Ctrl/Cmd+S | Save |
-| Ctrl/Cmd+Z | Undo, or undo the last stroke in Build mode |
-| Ctrl/Cmd+Shift+Z | Redo |
+| Ctrl/Cmd+Z | In Build mode, undo the last stroke. In Play and Library mode, undo to the previous save |
+| Ctrl/Cmd+Shift+Z | Redo the last undone save |
 | B, P | Switch to Build or Play mode |
 | Escape | Close a dialog, or put down the fog brush |
 | Arrows on the map | Move the map cursor |
 | Enter, Space on the map | Act on the cursor cell |
 | +, - on the map | Zoom |
-| Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, the second travels |
+| Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, and the second press travels |
 | Shift+F10, Menu key on the map | Open the tile menu for the cursor cell (Build mode) |
 
-Save, Undo, Redo, and the mode keys work in a GM tab only.
+Save, Undo, Redo, and the mode keys work in a GM tab only. The map keys
+work after you click the map or move focus to it.
 
 The map is a focusable widget with a visible focus ring. A screen-reader
 live region names the current node, its size, the party position, and the
-number of points of interest, and updates as these change. The points of
-interest themselves are in a list after the map, which a screen reader reads
-on demand. In Play mode the list names only the points of interest that the
-tooltip names: revealed, discovered if discoverable, and within detection
-range. It reads the notes in a GM tab only. A second region names the cursor cell after each arrow key: its
-column and row, its art, its point of interest, and whether it is explored.
+number of points of interest. The region updates as these values change.
+
+A list after the map names the points of interest, and a screen reader
+reads it on demand. In Play mode, the list names only the points of
+interest that the tooltip names: revealed, discovered if discoverable, and
+within detection range. It reads the notes in a GM tab only.
+
+A second live region names the cursor cell after each arrow key. It gives
+the column and row, the art, the point of interest, and whether the cell is
+explored.
 
 The ways out of a sub-region are real buttons. Tab past the map, and they
-appear over it, each naming its way out, for example "Return to Barrow of
-the Old King, through the stairs up at column 11, row 7". A cursor walk off
-an edge takes two presses: the first lights the arrow, and the second
-travels.
+show over it, each with its way out. For example: "Return to Barrow of the
+Old King, through the stairs up at column 11, row 7".
 
 The turn ribbon and the board of the combat screen are one tab stop each.
-Arrow keys move between chips and between cards. Enter or Space picks a
+Arrow keys move between chips and between cards, and Enter or Space picks a
 target. A live region announces each turn.
 
-## Mouse control
+## Mouse and touch control
 
 | Input | Build mode | Play mode |
 | --- | --- | --- |
-| Left button | Paint, erase, inspect, or drag a region | Move the party or the selected character |
+| Left button | Paint, erase, inspect, or link a region | Move the party or a character, or use a fog brush |
 | Right button drag | Pan the map | Pan the map |
-| Wheel | Zoom | Zoom |
+| Right click without a drag | Open the tile menu | Nothing |
+| Wheel | Zoom at the pointer | Zoom at the pointer |
+| Two-finger drag | Pan the map | Pan the map |
+| Pinch | Zoom | Zoom |
 
-The map grid shows X and Y labels along the top and left edges. The
-labels pin to the edges of the viewport at partial opacity when the grid
-edge scrolls out of view.
-
-When a map opens, the view fits the whole map. A map too large to show
-at a readable size centers on the party instead, or on the bound
-character in a player tab, and follows it until you pan or zoom. The
-**Center on party** button in the map controls brings the party back into
-view at the current zoom. A switch to Play mode opens the node where the
-party stands.
+The map grid shows X and Y labels along the top and left edges. When the
+grid edge scrolls out of view, the labels stay at the edges of the viewport
+at partial opacity.
