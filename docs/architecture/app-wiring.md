@@ -83,12 +83,14 @@ instead of writing.
 Each is a `wireX(app)` factory, listed here in the order a new contributor
 meets them.
 
-### campaignActions.js
+### campaignActions.js (plus externalSaves.js, historySteps.js, replaceActions.js)
 
-This module owns the dirty flag (the Save indicator and the leave-page
-guard) and the header's campaign controls: Save, Undo, Redo, New, Load
-example, Export, and Import. It provides `markDirty`, which every other
-module calls.
+`campaignActions.js` owns the dirty flag (the Save indicator and the
+leave-page guard), Save, autosave, and the combat flush. It provides
+`markDirty`, which every other module calls. It wires `externalSaves.js`,
+which handles another tab's saves, `historySteps.js`, which runs Undo and
+Redo, and `replaceActions.js`, which runs New, Load example, Export, and
+Import. Each gets only the parts of the dirty state that it reads.
 
 `src/storage/SaveNotices.js` decides what message the GM sees after a write.
 Autosave writes every ten seconds while the campaign is dirty, so a full
@@ -113,13 +115,13 @@ its previous save.
 
 `shortenedLoadPrompts.js` holds the prompts for a campaign that loaded
 shortened because it passes the decode limits (see "Shortened loads" in
-[Persistence](persistence.md)). This module calls two of them: the import
-handler asks `confirmShortenedImport` before it stores such a file, and the
+[Persistence](persistence.md)). Two of them run in these modules: the import
+handler in `replaceActions.js` asks `confirmShortenedImport` before it stores such a file, and the
 Save button asks `confirmSaveWhileHeld` while the save hold is on.
 `writeOut` checks `savesHeld` and skips the autosave and the flush during the
 hold. `main.js` calls the third, `holdShortenedBoot`, at boot.
 
-This module also handles cross-tab save adoption. When another browser tab
+`externalSaves.js` handles cross-tab save adoption. When another browser tab
 saves (`SaveManager.onExternalSave` reports it once the save mark lands), a Play-mode tab with nothing unsaved adopts that campaign in place
 through `rehydrate.js`, without a page reload. Build mode, Library mode, and
 any failure to adopt fall back to a reload. A tab with unsaved changes gets a
@@ -132,7 +134,7 @@ the other tab's change.
 
 The adoption tries the recorded delta first. Every save writes its exact
 edit as a delta beside the campaign (see the history log in
-[Persistence](persistence.md)), and this module remembers the history
+[Persistence](persistence.md)), and `externalSaves.js` remembers the history
 position of its live state. When an external save is exactly one delta ahead
 of that position, `HistoryLog.planAdoption` returns the ops, and the tab
 applies them to its own state with `HistoryLog.applyHistoryOps` without
@@ -348,7 +350,7 @@ The adoption has limits:
 - It takes an already-built `Campaign` and does not read storage, so
   migrations, asset restore, tile decode, and entity defaults stay stated
   once, in `Campaigns.loadInitialCampaign`, shared with an ordinary page
-  load. The delta adoption in `campaignActions.js` also hands it a
+  load. The delta adoption in `externalSaves.js` also hands it a
   `Campaign`, which `Campaigns.campaignFromLiveState` builds from the state
   that `applyOps` produced, and this module cannot tell which path built it.
 - `mode` and `role` are *not* adopted. Both are per-tab view state, so a

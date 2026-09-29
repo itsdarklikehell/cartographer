@@ -1,77 +1,36 @@
-import {
-  buildBlankCampaign,
-  buildExampleCampaign,
-  isBlankCampaign,
-  campaignFromLiveState,
-  loadInitialCampaign,
-} from '../campaign/Campaigns.js';
-import { rehydrateCampaign } from './rehydrate.js';
 import { mustGetElement } from '../ui/dom.js';
 import { runStepsWhenIdle } from '../util/idle.js';
 import { setTip } from '../ui/Tooltip.js';
-import { confirmModal } from '../ui/Modal.js';
-import { queueToastAfterReload } from '../ui/Toast.js';
-import {
-  STORAGE_KEY,
-  buildState,
-  onExternalSave,
-  packState,
-  readSaveMark,
-  warmPackSteps,
-} from '../storage/SaveManager.js';
-import {
-  downloadCampaignFile,
-  readCampaignFromFile,
-  libraryImportAction,
-} from '../storage/CampaignFile.js';
-import { loadCustomLibrary, saveCustomLibrary } from '../storage/LibraryStore.js';
+import { buildState, packState, warmPackSteps } from '../storage/SaveManager.js';
 import {
   footprintTooltip,
   footprintWarning,
   historyLoss,
   historyLossMessage,
-  replacePrompt,
   saveOutcome,
 } from '../storage/SaveNotices.js';
-import {
-  saveCampaign,
-  undoCampaign,
-  redoCampaign,
-  historyDepth,
-  historyPosition,
-  planAdoption,
-  applyHistoryOps,
-  adoptPersisted,
-  replaceIsUndoable,
-} from '../storage/HistoryLog.js';
-import {
-  shouldAutosave,
-  markMovedOn,
-  storageMovedOn,
-  AUTOSAVE_POLL_MS,
-} from '../storage/Autosave.js';
-import { followerMode } from '../view/CombatMode.js';
+import { saveCampaign } from '../storage/HistoryLog.js';
+import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { isGM } from '../view/ViewRole.js';
 import { wirePlayerPatches } from './playerPatches.js';
 import { savesHeld } from '../storage/ShortenedLoad.js';
-import { confirmSaveWhileHeld, confirmShortenedImport } from './shortenedLoadPrompts.js';
-import {
-  fetchAssets,
-  mirrorActive,
-  missingAssetKeys,
-  withStoredAssets,
-} from '../storage/AssetMirror.js';
+import { confirmSaveWhileHeld } from './shortenedLoadPrompts.js';
+import { mirrorActive } from '../storage/AssetMirror.js';
 import { createAssetWait } from './assetWait.js';
+import { wireExternalSaves } from './externalSaves.js';
+import { refreshHistoryButtons, wireHistorySteps } from './historySteps.js';
+import { wireReplaceActions } from './replaceActions.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * Wires campaign persistence and the header's campaign management controls.
- * These controls are the dirty flag (Save button indicator, leave-page
- * guard, external sync prompt), Save, Undo, New, Load example, Export,
- * Import, and the cross-tab reload-on-save sync. This function owns `dirty`
- * and registers `markDirty` on `app.actions` for every other module's
- * mutations.
+ * Wires campaign persistence: the dirty flag (Save button indicator and
+ * leave-page guard), Save, autosave, and the combat flush. This function
+ * owns `dirty` and registers `markDirty` on `app.actions` for every other
+ * module's mutations. It wires the modules beside it with the parts of that
+ * state they read: `externalSaves.js` for another tab's saves,
+ * `historySteps.js` for Undo and Redo, and `replaceActions.js` for New,
+ * Load example, Export, and Import.
  * @param {AppContext} app
  */
 export function wireCampaignActions(app) {
@@ -81,8 +40,6 @@ export function wireCampaignActions(app) {
   let lastMutationAt = 0;
   /** The time when the campaign first became dirty after the last save. */
   let dirtySince = 0;
-  /** True when this tab declined an external save reload. This suppresses re-prompts. */
-  let syncPromptDeclined = false;
   /** The footprint at the last near-quota warning. This stops the toast from repeating on every autosave. */
   let warnedFootprint = 0;
   /**
@@ -96,30 +53,6 @@ export function wireCampaignActions(app) {
    * @type {ReturnType<typeof setInterval> | null}
    */
   let autosaveTimer = null;
-  /**
-   * The history position of the state this tab holds, recorded whenever the
-   * live state matches the persisted save: at load, after this tab's own
-   * save, and after adopting another tab's save. An external save whose
-   * recorded delta is based exactly here is adopted by applying that delta
-   * instead of re-reading the whole save.
-   * @type {string | null}
-   */
-  let heldPosition = historyPosition();
-  /**
-   * The save mark of the save this tab last matched in storage, or null when
-   * it is not known. It is read before `heldSave`, so a save that lands
-   * between the two reads has removed it and cannot match it.
-   * @type {string | null}
-   */
-  let heldMark = readSaveMark();
-  /**
-   * The save string this tab last matched in storage: the one it loaded,
-   * wrote, or adopted. An automatic write checks storage against it first.
-   * @type {string | null}
-   */
-  let heldSave = localStorage.getItem(STORAGE_KEY);
-  /** True once this tab reported that autosave is paused. This stops the toast from repeating on every poll. */
-  let pausedNoticeShown = false;
   /**
    * True after a write failed on a full origin, until the next mutation.
    * Autosave does not retry in that time. The same write fails again, and
@@ -160,12 +93,7 @@ export function wireCampaignActions(app) {
   /** @param {boolean} next */
   function setDirty(next) {
     if (next && !dirty) dirtySince = Date.now();
-    // After this tab saves or intentionally reloads, its state becomes
-    // canonical again. A future external save then gets a fresh prompt.
-    if (!next) {
-      syncPromptDeclined = false;
-      pausedNoticeShown = false;
-    }
+    if (!next) externalSaves.resetPrompts();
     dirty = next;
     // Autosave has no work while the campaign is clean. The poll runs only
     // between the first unsaved change and the write that clears it.
@@ -254,7 +182,7 @@ export function wireCampaignActions(app) {
     if (patches.active()) return patches.send();
     if (savesHeld()) return false;
     if (assetWait.waiting()) return false;
-    if (externalWriteBlocks()) return false;
+    if (externalSaves.externalWriteBlocks()) return false;
     return persistState(buildCurrentState(), true);
   }
 
@@ -332,27 +260,11 @@ export function wireCampaignActions(app) {
       reportHistory(result.history);
       return false;
     }
-    heldSave = result.json;
-    heldMark = result.mark;
-    heldPosition = historyPosition();
+    externalSaves.noteWritten(result.json, result.mark);
     patches.rebase();
     reportHistory(result.history);
     refreshHistoryButtons();
     return true;
-  }
-
-  /**
-   * Greys out Undo and Redo when there is nothing in that direction. This
-   * makes the depth of the history visible instead of something the GM finds
-   * by clicking. Both buttons keep their handler's no-op message as a
-   * backstop, because another tab can save between a refresh and a click.
-   */
-  function refreshHistoryButtons() {
-    const { undo, redo } = historyDepth();
-    const undoBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('undo-btn'));
-    const redoBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('redo-btn'));
-    if (undoBtn) undoBtn.disabled = undo === 0;
-    if (redoBtn) redoBtn.disabled = redo === 0;
   }
 
   /**
@@ -395,29 +307,10 @@ export function wireCampaignActions(app) {
   });
   app.actions.mergeQueuedPatches = patches.mergeQueued;
 
-  /**
-   * Persists a campaign that replaces the live one (New, Load example,
-   * Import), then reloads, so every module re-initializes from the same
-   * load path that a normal page load takes. The save and history notices
-   * go into the queued toast, because a toast shown here disappears with
-   * the page at once.
-   * @param {import('../types/storage.js').CampaignState} state
-   * @param {string} toastMessage
-   */
-  function persistAndReload(state, toastMessage) {
-    const result = saveCampaign(state);
-    if (assetWait.after(result.pending, () => persistAndReload(state, toastMessage))) return;
-    const { landed, message } = saveOutcome(result, mirrorActive());
-    if (!landed) {
-      // Reloading here would read the stale save that is still stored.
-      if (message) app.toasts.show(message, { level: 'error' });
-      return;
-    }
-    const loss = historyLossMessage(historyLoss(result.history), '');
-    queueToastAfterReload([toastMessage, message, loss].filter(Boolean).join(' '));
-    setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
-    location.reload();
-  }
+  const isDirty = () => dirty;
+  const externalSaves = wireExternalSaves(app, { isDirty, setDirty, buildCurrentState, patches });
+  wireHistorySteps(app, { isDirty, setDirty, reportSave, assetWait });
+  wireReplaceActions(app, { buildCurrentState, setDirty, assetWait });
 
   // The pack caches key on the identity of a node and an entity, and a load
   // hands every one of them a fresh object. The first save of a session
@@ -443,45 +336,6 @@ export function wireCampaignActions(app) {
     const steps = [...warmPackSteps(buildCurrentState()), () => packState(buildCurrentState())];
     runStepsWhenIdle(steps.map(quietly));
   }
-
-  /**
-   * True when the live campaign is the untouched blank one. A blank campaign
-   * has nothing to lose, so a replace warning would only stand between a
-   * first-run GM and the example or their own file.
-   */
-  function isBlank() {
-    return isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
-  }
-
-  // A replace confirm needs the new campaign first, because whether Undo can
-  // restore the current one depends on the size of both saves. The example
-  // takes about 50 to 90 ms to build, so it is built once, before the
-  // confirm, and the same state is saved after it.
-  mustGetElement('new-btn').addEventListener('click', async () => {
-    const state = buildState(buildBlankCampaign());
-    const ok = await confirmModal(
-      replacePrompt(
-        'Start a new blank campaign? The current campaign is replaced, including anything saved.',
-        replaceIsUndoable(state),
-      ),
-      { variant: 'danger', confirmLabel: 'New campaign' },
-    );
-    if (ok) persistAndReload(state, 'Started a new blank campaign.');
-  });
-
-  mustGetElement('example-btn').addEventListener('click', async () => {
-    const state = buildState(buildExampleCampaign(app.palette));
-    const ok =
-      isBlank() ||
-      (await confirmModal(
-        replacePrompt(
-          'Load the example campaign? The current campaign is replaced, including anything saved.',
-          replaceIsUndoable(state),
-        ),
-        { variant: 'danger', confirmLabel: 'Load example' },
-      ));
-    if (ok) persistAndReload(state, 'Loaded the example campaign.');
-  });
 
   mustGetElement('save-btn').addEventListener('click', async () => {
     if (await confirmSaveWhileHeld()) saveNow();
@@ -511,332 +365,4 @@ export function wireCampaignActions(app) {
     setDirty(false);
     app.toasts.show('Autosaved.');
   }
-
-  // Undo and Redo walk the recorded history one step at a time. A step is one
-  // save, New, Load example, or Import. Both reload so every module
-  // re-initializes from the restored state, the same reload path those actions
-  // use. Both persist through the history log instead of `persistState`,
-  // because stepping the cursor is not an edit. Recording it as an edit
-  // pushes the inverse of the undo and leaves Undo toggling between two
-  // states forever.
-  //
-  // A step restores a saved state and reloads, so unsaved changes in this tab
-  // are lost. While the campaign is dirty, the step asks first. A GM who
-  // presses Undo to take back an unsaved paint stroke otherwise loses that
-  // stroke and everything else since the last save, and the tab leaves Build.
-  /**
-   * @typedef {() => { save: import('../storage/SaveManager.js').SaveResult } | null} HistoryStep
-   */
-  /**
-   * @param {HistoryStep} apply
-   * @param {string} nothingToDo
-   * @param {string} restored
-   * @param {string} verb the confirm label, "Undo" or "Redo"
-   */
-  async function stepHistory(apply, nothingToDo, restored, verb) {
-    if (
-      dirty &&
-      !(await confirmModal(
-        `${verb} steps between saves. Your changes since the last save are discarded. Save first to keep them.`,
-        { variant: 'danger', confirmLabel: verb },
-      ))
-    ) {
-      return;
-    }
-    runHistoryStep(apply, nothingToDo, restored);
-  }
-
-  /**
-   * Takes one step and reloads onto it. A restored state takes its images
-   * from the committed copy, so a step does not wait on a put. A step that
-   * does wait writes nothing, and it runs again once the put settles.
-   * @param {HistoryStep} apply
-   * @param {string} nothingToDo
-   * @param {string} restored
-   */
-  function runHistoryStep(apply, nothingToDo, restored) {
-    const step = apply();
-    if (!step) {
-      // Nothing exists in that direction, or the log was unreadable and got
-      // dropped. Either way, nothing exists to restore, and the campaign stands.
-      refreshHistoryButtons();
-      app.toasts.show(nothingToDo);
-      return;
-    }
-    const again = () => runHistoryStep(apply, nothingToDo, restored);
-    if (assetWait.after(step.save.pending, again)) return;
-    if (!reportSave(step.save)) return;
-    queueToastAfterReload(restored);
-    setDirty(false);
-    location.reload();
-  }
-
-  mustGetElement('undo-btn').addEventListener('click', () => {
-    void stepHistory(undoCampaign, 'Nothing to undo.', 'Restored the previous save.', 'Undo');
-  });
-
-  // Redo is reachable only right after an Undo. Saving from a stepped-back
-  // cursor is a new edit, and it drops everything ahead of it.
-  mustGetElement('redo-btn').addEventListener('click', () => {
-    void stepHistory(redoCampaign, 'Nothing to redo.', 'Reapplied the undone change.', 'Redo');
-  });
-
-  refreshHistoryButtons();
-
-  // This is cross-tab live sync, the minimum multi-device setup. When another
-  // tab of the same origin writes a new save, for example a GM laptop that
-  // drives a second player-facing tab, this tab takes that campaign as its
-  // own. The browser never fires this event for its own saves, so no feedback
-  // loop can occur. Autosave keeps a follower current while the GM plays, so
-  // these writes are adopted instead of filtered out. What changed is that
-  // adopting a write no longer costs a page load. A tab with unsaved local
-  // changes is asked first, instead of having them silently discarded, but
-  // only once. After a decline, further external saves, autosaves especially,
-  // which recur every few minutes, show a quiet toast instead of a storm of
-  // modals. This continues until this tab saves and its state becomes
-  // canonical again.
-  /**
-   * Adopt an external save by applying its recorded delta to the live state
-   * instead of re-reading the whole save. Every save writes its exact edit
-   * as a delta beside the campaign, and `applyHistoryOps` copies only along the
-   * op paths, so every node and entity the edit did not touch keeps its
-   * identity by construction. The map caches stay warm, and the reconcile
-   * inside `rehydrateCampaign` returns each untouched object at the first
-   * comparison. This runs only when this tab's held state is exactly the
-   * delta's base. Everything else answers false, and the caller re-reads
-   * the whole save.
-   * @returns {boolean}
-   */
-  function adoptByDelta() {
-    const plan = planAdoption(heldPosition);
-    if (plan.kind === 'current') return true;
-    if (plan.kind !== 'delta') return false;
-    try {
-      const next = applyHistoryOps(buildCurrentState(), plan.ops);
-      rehydrateCampaign(app, campaignFromLiveState(next));
-      return true;
-    } catch (error) {
-      console.warn('Could not apply the recorded delta; adopting the full save.', error);
-      return false;
-    }
-  }
-
-  /**
-   * Takes another tab's save without reloading the page. This adopts the
-   * save through `adoptByDelta` when the recorded delta chains from this
-   * tab's held state, and re-reads the whole save through the ordinary load
-   * path otherwise. Either way it writes the result over the live campaign.
-   * A reload costs this tab its scroll position, its open panel, the map's
-   * pan and zoom, and anything staged in the dice tray, on every ten seconds
-   * of GM editing.
-   *
-   * This applies only in Play mode and combat mode. Build mode carries
-   * authoring state that a re-hydrate leaves pointing at a world that no
-   * longer exists: the stroke history holds pre-stroke nodes by reference, and
-   * the tile inspector holds a tile from one of them. Library mode returns
-   * to Play with stale panels. Both modes, and any failure to adopt the
-   * campaign, fall back to the reload this function replaces, so the worst
-   * case matches the previous behavior. Combat mode holds nothing but a
-   * projection of the fight, which is exactly what the save carries.
-   * Reloading a tab that watches a fight was the worst version of this
-   * problem: mode is per-tab and never restored, so the tab returned to the
-   * map, and someone had to reopen the fight on every turn.
-   *
-   * `followerMode` decides whether the tab then moves between Play and combat.
-   * @returns {boolean} whether the tab re-hydrated instead of reloading
-   */
-  function adoptExternalSave() {
-    if (app.state.mode !== 'play' && app.state.mode !== 'combat') return false;
-    const hadFight = app.state.combat !== null;
-    try {
-      if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
-      heldPosition = historyPosition();
-      ({ raw: heldSave, mark: heldMark } = adoptPersisted(buildCurrentState()));
-      patches.rebase();
-    } catch (error) {
-      console.error('Could not adopt the campaign another tab saved; reloading.', error);
-      return false;
-    }
-    const next = followerMode(app.state.mode, { hadFight, hasFight: app.state.combat !== null });
-    if (next) app.actions.setMode(next);
-    refreshHistoryButtons();
-    showLateImages();
-    return true;
-  }
-
-  /**
-   * Reads the images that the stored save names and this tab's copy lacks,
-   * then shows them. Another tab commits an image before it writes the save
-   * that names it, so such a key was committed after this tab read IndexedDB
-   * (`storage/AssetMirror.js`). Until the read finishes, the image draws as
-   * a placeholder. The live state keeps the `asset:` key, so a later save
-   * still names the stored image. The tab takes the images only when it
-   * could still adopt a save: it has no unsaved change, it is in Play or
-   * combat mode, and no newer save has arrived.
-   */
-  function showLateImages() {
-    const raw = heldSave;
-    const missing = missingAssetKeys(raw);
-    if (!missing.length) return;
-    void fetchAssets(missing).then((added) => {
-      if (!added || dirty || heldSave !== raw) return;
-      if (app.state.mode !== 'play' && app.state.mode !== 'combat') return;
-      try {
-        rehydrateCampaign(app, campaignFromLiveState(withStoredAssets(buildCurrentState())));
-        ({ raw: heldSave, mark: heldMark } = adoptPersisted(buildCurrentState()));
-        patches.rebase();
-      } catch (error) {
-        console.warn('Could not show the images another tab stored.', error);
-      }
-    });
-  }
-
-  // The boot reads IndexedDB before the stored save, so a save that another
-  // tab wrote in between can name an image this tab has not read.
-  showLateImages();
-
-  let syncPromptOpen = false;
-
-  /**
-   * The way out of a declined reload. A player tab has no Save button, so it
-   * can only reload.
-   */
-  function takeOrOverwrite() {
-    return isGM(app.state.role)
-      ? 'Save here to overwrite it, or reload to take its version.'
-      : 'Reload to take its version.';
-  }
-
-  /**
-   * Asks a tab with unsaved changes whether to take another tab's save. A
-   * yes reloads, and a no keeps the changes here and pauses the automatic
-   * writes until an explicit Save.
-   */
-  async function promptExternalSave() {
-    syncPromptOpen = true;
-    const ok = await confirmModal(
-      'Another tab saved this campaign. Reload to match it? Your unsaved changes here are discarded.',
-      { variant: 'danger', confirmLabel: 'Reload' },
-    );
-    syncPromptOpen = false;
-    if (ok) {
-      setDirty(false);
-      location.reload();
-    } else {
-      syncPromptDeclined = true;
-    }
-  }
-
-  /**
-   * True when another tab wrote the campaign after this tab last matched
-   * storage, so an automatic write here stops. Without the stop, a tab that
-   * declined the reload prompt, or one that has not seen the other save yet,
-   * writes its older copy over the other tab's roll, attack, or map edit.
-   * The first stop asks the reload question, and a stop after a decline
-   * says once that autosave is paused.
-   * @returns {boolean}
-   */
-  function externalWriteBlocks() {
-    const moved =
-      markMovedOn(heldMark, readSaveMark()) ??
-      storageMovedOn(heldSave, localStorage.getItem(STORAGE_KEY));
-    if (!moved) return false;
-    if (syncPromptOpen) return true;
-    if (!syncPromptDeclined) {
-      void promptExternalSave();
-    } else if (!pausedNoticeShown) {
-      pausedNoticeShown = true;
-      app.toasts.show(`Autosave is paused because another tab saved. ${takeOrOverwrite()}`);
-    }
-    return true;
-  }
-
-  onExternalSave(() => {
-    // A player tab sends its unsent edit first. The GM tab merges it, so the
-    // tab adopts the save with nothing lost and needs no reload prompt.
-    if (dirty && patches.active() && patches.send()) setDirty(false);
-    if (!dirty) {
-      if (!adoptExternalSave()) location.reload();
-      return;
-    }
-    if (syncPromptOpen) return;
-    if (syncPromptDeclined) {
-      app.toasts.show(`Another tab saved again. ${takeOrOverwrite()}`);
-      return;
-    }
-    void promptExternalSave();
-  });
-
-  mustGetElement('export-btn').addEventListener('click', () => {
-    // The customs read fresh from their key at click time; the library
-    // wiring saves them there on every edit.
-    downloadCampaignFile(buildCurrentState(), loadCustomLibrary());
-    app.toasts.show('Campaign exported.');
-  });
-
-  const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));
-  mustGetElement('import-btn').addEventListener('click', () => importInput.click());
-  importInput.addEventListener('change', async () => {
-    const file = importInput.files?.[0];
-    // Clear the input before anything else can fail. A file input fires
-    // `change` only when the selection differs from the current value. If the
-    // value stays set, re-picking the same file becomes a silent no-op,
-    // including the retry a GM makes after a failed import.
-    importInput.value = '';
-    if (!file) return;
-    /** @type {import('../types/storage.js').CampaignState} */
-    let state;
-    /** @type {import('../types/library.js').CustomLibrary | null} */
-    let library;
-    try {
-      ({ state, library } = await readCampaignFromFile(file));
-    } catch {
-      // No data was written yet, so a plain toast states the fact.
-      app.toasts.show('That file is not a readable campaign JSON.', { level: 'error' });
-      return;
-    }
-    // Any JSON record parses as a campaign, and one with no map nodes gives
-    // the party and the map view nowhere to start.
-    if (state.nodes.length === 0) {
-      app.toasts.show('That file has no map, so it is not a campaign file.', { level: 'error' });
-      return;
-    }
-    if (!(await confirmShortenedImport(state))) return;
-    // The confirm comes after the read, so a file that is not a campaign
-    // gets its error without a question first.
-    const replace =
-      isBlank() ||
-      (await confirmModal(
-        replacePrompt(
-          'Import this campaign? It replaces the current campaign.',
-          replaceIsUndoable(state),
-          'Undo in the header restores the current one.',
-        ),
-        { variant: 'danger', confirmLabel: 'Import' },
-      ));
-    if (!replace) return;
-    // A file with a bundled library adopts it into the browser's customs,
-    // asking first when that would overwrite existing ones. A decline keeps
-    // the browser library and still imports the campaign, the same outcome
-    // as a file that carries no library.
-    const action = libraryImportAction(library, loadCustomLibrary());
-    let adopt = action === 'adopt';
-    if (action === 'confirm') {
-      adopt = await confirmModal(
-        'This campaign file includes library customizations. Replace yours ' +
-          'with them? Built-in defaults are unaffected.',
-        { variant: 'danger', confirmLabel: 'Replace' },
-      );
-    }
-    if (adopt && library && !saveCustomLibrary(library)) {
-      app.toasts.show('Storage is full. The campaign imports without its library.', {
-        level: 'error',
-      });
-      adopt = false;
-    }
-    // The reload makes every module re-initialize from the same
-    // loadFromLocalStorage path that a normal page load takes, including the
-    // library wiring's fresh read of the customs written above.
-    persistAndReload(state, adopt ? 'Campaign and library imported.' : 'Campaign imported.');
-  });
 }

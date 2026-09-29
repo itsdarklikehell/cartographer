@@ -860,7 +860,7 @@ another tab writes a new mark, and a new string fails the compare.
 In the steady state the cache reads only the mark. While the stored mark
 equals the cached one, the stored save is the cached string, so
 `loadPersistedCampaign` skips the `getItem` of the whole save and the
-string compare. `app/campaignActions.js` checks for another tab's write
+string compare. `app/externalSaves.js` checks for another tab's write
 the same way (`Autosave.markMovedOn`), so a steady-state autosave reads
 the save string zero times, where a string compare reads it twice. A
 missing mark tells neither side anything, and both fall back to the string
