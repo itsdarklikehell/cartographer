@@ -49,14 +49,16 @@ export const CONDITIONS = [
 /**
  * The optional parts of a chip. `source` names the cast that wrote it.
  * `rider` is what it adds to the holder's later rolls. `expires` is the turn
- * boundary that ends it, and `ongoing` is the damage it deals at the end of
- * each of the holder's turns. Each is left off the stored chip entirely when
- * there is none, so a hand-added chip stores no extra key.
+ * boundary that ends it, `ongoing` is the damage it deals at the end of each
+ * of the holder's turns, and `mods` is what it changes besides a roll, such
+ * as AC. Each is left off the stored chip entirely when there is none, so a
+ * hand-added chip stores no extra key.
  * @typedef {{
  *   source?: import('../types/entities.js').ConditionSource,
  *   rider?: import('../types/entities.js').RollRider,
  *   expires?: import('../types/entities.js').ChipExpiry,
  *   ongoing?: import('../types/entities.js').OngoingDamage,
+ *   mods?: import('../types/entities.js').ChipMods,
  * }} ConditionExtras
  */
 
@@ -66,7 +68,11 @@ export const CONDITIONS = [
  * @param {ConditionExtras} [extras]
  * @returns {Condition}
  */
-export function createCondition(name, rounds = null, { source, rider, expires, ongoing } = {}) {
+export function createCondition(
+  name,
+  rounds = null,
+  { source, rider, expires, ongoing, mods } = {},
+) {
   return {
     name,
     rounds,
@@ -74,6 +80,7 @@ export function createCondition(name, rounds = null, { source, rider, expires, o
     ...(rider ? { rider } : {}),
     ...(expires ? { expires } : {}),
     ...(ongoing ? { ongoing } : {}),
+    ...(mods ? { mods } : {}),
   };
 }
 

@@ -23,9 +23,9 @@ import { splitTrimmedList } from '../util/text.js';
  * The combatants a spell can target, by effect kind. An attack or a save
  * spell reaches the caster's foes, plus any other creature in the fight,
  * bystanders included. A heal or a buff reaches its own side (allies,
- * including the caster). A utility spell targets no one. The list comes
- * from the shared `combatantsAsTargets` function over the combat running
- * order.
+ * including the caster), and one with a range of Self reaches the caster
+ * alone. A utility spell targets no one. The list comes from the shared
+ * `combatantsAsTargets` function over the combat running order.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} caster
@@ -35,7 +35,19 @@ import { splitTrimmedList } from '../util/text.js';
 export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
   if (targetFree(kind)) return [];
-  return combatantsAsTargets(app, combat, caster, { allies: helps(kind) });
+  const reached = combatantsAsTargets(app, combat, caster, { allies: helps(kind) });
+  return selfOnly(spell) ? reached.filter((t) => t.id === caster.id) : reached;
+}
+
+/**
+ * Whether a spell reaches only its caster: a heal or a buff with a range of
+ * Self, such as Shield or False Life. A Self range with an area after it
+ * ("Self (30-foot radius)") reaches others, so only the bare word counts.
+ * @param {Spell} spell
+ * @returns {boolean}
+ */
+export function selfOnly(spell) {
+  return helps(spell.effect.kind) && spell.range.trim().toLowerCase() === 'self';
 }
 
 /**
@@ -74,14 +86,18 @@ export function targetFree(kind) {
  * not reached.
  * @param {AppContext} app
  * @param {Spell} spell
+ * @param {string} [casterId] the caster, which a Self-range buff reaches alone
  * @returns {import('./combatants.js').CombatTarget[]}
  */
-export function rosterTargets(app, spell) {
+export function rosterTargets(app, spell, casterId) {
   const { state } = app;
   const kind = spell.effect.kind;
   if (targetFree(kind)) return [];
   if (helps(kind)) {
-    return state.characters.map((c) => asTarget(c, 'character'));
+    const party = selfOnly(spell)
+      ? state.characters.filter((c) => c.id === casterId)
+      : state.characters;
+    return party.map((c) => asTarget(c, 'character'));
   }
   const position = app.partyTracker.getPosition();
   return hostileCreaturesOnTile(state.creatures, position).map((c) => asTarget(c, 'creature'));

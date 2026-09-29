@@ -75,6 +75,17 @@ export interface OngoingDamage {
   damage: DamagePart[];
 }
 
+/** What a chip changes on its holder besides a d20 roll. `ac` adds to the
+ * holder's AC (Shield's +5, Shield of Faith's +2). `acBase` is the base AC of
+ * a holder that wears no body armor, before its DEX modifier (Mage Armor's
+ * 13). `acMin` is a floor under the finished AC (Barkskin's 16). Several
+ * chips add their `ac` together, and the highest `acBase` and `acMin` win. */
+export interface ChipMods {
+  ac?: number;
+  acBase?: number;
+  acMin?: number;
+}
+
 /** Which rolls a rider touches. `check` has no roller yet, so a check rider
  * shows on the chip and the GM applies it in the dice tray. */
 export type RiderRoll = 'attack' | 'save' | 'check';
@@ -110,6 +121,8 @@ export interface Condition {
   expires?: ChipExpiry;
   /** Damage the chip deals at the end of each of the holder's turns. */
   ongoing?: OngoingDamage;
+  /** What the chip changes besides a d20 roll, such as the holder's AC. */
+  mods?: ChipMods;
 }
 
 /** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */

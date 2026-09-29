@@ -1,5 +1,6 @@
 import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
+import { normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
 
 /**
@@ -8,11 +9,12 @@ import { clampInt } from '../util/num.js';
  * again without a new slot, and what a hit does besides its damage (a save or
  * a chip on the target, and hit points back to the caster), and the HP rules
  * of a save (a pool rolled in place of the save, a kill, and a chip that
- * damage ends). The authoring form (through `SpellDraft.js`) and the library
- * import (through `Library.js`) share these functions, so a typed spell and
- * an imported one never disagree about what a value means. Each one returns
- * null, or an empty object, for a value that says nothing usable, and the
- * caller then leaves the field off the spell. Every function here is pure.
+ * damage ends), and what a buff's chip changes besides a roll. The authoring
+ * form (through `SpellDraft.js`) and the library import (through `Library.js`)
+ * share these functions, so a typed spell and an imported one never disagree
+ * about what a value means. Each one returns null, or an empty object, for a
+ * value that says nothing usable, and the caller then leaves the field off the
+ * spell. Every function here is pure.
  */
 
 /** @typedef {import('../types/spell.js').ChipUntil} ChipUntil */
@@ -178,6 +180,19 @@ export function saveExtras(raw, condition) {
     ...(raw.kills === true ? { kills: true } : {}),
     ...(condition && raw.endsOnDamage === true ? { endsOnDamage: true } : {}),
   };
+}
+
+/**
+ * The fields a buff effect has beyond its chip name and rider, from a written
+ * effect: what the chip changes besides a roll, and the turn boundary that
+ * ends it.
+ * @param {Record<string, unknown>} raw
+ * @returns {Partial<import('../types/spell.js').SpellBuffEffect>}
+ */
+export function buffExtras(raw) {
+  const mods = normalizeChipMods(raw.mods);
+  const until = normalizeUntil(raw.until);
+  return { ...(mods ? { mods } : {}), ...(until ? { until } : {}) };
 }
 
 /**

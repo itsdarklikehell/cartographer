@@ -539,3 +539,23 @@ test('damage ends a chip that damage ends, and a slay drops a creature to 0 HP',
   assert.equal(dead.currentHP, 0);
   assert.equal(dead.conditions, asleep.conditions);
 });
+
+test('effectiveStatBlock folds in the AC chips a creature holds', () => {
+  const chip = (name, mods) => createCondition(name, 10, { mods });
+  const bare = createCreature('a', 'Bram', { stats: { AC: 11, DEX: 14 } });
+  const shielded = { ...bare, conditions: [chip('Shield of Faith', { ac: 2 })] };
+  assert.equal(effectiveStatBlock(shielded).AC, 13);
+  // Mage Armor replaces a lower AC on a creature without armor, and does
+  // nothing for one that wears armor or has better natural armor.
+  const warded = { ...bare, conditions: [chip('Mage Armor', { acBase: 13 })] };
+  assert.equal(effectiveStatBlock(warded).AC, 15);
+  const tough = { ...warded, stats: { ...warded.stats, AC: 17 } };
+  assert.equal(effectiveStatBlock(tough).AC, 17);
+  const armored = { ...warded, armor: { name: 'Shield', baseAC: 10, dexCap: -1, acBonus: 2 } };
+  assert.equal(
+    effectiveStatBlock(armored).AC,
+    effectiveStatBlock({ ...armored, conditions: [] }).AC,
+  );
+  const barked = { ...bare, conditions: [chip('Barkskin', { acMin: 16 })] };
+  assert.equal(effectiveStatBlock(barked).AC, 16);
+});

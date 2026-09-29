@@ -1173,3 +1173,17 @@ test('normalizeLibrary keeps the HP pool, the kill, and the end on damage of a s
   assert.equal(effect.endsOnDamage, true);
   assert.equal(effect.kills, true);
 });
+
+test('normalizeLibrary keeps a buff chip change and its boundary', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Ward',
+        effect: { kind: 'buff', mods: { ac: 5, acMin: 'x' }, until: 'caster-start' },
+      },
+      { name: 'Dud', effect: { kind: 'buff', mods: { ac: 0 }, until: 'someday' } },
+    ],
+  });
+  assert.deepEqual(lib.spells[0].effect, { kind: 'buff', mods: { ac: 5 }, until: 'caster-start' });
+  assert.deepEqual(lib.spells[1].effect, { kind: 'buff' });
+});

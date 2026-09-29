@@ -1,4 +1,5 @@
 import { riderSummary } from '../entities/Riders.js';
+import { modsSummary } from '../entities/ChipMods.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { durationInRounds } from '../entities/SpellTiming.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
@@ -127,18 +128,27 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
   if (kind === 'buff') {
     // A buff rolls nothing, so the whole cast is the chip it leaves. The chip
     // carries the same source a failed save writes, which is what lets
-    // `endSpellEffects` sweep it when the caster stops concentrating.
+    // `endSpellEffects` sweep it when the caster stops concentrating. A buff
+    // that names a turn boundary (Shield) ends there instead of at the end
+    // of the spell's duration.
     const rounds = durationInRounds(spell.duration);
+    const until = spell.effect.until;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
+      const timing = until ? timingFor(app, until, casterId, o.target.id) : { rounds };
       const imposed = applyConditionToTarget(
         app,
         o.target.id,
         o.condition,
-        rounds,
+        timing.rounds,
         { spellId: spell.id, spellName: spell.name, casterId },
         o.rider,
+        {
+          ...(timing.expires ? { expires: timing.expires } : {}),
+          ...(o.mods ? { mods: o.mods } : {}),
+        },
       );
-      const adds = o.rider ? `: ${riderSummary(o.rider)}` : '';
+      const changes = [o.rider ? riderSummary(o.rider) : '', modsSummary(o.mods)].filter(Boolean);
+      const adds = changes.length > 0 ? `: ${changes.join(', ')}` : '';
       app.actions.logEvent(
         'combat',
         `${o.target.name} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,

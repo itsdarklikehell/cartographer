@@ -5,6 +5,7 @@ import { EQUIPMENT_SLOTS, SHIELD_AC, equip } from '../src/entities/Equipment.js'
 import { createCharacter, addItem } from '../src/entities/Character.js';
 import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { item } from './helpers/fixtures.js';
+import { createCondition } from '../src/entities/Conditions.js';
 
 test('unarmored AC is the character base AC + full DEX modifier', () => {
   const hero = createCharacter('c1', 'Hero', { DEX: 14 }); // +2
@@ -194,4 +195,25 @@ test('unproficientWear reads bare armor as light and skips untracked gear', () =
   assert.deepEqual(unproficientWear(bare), [], 'nothing worn, nothing to flag');
   const legacy = /** @type {any} */ ({ ...hero, proficiencies: undefined });
   assert.deepEqual(unproficientWear(legacy), [], 'a pre-list character stays unpenalized');
+});
+
+test('AC chips raise the unarmored base, add a bonus, and set a floor', () => {
+  const chip = (name, mods) => createCondition(name, 10, { mods });
+  const hero = createCharacter('c1', 'Hero', { DEX: 14 }); // +2
+  const warded = { ...hero, conditions: [chip('Mage Armor', { acBase: 13 })] };
+  assert.equal(armorClass(warded), 15);
+  let armored = addItem(
+    warded,
+    item('mail', 'Mail', { type: 'armor', armorWeight: 'heavy', baseAC: 16 }),
+  );
+  armored = equip(armored, 'chest', 'mail');
+  assert.equal(armorClass(armored), 16, 'body armor ignores the unarmored base');
+  assert.equal(armorClass({ ...warded, baseAC: 14 }), 16, 'a higher sheet base wins');
+  const both = { ...hero, conditions: [chip('Shield', { ac: 5 }), chip('Faith', { ac: 2 })] };
+  assert.equal(armorClass(both), 19);
+  const barked = {
+    ...hero,
+    conditions: [chip('Barkskin', { acMin: 16 }), chip('Faith', { ac: 2 })],
+  };
+  assert.equal(armorClass(barked), 16, 'the floor is not raised by the bonus');
 });

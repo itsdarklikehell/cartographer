@@ -15,6 +15,7 @@ import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import { normalizeRider } from '../entities/Riders.js';
 import {
   attackExtras,
+  buffExtras,
   normalizeLevelsPerStep,
   normalizeRepeat,
   saveExtras,
@@ -314,6 +315,7 @@ function normalizeSpell(raw, id) {
         ? { condition: raw.effect.condition.trim() }
         : {}),
       ...(rider ? { rider } : {}),
+      ...buffExtras(raw.effect),
     };
   } else if (summons) {
     // A count holds to the same cap as a target count, because both put that

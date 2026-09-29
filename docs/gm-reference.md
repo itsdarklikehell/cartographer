@@ -1436,6 +1436,11 @@ Power Word Kill compares the current HP of the target with its limit of
 a save. The app reads the HP of each target when you click Cast, not when
 the dialog opens. See [Hit-point rules](spells-missing.md#hit-point-rules).
 
+A buff with a range of Self, such as Shield, offers only the caster as its
+target. The chip of Shield, Shield of Faith, Mage Armor, or Barkskin changes
+the AC that the sheet, the combatant cards, and every later attack read. See
+[Armor class](spells-missing.md#armor-class).
+
 A spell that the caster still keeps open from an earlier turn, such as Spiritual
 Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot
 picker and no ritual box. A repeat spends no slot and skips the component
@@ -1919,7 +1924,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 64 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 67 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

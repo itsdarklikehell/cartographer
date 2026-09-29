@@ -1013,7 +1013,7 @@ test('a buff with no rider still hands out its chip', () => {
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.deepEqual(result.outcomes, [
-    { target: { id: 'a', name: 'Rogue' }, condition: 'Shielded', rider: null },
+    { target: { id: 'a', name: 'Rogue' }, condition: 'Shielded', rider: null, mods: null },
   ]);
 });
 

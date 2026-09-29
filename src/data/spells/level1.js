@@ -321,6 +321,42 @@ export const LEVEL_1 = [
     },
   },
   {
+    id: 'shield',
+    name: 'Shield',
+    level: 1,
+    school: 'abjuration',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: {
+      kind: 'reaction',
+      trigger: 'which you take when you are hit by an attack or targeted by magic missile',
+    },
+    range: 'Self',
+    components: ['V', 'S'],
+    duration: { kind: 'rounds', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'An invisible barrier gives the caster +5 AC until the start of its next turn, ' +
+      'including against the triggering attack, and it takes no damage from magic missile.',
+    effect: { kind: 'buff', mods: { ac: 5 }, until: 'caster-start' },
+  },
+  {
+    id: 'shield-of-faith',
+    name: 'Shield of Faith',
+    level: 1,
+    school: 'abjuration',
+    classes: ['cleric', 'paladin'],
+    castingTime: { kind: 'bonus' },
+    range: '60 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a small parchment with a bit of holy text written on it', consumed: false },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: false,
+    description: 'A shimmering field gives one creature +2 AC for the duration.',
+    effect: { kind: 'buff', mods: { ac: 2 } },
+  },
+  {
     id: 'mage-armor',
     name: 'Mage Armor',
     level: 1,
@@ -333,7 +369,9 @@ export const LEVEL_1 = [
     duration: { kind: 'hours', amount: 8 },
     concentration: false,
     ritual: false,
-    description: "An unarmored creature's base AC becomes 13 + its DEX modifier.",
-    effect: { kind: 'utility' },
+    description:
+      'A willing creature that wears no armor has a base AC of 13 + its DEX modifier. ' +
+      'The spell ends if the creature dons armor, which the GM removes by hand.',
+    effect: { kind: 'buff', mods: { acBase: 13 } },
   },
 ];

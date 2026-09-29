@@ -212,4 +212,22 @@ export const LEVEL_2 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'force' }], levelsPerStep: 2 },
     repeat: {},
   },
+  {
+    id: 'barkskin',
+    name: 'Barkskin',
+    level: 2,
+    school: 'transmutation',
+    classes: ['druid', 'ranger'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a handful of oak bark', consumed: false },
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      "A willing creature's skin turns rough as bark, and its AC can't be less than 16, " +
+      'whatever armor it wears.',
+    effect: { kind: 'buff', mods: { acMin: 16 } },
+  },
 ];

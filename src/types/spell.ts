@@ -1,4 +1,4 @@
-import type { DamagePart, RollRider } from './entities.js';
+import type { ChipMods, DamagePart, RollRider } from './entities.js';
 
 /** The six ability scores, the keys of a character's stat block. */
 export type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
@@ -173,6 +173,11 @@ export interface SpellBuffEffect {
   /** What the chip adds to the target's later rolls. Absent means the chip
    * only names a state. */
   rider?: RollRider;
+  /** What the chip changes besides a roll, such as AC (Shield, Barkskin). */
+  mods?: ChipMods;
+  /** When the chip ends, as a turn boundary (Shield's start of the caster's
+   * next turn). Absent means the spell's own duration. */
+  until?: ChipUntil;
 }
 
 /** A spell that puts creatures on the map. The effect names one library

@@ -9,6 +9,7 @@
 import { abilityModifier } from './Modifiers.js';
 import { isProficientArmor } from './Proficiencies.js';
 import { unarmoredDefenses } from './Classes.js';
+import { heldMods, withChipAC } from './ChipMods.js';
 import {
   ARMOR_WEIGHTS,
   armorTraits,
@@ -25,12 +26,14 @@ import {
  * unarmored baseline with its own base AC plus a DEX contribution set by its
  * weight class. Light armor adds the full DEX modifier. Medium armor caps
  * the DEX modifier at +2. Heavy armor ignores DEX. Unarmored AC is the base
- * AC, which is 10 by default or higher from an effect like Mage Armor, plus
+ * AC, which is 10 by default or the base the GM set on the sheet, plus
  * the full DEX modifier. A Barbarian or a Monk with an empty chest slot also
  * gets the unarmored defense formula of its class, and takes whichever result
  * is higher. A shield adds its own bonus, which is +2 unless the item says
  * otherwise. Every other equipped item adds its own flat acBonus. DEX here
- * includes equipped stat buffs.
+ * includes equipped stat buffs. The chips on the character also count (see
+ * `ChipMods.js`): a Mage Armor chip raises the unarmored base, a Shield chip
+ * adds to the total, and a Barkskin chip sets a floor under it.
  * @param {Character} character
  * @returns {number}
  */
@@ -39,6 +42,7 @@ export function armorClass(character) {
   const dexMod = abilityModifier(stats.DEX ?? 10);
   const worn = equippedIndex(character);
   const body = worn.get('chest');
+  const mods = heldMods(character.conditions);
   let ac;
   if (body && body.baseAC !== undefined) {
     const weight =
@@ -47,7 +51,9 @@ export function armorClass(character) {
     // hurt. Otherwise the modifier applies up to the weight's cap.
     ac = body.baseAC + (weight.dexCap === 0 ? 0 : Math.min(dexMod, weight.dexCap));
   } else {
-    const base = character.baseAC ?? 10;
+    // Mage Armor names a base AC for a holder with no body armor. It does
+    // not stack with a higher base, so the higher one counts.
+    const base = Math.max(character.baseAC ?? 10, mods.acBase);
     ac = base + dexMod;
     // The formula runs only with the chest slot empty. A chest item with no
     // base AC lands in this branch too, and something is worn in that case,
@@ -69,7 +75,7 @@ export function armorClass(character) {
     if (item === body) continue;
     ac += itemACBonus(item);
   }
-  return ac;
+  return withChipAC(ac, mods);
 }
 
 /**

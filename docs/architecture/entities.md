@@ -745,8 +745,8 @@ keeps the slots, the equip rules, and the field readers for one item, such as
 character. Equipped body armor replaces the unarmored base with its own
 `baseAC`, and its weight class sets how much DEX it adds. Without body armor,
 the AC is `character.baseAC` plus the full DEX modifier. `baseAC` is 10 unless
-an effect such as Mage Armor raised it. Every other equipped piece then adds
-its own `acBonus`.
+the GM set another value on the sheet. Every other equipped piece then adds
+its own `acBonus`, and the AC chips of the character apply last.
 
 ### Shields
 
@@ -770,13 +770,33 @@ modifier, plus the modifier of one more ability. The class definition stores
 the ability, and whether a shield cancels the formula, as `unarmoredDefense`.
 `Classes.unarmoredDefenses(character)` collects the grants of the whole class
 list. `armorClass` takes the higher of the plain unarmored AC and the formula,
-so a `baseAC` raised by Mage Armor wins when it is higher.
+so a higher `baseAC` or Mage Armor base wins.
 
 The formula has two conditions. The chest slot has to be empty, because a
 chest item with no `baseAC` still means that the character wears something.
 `baseAC` has to be at least 10, because a GM can lower it as a curse, and the
 formula would otherwise remove that penalty. A Monk with a shield loses the
 formula but still gets the AC that the shield adds.
+
+### AC chips
+
+A buff spell can write `mods` onto its chip (see `ChipMods.js`). `ac` is a
+flat bonus, `acBase` is a base AC for a holder without body armor, and
+`acMin` is a floor under the finished AC. `ChipMods.heldMods` combines the
+chips of one holder. The flat bonuses add up, because Shield and Shield of
+Faith stack, and the highest base and the highest floor win.
+
+`armorClass` uses the higher of `baseAC` and the chip base in its unarmored
+branch, so body armor ignores Mage Armor. `ChipMods.withChipAC` then adds
+the bonuses and applies the floor. The floor comes last, so Shield of Faith
+on a holder with AC 12 under Barkskin gives AC 16 and not 18.
+`Creature.effectiveStatBlock` reads the same chips. A creature has no
+unarmored branch, because its stat block AC already includes natural armor,
+so a chip base replaces a lower AC on a creature with no worn armor.
+
+The chip leaves with its spell, so the AC goes back without a separate
+undo. A turn boundary on the buff (`until`) ends the chip of Shield at the
+start of the caster's next turn.
 
 ### Stealth and Strength
 

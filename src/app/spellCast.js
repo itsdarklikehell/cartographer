@@ -81,7 +81,7 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
  * @param {Spell} spell
  */
 export async function castSpellOutOfCombat(app, caster, spell) {
-  await runCast(app, caster, spell, rosterTargets(app, spell), (next) => {
+  await runCast(app, caster, spell, rosterTargets(app, spell, caster.id), (next) => {
     app.state.characters = replaceById(app.state.characters, next);
     app.actions.refreshSelectedCharacter();
   });

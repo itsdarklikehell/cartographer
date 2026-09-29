@@ -7,6 +7,7 @@ import {
 import { normalizeRider } from './Riders.js';
 import {
   attackExtras,
+  buffExtras,
   normalizeLevelsPerStep,
   normalizeRepeat,
   saveExtras,
@@ -51,6 +52,9 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [melee] whether the attack kind is a melee spell attack
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
+ *   or a buff's chip
+ * @property {{ ac: unknown, acBase: unknown, acMin: unknown }} [mods] what a
+ *   buff's chip changes besides a roll
  * @property {{ damage: DamagePart[], perStep: DamagePart[], until: string } | null} [ongoing]
  *   the damage an attack or a save leaves for later turns, null for none
  * @property {{ condition: string, saveAbility: string, until: string } | null} [onHit]
@@ -157,6 +161,7 @@ export function assembleEffect(draft) {
       kind: 'buff',
       ...(condition ? { condition } : {}),
       ...(rider ? { rider } : {}),
+      ...buffExtras(draft),
     };
   }
   return { kind: 'utility' };

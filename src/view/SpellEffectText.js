@@ -1,6 +1,7 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
+import { modsSummary } from '../entities/ChipMods.js';
 import { UNTIL_LABELS, rollsNoSave } from '../entities/SpellFields.js';
 
 /**
@@ -19,8 +20,9 @@ const COST_TEXT = { action: 'an action', bonus: 'a bonus action', reaction: 'a r
  * The one-line effect summary shown under the meta grid: a spell attack and
  * its damage, a save (ability plus DC) or the HP rule that takes its place,
  * with its damage and the chip it imposes, healing dice, or the chip a buff
- * hands out. A chip that changes later rolls states what it adds. A utility
- * spell has no line, because its rules live in the description.
+ * hands out with what it changes and when it ends. A chip that changes later
+ * rolls states what it adds. A utility spell has no line, because its rules
+ * live in the description.
  * @param {Spell} spell
  * @param {number | null} saveDC the caster's save DC, or null when unknown
  * @returns {string | null}
@@ -67,7 +69,11 @@ export function effectSummary(spell, saveDC) {
   }
   if (effect.kind === 'buff') {
     const chip = buffCondition(spell);
-    return effect.rider ? `${chip} — ${riderSummary(effect.rider)}` : chip;
+    const changes = [effect.rider ? riderSummary(effect.rider) : '', modsSummary(effect.mods)]
+      .filter(Boolean)
+      .join(', ');
+    const until = effect.until ? ` until ${UNTIL_LABELS[effect.until]}` : '';
+    return changes ? `${chip} — ${changes}${until}` : `${chip}${until}`;
   }
   return null;
 }

@@ -1,5 +1,6 @@
 import { coerceCR } from '../data/challenge.js';
-import { normalizeStatBlock } from './Modifiers.js';
+import { abilityModifier, normalizeStatBlock } from './Modifiers.js';
+import { heldMods, withChipAC } from './ChipMods.js';
 import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './Character.js';
@@ -216,16 +217,25 @@ export function withDefaults(creature) {
 /**
  * The stat block a creature fights with: base values, with the worn armor in
  * place of the unarmored 10 + DEX (`enemyArmorDelta`), plus every active
- * timed modifier. Combat math and the Play view use this value.
+ * timed modifier. The chips on the creature change its AC last (see
+ * `ChipMods.js`). A Mage Armor base counts only for a creature that wears no
+ * armor, and it replaces a lower AC rather than adding to it, because the
+ * stat block AC of an unarmored creature already includes its natural armor.
+ * Combat math and the Play view use this value.
  * @param {Creature} creature
  * @returns {Record<string, number>}
  */
 export function effectiveStatBlock(creature) {
   const block = normalizeStatBlock(creature.stats ?? {});
   block.AC += enemyArmorDelta(creature.armor, block.DEX);
+  const mods = heldMods(creature.conditions);
+  if (mods.acBase > 0 && !creature.armor) {
+    block.AC = Math.max(block.AC, mods.acBase + abilityModifier(block.DEX));
+  }
   for (const mod of creature.statMods ?? []) {
     if (mod.stat in block) block[mod.stat] += mod.delta;
   }
+  block.AC = withChipAC(block.AC, mods);
   return block;
 }
 

@@ -12,16 +12,17 @@ const SAMPLE = [{ count: 1, sides: 6, damageType: 'acid' }];
 /**
  * The spell form's controls for what a spell does after the turn it is cast:
  * how a melee spell attack and a splash on a miss read, damage that stays on
- * a target for later turns, the turn boundary that ends a save's condition,
- * and a repeat that the caster uses without a new slot. `ui/SpellForm.js`
- * places the rows, calls `sync` when the effect kind changes, and reads the
- * values back with `read`. `entities/SpellDraft.js` decides what they mean.
+ * a target for later turns, the turn boundary that ends a save's condition
+ * or a buff's chip, and a repeat that the caster uses without a new slot.
+ * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
+ * changes, and reads the values back with `read`. `entities/SpellDraft.js` decides what they mean.
  * @param {Spell | null} spell the spell being edited, or null for a new one
  */
 export function buildLaterTurnControls(spell) {
   const effect = spell?.effect;
   const attack = effect?.kind === 'attack' ? effect : null;
   const save = effect?.kind === 'save' ? effect : null;
+  const buff = effect?.kind === 'buff' ? effect : null;
   const ongoing = attack?.ongoing ?? save?.ongoing ?? null;
 
   const melee = checkbox('Melee spell attack', attack?.melee === true);
@@ -33,7 +34,7 @@ export function buildLaterTurnControls(spell) {
       { value: '', label: 'Spell duration' },
       ...CHIP_UNTILS.map((value) => ({ value, label: capitalize(UNTIL_LABELS[value]) })),
     ],
-    save?.until ?? '',
+    save?.until ?? buff?.until ?? '',
   );
   const untilField = labeled('Condition ends at', until);
 
@@ -85,7 +86,9 @@ export function buildLaterTurnControls(spell) {
   function sync(kind, hasCondition) {
     const damaging = kind === 'attack' || kind === 'save';
     rows.attack.hidden = kind !== 'attack';
-    rows.until.hidden = kind !== 'save' || !hasCondition;
+    // A buff always leaves a chip, and a save leaves one once it names a
+    // condition.
+    rows.until.hidden = kind !== 'buff' && (kind !== 'save' || !hasCondition);
     rows.lingers.hidden = !damaging;
     rows.ongoing.hidden = !damaging || !lingers.input.checked;
     rows.ongoingMore.hidden = rows.ongoing.hidden;

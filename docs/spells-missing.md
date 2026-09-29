@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 64. Each shipped spell has rules that the
+319 spells, and the app ships 67. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -22,8 +22,8 @@ The paladin also has one spell of its own, Destructive Wave.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Mage Armor |
-| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Mage Armor |
+| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch |
 | 4th | Ice Storm, Blight, Phantasmal Killer |
 | 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave |
@@ -67,6 +67,8 @@ full. The resolver applies these rules:
 - A spell that the caster uses again on each later turn while it lasts,
   with no new slot.
 - A condition chip that ends when its holder takes damage.
+- A condition chip that changes the AC of its holder: a flat bonus, a base
+  AC for a holder without body armor, or a floor under the AC.
 - Damage or effect scaling by spell slot level, and by caster level for
   cantrips. A spell can also scale once per two slot levels.
 
@@ -137,10 +139,32 @@ or fewer dies with no roll, and one with more is unaffected. A creature
 dies at 0 HP. A character dies through the death-save tracker, the same way
 as a death from exhaustion, and keeps the HP that the GM tracks.
 
+### Armor class
+
+Shield of Faith gives its target +2 AC while the caster concentrates. Shield
+gives its caster +5 AC until the start of the caster's next turn. Its range
+is Self, so the cast dialog offers only the caster as the target. The GM
+casts it from the reaction control of the combat screen, and the AC of a
+later attack reads the chip. The app does not stop the damage of Magic
+Missile, so the GM undoes that damage by hand.
+
+Mage Armor gives a character with no body armor a base AC of 13 plus its DEX
+modifier, and a shield still adds to it. A higher base on the character
+sheet, or a higher unarmored defense, wins. On a creature with no armor,
+the spell raises a lower AC to 13 plus the DEX modifier. The chip stays when
+the holder puts armor on, but it then changes nothing, and the GM removes it.
+
+Barkskin sets a floor of 16 under the AC of its target. The floor applies
+after every bonus, so Shield of Faith on a target with AC 12 gives AC 16,
+not 18.
+
+The character sheet, the combatant cards, and every attack roll read the
+same AC, so each of them shows the change while the chip lasts.
+
 ### Spells described in prose
 
-Four built-in spells have the `utility` effect kind: Light, Mage Armor,
-Lesser Restoration, and Counterspell. Their rules exist only as text in the
+Three built-in spells have the `utility` effect kind: Light, Lesser
+Restoration, and Counterspell. Their rules exist only as text in the
 description of each spell, and the GM applies them. They are in the list
 because a GM notices when a spell this common is missing.
 
@@ -200,14 +224,14 @@ rule keeps a zone on the map after the cast.
 
 ### Buffs outside d20 rolls
 
-Examples: the +5 AC reaction of Shield, the extra action of Haste,
-Enlarge/Reduce, Barkskin, Aid, and the temporary hit points of Heroism.
+Examples: the extra action of Haste, Enlarge/Reduce, Aid, and the temporary
+hit points of Heroism.
 
 A rider on a d20 roll works. A chip can add or subtract dice and a flat
 amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
-Guidance, and Resistance do. A chip that changes AC, the action budget,
-the hit-point maximum, the temporary hit points, or the size of a creature
-has no rule to change.
+Guidance, and Resistance do. A chip can also change AC, as Shield and
+Barkskin do. A chip that changes the action budget, the hit-point maximum,
+the temporary hit points, or the size of a creature has no rule to change.
 
 ### Summon choice and control
 

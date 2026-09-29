@@ -151,3 +151,23 @@ test('a spell that reads HP names its rule in place of the save', () => {
     'CON save DC 17 — no damage, Stunned',
   );
 });
+
+test('the effect summary and the chip notes name an AC change', () => {
+  assert.equal(
+    effectSummary(spellById('shield'), null),
+    "Shield — +5 AC until the start of the caster's next turn",
+  );
+  assert.equal(effectSummary(spellById('barkskin'), null), 'Barkskin — AC at least 16');
+  const bless = spellById('bless');
+  assert.equal(
+    effectSummary({ ...bless, effect: { ...bless.effect, until: 'target-end' } }, null),
+    "Bless — +1d4 to attack rolls and saving throws until the end of the target's next turn",
+  );
+  const plain = { ...spellById('invisibility') };
+  assert.equal(
+    effectSummary({ ...plain, effect: { ...plain.effect, until: 'caster-end' } }, null),
+    "Invisible until the end of the caster's next turn",
+  );
+  const chip = createCondition('Mage Armor', 480, { mods: { acBase: 13 } });
+  assert.deepEqual(chipNotes(chip), ['Base AC 13 + DEX without armor']);
+});

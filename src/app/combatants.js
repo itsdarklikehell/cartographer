@@ -401,7 +401,7 @@ export function logDefeatTransition(app, prev, next) {
  * @param {number | null} rounds
  * @param {import('../types/entities.js').ConditionSource} [source]
  * @param {import('../types/entities.js').RollRider | null} [rider]
- * @param {Pick<import('../entities/Conditions.js').ConditionExtras, 'expires' | 'ongoing'>} [more]
+ * @param {Pick<import('../entities/Conditions.js').ConditionExtras, 'expires' | 'ongoing' | 'mods'>} [more]
  * @returns {boolean}
  */
 export function applyConditionToTarget(

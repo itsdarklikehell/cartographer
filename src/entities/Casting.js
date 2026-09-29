@@ -383,7 +383,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   heal with `addsModifier` adds `spellModifier`, the caster's spellcasting
  *   ability modifier, to the roll.
  * - `buff`: no rolls, and one entry per target naming the `condition` chip it
- *   takes and the `rider` that chip carries.
+ *   takes, the `rider` that chip carries, and its `mods`.
  * - `summons`: no rolls and no targets, and one entry naming the `creature`
  *   template to spawn and how many (`count`).
  * - `utility`: no rolls, and an empty `outcomes`.
@@ -643,11 +643,16 @@ function resolveEffect(spell, ctx) {
     return targets.map((target) => ({ target, healing }));
   }
 
-  // A buff rolls nothing. It names the chip each target takes and what that
-  // chip adds to the target's later rolls.
+  // A buff rolls nothing. It names the chip each target takes, what that chip
+  // adds to the target's later rolls, and what it changes besides a roll.
   if (effect.kind === 'buff') {
     const condition = buffCondition(spell);
-    return targets.map((target) => ({ target, condition, rider: effect.rider ?? null }));
+    return targets.map((target) => ({
+      target,
+      condition,
+      rider: effect.rider ?? null,
+      mods: effect.mods ?? null,
+    }));
   }
 
   // A summons rolls nothing and names no target. It reports which template to

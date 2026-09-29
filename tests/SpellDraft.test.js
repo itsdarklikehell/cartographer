@@ -393,3 +393,22 @@ test('a save keeps its HP pool, its kill, and an end on damage that a condition 
   assert.equal('hpPool' in bare, false);
   assert.equal('endsOnDamage' in bare, false);
 });
+
+test('a buff keeps what its chip changes and the boundary that ends it', () => {
+  assert.deepEqual(
+    assembleEffect(
+      effectDraft({
+        kind: 'buff',
+        mods: { ac: '5', acBase: '0', acMin: '' },
+        until: 'caster-start',
+      }),
+    ),
+    { kind: 'buff', mods: { ac: 5 }, until: 'caster-start' },
+  );
+  assert.deepEqual(
+    assembleEffect(
+      effectDraft({ kind: 'buff', mods: { ac: '0', acBase: '', acMin: '' }, until: '' }),
+    ),
+    { kind: 'buff' },
+  );
+});

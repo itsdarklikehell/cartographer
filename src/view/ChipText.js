@@ -1,5 +1,7 @@
 import { chipRider, riderSummary } from '../entities/Riders.js';
 import { formatDamage } from '../entities/Equipment.js';
+import { modsSummary } from '../entities/ChipMods.js';
+import { capitalize } from '../util/text.js';
 
 /**
  * What a condition chip says: the label on the chip itself, and the lines of
@@ -24,9 +26,10 @@ export function chipLabel(condition) {
 }
 
 /**
- * The tooltip lines of a chip: what it adds to its holder's rolls, the damage
- * it deals on later turns, and the turn boundary that ends it. A chip with
- * none of these has no tooltip, and the list comes back empty.
+ * The tooltip lines of a chip: what it adds to its holder's rolls, what it
+ * changes besides a roll (such as AC), the damage it deals on later turns,
+ * and the turn boundary that ends it. A chip with none of these has no
+ * tooltip, and the list comes back empty.
  * @param {Condition} condition
  * @param {(id: string) => string | undefined} [nameOf] the name of a
  *   combatant, for the boundary line. Without it, the line names no one.
@@ -37,6 +40,8 @@ export function chipNotes(condition, nameOf = () => undefined) {
   const lines = [];
   const rider = chipRider(condition);
   if (rider) lines.push(riderSummary(rider));
+  const mods = modsSummary(condition.mods);
+  if (mods) lines.push(capitalize(mods));
   const damage = condition.ongoing ? formatDamage(condition.ongoing.damage) : '';
   if (damage) {
     lines.push(
