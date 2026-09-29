@@ -5,6 +5,10 @@
 // because `tsc --noEmit` (checkJs + strict) already resolves identifiers with
 // full DOM lib knowledge; ESLint here covers the style/logic rules tsc does not.
 export default [
+  // Agent worktrees live under .claude/worktrees/ inside the checkout. Their
+  // work in progress is not part of this tree, and linting it fails the
+  // pre-commit hook of the main checkout.
+  { ignores: ['.claude/**'] },
   {
     files: ['src/**/*.js', 'tests/**/*.js', 'bench/**/*.js', 'docs/gallery/**/*.js'],
     languageOptions: {
