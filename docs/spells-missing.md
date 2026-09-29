@@ -3,7 +3,7 @@
 *Explanation. To add a spell of your own, follow the steps in the
 [GM guide](gm-guide.md#add-a-missing-spell).*
 
-The built-in spell list in `src/data/spells.js` is a curated part of the
+The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
 319 spells, and the app ships 54. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
@@ -205,4 +205,4 @@ table. The [GM guide](gm-guide.md#add-a-missing-spell) gives the steps.
 
 A new mechanic, such as movement, a lasting zone, or an effect that rolls
 again on a later turn, lets the list grow. Add the spells that need the
-mechanic to `src/data/spells.js` in the same change.
+mechanic to the level file under `src/data/spells/` in the same change.

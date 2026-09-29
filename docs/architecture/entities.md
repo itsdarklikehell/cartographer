@@ -1006,7 +1006,7 @@ it cannot count ten minutes, and a ritual does not advance it. The session log
 states the extra time instead (`casts Detect Magic as a ritual (10 minutes
 longer)`), and the GM decides what it costs.
 
-No built-in spell in `src/data/spells.js` is a ritual, so the flag applies only
+No built-in spell in `src/data/spells/` is a ritual, so the flag applies only
 to spells that a GM writes or imports. See
 [the curated-spells note](../spells-missing.md) for what the built-in list
 covers.
