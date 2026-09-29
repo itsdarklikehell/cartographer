@@ -773,6 +773,9 @@ nodes and the cached nodes are the same objects, and the first save of the
 session diffs by identity like every later one. A first save that parses
 the stored string a second time and diffs two unrelated object trees costs
 more than a hundred milliseconds at two hundred nodes.
+A tab that adopts another tab's save calls `adoptPersisted` with its live
+state for the same reason, because the full load path leaves the cache on
+parsed objects that the reconciled live state does not share.
 
 ## The custom library store
 

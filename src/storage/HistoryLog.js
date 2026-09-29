@@ -297,6 +297,24 @@ export function loadPersistedCampaign() {
 }
 
 /**
+ * Make `state` the base of the next diff, stamped with the save string
+ * stored now. A tab calls this after it adopts another tab's save, when its
+ * live state is the stored campaign. The full load path leaves the cache on
+ * freshly parsed objects, while the live state keeps the objects that
+ * `Reconcile.reconcile` put back, and a delta adoption leaves the cache on
+ * the save before. Either way the next save of the tab would diff two
+ * states that share no object, which at 200 extra regions costs more than a
+ * hundred milliseconds.
+ * @param {CampaignState} state
+ * @returns {string | null} the stored save string
+ */
+export function adoptPersisted(state) {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  cached = raw === null ? null : { raw, state };
+  return raw;
+}
+
+/**
  * `loadPersistedCampaign`, with an unreadable save read as nothing stored.
  * A history step must not throw over a save it cannot read.
  * @returns {CampaignState | null}

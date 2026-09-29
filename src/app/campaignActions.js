@@ -40,6 +40,7 @@ import {
   historyPosition,
   planAdoption,
   applyHistoryOps,
+  adoptPersisted,
   replaceIsUndoable,
 } from '../storage/HistoryLog.js';
 import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
@@ -540,7 +541,7 @@ export function wireCampaignActions(app) {
    * inside `rehydrateCampaign` returns each untouched object at the first
    * comparison. This runs only when this tab's held state is exactly the
    * delta's base. Everything else answers false, and the caller re-reads
-   * the whole save, which is the path that existed before this one.
+   * the whole save.
    * @returns {boolean}
    */
   function adoptByDelta() {
@@ -587,7 +588,7 @@ export function wireCampaignActions(app) {
     try {
       if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
       heldPosition = historyPosition();
-      heldSave = localStorage.getItem(STORAGE_KEY);
+      heldSave = adoptPersisted(buildCurrentState());
       patches.rebase();
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);

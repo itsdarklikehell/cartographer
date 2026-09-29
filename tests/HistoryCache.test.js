@@ -1,9 +1,11 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { loadPersistedCampaign, saveCampaign } from '../src/storage/HistoryLog.js';
+import { adoptPersisted, loadPersistedCampaign, saveCampaign } from '../src/storage/HistoryLog.js';
 import {
   buildState,
+  deserialize,
   loadFromLocalStorage,
+  serialize,
   toTileGrid,
   trySaveToLocalStorage,
 } from '../src/storage/SaveManager.js';
@@ -106,4 +108,27 @@ test('loadInitialCampaign holds the node objects the history cache holds', () =>
   assert.equal(campaign.grid.getNode('world'), persisted.nodes[0]);
   assert.equal(campaign.characters, persisted.characters);
   assert.deepEqual(toTileGrid(persisted).getNode('world'), campaign.grid.getNode('world'));
+});
+
+test('adoptPersisted makes the live state the base of the next diff', () => {
+  const state = freshState();
+  saveCampaign(state);
+  // Another tab writes an equal campaign, and this tab adopts it with the
+  // objects it already holds.
+  const raw = serialize(deserialize(serialize(state)));
+  localStorage.setItem('campaign-builder:save', raw);
+  assert.equal(adoptPersisted(state), raw);
+  assert.equal(loadPersistedCampaign(), state, 'the cache keeps the live objects');
+  const edited = { ...state, quests: [{ ...state.quests[0], done: true }] };
+  assert.equal(
+    parsesOf(raw, () => saveCampaign(edited)),
+    0,
+    'the save parses nothing',
+  );
+});
+
+test('adoptPersisted with nothing stored leaves no cache', () => {
+  const state = freshState();
+  assert.equal(adoptPersisted(state), null);
+  assert.equal(loadPersistedCampaign(), null);
 });

@@ -118,11 +118,17 @@ edit as a delta beside the campaign (see the history log in
 [Persistence](persistence.md)), and this module remembers the history
 position of its live state. When an external save is exactly one delta ahead
 of that position, `HistoryLog.planAdoption` returns the ops, and the tab
-applies them to its own state with `applyOps` without reading the whole save
-again. `applyOps` copies only along the op paths, so every node and entity
-outside the edit keeps its identity and the adoption costs the size of the
-edit. Every other case (a position gap, an undo, a cleared log, or a failed
-apply) takes the full load path through `Campaigns.loadInitialCampaign`.
+applies them to its own state with `HistoryLog.applyHistoryOps` without
+reading the whole save again. `applyOps` copies only along the op paths, so
+every node and entity outside the edit keeps its identity and the adoption
+costs the size of the edit. Every other case (a position gap, an undo, a
+cleared log, or a failed apply) takes the full load path through
+`Campaigns.loadInitialCampaign`. After either path, the tab passes its live
+state to `HistoryLog.adoptPersisted`, so its own next save diffs against the
+objects it holds. After a full load, the history cache otherwise keeps the
+freshly parsed objects, which share nothing with the reconciled live state.
+Over the example campaign plus 200 generated regions, that next save takes
+151 ms with the parsed cache and 3.6 ms with the live one.
 
 A player tab does not write the save while a GM tab is open. If both tabs
 write the whole campaign and both change it within the same few seconds,

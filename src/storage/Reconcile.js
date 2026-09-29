@@ -5,8 +5,8 @@
  * over `app.state`. Every entity in the new state is a fresh object, even
  * where the field values are identical, so a panel that compares its rows by
  * identity sees every row as new and rebuilds all of them. Most adoptions
- * carry one edit, or none at all: autosave writes every ten idle seconds
- * whether or not anything moved.
+ * carry one small edit, because autosave writes after ten idle seconds of
+ * editing and a fight writes after each action.
  *
  * `reconcile(live, incoming)` returns the incoming value with the live
  * objects put back wherever the two are structurally equal. An unchanged
