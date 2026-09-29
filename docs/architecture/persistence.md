@@ -293,6 +293,11 @@ The table follows these rules:
   Nodes are immutable, and the save path packs a node once per identity, so
   a later save skips the tiles of an unchanged node instead of walking them
   again.
+- A module-level map keeps the hash of each payload that the last hoist
+  met, so a save hashes only a payload that is new since the previous save.
+  Each hoist starts a new map, so a payload that leaves the campaign leaves
+  the map too. With eight photos of 250,000 characters, a one-hit save costs
+  about 1.6 ms, where hashing every payload again costs about 5.5 ms.
 - Keys resolve a collision by comparing the stored payload and probing a
   suffix. A hash collision costs a longer key, and never the wrong image.
 - A reference that the table cannot resolve stays as written, instead of
@@ -360,6 +365,17 @@ the table is written only when the kept table differs from the stored one.
 Without these checks, one picture in the campaign makes every autosave parse
 the table, read every other stored string, and write the table back
 unchanged.
+
+The table string itself is read only when it can differ from the one this
+tab wrote. `storeAssets` and `persistAssets` compare the length that the
+`Footprint.js` ledger records for the key with the length this tab wrote,
+and `Footprint.externalWriteSerial` tells them whether a `storage` event
+from another tab has touched the key since. When both match, they use the
+remembered string, because a `getItem` of a table with eight photos copies
+about 2M characters. A write from another tab whose event has not arrived
+yet can slip past this check. `storeAssets` therefore merges new payloads
+into a freshly read table, and a scan that `persistAssets` runs reads the
+table fresh too.
 
 ## Packing layer 4: the tile codec
 

@@ -32,6 +32,16 @@ let ledger = null;
 /** @type {unknown} */
 let source = null;
 
+/** A count of every write `recordExternalWrite` has seen from another tab. */
+let externalWrites = 0;
+
+/** The count at the last external write to each key. */
+/** @type {Map<string, number>} */
+const lastExternal = new Map();
+
+/** The count at the last external `clear()`, which touches every key. */
+let clearedAt = 0;
+
 /**
  * The byte cost of a set of stored key and value pairs, keys included.
  * localStorage charges for both, in UTF-16 code units. The function is
@@ -107,14 +117,29 @@ export function removeStored(key) {
  * @param {{ key: string | null, newValue: string | null }} event
  */
 export function recordExternalWrite(event) {
+  externalWrites += 1;
   if (event.key === null) {
     ledger = null;
+    clearedAt = externalWrites;
     return;
   }
+  lastExternal.set(event.key, externalWrites);
   if (!tracking()) return;
   const map = /** @type {Map<string, number>} */ (ledger);
   if (event.newValue === null) map.delete(event.key);
   else map.set(event.key, event.newValue.length);
+}
+
+/**
+ * The serial number of the last write another tab made to one key, or to the
+ * whole origin with `clear()`. A module that caches a stored value compares
+ * this number with the one it read at its own write, so a change from
+ * another tab forces a fresh read even when the length stayed the same.
+ * @param {string} key
+ * @returns {number}
+ */
+export function externalWriteSerial(key) {
+  return Math.max(lastExternal.get(key) ?? 0, clearedAt);
 }
 
 /**

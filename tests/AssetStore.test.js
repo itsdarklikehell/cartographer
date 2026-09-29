@@ -21,6 +21,7 @@ import {
 import { saveCampaign, undoCampaign } from '../src/storage/HistoryLog.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 import { installLocalStorage } from './helpers/env.js';
+import { recordExternalWrite, removeStored, writeStored } from '../src/storage/Footprint.js';
 
 const PAYLOAD = 'data:image/png;base64,AAAA';
 
@@ -181,6 +182,18 @@ test('persistAssets leaves an untouched origin alone when there is nothing to st
  * the reads of every other stored string. The footprint ledger is not in
  * play here, so a read means the retention scan ran.
  */
+/**
+ * A write from another tab: the value lands in storage, and this tab hears
+ * of it through the storage event. A null key is a `clear()`.
+ * @param {string | null} key
+ * @param {string | null} value
+ */
+function otherTabWrites(key, value) {
+  if (key === null) localStorage.clear();
+  else localStorage.setItem(key, /** @type {string} */ (value));
+  recordExternalWrite({ key, newValue: value });
+}
+
 function sidecarTraffic(state) {
   const { state: detached, assets } = detachAssets(packState(state));
   const json = JSON.stringify(detached);
@@ -209,7 +222,7 @@ function sidecarTraffic(state) {
 test('a repeat save with the same images neither scans nor rewrites the sidecar', () => {
   const state = stateWithHandoutImage();
   trySaveToLocalStorage(state);
-  localStorage.setItem('campaign-builder:library', '{"spells":[]}');
+  writeStored('campaign-builder:library', '{"spells":[]}');
   const stored = localStorage.getItem(ASSETS_KEY);
   const traffic = sidecarTraffic(state);
   assert.equal(traffic.writes, 0, 'the table is not written again');
@@ -219,14 +232,14 @@ test('a repeat save with the same images neither scans nor rewrites the sidecar'
 
 test('a new history record does not trigger a scan, a dropped one does', () => {
   const state = stateWithHandoutImage();
-  localStorage.setItem('campaign-builder:history:d6', '[]');
+  writeStored('campaign-builder:history:d6', '[]');
   trySaveToLocalStorage(state);
   // A record that appears after the scan could only add a reference, and a
   // reference already kept needs no rescan.
-  localStorage.setItem('campaign-builder:history:d7', '[]');
+  writeStored('campaign-builder:history:d7', '[]');
   assert.equal(sidecarTraffic(state).reads, 0);
   // A record the scan saw is gone, so a reference it held may be gone too.
-  localStorage.removeItem('campaign-builder:history:d6');
+  removeStored('campaign-builder:history:d6');
   const traffic = sidecarTraffic(state);
   assert.ok(traffic.reads > 0, 'a missing key means a reference may be gone');
   assert.equal(traffic.writes, 0, 'the kept table equals the stored one, so no write');
@@ -235,10 +248,40 @@ test('a new history record does not trigger a scan, a dropped one does', () => {
 test('a table another tab replaced is scanned and rewritten', () => {
   const state = stateWithHandoutImage();
   trySaveToLocalStorage(state);
-  localStorage.setItem(ASSETS_KEY, JSON.stringify({ stale: 'data:image/png;base64,ZZZZ' }));
+  otherTabWrites(ASSETS_KEY, JSON.stringify({ stale: 'data:image/png;base64,ZZZZ' }));
   const traffic = sidecarTraffic(state);
   assert.equal(traffic.writes, 1);
   assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
+});
+
+test('a replacement of the same length from another tab is still read', () => {
+  const state = stateWithHandoutImage();
+  trySaveToLocalStorage(state);
+  const stored = /** @type {string} */ (localStorage.getItem(ASSETS_KEY));
+  const same = stored.replace('AAAA', 'AAAB');
+  assert.equal(same.length, stored.length);
+  otherTabWrites(ASSETS_KEY, same);
+  assert.equal(sidecarTraffic(state).writes, 1, 'the changed payload is written back');
+  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
+  otherTabWrites(null, null);
+  assert.equal(sidecarTraffic(state).writes, 1, 'a clear from another tab forces a read');
+});
+
+test('a repeat save does not read the sidecar back', () => {
+  const state = stateWithHandoutImage();
+  trySaveToLocalStorage(state);
+  const getItem = localStorage.getItem;
+  let reads = 0;
+  localStorage.getItem = (key) => {
+    if (key === ASSETS_KEY) reads += 1;
+    return getItem(key);
+  };
+  try {
+    trySaveToLocalStorage(state);
+  } finally {
+    localStorage.getItem = getItem;
+  }
+  assert.equal(reads, 0);
 });
 
 test('a save whose key names a different payload rewrites the table', () => {

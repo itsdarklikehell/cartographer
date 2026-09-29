@@ -74,6 +74,36 @@ export function assetKey(payload) {
 }
 
 /**
+ * The `assetKey` of each payload the last hoist met. A save hoists every
+ * payload again, and hashing eight photos of 250,000 characters each costs
+ * about 4 ms per save. Each hoist starts a new map from the payloads it
+ * meets, so a payload that leaves the campaign leaves the cache at the next
+ * save.
+ * @type {Map<string, string>}
+ */
+let hashCache = new Map();
+
+/**
+ * `assetKey` through `hashCache`, and a function that makes the payloads
+ * this hoist met the new cache.
+ * @returns {{ hash: (payload: string) => string, commit: () => void }}
+ */
+function cachedAssetKey() {
+  /** @type {Map<string, string>} */
+  const met = new Map();
+  return {
+    hash(payload) {
+      const key = hashCache.get(payload) ?? assetKey(payload);
+      met.set(payload, key);
+      return key;
+    },
+    commit() {
+      hashCache = met;
+    },
+  };
+}
+
+/**
  * Collects payloads into one table and returns the ref to store in their
  * place. It reuses a key whose stored payload is identical (deduplication)
  * and probes a suffixed key when the payload differs (a collision).
@@ -200,21 +230,25 @@ function mapStateRefs(state, convert, unchanged) {
 
 /**
  * The save with every inline image payload replaced by a reference into a
- * new `assets` table. The function is pure. It never touches the state
- * passed in. A save with no payloads comes back with no `assets` field, so
+ * new `assets` table. The function never touches the state passed in, and
+ * its result depends on that state alone, because the hash cache changes
+ * only how often a payload is hashed. A save with no payloads comes back with no `assets` field, so
  * an image-free campaign serializes exactly as it did before this table
  * existed.
  * @param {RawSave} state
- * @param {(payload: string) => string} [hash] injected for collision tests
+ * @param {(payload: string) => string} [hash] injected for collision tests; the
+ *   default is `assetKey` through the payload cache
  * @returns {RawSave}
  */
-export function hoistAssets(state, hash = assetKey) {
-  const hoister = createHoister(hash);
+export function hoistAssets(state, hash) {
+  const cache = cachedAssetKey();
+  const hoister = createHoister(hash ?? cache.hash);
   const next = mapStateRefs(
     state,
     (ref) => (isPayload(ref) ? hoister.refFor(ref) : ref),
     payloadFree,
   );
+  if (!hash) cache.commit();
   if (!Object.keys(hoister.assets).length) {
     // Never carry a stale table forward. The table is derived from the refs
     // present, so the code rebuilds it and drops any entry with no reference.

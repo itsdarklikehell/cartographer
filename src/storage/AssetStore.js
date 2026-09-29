@@ -17,7 +17,7 @@
  */
 
 import { referencedAssetKeys } from './Assets.js';
-import { removeStored, writeStored } from './Footprint.js';
+import { externalWriteSerial, removeStored, storedLength, writeStored } from './Footprint.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
@@ -119,10 +119,31 @@ function otherStoredStrings(skip) {
  * anything. `raw` is the string written, so a table another tab replaced
  * fails the compare and forces a fresh scan. `refs` is the sorted set of
  * keys the save referenced, and `keys` the names of every stored key at
- * the time of the scan.
- * @type {{ raw: string, table: Record<string, string>, refs: string, keys: Set<string> } | null}
+ * the time of the scan. `key` is the storage key written, and `external`
+ * the `Footprint.externalWriteSerial` of that key at the write.
+ * @typedef {{ key: string, raw: string, table: Record<string, string>, refs: string, keys: Set<string>, external: number }} LastWrite
+ * @type {LastWrite | null}
  */
 let lastWrite = null;
+
+/**
+ * The table string stored under `key`. The function skips the read when
+ * the footprint ledger shows the length this tab wrote and no other tab has
+ * written the key since, and returns the string this tab wrote. A table of
+ * eight photos is about 2M characters, and a `getItem` copies all of it on
+ * every save.
+ * @param {string} key
+ * @returns {string | null}
+ */
+function storedTable(key) {
+  if (
+    lastWrite?.key === key &&
+    lastWrite.external === externalWriteSerial(key) &&
+    storedLength(key) === lastWrite.raw.length
+  )
+    return lastWrite.raw;
+  return localStorage.getItem(key);
+}
 
 /**
  * @param {Iterable<string>} values
@@ -202,7 +223,7 @@ function sameTable(a, b) {
  * @returns {boolean}
  */
 export function persistAssets(assets, json, superseded = [], key = ASSETS_KEY) {
-  const stored = localStorage.getItem(key);
+  const stored = storedTable(key);
   if (!stored && !Object.keys(assets).length) return true;
   const refs = sortedJoin(referencedAssetKeys(json));
   const keys = storedKeyNames();
@@ -222,7 +243,7 @@ export function persistAssets(assets, json, superseded = [], key = ASSETS_KEY) {
   try {
     const raw = JSON.stringify(kept);
     writeStored(key, raw);
-    lastWrite = { raw, table: kept, refs, keys };
+    lastWrite = { key, raw, table: kept, refs, keys, external: externalWriteSerial(key) };
     return true;
   } catch {
     lastWrite = null;
@@ -245,9 +266,14 @@ export function persistAssets(assets, json, superseded = [], key = ASSETS_KEY) {
 export function storeAssets(assets, key = ASSETS_KEY) {
   const entries = Object.entries(assets);
   if (!entries.length) return true;
-  const stored = localStorage.getItem(key);
-  const table = stored && lastWrite?.raw === stored ? lastWrite.table : loadAssetTable(key);
-  if (entries.every(([name, payload]) => table[name] === payload)) return true;
+  /** @param {Record<string, string>} table */
+  const holdsAll = (table) => entries.every(([name, payload]) => table[name] === payload);
+  const stored = storedTable(key);
+  if (stored && lastWrite?.raw === stored && holdsAll(lastWrite.table)) return true;
+  // The merge reads the stored table fresh. A write another tab made that
+  // has not reached this tab as a storage event yet is then kept.
+  const table = loadAssetTable(key);
+  if (holdsAll(table)) return true;
   try {
     writeStored(key, JSON.stringify({ ...table, ...assets }));
   } catch {
