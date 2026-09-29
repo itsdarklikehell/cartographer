@@ -9,6 +9,7 @@ import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
 import { detachAssets, loadAssetTable, persistAssets, storeAssets } from './AssetStore.js';
 import { createEntityPacker } from './EntityPack.js';
+import { restoreGear, tabulateGear } from './GearTable.js';
 import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
@@ -208,9 +209,10 @@ const packNodeTiles = memoizeByIdentity((node) => ({
 const encodePackedNode = memoizeByIdentity(encodeNodeTiles);
 
 /**
- * The campaign in its on-disk shape: the state, with every node's tiles
- * packed, every entity's default-valued fields omitted, every inline image
- * payload hoisted into an `assets` table, and every node whose tiles fill a
+ * The campaign in its on-disk form: the state, with every node's tiles
+ * packed, every entity's default-valued fields omitted, every repeated gear
+ * piece moved into a `gear` table, every inline image payload hoisted into an
+ * `assets` table, and every node whose tiles fill a
  * grid encoded by position. The function is pure. It never touches the
  * state passed in.
  *
@@ -234,7 +236,7 @@ export function packState(state) {
     const list = packed[key];
     if (Array.isArray(list)) packed[key] = pack(list);
   }
-  const hoisted = hoistAssets(packed);
+  const hoisted = hoistAssets(tabulateGear(packed));
   const nodes = hoisted.nodes;
   if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodePackedNode);
   return hoisted;
@@ -318,7 +320,7 @@ function entities(key, value) {
  * @returns {CampaignState}
  */
 export function deserialize(json, assets) {
-  const raw = record(JSON.parse(json)) ?? {};
+  const raw = restoreGear(record(JSON.parse(json)) ?? {});
   // Migrations run on the raw object, before the coercion below. A step can
   // repair a shape this validator otherwise flattens or removes. The
   // validator stays last, so a step that returns something other than a

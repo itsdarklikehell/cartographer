@@ -19,6 +19,7 @@ take down the whole map.
       |
       |  packTile              drop tile fields equal to their defaults
       |  packEntity            drop entity fields withDefaults would restore
+      |  tabulateGear          repeated weapons, armor, items -> gear table
       |  hoistAssets           inline data: URLs -> asset:<key> + assets table
       |  encodeNodeTiles       tile codec: palette + run-length streams
       v
@@ -34,7 +35,8 @@ take down the whole map.
 ```
 
 Loading runs the same stages in reverse, with two extra steps at the front:
-schema migrations, then field coercion.
+schema migrations, then field coercion. The gear restore is the one stage
+that runs ahead of the migrations.
 
 The top-level type is `CampaignState` (`src/types/storage.ts`). It has a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
@@ -222,6 +224,42 @@ win scales with the size of the roster, not the size of the map. It is small
 next to the tile packing, and it grows with a campaign that has hundreds of
 mobs.
 
+### The gear table
+
+A creature spawned from a template copies the template's weapon and armor,
+and a character copies each library item it carries. Twenty goblins store
+the same Shortsword twenty times. `tabulateGear` in `storage/GearTable.js`
+runs on the packed entities and moves every piece used two or more times
+into a `gear` list at the top of the save. The record keeps `{"@": 0}` in
+its place. The sites are `weapon` and `armor` on `creatures` and
+`bestiary`, and each entry of a character's `inventory`. A piece used
+once stays inline, because a reference plus a table entry costs more than
+the piece.
+
+An inventory item has two fields that belong to the one copy a character
+carries, `quantity` and `notes`. The table entry keeps those keys with a
+null value, and the reference keeps their values: `{"@": 2, "quantity": 5,
+"notes": ""}`. `restoreGear` spreads a copy of the entry and then the
+reference, so the restored item has its keys in the order it was stored in.
+Without that order, a load followed by a save gives a different string for
+the same state.
+
+`restoreGear` is the first step of `deserialize`, ahead of the migrations,
+so no migration step and no coercion ever sees a reference. The table is
+built again from the state at each save, in the order the walk first meets
+each piece, and it exists only in the stored string. The undo log diffs
+parsed state, so a history op holds gear inline. A save with no `gear`
+field loads with no restore step, so a save written without the table still
+reads.
+
+The walk caches each piece's dedup key on the piece object. The entity pack
+cache hands the same packed piece to every save until the entity changes,
+so a save with 1,200 creatures spends about 1 ms on the table. On the
+example campaign the table saves about 3,600 characters. Each goblin
+spawned from the bestiary costs 281 characters where it costs 484 with its
+gear inline. The four example characters carry mostly different items, so
+their inventories shrink by only about 340 characters.
+
 ## Packing layer 3: the asset table
 
 GM-supplied images arrive as inline `data:` URLs, so the whole image is
@@ -408,7 +446,8 @@ this field existed).
 The migration chain runs on the raw parsed object *before* the coercion in
 `deserialize`. A step repairs data that coercion would flatten or drop. The chain also
 runs ahead of the asset restore, so a step sees hoisted refs and resolves a
-payload through the table itself. A
+payload through the table itself. The gear restore runs before the chain,
+so a step sees each weapon, armor, and item inline. A
 save stamped newer than the app runs no migration steps, and the app reads it
 on a best-effort basis.
 

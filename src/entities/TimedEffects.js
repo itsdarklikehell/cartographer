@@ -114,5 +114,6 @@ export function elapseCreature(creature, rounds) {
  */
 export function passRound(entity) {
   const { character, expired } = tick(elapseTimed(entity, 1));
-  return { entity: character, ended: expired ? (entity.concentration ?? null) : null };
+  const held = /** @type {ConcentrationState} */ (entity.concentration);
+  return { entity: character, ended: expired ? held : null };
 }
