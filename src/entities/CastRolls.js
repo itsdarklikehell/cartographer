@@ -256,3 +256,64 @@ export function resolveAttack(effect, ctx) {
     };
   });
 }
+
+/**
+ * An attack spell's outcome for one target after the target raised its AC
+ * by `raised` with a reaction (Shield). A roll that no longer meets the new
+ * AC misses, unless its d20 showed a natural 20. A projectile that hits
+ * automatically (Magic Missile) is blocked outright. A single attack that
+ * turns into a miss keeps its rolled dice as the splash of a spell with
+ * `halfOnMiss`. A target that no hit reaches any more loses the chip and the
+ * dice for later turns that the hit brought.
+ * @param {SpellAttackEffect} effect
+ * @param {any} outcome one entry of `resolveAttack`
+ * @param {number} raised how much the target's AC went up
+ * @returns {any}
+ */
+export function wardedOutcome(effect, outcome, raised) {
+  if (!outcome.hit || raised <= 0) return outcome;
+  const ac = outcome.ac + raised;
+  const turned = (/** @type {any} */ s) =>
+    s.hit && s.natural !== 20 && (s.attack === null || s.attack.total < ac);
+  const { ongoing: _ongoing, onHit: _onHit, ...plain } = outcome;
+  if (!outcome.shots) {
+    if (!turned(outcome)) return { ...outcome, ac };
+    return {
+      ...plain,
+      ac,
+      hit: false,
+      crit: false,
+      damage: effect.halfOnMiss ? outcome.damage : null,
+      ...(effect.halfOnMiss ? { halved: true } : {}),
+    };
+  }
+  /** @type {ProjectileShot[]} */
+  const shots = outcome.shots.map((/** @type {ProjectileShot} */ s) =>
+    turned(s) ? { ...s, hit: false, crit: false, damage: null } : s,
+  );
+  const landed = shots.filter((s) => s.damage !== null);
+  if (landed.length === 0) return { ...plain, ac, shots, hits: 0, hit: false, damage: null };
+  return {
+    ...outcome,
+    ac,
+    shots,
+    hits: landed.length,
+    damage: mergeDamage(
+      /** @type {ReturnType<typeof rollDamage>[]} */ (landed.map((s) => s.damage)),
+    ),
+  };
+}
+
+/**
+ * Whether raising the target's AC by `bonus` takes away at least one hit
+ * from this outcome, which is the only case where a reaction such as Shield
+ * is worth offering.
+ * @param {SpellAttackEffect} effect
+ * @param {any} outcome
+ * @param {number} bonus
+ * @returns {boolean}
+ */
+export function wardTurns(effect, outcome, bonus) {
+  const warded = wardedOutcome(effect, outcome, bonus);
+  return outcome.shots ? warded.hits < outcome.hits : outcome.hit && !warded.hit;
+}

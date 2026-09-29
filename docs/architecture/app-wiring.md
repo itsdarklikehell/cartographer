@@ -582,6 +582,7 @@ the same code. The fight itself renders in combat mode, which
 | `combatEnd.js` | The confirm before End combat drops a fight that hostile creatures still stand in, and the XP offer after a victory |
 | `summons.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
+| `shieldWard.js` | The pause before a hit lands on a defender that can raise its AC with a reaction (Shield), for a weapon swing and for an attack spell |
 
 #### The creature dialog
 

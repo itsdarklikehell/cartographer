@@ -294,9 +294,10 @@ weapons of a list, because a bow cannot hit a creature that walks past.
 `reactionSpells` keeps the spells whose casting time reads as a reaction,
 through `SpellTiming.castingCost`.
 
-The app does not detect a trigger. A 5e reaction starts from a fact that this
-app does not track, such as a creature leaving the reach of another. The GM
-sees the trigger at the table and presses the control.
+Apart from a hit on a Shield caster (see below), the app does not detect a
+trigger. A 5e reaction starts from a fact that this app does not track, such
+as a creature leaving the reach of another. The GM sees the trigger at the
+table and presses the control.
 
 The controls sit under the board card of the combatant that reacts, which is
 not the combatant taking the turn. A board card is one button, and HTML does
@@ -317,6 +318,30 @@ reaction interrupts. A card that the GM picked on the board replaces that
 default. The cast goes to the same `castSpellAction` that the action bar
 uses. That path already spends what the casting time names, and `castPlan`
 finds the caster's participant by id and not by whose turn it is.
+
+### The Shield pause
+
+An attack roll that hits is a trigger that the app does see, and
+`src/app/shieldWard.js` offers the defender its AC reaction at that point.
+`pendingWard` looks for a spell that casts as a reaction, whose buff chip
+adds AC (`mods.ac`), and whose `castPlan` the defender can pay for without
+an opt-out. The defender also needs an unspent reaction, the ability to
+act, no chip of that spell already, and a viewer who may act for it
+(`CombatView.mayActOn`). `offerWard` asks the question and casts the spell
+through `resolveCast` at the lowest slot. It returns how far the AC of the
+defender went up, which it reads with `acOf` before and after the cast.
+
+`rollWeaponAttack` asks after the d20 rolls and before the log line, so the
+line states the AC that the roll answered to in the end. `resolveCast` asks
+through `wardSpellAttack`, after `castSpell` rolls and before
+`applyOutcomes` writes anything. The pure `CastRolls.wardedOutcome` then
+checks each outcome again against the raised AC. It blocks a projectile
+that hits automatically, which is the Magic Missile rule of Shield.
+
+Both functions return a promise only while a question is open. A call with
+no ward in reach finishes before it returns, so a suite that calls one
+without `await` reads the result on the next line. Each takes an `ask`
+option in place of `confirmModal`, and a test passes its own answer there.
 
 ### Weapon options in the attack dialog
 

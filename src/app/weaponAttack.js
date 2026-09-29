@@ -26,6 +26,7 @@ import { findCombatant, combatantsAsTargets, applyToTarget, defendedDamage } fro
 import { skipsTurn } from '../combat/CombatView.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { spendRollRiders } from './riderSpend.js';
+import { offerWard, pendingWard } from './shieldWard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
@@ -246,9 +247,14 @@ export function readAttackTweaks(values) {
  * the attacker's d6 on a hit and marks the flag as used for the turn, so the
  * second swing cannot add it again.
  *
+ * A hit that a higher AC would turn aside pauses when the defender has a
+ * reaction ready that raises its AC, such as Shield (see `shieldWard.js`).
+ * A yes casts the spell, and the roll is checked again against the new AC.
+ *
  * The attack roll goes through the dice tray, which owns its own randomness.
  * `rng` is the source for the damage roll and for the rider dice, injected
- * the way the pure modules take theirs.
+ * the way the pure modules take theirs. `ask` puts the question of the
+ * defender's reaction, and a test passes its own answer.
  * @param {AppContext} app
  * @param {{
  *   attacker: any,
@@ -256,11 +262,14 @@ export function readAttackTweaks(values) {
  *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon,
  *   tweaks?: AttackTweaks,
  *   rng?: () => number,
+ *   ask?: import('./shieldWard.js').WardAsk,
  * }} attack
+ * @returns {void | Promise<void>} a promise when the defender's reaction
+ *   paused the attack, which settles once the attack has landed
  */
 export function rollWeaponAttack(
   app,
-  { attacker, defender, weapon, tweaks = {}, rng = Math.random },
+  { attacker, defender, weapon, tweaks = {}, rng = Math.random, ask },
 ) {
   // The swing pays first, so a turn with nothing left rolls no dice. A main-hand
   // swing spends the Attack action and banks whatever Extra Attack adds, and
@@ -349,103 +358,119 @@ export function rollWeaponAttack(
   );
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
-  const { crit, hit, outcome } = resolveAttack({
-    natural,
-    total: result.total,
-    ac,
-    // A helpless defender turns any melee hit into a critical one, without a
-    // natural 20.
-    autoCrit: autoCrits(defender.conditions, { melee }),
-  });
-  // An advantage or disadvantage attack notes the discarded d20, so the log
-  // shows both dice and matches the tray's own readout.
-  const modeNote = droppedNote(d20, result.selection.mode);
-  const tweakNote = tweak.note ? `, ${tweak.note}` : '';
-  const riderNote = rider.note ? `, ${rider.note}` : '';
-  // Naming the chips keeps a cancelled pair readable: the log says why the
-  // roll came out straight, not just that it did.
-  // A GM-picked mode replaces the chip reasons, because the chips no longer
-  // decide the roll and naming them would say the opposite of what happened.
-  const slantReasons = [
-    modeReasons(conditionQuery),
-    longSlant && !picked ? 'long range disadvantage' : '',
-    wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
-  const reasons = picked ? `${picked} set by the GM` : slantReasons;
-  const conditionNote = reasons ? `, ${reasons}` : '';
-  const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
-  const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
-  // An off-hand swing and an opportunity attack both roll to hit like any other
-  // swing, so the note sits on the attack line: it says where the missing damage
-  // bonus went, or which part of the turn the swing came out of.
-  const handNote = swing.note;
-  // The AC in the log is the one the roll answered to, and the cover note says
-  // where the difference came from.
-  const coverAC = cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
-  app.actions.logEvent(
-    'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${ac}${coverAC}${modeNote} — ${outcome}.`,
-  );
-  spendRollRiders(app, attacker.id, rider);
-  if (!hit) {
-    app.toasts.show(`${result.total} vs AC ${ac}: ${attacker.name} misses ${defender.name}.`);
-    return;
+  // A helpless defender turns any melee hit into a critical one, without a
+  // natural 20.
+  const autoCrit = autoCrits(defender.conditions, { melee });
+  // A roll that hits can still miss when the defender raises its AC with a
+  // reaction (Shield). The question comes before the log line, so the line
+  // states the AC that the roll answered to in the end. A natural 20 hits
+  // whatever the AC, so it asks nothing.
+  const first = resolveAttack({ natural, total: result.total, ac, autoCrit });
+  const ward = first.hit && natural !== 20 ? pendingWard(app, defender.id, attacker.id) : null;
+  /** @param {number} raised how much the defender's reaction raised its AC */
+  const land = (raised) => {
+    const warded = ac + raised;
+    const { crit, hit, outcome } = raised
+      ? resolveAttack({ natural, total: result.total, ac: warded, autoCrit })
+      : first;
+    // An advantage or disadvantage attack notes the discarded d20, so the log
+    // shows both dice and matches the tray's own readout.
+    const modeNote = droppedNote(d20, result.selection.mode);
+    const tweakNote = tweak.note ? `, ${tweak.note}` : '';
+    const riderNote = rider.note ? `, ${rider.note}` : '';
+    // Naming the chips keeps a cancelled pair readable: the log says why the
+    // roll came out straight, not just that it did.
+    // A GM-picked mode replaces the chip reasons, because the chips no longer
+    // decide the roll and naming them would say the opposite of what happened.
+    const slantReasons = [
+      modeReasons(conditionQuery),
+      longSlant && !picked ? 'long range disadvantage' : '',
+      wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+    const reasons = picked ? `${picked} set by the GM` : slantReasons;
+    const conditionNote = reasons ? `, ${reasons}` : '';
+    const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
+    const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
+    // An off-hand swing and an opportunity attack both roll to hit like any other
+    // swing, so the note sits on the attack line: it says where the missing damage
+    // bonus went, or which part of the turn the swing came out of.
+    const handNote = swing.note;
+    // The AC in the log is the one the roll answered to, and the cover note says
+    // where the difference came from.
+    const coverAC = cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
+    const wardAC = raised && ward ? ` (${ward.spell.name} +${raised})` : '';
+    app.actions.logEvent(
+      'combat',
+      `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote} — ${outcome}.`,
+    );
+    spendRollRiders(app, attacker.id, rider);
+    if (!hit) {
+      app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
+      return;
+    }
+    // A crit rolls every damage die twice, including the dialog's added dice.
+    // The ability modifier still adds only once, and proficiency never
+    // reaches damage. A two-handed swing of a versatile weapon reads the
+    // two-handed dice instead of the one-handed ones. The live attacker must
+    // still have the other hand free, because the dialog read the equipment
+    // before its await.
+    const twoHanded =
+      tweaks.twoHanded &&
+      hasFreeHandFor(attacker, weapon) &&
+      'versatileDamage' in weapon &&
+      weapon.versatileDamage?.length;
+    // Sneak Attack adds its dice only on a hit, so the flag is spent here rather
+    // than beside the swing. An attacker without the feature, or a weapon that
+    // is neither finesse nor ranged, has no dice to add, whatever the dialog
+    // said.
+    const sneakDice = tweaks.sneak && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
+    if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
+    const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
+      crit,
+      bonusDice: tweaks.damageDice ?? 0,
+      bonusDie: tweaks.damageDie ?? 'd4',
+      sneakDice,
+    });
+    // The second hand of two-weapon fighting adds no ability bonus to damage. A
+    // negative modifier still applies, so the swing of a weak character is still
+    // weak.
+    const damageMod = tweaks.offhand ? offhandDamageModifier(abilityMod) : abilityMod;
+    const damage = rollDamage(parts, damageModifier(damageMod, tweaks.damageFlat ?? 0), rng);
+    const inflicts =
+      'statusEffects' in weapon && weapon.statusEffects?.length
+        ? `, inflicting ${weapon.statusEffects.join(', ')}`
+        : '';
+    const blow = crit ? 'critically hits' : 'hits';
+    // The dice are already inside the detail, so the note only names how many of
+    // them came from Sneak Attack. A crit doubled that count too.
+    const sneakNote =
+      sneakDice > 0 ? `, with sneak attack ${crit ? sneakDice * 2 : sneakDice}d6` : '';
+    // The defender's resistances, vulnerabilities, and immunities change what
+    // it takes, and the log names them beside the roll.
+    const taken = defendedDamage(app, defender.id, damage.byType);
+    const defended = defenseNote(taken.notes, taken.total);
+    // The travelogue keeps the raw damage dice as detail. The toast below
+    // keeps only the short per-type totals as text.
+    app.actions.logEvent(
+      'combat',
+      `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}${defended}.`,
+    );
+    // Applies the damage on the spot through the shared write path. Every
+    // combatant tracks HP, and the function logs a defeat or a drop to 0
+    // only once.
+    applyToTarget(app, defender.id, taken.total, false, { crit });
+    const text = defended ? `${taken.total} damage` : damage.text || 'no damage';
+    app.toasts.show(
+      `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${text}${inflicts}.`,
+    );
+  };
+  if (ward && result.total < ac + ward.bonus) {
+    const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} (${result.total} vs AC ${ac}).`;
+    return offerWard(app, ward, hitLine, { ask }).then(land);
   }
-  // A crit rolls every damage die twice, including the dialog's added dice.
-  // The ability modifier still adds only once, and proficiency never
-  // reaches damage. A two-handed swing of a versatile weapon reads the
-  // two-handed dice instead of the one-handed ones. The live attacker must
-  // still have the other hand free, because the dialog read the equipment
-  // before its await.
-  const twoHanded =
-    tweaks.twoHanded &&
-    hasFreeHandFor(attacker, weapon) &&
-    'versatileDamage' in weapon &&
-    weapon.versatileDamage?.length;
-  // Sneak Attack adds its dice only on a hit, so the flag is spent here rather
-  // than beside the swing. An attacker without the feature, or a weapon that
-  // is neither finesse nor ranged, has no dice to add, whatever the dialog
-  // said.
-  const sneakDice = tweaks.sneak && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
-  if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
-  const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
-    crit,
-    bonusDice: tweaks.damageDice ?? 0,
-    bonusDie: tweaks.damageDie ?? 'd4',
-    sneakDice,
-  });
-  // The second hand of two-weapon fighting adds no ability bonus to damage. A
-  // negative modifier still applies, so the swing of a weak character is still
-  // weak.
-  const damageMod = tweaks.offhand ? offhandDamageModifier(abilityMod) : abilityMod;
-  const damage = rollDamage(parts, damageModifier(damageMod, tweaks.damageFlat ?? 0), rng);
-  const inflicts =
-    'statusEffects' in weapon && weapon.statusEffects?.length
-      ? `, inflicting ${weapon.statusEffects.join(', ')}`
-      : '';
-  const blow = crit ? 'critically hits' : 'hits';
-  // The dice are already inside the detail, so the note only names how many of
-  // them came from Sneak Attack. A crit doubled that count too.
-  const sneakNote =
-    sneakDice > 0 ? `, with sneak attack ${crit ? sneakDice * 2 : sneakDice}d6` : '';
-  // The defender's resistances, vulnerabilities, and immunities change what
-  // it takes, and the log names them beside the roll.
-  const taken = defendedDamage(app, defender.id, damage.byType);
-  const defended = defenseNote(taken.notes, taken.total);
-  // The travelogue keeps the raw damage dice as detail. The toast below
-  // keeps only the short per-type totals as text.
-  app.actions.logEvent(
-    'combat',
-    `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}${defended}.`,
-  );
-  // Applies the damage on the spot through the shared write path. Every
-  // combatant tracks HP, and the function logs a defeat or a drop to 0
-  // only once.
-  applyToTarget(app, defender.id, taken.total, false, { crit });
-  const text = defended ? `${taken.total} damage` : damage.text || 'no damage';
-  app.toasts.show(`${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${text}${inflicts}.`);
+  land(0);
 }
 
 /**
@@ -678,7 +703,7 @@ export async function weaponAttack(
     app.toasts.show(live.refusal);
     return;
   }
-  rollWeaponAttack(app, {
+  await rollWeaponAttack(app, {
     attacker: live.attacker,
     defender: live.defender,
     weapon,

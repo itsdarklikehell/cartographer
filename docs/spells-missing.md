@@ -143,10 +143,15 @@ as a death from exhaustion, and keeps the HP that the GM tracks.
 
 Shield of Faith gives its target +2 AC while the caster concentrates. Shield
 gives its caster +5 AC until the start of the caster's next turn. Its range
-is Self, so the cast dialog offers only the caster as the target. The GM
-casts it from the reaction control of the combat screen, and the AC of a
-later attack reads the chip. The app does not stop the damage of Magic
-Missile, so the GM undoes that damage by hand.
+is Self, so the cast dialog offers only the caster as the target. When an
+attack roll hits a caster who has Shield ready, and +5 AC would turn the
+hit into a miss, the app pauses before the damage and asks whether the
+caster casts it. A yes spends the reaction and the slot, and the app checks
+the roll again against the new AC. A weapon swing and an attack spell both
+pause, and Shield blocks every dart of Magic Missile. The question goes
+only to a tab that may act for the caster, so an attack that a player tab
+rolls against a foe does not pause. The GM then casts the foe's Shield from
+the reaction control of the combat screen, and undoes the damage by hand.
 
 Mage Armor gives a character with no body armor a base AC of 13 plus its DEX
 modifier, and a shield still adds to it. A higher base on the character

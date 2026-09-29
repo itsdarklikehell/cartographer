@@ -1081,8 +1081,9 @@ of these conditions are true:
 The row has one button per melee weapon for an opportunity attack. It also
 has one button per spell that casts as a reaction, such as Shield.
 
-The app does not watch for a trigger. It tracks no distance between tokens,
-so it cannot see a creature leave the reach of another. You call the
+Apart from a hit on a Shield caster (see below), the app does not watch
+for a trigger. It tracks no distance between tokens, so it cannot see a
+creature leave the reach of another. You call the
 trigger at the table and press the button.
 
 An opportunity attack rolls like a normal swing and keeps its ability bonus
@@ -1093,6 +1094,24 @@ Its defender starts as the combatant that takes the turn, because that is
 who the reaction interrupts. A card that you pick on the board overrides
 that. A reaction spell opens the usual cast dialog and spends the reaction
 instead of the action.
+
+### Shield against a hit
+
+When an attack roll hits a combatant whose reaction spell raises its AC,
+such as Shield, a Reaction dialog opens before the damage. The dialog names
+the roll and the AC. It opens only when the higher AC would turn the hit
+into a miss, so it never opens on a natural 20, which hits whatever the AC.
+
+Press **Cast Shield** to cast the spell at the lowest slot that the
+combatant can spend. The cast spends the reaction, and the attack then
+rolls against the new AC. The log line of the attack names the spell
+beside the AC. Press **Take the hit** to let the attack land as rolled.
+Against Magic Missile, the spell blocks every dart.
+
+The dialog opens only in a tab that can act for the defender: the GM tab,
+or the Player tab bound to that character. When a player attacks a foe
+that knows Shield, the attack does not pause. Cast the foe's Shield from
+its reaction control, and undo the damage by hand.
 
 ### Cover and Sneak Attack
 

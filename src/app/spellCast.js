@@ -319,5 +319,5 @@ async function runCast(app, entity, spell, offered, writeBack, preferredTargetId
     ],
   });
   if (!values) return;
-  resolveCast(app, plan, values, { writeBack });
+  await resolveCast(app, plan, values, { writeBack });
 }

@@ -13,6 +13,7 @@ import { opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
 import { findCombatant, hpOf, applyConditionToTarget, endSpellEffects } from './combatants.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
+import { wardSpellAttack } from './shieldWard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -47,12 +48,19 @@ import { effectiveSlot } from './spellCastFields.js';
  * @param {AppContext} app
  * @param {CastPlan} plan
  * @param {Record<string, string>} values the dialog's answers
- * @param {{ writeBack: (next: any) => void, rng?: () => number }} opts
+ * @param {{
+ *   writeBack: (next: any) => void,
+ *   rng?: () => number,
+ *   ask?: import('./shieldWard.js').WardAsk,
+ * }} opts
  *   `writeBack` stores the updated entity. `rng` is the
  *   source for every roll the cast makes, injected the way the pure modules
- *   take theirs.
+ *   take theirs. `ask` puts the question of a target's ward (Shield), and a
+ *   test passes its own answer.
+ * @returns {void | Promise<void>} a promise when a target's ward paused the
+ *   cast, which settles once the cast has landed
  */
-export function resolveCast(app, plan, values, { writeBack, rng = Math.random }) {
+export function resolveCast(app, plan, values, { writeBack, rng = Math.random, ask }) {
   const { entity, spell, targets, saveAbility, sourceClass, dc, material, armor } = plan;
   // The plan holds the caster as it was when the dialog opened. The dialog
   // can sit open while a heal lands or another tab adopts a save. The cast
@@ -297,10 +305,19 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
     endSpellEffects(app, entity.id, displaced.spellId);
   }
 
-  applyOutcomes(app, resolved, result, entity.id, { tracked: holds });
-  // The chip for a later repeat lands last. The sweep of a displaced spell
-  // above would take it off again, because it names this spell too.
-  if (!free) openRepeat(app, spell, result, entity.id);
+  /** @param {typeof result} landed */
+  const finish = (landed) => {
+    applyOutcomes(app, resolved, landed, entity.id, { tracked: holds });
+    // The chip for a later repeat lands last. The sweep of a displaced spell
+    // above would take it off again, because it names this spell too.
+    if (!free) openRepeat(app, spell, landed, entity.id);
+  };
+  // A target that can raise its AC with a reaction (Shield) gets the chance
+  // after the attack rolls and before its damage lands. With no such target
+  // the cast finishes here, without waiting.
+  const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
+  if (warding) return warding.then(finish);
+  finish(result);
 }
 
 /**
