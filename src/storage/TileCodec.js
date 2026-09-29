@@ -1,4 +1,5 @@
 import { tileIdAt } from '../map/MapGeometry.js';
+import { variantCount, variantIndexAt } from '../map/TileCatalog.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
 import { fullRef, mapOverlay, shortRef, variesByCell } from './TileRefs.js';
 import { EMPTY, expandFog, expandIndexRuns, fogRuns, indexRuns } from './RunLength.js';
@@ -140,12 +141,27 @@ function liveEntry(entry) {
     imageRef: /** @type {string} */ (fullRef(base, x, y)),
     overlay: mapOverlay(overlay, (ref) => fullRef(ref, x, y)),
   });
-  const varies =
-    variesByCell(base) ||
-    (Array.isArray(overlay) ? overlay.some(variesByCell) : variesByCell(overlay));
-  if (varies) return read;
-  const fixed = read(0, 0);
-  return () => fixed;
+  const overlayVaries = Array.isArray(overlay) ? overlay.some(variesByCell) : variesByCell(overlay);
+  if (overlayVaries) return read;
+  if (!variesByCell(base)) {
+    const fixed = read(0, 0);
+    return () => fixed;
+  }
+  // The common case: a family base under a fixed overlay. The decoder reads
+  // one object per variant, not one per cell, because a large map has tens
+  // of thousands of such cells.
+  const liveOverlay = mapOverlay(overlay, (ref) => fullRef(ref, 0, 0));
+  const count = variantCount(base);
+  /** @type {LiveArt[]} */
+  const byVariant = [];
+  return (x, y) => {
+    const n = variantIndexAt(count, x, y);
+    byVariant[n] ??= {
+      imageRef: /** @type {string} */ (fullRef(`${base}-${n + 1}`, 0, 0)),
+      overlay: liveOverlay,
+    };
+    return byVariant[n];
+  };
 }
 
 /**
