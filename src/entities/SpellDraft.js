@@ -49,6 +49,11 @@ import { clampInt } from '../util/num.js';
  * @property {string} [until] the turn boundary that ends a save's condition
  * @property {{ damage: DamagePart[], perStep: DamagePart[], until: string } | null} [ongoing]
  *   the damage an attack or a save leaves for later turns, null for none
+ * @property {{ condition: string, saveAbility: string, until: string } | null} [onHit]
+ *   the save or chip an attack's hit brings, null for none. An empty
+ *   `saveAbility` means no save
+ * @property {string} [drain] the share of dealt damage an attack gives back
+ *   to its caster, empty for none
  * @property {boolean} [dealsDamage] the save kind's damage gate
  * @property {string} [condition] empty for none
  * @property {boolean} [fires] whether the attack kind fires projectiles

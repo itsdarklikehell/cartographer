@@ -5,7 +5,12 @@ import { defenseNote } from '../entities/DamageDefenses.js';
 import { chipTiming } from '../entities/TurnEffects.js';
 import { currentParticipant } from '../combat/Initiative.js';
 import { spawnSummons } from './summons.js';
-import { applyToTarget, applyConditionToTarget, defendedDamage } from './combatants.js';
+import {
+  applyToTarget,
+  applyConditionToTarget,
+  defendedDamage,
+  findCombatant,
+} from './combatants.js';
 import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
 
@@ -180,6 +185,8 @@ function applyAttack(app, spell, result, casterId) {
     ),
   );
   spendRollRiders(app, casterId, { spent });
+  // The damage the hits dealt after defenses, for a spell that drains it.
+  let dealt = 0;
   for (const o of /** @type {any[]} */ (result.outcomes)) {
     // A multi-projectile cast logs the tally, not one line per ray. The
     // rolls are already aggregated per creature, and the damage carries
@@ -207,9 +214,11 @@ function applyAttack(app, spell, result, casterId) {
       // Each ray that lands is its own hit, so a concentrating target
       // saves once per ray and a dying one takes a failure per ray.
       for (const h of hits) applyToTarget(app, o.target.id, h.total, false, { crit: h.crit });
+      dealt += hits.reduce((n, h) => n + h.total, 0);
       if (o.ongoing) {
         leaveOngoing(app, spell, casterId, o.target.id, o.ongoing, effect.ongoing?.until);
       }
+      if (o.onHit) applyOnHit(app, spell, o, casterId);
       continue;
     }
     const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
@@ -228,6 +237,7 @@ function applyAttack(app, spell, result, casterId) {
         `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${o.target.name}${splashed}.`,
       );
       if (splash) applyToTarget(app, o.target.id, splash.total, false);
+      dealt += splash?.total ?? 0;
       continue;
     }
     const taken = defendedDamage(app, o.target.id, o.damage?.byType ?? []);
@@ -237,10 +247,76 @@ function applyAttack(app, spell, result, casterId) {
         `${defenseNote(taken.notes, taken.total)}.`,
     );
     applyToTarget(app, o.target.id, taken.total, false, { crit: o.crit });
+    dealt += taken.total;
     if (o.ongoing) {
       leaveOngoing(app, spell, casterId, o.target.id, o.ongoing, effect.ongoing?.until);
     }
+    if (o.onHit) applyOnHit(app, spell, o, casterId);
   }
+  if (effect.drain) drainTo(app, spell, casterId, effect.drain, dealt);
+}
+
+/**
+ * Apply and log what one hit brings besides its damage: a save against the
+ * caster's DC, and the condition on a failure, or the condition alone when
+ * the hit brings no save. The chip names the cast, so it goes when the
+ * caster stops holding the spell, and it ends at the turn boundary the spell
+ * names or after the spell's duration.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {any} o the target's attack outcome, with its `onHit` result
+ * @param {string} casterId
+ */
+function applyOnHit(app, spell, o, casterId) {
+  const effect = /** @type {import('../types/spell.js').SpellAttackEffect} */ (spell.effect);
+  const onHit = /** @type {import('../types/spell.js').SpellOnHit} */ (effect.onHit);
+  const hit = o.onHit;
+  const name = o.target.name;
+  const timing = onHit.until ? timingFor(app, onHit.until, casterId, o.target.id) : null;
+  const imposed = hit.condition
+    ? applyConditionToTarget(
+        app,
+        o.target.id,
+        hit.condition,
+        timing ? timing.rounds : durationInRounds(spell.duration),
+        { spellId: spell.id, spellName: spell.name, casterId },
+        null,
+        timing?.expires ? { expires: timing.expires } : {},
+      )
+    : false;
+  const cond = hit.condition ? `${hit.condition}${imposed ? '' : ' (untracked)'}` : '';
+  if (!onHit.saveAbility) {
+    app.actions.logEvent('combat', `${name} gains ${cond}.`);
+    return;
+  }
+  const bonus = `${onHit.saveAbility} ${formatModifier(o.target.saveBonus ?? 0)}`;
+  const rode = hit.rider ? `, ${hit.rider.note}` : '';
+  const detail = hit.autoFailedBy ? hit.autoFailedBy : `${bonus}${rode}: ${hit.save.total}`;
+  app.actions.logEvent(
+    'combat',
+    hit.saved
+      ? `${name} saves DC ${hit.dc} (${detail}).`
+      : `${name} fails DC ${hit.dc} (${detail}), ${cond}.`,
+  );
+  spendRollRiders(app, o.target.id, hit.rider);
+}
+
+/**
+ * Give the caster of a draining spell its share of the damage the hits
+ * dealt, after the targets' defenses. Half rounds down.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {string} casterId
+ * @param {import('../types/spell.js').SpellDrain} drain
+ * @param {number} dealt
+ */
+function drainTo(app, spell, casterId, drain, dealt) {
+  const regained = drain === 'half' ? Math.floor(dealt / 2) : dealt;
+  // A caster that left the campaign has no hit points to regain.
+  const found = findCombatant(app, casterId);
+  if (!found || regained <= 0) return;
+  app.actions.logEvent('combat', `${found.entity.name} regains ${regained} HP from ${spell.name}.`);
+  applyToTarget(app, casterId, regained, true);
 }
 
 /**

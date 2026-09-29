@@ -241,6 +241,29 @@ export const LEVEL_1 = [
     repeat: { damage: [{ count: 1, sides: 12, damageType: 'lightning' }] },
   },
   {
+    id: 'ray-of-sickness',
+    name: 'Ray of Sickness',
+    level: 1,
+    school: 'necromancy',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'A ray of sickening energy makes a ranged spell attack for 2d8 poison. A creature it ' +
+      "hits also makes a CON save, and on a failure it is poisoned until the end of the caster's " +
+      'next turn.',
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 2, sides: 8, damageType: 'poison' }],
+      onHit: { condition: 'Poisoned', saveAbility: 'CON', until: 'caster-end' },
+    },
+    scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'poison' }] },
+  },
+  {
     id: 'mage-armor',
     name: 'Mage Armor',
     level: 1,

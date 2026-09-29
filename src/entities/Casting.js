@@ -1,7 +1,6 @@
-import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
-import { resolveSave } from './Checks.js';
+import { rollDamage } from '../dice/DiceRoller.js';
+import { resolveAttack, targetSave } from './CastRolls.js';
 import { carriesSpellFocus } from './Equipment.js';
-import { rollRiders } from './Riders.js';
 import { spendResource } from './Character.js';
 import { isRitualOnly, isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
@@ -523,110 +522,6 @@ function payForCast(caster, spell, slotLevel, ritual) {
 }
 
 /**
- * One projectile's resolution: its attack roll, null when the spell hits
- * automatically, the natural d20, whether it crit or hit, the damage it
- * dealt, which is null on a miss, and what the caster's rider chips added to
- * the roll, which is null when it held none.
- * @typedef {{
- *   attack: DiceResult | null,
- *   natural: number,
- *   crit: boolean,
- *   hit: boolean,
- *   damage: ReturnType<typeof rollDamage> | null,
- *   rider: { modifier: number, note: string, spent: string[] } | null,
- * }} ProjectileShot
- */
-
-/**
- * Roll one projectile against an AC: a d20 plus the caster's spell attack
- * bonus, plus whatever the caster's rider chips add. A natural 20 doubles
- * this projectile's dice alone, and a natural 1 always misses. `autoCrit`
- * makes any hit a critical one. An `autoHit`
- * projectile skips the d20 entirely and can neither miss nor crit, so no
- * rider applies to it either. `bonus` is a flat amount added to the damage of
- * a hit, which a critical hit does not double.
- *
- * The riders roll per projectile, because each projectile is its own attack
- * roll and a blessed caster rolls the d4 again for each one.
- * @param {{
- *   parts: DamagePart[],
- *   ac: number,
- *   attackBonus: number,
- *   mode: RollMode,
- *   autoHit: boolean | undefined,
- *   autoCrit?: boolean,
- *   bonus?: number,
- *   casterConditions: import('./Riders.js').RiderSource[],
- *   rng: RandomFn,
- * }} shot `parts` is what one projectile deals
- * @returns {ProjectileShot}
- */
-function rollProjectile({
-  parts,
-  ac,
-  attackBonus,
-  mode,
-  autoHit,
-  autoCrit = false,
-  bonus = 0,
-  casterConditions,
-  rng,
-}) {
-  if (autoHit) {
-    return {
-      attack: null,
-      natural: 0,
-      crit: false,
-      hit: true,
-      damage: rollDamage(parts, bonus, rng),
-      rider: null,
-    };
-  }
-  const rider = rollRiders(casterConditions, 'attack', rng);
-  const attack = roll({ counts: { d20: 1 }, modifier: attackBonus + rider.modifier, mode }, rng);
-  const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
-  const hit = natural !== 1 && (natural === 20 || attack.total >= ac);
-  const crit = hit && (natural === 20 || autoCrit);
-  const doubled = crit ? parts.map((p) => ({ ...p, count: p.count * 2 })) : parts;
-  return {
-    attack,
-    natural,
-    crit,
-    hit,
-    damage: hit ? rollDamage(doubled, bonus, rng) : null,
-    rider: rider.note ? rider : null,
-  };
-}
-
-/**
- * Fold several projectiles' damage into one result, so the log line for a
- * creature caught by two rays names both rays' dice. The result has the same
- * fields that `rollDamage` returns: totals and raw dice merged per damage
- * type. The caller still applies each ray as its own hit.
- * @param {ReturnType<typeof rollDamage>[]} rolls
- * @returns {ReturnType<typeof rollDamage>}
- */
-function mergeDamage(rolls) {
-  /** @type {Map<string, import('../dice/DiceRoller.js').DamageGroup>} */
-  const byType = new Map();
-  for (const result of rolls) {
-    for (const group of result.byType) {
-      const merged = byType.get(group.damageType) ?? {
-        damageType: group.damageType,
-        rolls: [],
-        bonus: 0,
-        subtotal: 0,
-      };
-      merged.rolls.push(...group.rolls);
-      merged.bonus += group.bonus;
-      merged.subtotal += group.subtotal;
-      byType.set(group.damageType, merged);
-    }
-  }
-  return damageReadout([...byType.values()]);
-}
-
-/**
  * Roll a spell's effect against its targets, dispatched by effect kind. This
  * function is split out of `castSpell` so the validation and slot
  * bookkeeping stay readable.
@@ -657,77 +552,23 @@ function resolveEffect(spell, ctx) {
   } = ctx;
 
   if (effect.kind === 'attack') {
-    const baseParts = scaledParts(effect.damage, spell.scaling, steps);
-    const bonus = effect.addsModifier ? spellModifier : 0;
-    // The dice a hit leaves on the target for its later turns, scaled with the
+    // The dice a hit leaves on the target for its later turns scale with the
     // cast. A critical hit doubles only the dice of the hit itself.
-    const ongoing = ongoingParts(effect.ongoing, steps);
-    // The target's own chips can slant the roll aimed at it, so the mode is
-    // read per target and falls back to the one the whole cast carries.
-    const shot = (/** @type {CastTarget} */ target, /** @type {number} */ ac) =>
-      rollProjectile({
-        parts: baseParts,
-        ac,
-        attackBonus: spellAttackBonus,
-        mode: target.attackMode ?? attackMode,
-        autoHit: effect.projectiles?.autoHit,
-        autoCrit: target.autoCrit,
-        bonus,
-        casterConditions,
-        rng,
-      });
-
-    // A single-projectile spell reports its one roll flat. A spell that
-    // splashes on a miss rolls its damage anyway, and `halved` tells the
-    // caller to take half of it.
-    if (!effect.projectiles) {
-      return targets.map((target) => {
-        const ac = target.ac ?? 10;
-        const { attack, natural, crit, hit, damage, rider } = shot(target, ac);
-        const splash = !hit && effect.halfOnMiss ? rollDamage(baseParts, bonus, rng) : null;
-        return {
-          target,
-          attack,
-          natural,
-          crit,
-          hit,
-          ac,
-          damage: damage ?? splash,
-          rider,
-          ...(splash ? { halved: true } : {}),
-          ...(hit && ongoing ? { ongoing } : {}),
-        };
-      });
-    }
-
-    // Otherwise each allocated projectile rolls on its own, with its own d20
-    // and its own crit that doubles only its own dice. The merged damage is
-    // for the readout. Each shot keeps its own damage for the caller to apply.
-    const allocation = allocateProjectiles(targets, projectileCount(effect, steps));
-    return targets.map((target, i) => {
-      const ac = target.ac ?? 10;
-      /** @type {ProjectileShot[]} */
-      const shots = [];
-      for (let n = 0; n < allocation[i]; n++) shots.push(shot(target, ac));
-      const landed = shots.filter((s) => s.damage !== null);
-      return {
-        target,
-        ac,
-        shots,
-        fired: shots.length,
-        hits: landed.length,
-        hit: landed.length > 0,
-        damage:
-          landed.length > 0
-            ? mergeDamage(
-                /** @type {ReturnType<typeof rollDamage>[]} */ (landed.map((s) => s.damage)),
-              )
-            : null,
-        ...(landed.length > 0 && ongoing ? { ongoing } : {}),
-      };
+    return resolveAttack(effect, {
+      parts: scaledParts(effect.damage, spell.scaling, steps),
+      ongoing: ongoingParts(effect.ongoing, steps),
+      allocation: effect.projectiles
+        ? allocateProjectiles(targets, projectileCount(effect, steps))
+        : null,
+      targets,
+      spellAttackBonus,
+      saveDC,
+      spellModifier,
+      attackMode,
+      casterConditions,
+      rng,
     });
   }
-
   if (effect.kind === 'save') {
     // Save spells roll their damage once. Each target then takes full
     // damage, half damage rounded down when the spell halves on a success,
@@ -752,14 +593,7 @@ function resolveEffect(spell, ctx) {
       }
       const limitFails = limit === undefined ? null : `${limit} HP or fewer`;
       const autoFailedBy = target.autoFailSave ?? limitFails;
-      const rolled = autoFailedBy
-        ? { roll: null, success: false, rider: null }
-        : resolveSave(target.saveBonus ?? 0, saveDC, {
-            mode: target.saveMode ?? 'normal',
-            conditions: [...(target.conditions ?? []), ...(target.riders ?? [])],
-            rng,
-          });
-      const { roll: save, success: saved, rider } = rolled;
+      const { roll: save, success: saved, rider } = targetSave(target, saveDC, autoFailedBy, rng);
       const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
       const condition = !saved ? (effect.condition ?? null) : null;
       return {

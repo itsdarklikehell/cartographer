@@ -206,6 +206,11 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
         { value: 'disadvantage', label: 'Disadvantage' },
       ],
     });
+    // A hit that brings a save rolls it against the caster's DC, which the GM
+    // can change here the same way as for a save spell.
+    if (spell.effect.kind === 'attack' && spell.effect.onHit?.saveAbility) {
+      fields.push({ name: 'dc', label: 'Save DC on a hit', type: 'number', value: saveDC, min: 1 });
+    }
   }
   if (kind === 'save') {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });

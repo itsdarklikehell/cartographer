@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   attackExtras,
   normalizeLevelsPerStep,
+  normalizeOnHit,
   normalizeOngoing,
   normalizeParts,
   normalizeRepeat,
@@ -103,4 +104,29 @@ test('a locked repeat opens only on a hit, and an open one on any cast', () => {
   assert.equal(opensRepeat(spellById('witch-bolt'), ['ogre']), true);
   assert.equal(opensRepeat(spellById('spiritual-weapon'), []), true);
   assert.equal(opensRepeat(spellById('fire-bolt'), ['ogre']), false);
+});
+
+test('an on-hit block needs a condition, and drops a save ability outside the six', () => {
+  assert.equal(normalizeOnHit(null), null);
+  assert.equal(normalizeOnHit({ condition: '  ' }), null);
+  assert.equal(normalizeOnHit({ condition: 7 }), null);
+  assert.deepEqual(
+    normalizeOnHit({ condition: ' Poisoned ', saveAbility: 'LUCK', until: 'noon' }),
+    {
+      condition: 'Poisoned',
+    },
+  );
+  assert.deepEqual(
+    normalizeOnHit({ condition: 'Poisoned', saveAbility: 'CON', until: 'caster-end' }),
+    { condition: 'Poisoned', saveAbility: 'CON', until: 'caster-end' },
+  );
+});
+
+test('an attack keeps an on-hit block and a drain only when each says something', () => {
+  assert.deepEqual(attackExtras({ onHit: { condition: '' }, drain: 'most' }), {});
+  assert.deepEqual(attackExtras({ onHit: { condition: 'Blinded' }, drain: 'half' }), {
+    onHit: { condition: 'Blinded' },
+    drain: 'half',
+  });
+  assert.deepEqual(attackExtras({ drain: 'full' }), { drain: 'full' });
 });

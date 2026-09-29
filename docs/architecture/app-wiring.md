@@ -608,7 +608,7 @@ bar starts. Casting a spell is the same job, split across five modules:
 | `spellTargets.js` | Which creatures a spell can reach |
 | `spellCastFields.js` | The dialog fields |
 | `spellCastResolve.js` | Rolling the cast, and the chip that lets the caster repeat it on a later turn |
-| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the damage a chip leaves for later turns, summons, and the log lines |
+| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the chip or save that a hit brings, the hit points that a draining hit gives back, the damage a chip leaves for later turns, summons, and the log lines |
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 

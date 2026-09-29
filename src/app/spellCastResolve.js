@@ -138,6 +138,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
   // same slant, so they fold together under the cancel rule. Neither one
   // overrides the other.
   let castTargets = chosen;
+  // An attack's dialog mode slants the attack roll, so a save that its hit
+  // brings rolls with only the target's own slant.
+  const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
   if (saveAbility) {
     const hpLimited = spell.effect.kind === 'save' && spell.effect.hpLimit !== undefined;
     castTargets = chosen.map((t) => {
@@ -157,16 +160,17 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
         // Every live target carries a derived bonus. A target the roster lost
         // while the dialog sat open carries none and saves on the flat die.
         saveBonus: t.saveBonus ?? 0,
-        saveMode: combineModes([mode, outcome.mode]) ?? 'normal',
+        saveMode: combineModes([saveMode, outcome.mode]) ?? 'normal',
         ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
       };
     });
-  } else if (resolved.effect.kind === 'attack') {
+  }
+  if (resolved.effect.kind === 'attack') {
     // A melee spell attack says so. Otherwise a touch spell reaches as far as
     // a melee weapon does, which is the split Prone needs, and every other
     // range is a ranged attack.
     const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
-    castTargets = chosen.map((t) => ({
+    castTargets = castTargets.map((t) => ({
       ...t,
       attackMode:
         combineModes([

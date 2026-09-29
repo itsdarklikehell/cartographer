@@ -1,10 +1,12 @@
 import { normalizeDamagePart } from './Equipment.js';
+import { ABILITY_SCORES } from './Modifiers.js';
 import { clampInt } from '../util/num.js';
 
 /**
- * Normalizers for the spell fields that carry an effect onto later turns:
- * damage that stays on a target, the turn boundary that ends a chip, and a
- * spell that the caster uses again without a new slot. The authoring form
+ * Normalizers for the spell fields beyond a single roll: damage that stays on
+ * a target, the turn boundary that ends a chip, a spell that the caster uses
+ * again without a new slot, and what a hit does besides its damage (a save or
+ * a chip on the target, and hit points back to the caster). The authoring form
  * (through `SpellDraft.js`) and the library import (through `Library.js`)
  * share these functions, so a typed spell and an imported one never disagree
  * about what a value means. Each one returns null, or an empty object, for a
@@ -15,6 +17,9 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/spell.js').ChipUntil} ChipUntil */
 /** @typedef {import('../types/spell.js').SpellOngoing} SpellOngoing */
 /** @typedef {import('../types/spell.js').SpellRepeat} SpellRepeat */
+/** @typedef {import('../types/spell.js').SpellOnHit} SpellOnHit */
+/** @typedef {import('../types/spell.js').SpellDrain} SpellDrain */
+/** @typedef {import('../types/spell.js').Ability} Ability */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
 /** The turn boundaries a chip can end at, in the order the form lists them.
@@ -31,6 +36,9 @@ export const UNTIL_LABELS = {
 
 /** The costs a repeat can take. @type {('action' | 'bonus')[]} */
 export const REPEAT_COSTS = ['action', 'bonus'];
+
+/** The shares of dealt damage a draining spell gives back. @type {SpellDrain[]} */
+export const DRAINS = ['half', 'full'];
 
 /**
  * A written boundary, or null when the value names none.
@@ -93,7 +101,25 @@ export function normalizeRepeat(value) {
 }
 
 /**
- * The later-turn fields an attack effect has, from a written effect. Each
+ * A written on-hit block, or null when it names no condition. A save ability
+ * outside the six drops, and the hit then imposes the condition with no save.
+ * @param {unknown} value
+ * @returns {SpellOnHit | null}
+ */
+export function normalizeOnHit(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const condition = typeof raw.condition === 'string' ? raw.condition.trim() : '';
+  if (!condition) return null;
+  const saveAbility = ABILITY_SCORES.includes(/** @type {string} */ (raw.saveAbility))
+    ? /** @type {Ability} */ (raw.saveAbility)
+    : null;
+  const until = normalizeUntil(raw.until);
+  return { condition, ...(saveAbility ? { saveAbility } : {}), ...(until ? { until } : {}) };
+}
+
+/**
+ * The later-turn and on-hit fields an attack effect has, from a written effect. Each
  * flag is kept only when it is true, so an effect written before the flags
  * existed comes back unchanged.
  * @param {Record<string, unknown>} raw
@@ -101,11 +127,17 @@ export function normalizeRepeat(value) {
  */
 export function attackExtras(raw) {
   const ongoing = normalizeOngoing(raw.ongoing);
+  const onHit = normalizeOnHit(raw.onHit);
+  const drain = DRAINS.includes(/** @type {SpellDrain} */ (raw.drain))
+    ? /** @type {SpellDrain} */ (raw.drain)
+    : null;
   return {
     ...(raw.melee === true ? { melee: true } : {}),
     ...(raw.halfOnMiss === true ? { halfOnMiss: true } : {}),
     ...(raw.addsModifier === true ? { addsModifier: true } : {}),
     ...(ongoing ? { ongoing } : {}),
+    ...(onHit ? { onHit } : {}),
+    ...(drain ? { drain } : {}),
   };
 }
 

@@ -1,4 +1,4 @@
-import { effectSummary, laterTurnLines } from '../view/SpellEffectText.js';
+import { effectSummary, hitLines, laterTurnLines } from '../view/SpellEffectText.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
 import { badge, textButton } from './buttons.js';
@@ -70,6 +70,9 @@ export function promptSpellDetail(spell, actions, options = {}) {
             ),
           ),
           summary && el('p', 'spell-detail__effect', summary),
+          ...hitLines(spell, options.saveDC ?? null).map((line) =>
+            el('p', 'spell-detail__effect', line),
+          ),
           ...laterTurnLines(spell).map((line) => el('p', 'spell-detail__effect', line)),
           spell.description && el('p', 'spell-detail__description', spell.description),
         ].filter(Boolean)

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { chipLabel, chipNotes } from '../src/view/ChipText.js';
-import { effectSummary, laterTurnLines } from '../src/view/SpellEffectText.js';
+import { effectSummary, hitLines, laterTurnLines } from '../src/view/SpellEffectText.js';
 import { createCondition } from '../src/entities/Conditions.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
@@ -104,4 +104,26 @@ test('the effect summary reads projectiles, healing, and buffs', () => {
     'Bless — +1d4 to attack rolls and saving throws',
   );
   assert.equal(effectSummary(spellById('invisibility'), null), 'Invisible');
+});
+
+test('the detail states what a hit does besides its damage', () => {
+  assert.deepEqual(hitLines(spellById('ray-of-sickness'), 14), [
+    "A creature it hits makes a CON save DC 14, and on a failure it is Poisoned until the end of the caster's next turn.",
+  ]);
+  assert.deepEqual(hitLines(spellById('vampiric-touch'), null), [
+    'The caster regains hit points equal to half the damage its hits deal.',
+  ]);
+  const ray = spellById('ray-of-sickness');
+  assert.deepEqual(
+    hitLines(
+      { ...ray, effect: { ...ray.effect, onHit: { condition: 'Blinded' }, drain: 'full' } },
+      null,
+    ),
+    [
+      'A creature it hits is also Blinded.',
+      'The caster regains hit points equal to all the damage its hits deal.',
+    ],
+  );
+  assert.deepEqual(hitLines(spellById('fireball'), 14), []);
+  assert.deepEqual(hitLines(spellById('magic-missile'), 14), []);
 });

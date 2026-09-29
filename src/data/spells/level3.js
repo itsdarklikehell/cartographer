@@ -153,4 +153,29 @@ export const LEVEL_3 = [
       saveEnds: true,
     },
   },
+  {
+    id: 'vampiric-touch',
+    name: 'Vampiric Touch',
+    level: 3,
+    school: 'necromancy',
+    classes: ['warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      "The caster's touch makes a melee spell attack for 3d6 necrotic, and the caster regains " +
+      'hit points equal to half the necrotic damage dealt. Until the spell ends, the caster ' +
+      'can make the attack again on each of its turns as an action.',
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 3, sides: 6, damageType: 'necrotic' }],
+      melee: true,
+      drain: 'half',
+    },
+    scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'necrotic' }] },
+    repeat: {},
+  },
 ];

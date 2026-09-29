@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 59. Each shipped spell has rules that the
+319 spells, and the app ships 61. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -22,9 +22,9 @@ The paladin also has one spell of its own, Destructive Wave.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Mage Armor |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Mage Armor |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon |
-| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear |
+| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch |
 | 4th | Ice Storm, Blight, Phantasmal Killer |
 | 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
@@ -38,6 +38,9 @@ full. The resolver applies these rules:
 - A d20 spell attack against AC. A melee spell attack gets the melee side
   of Prone and of an automatic critical hit, and some attacks deal half
   their damage on a miss.
+- A condition that a spell attack's hit imposes, with or without a save
+  against it, and a hit that gives the caster back part of the damage it
+  deals.
 - Several projectiles from one cast, each rolled on its own and split
   between the creatures that the caster picks.
 - A save against the spell save DC of the caster, with damage that the save
@@ -95,6 +98,19 @@ from a new slot, remove the chip first.
 A chip that ends at a turn boundary shows "next turn" in place of a round
 count. Outside a fight there are no turns, so such a chip lasts one round.
 The end of a fight removes every such chip.
+
+### Two effects in one hit
+
+Ray of Sickness rolls its attack first. A creature that it hits then makes a
+CON save against the spell save DC of the caster, and on a failure it is
+Poisoned until the end of the caster's next turn. The creature saves once,
+even when several projectiles of one spell hit it.
+
+Vampiric Touch gives the caster hit points equal to half the necrotic
+damage that its hit deals. The app counts the damage after the resistances
+of the target, so a hit on a creature that resists necrotic damage gives
+back less. Vampiric Touch also repeats on each later turn, as Spiritual
+Weapon does.
 
 ### Spells described in prose
 
@@ -157,13 +173,6 @@ Death, and Fire Storm work this way.
 A cast resolves once, and the app has no template for map areas. So no
 rule keeps a zone on the map after the cast.
 
-### Two mechanics in one cast
-
-Examples: Ray of Sickness, Vampiric Touch, and Heroism.
-
-A spell has one effect. A cast cannot roll an attack and a save together,
-and it cannot damage one creature and heal another.
-
 ### Hit-point thresholds
 
 Examples: Sleep, Color Spray, and Power Word Kill.
@@ -174,12 +183,13 @@ the cast cannot decide which creatures the spell affects.
 ### Buffs outside d20 rolls
 
 Examples: the +5 AC reaction of Shield, the extra action of Haste,
-Enlarge/Reduce, Barkskin, and Aid.
+Enlarge/Reduce, Barkskin, Aid, and the temporary hit points of Heroism.
 
 A rider on a d20 roll works. A chip can add or subtract dice and a flat
 amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
 Guidance, and Resistance do. A chip that changes AC, the action budget,
-the hit-point maximum, or the size of a creature has no rule to change.
+the hit-point maximum, the temporary hit points, or the size of a creature
+has no rule to change.
 
 ### Summon choice and control
 

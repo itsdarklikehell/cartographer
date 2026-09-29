@@ -669,10 +669,10 @@ number per group, so a readout shows `7 slashing [2,3 +2]` and not two
 separate signs. No group can go below zero, so a negative rider cannot heal.
 
 A critical hit doubles the dice of a term and not its bonus.
-`AttackResolve.damageParts` and `Casting.js` do this by doubling `count`.
+`AttackResolve.damageParts` and `CastRolls.js` do this by doubling `count`.
 
 `damageReadout` builds the `text` and `detail` lines from the groups. The
-projectile merge in `Casting.js` uses it too, so a hit made of three darts
+projectile merge in `CastRolls.js` uses it too, so a hit made of three darts
 reads like one roll.
 
 ## The weapon property model
@@ -903,7 +903,7 @@ attack spell, so a spell without the field needs no migration.
   the function limits the shares in order so the total never exceeds what the
   spell fires. With no stated shares, the projectiles spread as evenly as
   possible, which puts all of them on the only target in the common case.
-- Resolution rolls one attack per projectile. Each projectile has its own d20
+- `CastRolls.resolveAttack` rolls one attack per projectile. Each projectile has its own d20
   and its own critical hit, which doubles only its own dice, or it rolls
   nothing when `autoHit` is set. The outcome keeps each projectile's roll and
   damage under `shots`, plus `fired` and `hits`, so the log can read
@@ -1517,6 +1517,29 @@ sweep of a displaced spell. A repeat with fixed damage resolves through
 The chip ticks down with the duration of the spell, and a concentration
 spell loses it with every other chip of the cast.
 
+## Effects of a hit
+
+An attack effect can do more on a hit than deal damage. `Casting.js` pays
+for the cast and scales the dice, and `entities/CastRolls.js` rolls them
+against each target. The save of a save effect and the save that a hit
+brings both go through `CastRolls.targetSave`, so the chips and the feat
+riders of the target join both in the same way.
+
+`onHit` names a condition that the hit imposes. With `onHit.saveAbility`,
+the target rolls that save against the DC of the cast after the damage roll,
+and the outcome keeps the roll under `onHit`. A target that several
+projectiles hit rolls once. `castPlan` reads the save bonus of each target
+for `onHit.saveAbility` the same way as for a save spell, and the cast
+dialog adds a DC field. `app/spellOutcomes.js` writes the chip with the
+cast as its source. The chip ends at `onHit.until` when the spell names a
+turn boundary, and after the duration of the spell otherwise. Ray of
+Sickness uses this.
+
+`drain` gives the caster hit points equal to `half` or all (`full`) of the
+damage that the hits deal. `spellOutcomes.js` sums the damage after the
+defenses of each target, including a splash on a miss, and heals the caster
+once after the last target. Vampiric Touch uses this.
+
 ## Summoned creatures
 
 A spell can put new creatures on the map. Its `summons` effect names one
@@ -1689,7 +1712,7 @@ which has no dice tray, works the same as an attack, which has one.
 
 - `app/weaponAttack.js` reads the attacker's own chips before it loads the
   tray, and puts the note in the log beside the dialog's own modifiers.
-- `Casting.js` rolls the caster's chips once per projectile, because each
+- `CastRolls.js` rolls the caster's chips once per projectile, because each
   projectile is its own attack roll. An auto-hit projectile rolls no attack, so
   no rider applies to it. The caster view has no conditions, so
   `app/spellCast.js` passes in the chips of the real combatant as

@@ -346,3 +346,32 @@ test('a repeat and slot levels per step come through the whole form', () => {
     undefined,
   );
 });
+
+test('an attack draft keeps the on-hit save and the drain the form names', () => {
+  const effect = assembleEffect(
+    effectDraft({
+      kind: 'attack',
+      onHit: { condition: 'Poisoned', saveAbility: 'CON', until: 'caster-end' },
+      drain: 'half',
+    }),
+  );
+  assert.deepEqual(effect.onHit, {
+    condition: 'Poisoned',
+    saveAbility: 'CON',
+    until: 'caster-end',
+  });
+  assert.equal(effect.drain, 'half');
+  const plain = assembleEffect(
+    effectDraft({
+      kind: 'attack',
+      onHit: { condition: 'Blinded', saveAbility: '', until: '' },
+      drain: '',
+    }),
+  );
+  assert.deepEqual(plain.onHit, { condition: 'Blinded' });
+  assert.equal('drain' in plain, false);
+  const save = assembleEffect(
+    effectDraft({ kind: 'save', onHit: { condition: 'Blinded' }, drain: 'half' }),
+  );
+  assert.equal('onHit' in save || 'drain' in save, false, 'only an attack keeps them');
+});

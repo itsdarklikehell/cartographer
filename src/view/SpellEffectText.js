@@ -61,6 +61,36 @@ export function effectSummary(spell, saveDC) {
 }
 
 /**
+ * What an attack spell's hit does besides its damage, one sentence per
+ * effect: the save or condition it brings, and the hit points the caster
+ * regains. A spell with neither has no lines.
+ * @param {Spell} spell
+ * @param {number | null} saveDC the caster's save DC, or null when unknown
+ * @returns {string[]}
+ */
+export function hitLines(spell, saveDC) {
+  const effect = spell.effect;
+  if (effect.kind !== 'attack') return [];
+  /** @type {string[]} */
+  const lines = [];
+  const onHit = effect.onHit;
+  if (onHit) {
+    const until = onHit.until ? ` until ${UNTIL_LABELS[onHit.until]}` : '';
+    const dc = saveDC !== null ? ` DC ${saveDC}` : '';
+    lines.push(
+      onHit.saveAbility
+        ? `A creature it hits makes a ${onHit.saveAbility} save${dc}, and on a failure it is ${onHit.condition}${until}.`
+        : `A creature it hits is also ${onHit.condition}${until}.`,
+    );
+  }
+  if (effect.drain) {
+    const share = effect.drain === 'half' ? 'half the damage' : 'all the damage';
+    lines.push(`The caster regains hit points equal to ${share} its hits deal.`);
+  }
+  return lines;
+}
+
+/**
  * What a spell does on the turns after the cast, one sentence per effect:
  * damage it leaves on a target, and a repeat that the caster can use without
  * a new slot. A spell with neither has no lines.

@@ -136,13 +136,19 @@ export function castPlan(app, entity, spell, offered) {
   // Each target of a save spell gets its own bonus where the app can read
   // one. The dialog shows what a target will add, and the resolver rolls it.
   // This happens once here, not in the two target assemblies, because the
-  // saved ability is a property of the spell, not of the target.
+  // saved ability is a property of the spell, not of the target. An attack
+  // spell whose hit brings a save reads the same numbers for that save.
   // A target's own chips ride the same save, so they travel with the bonus.
   // Both are read when the dialog opens, not when it is submitted, so a chip
   // that lands on a target while the dialog sits open misses this cast. The
   // GM opens and submits a cast in one motion, and re-reading the roster
   // under an open dialog would let the numbers on screen go stale instead.
-  const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
+  const saveAbility =
+    spell.effect.kind === 'save'
+      ? spell.effect.saveAbility
+      : spell.effect.kind === 'attack'
+        ? (spell.effect.onHit?.saveAbility ?? null)
+        : null;
   // Untrained armor slants a STR or DEX save, so a character target in such
   // armor carries the penalty flag alongside its bonus and chips.
   const physical = saveAbility === 'STR' || saveAbility === 'DEX';

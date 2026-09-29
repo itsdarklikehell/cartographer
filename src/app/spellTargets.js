@@ -104,7 +104,15 @@ export function targetLabel(spell, target) {
     if (target.saveBonus === undefined) return target.name;
     return `${target.name} (${spell.effect.saveAbility} ${formatModifier(target.saveBonus)})`;
   }
-  return `${target.name} (AC ${target.ac})`;
+  // A hit that brings a save names the bonus beside the AC.
+  // Every kind left here is an attack.
+  const onHitSave = /** @type {import('../types/spell.js').SpellAttackEffect} */ (spell.effect)
+    .onHit?.saveAbility;
+  const save =
+    onHitSave && target.saveBonus !== undefined
+      ? `, ${onHitSave} ${formatModifier(target.saveBonus)}`
+      : '';
+  return `${target.name} (AC ${target.ac}${save})`;
 }
 
 /**

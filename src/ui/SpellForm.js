@@ -5,6 +5,7 @@ import { classNames, el } from './dom.js';
 import { HEALING_TYPE } from '../entities/Equipment.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import { buildLaterTurnControls } from './SpellFormLater.js';
+import { buildOnHitControls } from './SpellFormOnHit.js';
 import {
   labeled,
   fieldRow,
@@ -232,6 +233,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       spell.effect.addsModifier === true,
   );
   const later = buildLaterTurnControls(spell);
+  const onHit = buildOnHitControls(spell);
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
@@ -411,6 +413,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     healField.hidden = kind !== 'heal';
     healTogglesRow.hidden = kind !== 'heal' && kind !== 'attack';
     later.sync(kind, conditionSelect.value !== '');
+    onHit.sync(kind);
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
@@ -458,6 +461,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   fires.input.addEventListener('change', syncEffectFields);
   conditionSelect.addEventListener('change', syncEffectFields);
   later.listen(syncEffectFields);
+  onHit.listen(syncEffectFields);
 
   function syncScaling() {
     const hide = !scales.input.checked;
@@ -547,6 +551,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
           countPerStep: summonPerStepInput.value,
         },
         ...extra.effect,
+        ...onHit.read(),
       },
       scaling: scales.input.checked
         ? {
@@ -576,6 +581,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       projectilesRow,
       projectileFieldsRow,
       later.rows.attack,
+      onHit.rows.imposes,
+      onHit.rows.onHit,
+      onHit.rows.onHitUntil,
+      onHit.rows.drain,
       summonsRow,
       saveTogglesRow,
       conditionRow,

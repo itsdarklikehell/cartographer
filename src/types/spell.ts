@@ -47,6 +47,27 @@ export interface SpellAttackEffect {
   addsModifier?: boolean;
   /** Damage that a hit leaves on the target for later turns. */
   ongoing?: SpellOngoing;
+  /** A save or a chip that a hit brings with it (Ray of Sickness). */
+  onHit?: SpellOnHit;
+  /** How much of the damage its hits deal, after the target's defenses, the
+   * caster regains as hit points (Vampiric Touch's half). Absent means none. */
+  drain?: SpellDrain;
+}
+
+/** The share of dealt damage that a draining spell gives back to its caster. */
+export type SpellDrain = 'half' | 'full';
+
+/** What a spell attack's hit does beyond its damage. With `saveAbility` the
+ * creature it hits rolls that save against the caster's spell save DC, and
+ * takes the condition only on a failure. Without it, every hit imposes the
+ * condition. */
+export interface SpellOnHit {
+  /** The condition name that a hit imposes, for example 'Poisoned'. */
+  condition: string;
+  saveAbility?: Ability;
+  /** When the condition ends, as a turn boundary. Absent means the spell's
+   * own duration. */
+  until?: ChipUntil;
 }
 
 /** When a chip that a spell writes ends, as a turn boundary. `caster-start`
