@@ -4,8 +4,9 @@
  * The log keeps two kinds of record. A delta record keeps the ops of one
  * edit, and all delta records share a fixed cap. A snapshot record keeps
  * the whole save string that a New, Load example, or Import replaced. One
- * snapshot of the example campaign is about 800 KB, which is more than the
- * whole delta cap. Counted against that cap, a snapshot removes every older
+ * snapshot of the example campaign is about 280 KB, more than half of the
+ * delta cap, and a campaign with a few generated regions more passes the
+ * whole cap. Counted against that cap, such a snapshot removes every older
  * step when it is written, and the next save then removes the snapshot
  * itself, so the undo of an Import lasts only until the next autosave.
  *

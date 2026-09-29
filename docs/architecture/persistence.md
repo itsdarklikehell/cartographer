@@ -657,8 +657,8 @@ campaign:
 
 | Step | Plain ops | Compact record |
 | --- | --- | --- |
-| Add a generated 48x48 region | 97,098 | 10,182 |
-| Regenerate that region | 83,782 | 20,700 |
+| Add a generated 48x48 region | 97,098 | 3,566 |
+| Regenerate that region | 77,127 | 6,819 |
 | Ten party moves on it | 4,209 | 495 |
 
 A delta record is stored as `delta:` followed by the JSON op list. An app
@@ -678,9 +678,10 @@ Delta records share `HISTORY_BYTE_CAP` (512 KiB), and `trimToCap` drops
 the oldest records until the deltas fit. A record larger than the whole
 cap stays as the only step, because `trimToCap` always keeps the newest
 record. Snapshot records do not count against the cap. One snapshot of the
-example campaign is about 800 KB, so counted against the cap it removes
-every older step when it lands, and the next save removes the snapshot
-itself. `storage/HistoryBudget.js` gives snapshots a budget of their own,
+example campaign is about 280 KB, more than half of the cap, and a
+campaign with a few generated regions more passes the whole cap. Counted
+against the cap, such a snapshot removes every older step when it lands,
+and the next save removes the snapshot itself. `storage/HistoryBudget.js` gives snapshots a budget of their own,
 as pure arithmetic over record sizes. The newest snapshot is outside that
 budget, because its write already succeeded. An older snapshot stays only
 while it fits in the quota estimate (`QUOTA_BYTES`, 5 MiB) less the delta
