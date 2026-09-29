@@ -1,34 +1,92 @@
 # Campaign Builder
 
-This project is a self-contained suite that creates and manages the world of a D&D campaign, or an equivalent campaign. It does not act as the GM. The suite only shows the world that the players move through.
+Campaign Builder is a browser app for building and running the world of a D&D campaign, or of a similar tabletop campaign. It shows the world that the players move through: the map, the fog of war, the party, the fights, and the story so far. It does not act as the game master (GM). The GM makes every rules call and moves the story forward.
+
+The app runs entirely in one browser tab. It has no server and no account. It keeps each campaign in the local storage of the browser, and you move a campaign between browsers with a JSON export file.
 
 ![Play mode: the fog-revealed map with the session panels alongside](docs/images/play-mode-light.png)
 
+## Quick start
+
+You need [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/) 11.
+
+1. Clone the repository, and open a terminal in it.
+2. Install the development tools:
+
+   ```bash
+   pnpm install
+   ```
+
+3. Start the dev server:
+
+   ```bash
+   pnpm run dev
+   ```
+
+4. Open `http://127.0.0.1:8080` in a browser.
+
+The app opens in Play mode with a blank campaign. On the first visit, a **Welcome, GM** card offers three ways to start: build by hand, generate a world, or load the example campaign. At any time, click **Load example** in the header to load the example campaign. If port 8080 is in use, the dev server fails to start, so stop the other process first.
+
+A hosted build runs at <https://cartographer.tbmh.org>. The hosted build can be older than the source in this repository. Each origin has its own local storage, so a campaign that you save on the hosted build does not appear on your dev server. Use **Export** and **Import** to move it.
+
 ## Features
 
-With Campaign Builder, you can:
+### World building
 
-  - Build a tiled world visually, with regions, sub-regions, and major and minor points of interest
-    - You can use a set of pre-built tile images, or supply your own tile images. [WIP]
-    - Each tile carries metadata. You use the metadata to mark major features that players can find and interact with.
-    - Groups of tiles form a hierarchy. A world contains regions. A region contains sub-regions, and so on.
-    - You can zoom in and out of the different levels of the hierarchy. For example, you can zoom from a region into one sub-region to show its point-of-interest tiles.
-    - The way back out depends on the links that you already drew. You can walk off a sub-region on any side that touches the map above it. Where two regions share a border, you walk straight across into the next region, at the matching spot. An interior area leaves through its outer door or through the staircase that connects it to the level above or below. Build mode warns you when a node has no way in or out.
-    - You can reveal parts of the map as your party travels. Unexplored areas stay grayed out by the fog of war until your party moves closer.
-    - You can track your party's location on the map at all times. Inside a sub-region, a mini-map in the corner of the map shows about where the party is on the map one level up.
-  - Populate the world with creatures, from major enemies with life tracking to friendly and neutral NPCs, all in one list
-  - Run fights on a full-width combat screen. The screen shows a turn ribbon above the initiative order. Combatant cards work as target pickers, and each card shows what the combatant wears, swings, and holds in spell slots. One-click attack and cast buttons appear for the combatant whose turn it is. The combat log and dice tray sit alongside the screen. A player on a bound tab runs the turn of their own character. After the last enemy is defeated, the fight stays open until the GM ends it.
-    - Before the fight starts, the Encounters panel rates it for the GM alone: what the foes on the party's tile are worth in experience points, against the budget of the party's levels. A creature carries a challenge rating and the saving throws and skills it is trained in, and the app works out every bonus from those.
-  - Add resource tracking (items, D&D-style spell slots, and other resources that a character can use up)
-  - Add character sheets with full character stats. A sheet:
-    - shows class and subclass, race, background, and assembled proficiencies;
-    - shows hit dice and spellcasting;
-    - tracks level and progression, with class assignment at each level;
-    - lets you choose a subclass. The Eldritch Knight and the Arcane Trickster add spellcasting to the Fighter and the Rogue;
-    - supports multiclassing and choices for an ability score improvement or a feat. A feat comes from an editable catalog in the library, and its ability increases, proficiencies, and roll bonuses apply to the sheet when you take it. A class feature with choices, such as the Expertise of the Rogue, prompts its picks at level-up and applies them the same way.
-  - Simulate dice rolls and their results for any combination of dice that an interaction needs
-  - Curate a library of equipment, creature, spell, and feat templates that is independent of the campaign (the Library mode in the header). The library lists the built-in 5e defaults, and you can customize each one separately. Your overrides and additions export to a portable JSON file. The file saves over `library/campaign-library.json`, and it loads automatically into any new browser or clone. A campaign export bundles them too, and a campaign import offers to restore them, so one file moves a whole table.
-  - Switch the whole UI between light and dark with the theme switch in the header. You can also leave it on System to follow the preference of the operating system. The choice persists per browser.
+- Paint a tiled map with the built-in tile art, or generate a map with the procedural generator and then edit it.
+- Nest maps in a hierarchy. A world contains regions, a region contains towns and dungeons, and a building contains its floors.
+- Link a tile to a child map, so the party can zoom from a region into a town.
+- Mark points of interest. Each tile has notes that only the GM sees.
+- Get a warning in Build mode when a map has no way in or out.
+- Export any map as a PNG image.
+
+The data model accepts custom tile images, but the app has no control that adds one yet.
+
+### Sessions
+
+- Move the party across the map. The fog of war hides every area that the party has not seen, and it clears as the party walks.
+- Leave a sub-region from any side that touches the map above it. Where two regions share a border, the party walks straight across into the next region.
+- Take stairs and doors between the floors of a building.
+- Split the party into more than one group on the map.
+- See a mini-map in the corner inside a sub-region. It shows where the party stands on the map one level up.
+- Advance an in-game clock of six watches per day, and take short and long rests.
+- Keep a quest log, a list of NPCs, handouts with pictures, and a travelogue of what happened.
+
+### Combat
+
+- Run a fight on a full-width combat screen, with a turn ribbon above the initiative order.
+- Pick a target from the combatant cards. Each card shows armor, weapons, and spell slots.
+- Attack or cast with one click on the turn of the active combatant, and read the result in the combat log.
+- Check the difficulty of a fight before it starts. The Encounters panel shows the experience-point value of the foes against the budget for the party's levels, and only the GM sees it.
+- Keep a fight open after the last enemy falls, until the GM ends it.
+
+### Characters and creatures
+
+- Keep full character sheets: class and subclass, race, background, proficiencies, hit dice, and spellcasting.
+- Level up one class level at a time, with multiclassing, subclasses, and a choice of an ability score improvement or a feat.
+- Pick the choices of a class feature at level-up, such as the Expertise of the Rogue.
+- Track items, spell slots, and other resources that a character uses up.
+- Keep every creature in one list, from major enemies with hit points to friendly and neutral NPCs. A creature has a challenge rating and its trained saving throws and skills, and the app works out each bonus.
+- Roll any combination of dice in the dice tray.
+
+### Library
+
+- Curate templates for equipment, creatures, spells, and feats in Library mode. The templates do not belong to one campaign.
+- Start from the built-in 5th edition (5e) defaults, and override or add entries.
+- Export your library to a JSON file. Save the file over `library/campaign-library.json`, and every new browser or clone loads it at startup.
+- Include the library in a campaign export. A campaign import offers to restore it.
+
+### Player displays
+
+- Open a second browser tab in the Player role for a screen that the players see. A Player tab shows only the revealed map, and it shows enemy health as a band instead of exact hit points.
+- Bind a Player tab to one character, so that player runs their own turns in a fight.
+- Keep the tabs of one browser in step. Each save in the GM tab reaches the other tabs without a reload.
+
+The Player role hides GM information on the screen, but it is not a security control. A person at that browser can read the whole campaign from its storage. See [Limits of the Player view](docs/gm-reference.md#limits-of-the-player-view).
+
+### Appearance
+
+- Switch between the light and dark themes in the header, or follow the setting of the operating system. The app keeps the choice for each browser.
 
 ![Build mode: world tree, editable map, and the paint palette](docs/images/build-mode.png)
 
@@ -36,10 +94,14 @@ With Campaign Builder, you can:
 
 ![Play mode in the dark theme](docs/images/play-mode-dark.png)
 
-New to the app? Follow [`docs/tutorial-gm-first-session.md`](docs/tutorial-gm-first-session.md). It loads the example campaign and runs one session end to end. After that, [`docs/gm-guide.md`](docs/gm-guide.md) gives the steps for each task, and [`docs/gm-reference.md`](docs/gm-reference.md) describes every control and rule.
+## Documentation for GMs
+
+| Document | Use it to |
+| --- | --- |
+| [First session as GM](docs/tutorial-gm-first-session.md) | Load the example campaign and run one session from start to end |
+| [GM guide](docs/gm-guide.md) | Find the steps for one task, such as painting a region or staging an encounter |
+| [GM reference](docs/gm-reference.md) | Look up a control, a field, a limit, or a rule |
 
 ## Contributing
 
-This project welcomes contributions. See the [**`CONTRIBUTING.md`**](CONTRIBUTING.md) file for guidance on how to install the development environment, run the tests, and understand the codebase.
-
-[`docs/README.md`](docs/README.md) lists every document and says what kind it is: a tutorial, a how-to guide, a reference, or an explanation. Start with [`docs/tutorial-first-code-change.md`](docs/tutorial-first-code-change.md) to make one change end to end. Read [`docs/architecture.md`](docs/architecture.md) for the module layout and the map data model, [`docs/testing.md`](docs/testing.md) for how to test a change and check it visually, and [`docs/tile-assets.md`](docs/tile-assets.md) for the conventions for tile art.
+[CONTRIBUTING.md](CONTRIBUTING.md) tells you how to set up the tools, run the checks, and send a change. [docs/README.md](docs/README.md) lists every document by kind. To learn the code, start with [Your first code change](docs/tutorial-first-code-change.md), then read [Architecture](docs/architecture.md).

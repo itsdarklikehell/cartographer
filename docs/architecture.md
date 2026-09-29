@@ -2,11 +2,16 @@
 
 *Explanation. [`docs/README.md`](README.md) lists every document by kind.*
 
-Campaign Builder is a single-page browser app with no build step, no
-framework, and no runtime dependencies. The browser loads `index.html`,
-which pulls in `style.css` and `src/main.js` as a native ES module, and
-every other file is imported from `src/main.js`. Reading the codebase needs
-plain JavaScript and the DOM, nothing more.
+Campaign Builder is a single-page browser app with no framework and no
+runtime dependencies. `index.html` loads `style.css`, the small blocking
+script `src/boot.js`, and `src/main.js` as a native ES module. Every other
+source file is imported from `src/main.js`. To read the codebase, you need
+plain JavaScript and the DOM.
+
+esbuild bundles the sources for the dev server and for the production
+build, but the code does not depend on it. The same `index.html` runs the
+unbundled sources when a static server serves the repository root.
+[CONTRIBUTING.md](../CONTRIBUTING.md) describes both builds.
 
 Each deeper subsystem has its own guide:
 
@@ -20,16 +25,19 @@ Each deeper subsystem has its own guide:
 | [UI components](architecture/ui-components.md) | Reference | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |
 | [Conventions](architecture/conventions.md) | Reference | Performance patterns, UI and CSS rules, and how code here gets tested |
 
-Read this page first, then the guide for the area you change, because each
-guide stands alone and assumes only what this page says. If you have not
-changed anything here yet, the [first code change](tutorial-first-code-change.md)
-tutorial walks the whole loop once, from a running app to a tested change.
+Read this page first, and then read the guide for the area that you change.
+Each guide assumes only what this page says. If you have not changed
+anything here yet, follow the [first code change](tutorial-first-code-change.md)
+tutorial. It goes once through the whole loop, from a running app to a
+tested change.
 
 ## The big picture
 
 ```
   index.html + style.css
           |
+          +--> src/boot.js ....... before the first paint: applies the
+          |                        saved theme and the viewer role
           v
   src/main.js ................ composition root: builds one AppContext,
           |                    then calls each wiring module in order
@@ -37,73 +45,103 @@ tutorial walks the whole loop once, from a running app to a tested change.
   src/app/*.js ............... wiring modules, one per feature area;
           |                    mount panels, register views and actions,
           |                    keep per-feature UI state
-     _____|______________________________
-    |            |            |          |
-    v            v            v          v
-  src/ui/      src/map/    src/entities/  src/dice/, src/party/,
-  DOM widgets  canvas +    pure data      src/library/, src/campaign/
-  (panels,     pure map    models         (more pure logic)
-  dialogs,     logic
-  forms)          |
+     _____|________________________________________
+    |            |            |                    |
+    v            v            v                    v
+  src/ui/      src/map/    src/entities/,      src/dice/, src/party/,
+  DOM widgets  canvas +    src/combat/         src/quest/, src/handout/,
+  (panels,     pure map    pure rules and      src/time/, src/log/,
+  dialogs,     logic       data models         src/view/, src/library/,
+  forms)          |                            src/campaign/, src/util/
                   v
              src/storage/ ..... serialization, localStorage,
                                 file export/import, undo history
 ```
 
-UI widgets and wiring modules call *down* into the pure modules (`map/`,
-`entities/`, `storage/`, `dice/`, `party/`, `library/`). The pure modules
-never import from `ui/` or `app/` and never touch the DOM, which is what lets
-`node --test` cover most of the codebase with no browser. The
-[Conventions](architecture/conventions.md) guide describes the pattern in
-detail.
+UI widgets and wiring modules call *down* into the pure modules. The pure
+modules do not import from `ui/` or `app/`, so `node --test` covers most of
+the codebase with no browser. A few files in the pure directories use a
+browser API directly, and the browser checks cover them:
+
+- `map/TileRaster.js` and `map/MapExport.js` draw to an offscreen canvas.
+- `storage/fileIO.js` starts a file download.
+- `storage/SaveManager.js`, `storage/PlayerPatch.js`, and
+  `storage/GMLock.js` listen for the `storage` event of other tabs.
+- `view/CharacterClaim.js` builds the character picker of a Player tab
+  with the helpers in `ui/`.
+
+The [Conventions](architecture/conventions.md) guide describes the pattern
+in detail.
 
 ## Directory map
 
 ```
+index.html        the page: layout, Content Security Policy, script tags
+style.css         the stylesheet manifest (see below)
 src/
   main.js         composition root (see the wiring guide)
+  boot.js         before-paint script: theme and viewer role
   app/            wiring modules, one per feature area
-  types/          .ts declaration files, no runtime code
-  campaign/       campaign construction: blank/example builders, initial load
-  map/            tile grid, node hierarchy, canvas rendering, fog of war
+  ui/             DOM widgets: panels, dialogs, forms, the combat screen
+  map/            tile grid, node hierarchy, generators, canvas rendering, fog of war
+  entities/       creature, resource, equipment, and character models
+  combat/         initiative, attack resolution, action budget, reactions
+  data/           frozen 5e catalogs: classes, races, backgrounds, spells, feats
+  campaign/       blank and example campaign builders, and the initial load
+  party/          party position and split-party tokens; moving the party reveals fog
+  quest/          quests, objectives, and quest links
+  handout/        handout records, visibility filters, and form helpers
+  time/           the in-game clock of watches and days
+  log/            the travelogue
   dice/           dice roll logic
-  entities/       creature/resource/character models
-  library/        built-in default templates + custom-library merge logic
-  party/          party position tracking; triggers fog reveal
-  storage/        serialization, localStorage/file persistence, undo history
-  ui/             thin DOM widgets (DiceTray, CharacterSheet, panels, dialogs)
-styles/           feature-scoped CSS sheets; style.css @imports them in order
-tests/            node --test suites for the pure modules
+  library/        built-in templates merged with the GM's custom library
+  view/           view rules: stat bars, the shortcut table, theme, player lock
+  storage/        serialization, localStorage and file persistence, undo history
+  util/           small helpers: clamping, memoizing, deep freeze, seeded random
+  types/          .ts declaration files, no runtime code
+styles/           feature-scoped CSS sheets
+assets/tiles/     tile art, one directory per tile family
+fonts/            the bundled typefaces (see fonts/README.md)
+library/          campaign-library.json, the custom library loaded at startup
+tests/            node --test suites, and HTML preview pages for the browser
+bench/            performance harnesses (see bench/README.md)
+scripts/          the esbuild build, the deploy script, the developer guide build
+hooks/            the versioned pre-commit hook
 docs/             this documentation
 ```
 
-The project is written in plain JavaScript and is fully typechecked. Types
+The project is written in plain JavaScript, and TypeScript checks it. Types
 live in `.ts` files that contain only declarations, and the `.js` files
-reference those types through JSDoc comments. `tsconfig.json` sets `allowJs`
-and `checkJs`, so `pnpm run typecheck` checks the whole project and emits
-nothing.
+reference those types through JSDoc comments. `tsconfig.json` sets `allowJs`,
+`checkJs`, and `strict`, and includes `src/` and `docs/gallery/`. The
+command `pnpm run typecheck` checks those two trees and emits nothing. It
+does not check `tests/` or `bench/`.
 
 `style.css` is an import manifest. It `@import`s the feature sheets under
-`styles/`, with base tokens and primitives first and the responsive overrides
-last, so the cascade order is stated in exactly one place.
+`styles/` in cascade order. `base.css` comes first with the design tokens
+and the shared primitives, and `responsive.css` comes last with the
+overrides for narrow screens. The order lives in this one file, so it shows
+which sheet overrides which.
 
 ## Pure logic and DOM glue
 
-Almost every module here is either pure logic, which takes its inputs as
-arguments (including side effects such as the random number generator or the
-current time) and returns new values without changing what it received or
-touching the DOM, or thin DOM glue, which connects that logic to elements
-and events. `dice/`'s `roll(selection, rng)`, `map/MapNavigator.js`,
-`map/FogOfWar.js`, all of `entities/`, and the serialize and deserialize
-functions of `storage/SaveManager.js` are pure logic. The widgets in `ui/`,
-the canvas event handlers, and the wiring modules in `app/` are glue.
+Almost every module here is either pure logic or thin DOM glue. Pure
+logic takes its inputs as arguments, including side effects such as the
+random number generator or the current time. It returns new values, and it
+does not change what it received or touch the DOM. Glue connects that logic
+to elements and events.
 
-Unit tests cover the pure logic, and the browser checks the glue (see
-`docs/testing.md`). When you add a feature, decide which part is a pure
-function and which part is glue, then split the code at that point so that
-both halves stay simple. Anything you can construct without the DOM belongs
-in a pure module. For the same reason, the example campaign is built in
-`campaign/`, not in the wiring module that loads it:
+`dice/`'s `roll(selection, rng)`, `map/MapNavigator.js`, `map/FogOfWar.js`,
+all of `entities/`, and the serialize and deserialize functions of
+`storage/SaveManager.js` are pure logic. The widgets in `ui/`, the canvas
+event handlers, and the wiring modules in `app/` are glue.
+
+Unit tests cover the pure logic, and browser checks cover the glue (see
+[Testing a change](testing.md)). When you add a feature, decide which part
+is a pure function and which part is glue, and split the code at that point.
+Anything that you can construct without the DOM belongs in a pure module.
+For the same reason, `campaign/` builds the example campaign, and the
+wiring module only loads it:
 
 | File | What it builds |
 | --- | --- |
@@ -116,11 +154,13 @@ in a pure module. For the same reason, the example campaign is built in
 | `ExampleStory.js` | The quests with their steps and links |
 | `ExampleHandouts.js` | The handouts, bound to their story places |
 
-Pure functions take a value and return a new value instead of changing the
-value in place: `applyDamage(creature, n)` returns a new creature, and
-`setTile(node, tile)` returns a new node. Several caches depend on this rule,
-because once code hands out an object no code changes that object in place,
-so a cache keyed on the object itself never goes stale. The
+`Campaigns.js` combines the maps and the content, and it also builds the
+blank campaign and loads the saved one at startup.
+
+Pure functions return a new value instead of changing the value in place.
+For example, `applyDamage(creature, n)` returns a new creature, and
+`setTile(node, tile)` returns a new node. Several caches depend on this
+rule. Code never changes an object in place after it hands the object out,
+so a cache keyed on the object itself never serves stale data. The
 [Conventions](architecture/conventions.md) guide covers these caches and
-explains why the code enforces immutability at runtime instead of assuming
-it.
+explains why the code enforces immutability at runtime.

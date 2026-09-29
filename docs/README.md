@@ -1,32 +1,37 @@
 # Documentation
 
-Each document here is a tutorial, a how-to guide, a reference, or an
-explanation, and the kind tells you what the document does for you.
+This page lists every document in `docs/`. Each document is one of four
+kinds, and the kind tells you what the document does for you.
 
 | Kind | What it does | When you read it |
 | --- | --- | --- |
 | Tutorial | Takes you through one complete piece of work, step by step | You are new and want to learn by doing |
-| How-to guide | Gives the steps for one task you already want to do | You know the goal and want the recipe |
+| How-to guide | Gives the steps for one task you already want to do | You know the goal and want the steps |
 | Reference | Describes what exists: controls, fields, rules, and modules | You need a fact while you work |
 | Explanation | Says why the app or the code works the way it does | You want the background |
 
-A document stays inside its kind, so a tutorial does not list every option,
-a reference does not teach, and an explanation gives no steps.
+A document stays inside its kind. A tutorial does not list every option, a
+reference does not teach, and an explanation gives no steps.
+
+If you run a campaign, start with [First session as GM](tutorial-gm-first-session.md).
+If you change the code, start with [First code change](tutorial-first-code-change.md)
+and then read [Architecture](architecture.md).
 
 ## Tutorials
 
-| Document | What you build |
+| Document | What you do |
 | --- | --- |
-| [First session as GM](tutorial-gm-first-session.md) | You load the example campaign, move the party, and run one fight |
-| [First code change](tutorial-first-code-change.md) | You start the app, change one module, test the change, and see it in the browser |
+| [First session as GM](tutorial-gm-first-session.md) | Load the example campaign, move the party, and run one fight |
+| [First code change](tutorial-first-code-change.md) | Start the app, change one module, test the change, and see it in the browser |
 
 ## How-to guides
 
 | Document | Tasks it covers |
 | --- | --- |
 | [GM guide](gm-guide.md) | Build a world, run a session, track characters, curate the library |
+| [Contributing](../CONTRIBUTING.md) | Set up the tools, run the checks, build, and send a change |
 | [Testing a change](testing.md) | Run the unit tests, the typecheck, the linter, and the browser checks |
-| [Adding a tile](adding-a-tile.md) | Draw a tile, register it, and check that it abuts its neighbors |
+| [Adding a tile](adding-a-tile.md) | Draw a tile, register it, and check that it joins its neighbors |
 
 ## Reference
 
@@ -37,6 +42,8 @@ a reference does not teach, and an explanation gives no steps.
 | [UI components](architecture/ui-components.md) | The shared widget builders, the panel contract, and the CSS vocabulary |
 | [The app wiring layer](architecture/app-wiring.md) | The `AppContext` object and what each `src/app/` module owns |
 | [Conventions](architecture/conventions.md) | The performance, UI, and testing rules that code here follows |
+| [Benchmarks](../bench/README.md) | The performance harnesses, their options, and how to read their output |
+| [Bundled fonts](../fonts/README.md) | The three typefaces, their licenses, and where the styles use them |
 
 ## Explanation
 
@@ -50,12 +57,13 @@ a reference does not teach, and an explanation gives no steps.
 | [Testing strategy](testing-strategy.md) | Why the coverage total is low, and what the suite cannot reach |
 | [Curated spells](spells-missing.md) | Why the app ships 54 spells and not the full SRD |
 
-`dev-guide.html` sits beside these documents. It is a generated tour of the
-codebase rather than one of the four kinds, and `CONTRIBUTING.md` in the
-project root tells you how to rebuild it.
+## Browser pages
 
-`gallery.html` renders every shared builder in `src/ui/` from the real
-modules, with the call that built each one and the classes that the call
-produces. It loads ES modules, so start `pnpm run dev` and open
-`http://localhost:8080/docs/gallery.html` when you need to see a widget
-before you use it.
+The two HTML pages in `docs/` sit outside the four kinds. `pnpm run guide`
+generates `dev-guide.html`, so do not edit it by hand. `gallery.html` and
+the scripts in `docs/gallery/` are written by hand.
+
+| Page | What it shows | How to open it |
+| --- | --- | --- |
+| `dev-guide.html` | A tour of the codebase: the import map, the mount order, the packing layers of a save, and a checklist for a pull request | Open the file in a browser. Rebuild it with `pnpm run guide` (see [Contributing](../CONTRIBUTING.md#the-developer-guide)) |
+| `gallery.html` | Every shared builder in `src/ui/`, drawn from the real modules, with the call that built it and the classes that the call adds | Start `pnpm run dev`, and open `http://127.0.0.1:8080/docs/gallery.html`. The page loads ES modules, so it does not work from a `file://` address |

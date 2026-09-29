@@ -1,79 +1,119 @@
 # Contributing to Campaign Builder
 
-Thank you for your interest in this project.
+*How-to guide. [docs/README.md](docs/README.md) lists every document by kind.*
 
-## Core Philosophy
+This guide tells you how to set up the development tools, run the app and its checks, and send a change. To walk through one complete change first, follow [Your first code change](docs/tutorial-first-code-change.md).
 
-- **Framework-Free Vanilla JS:** The application logic is plain, modern JavaScript (ES modules). It uses standard browser APIs. The project has no runtime frameworks.
-- **Build Step for Production:** Development happens on the source files. A build process bundles and minifies the assets for production. This process is a convenience for developers. It does not change the framework-free nature of the runtime code.
-- **Separation of Concerns:** The code separates pure, stateful logic from the code that shows the UI in the DOM.
+## Design principles
 
-## Development Setup
+- **Plain JavaScript.** The app is written in modern JavaScript as native ES modules, and it uses only standard browser APIs. It has no runtime dependencies and no framework.
+- **Types without a compile step.** Type declarations live in `.ts` files under `src/types/`, and the `.js` files use them through JSDoc comments, for example `@typedef {import('../types/map.js').Tile}`. TypeScript only checks the code. It emits nothing.
+- **A bundler for serving only.** esbuild bundles the sources for the dev server and for the production build. The runtime code does not depend on esbuild, and `index.html` loads `src/main.js` directly when a static server serves the repository root.
+- **Pure logic apart from DOM glue.** Rules, data models, and the save format live in modules that do not touch the DOM, so unit tests cover them in Node. [Architecture](docs/architecture.md) describes the split.
 
-This project uses `pnpm` to manage development tools and to run a local development server.
+## Prerequisites
 
-1.  **Install Dependencies:**
-    The development environment uses `esbuild` for bundling, `typescript` for type checking, `eslint` for linting, and `prettier` for formatting. The lockfile pins each version. Run this command to install them:
-    ```bash
-    pnpm install
-    ```
+- Node.js 22 or later. The browser benchmark uses the `WebSocket` global that Node 22 added.
+- pnpm 11. The `devEngines` field in `package.json` names the version, and pnpm downloads it if yours does not match.
+- Google Chrome, only if you run `pnpm bench`.
 
-2.  **Run the Local Dev Server:**
-    The project includes a live-reloading development server. The server rebuilds the assets each time you change a source file.
-    ```bash
-    pnpm run dev
-    ```
-    Open the local URL that appears in your terminal (usually `http://localhost:8080`) in your browser.
+## Set up the tools
 
-3.  **Make One Change:**
-    [`docs/tutorial-first-code-change.md`](docs/tutorial-first-code-change.md) walks the whole loop once: change a module, test it, and see the result in the browser. [`docs/README.md`](docs/README.md) lists every other document and says what kind it is.
+1. Install the development tools that the lockfile pins (esbuild, TypeScript, ESLint, and Prettier):
 
-## Development Workflow
+   ```bash
+   pnpm install
+   ```
 
-- **Production Build:**
-  Run this command to generate a production build in the `dist/` directory:
-  ```bash
-  pnpm run build
-  ```
+2. Turn on the pre-commit hook for this clone:
 
-- **Run Tests:**
-  Tests use Node's built-in test runner and run against the source files, not the built assets.
-  ```bash
-  # Run the full test suite
-  pnpm test
+   ```bash
+   git config core.hooksPath hooks
+   ```
 
-  # Same run, but list the name of every test
-  TEST_VERBOSE=1 pnpm test
-  ```
-  The results group by the area under `src/`, with one line for each test file. Only a failing file lists its individual tests. See [`docs/testing.md`](docs/testing.md) for the format.
+The hook runs the tools from `node_modules`, so step 1 must come first. See [The pre-commit hook](#the-pre-commit-hook) for what it checks.
 
-- **Run Linter:**
-  ```bash
-  pnpm run lint
-  ```
+## Start the dev server
 
-- **Run Type Checker:**
-  Types live in `src/types/*.ts` as declaration files. The `.js` files reference them with JSDoc comments (`@typedef {import('../types/map.js').Tile}`).
-  ```bash
-  pnpm run typecheck
-  ```
+Start the server, and leave the terminal open:
 
-- **Developer Guide:**
-  `docs/dev-guide.html` is an interactive tour of the codebase. Open it in a browser to see the import map, the mount order of `src/main.js`, the packing layers of a save, and a checklist for a pull request. The page is generated, so do not edit it by hand. Rebuild it with this command:
-  ```bash
-  pnpm run guide
-  ```
-  Counts, import edges, mount order, registry entries, storage keys, code snippets, and save sizes are read out of the repository each time. The prose and the classifications live in `scripts/dev-guide/content.mjs`. Every file and symbol that the prose names is checked during the build, so a rename fails the build instead of leaving stale text behind. `pnpm run guide:check` reports whether the committed page matches the current tree.
+```bash
+pnpm run dev
+```
 
-- **Automated Checks:**
-  The project provides a versioned pre-commit hook. The hook formats the staged files with prettier, then runs the linter, the test suite, and the type checker before each commit. It runs the versions from `node_modules`, so run `pnpm install` before your first commit. It also regenerates the developer guide when a commit touches the source tree. A commit that touches `src/` also gets a fast benchmark check. That check warns about a path over its performance budget, and it never blocks the commit. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
-  ```bash
-  git config core.hooksPath hooks
-  ```
+The server prints `http://127.0.0.1:8080`. Open that address in a browser.
 
-## Making a Contribution
+The dev server bundles the sources into `dist/` and serves `dist/` on port 8080. It accepts connections from the same computer only. When you save a file under `src/` or a stylesheet, esbuild rebuilds the bundle, and you reload the page to see the change. The page does not reload by itself.
 
-- Add unit tests for any new pure logic.
-- If you change the UI or the canvas, open it in a browser. Make sure that it looks and works correctly.
-- Keep pull requests focused on a single feature or bug fix.
-- Before you submit a pull request, make sure that all automated checks pass.
+The server writes `dist/index.html` and copies `assets/` once, at start. If you change `index.html` or a file under `assets/`, stop the server and start it again.
+
+The server also serves `docs/`, `src/`, `styles/`, and `fonts/` as plain files through links in `dist/`. Pages that load the source modules directly, such as the widget gallery at `http://127.0.0.1:8080/docs/gallery.html`, use these links.
+
+## Run the checks
+
+| Command | What it does |
+| --- | --- |
+| `pnpm test` | Runs every unit test in `tests/` with the Node test runner. The output has one line for each test file, grouped by the area under `src/`. Only a failing file lists its tests |
+| `TEST_VERBOSE=1 pnpm test` | Runs the same tests, and lists the name of every test |
+| `node --test tests/Conditions.test.js` | Runs one test file. Use it while you work on one module |
+| `pnpm run test:flat` | Runs every test with the default reporter of Node |
+| `pnpm run coverage` | Runs every test, and reports line, branch, and function coverage for each file |
+| `pnpm run lint` | Runs ESLint over the tree |
+| `pnpm run typecheck` | Runs the TypeScript checker over `src/` and `docs/gallery/` |
+| `pnpm run guide:check` | Fails if `docs/dev-guide.html` does not match the current source tree |
+
+Do not use `pnpx tsc` for the typecheck. It downloads a placeholder package named `tsc` that checks nothing.
+
+The tests run against the source files, not the bundle. [Testing a change](docs/testing.md) describes the test output, the browser checks, and the preview pages.
+
+## The pre-commit hook
+
+The hook in `hooks/pre-commit` runs these steps in order, and stops the commit at the first failure:
+
+1. It formats the staged `.js`, `.ts`, and `.css` files with Prettier, and stages them again.
+2. It rebuilds `docs/dev-guide.html` and stages it, if the commit changes `src/`, `tests/`, `package.json`, or the guide scripts.
+3. It runs ESLint.
+4. It runs the unit tests.
+5. It runs the typecheck.
+6. It runs `pnpm run bench:commit`, if the commit changes `src/`. This step prints a warning when a code path is over its time budget, and it never stops the commit.
+
+> **Warning:** Step 1 stages the whole file again. If you staged only part of a file, the hook also stages the rest of that file. To prevent this, commit or stash the other changes first.
+
+Prettier formats code only. It skips Markdown, HTML, and JSON files, as `.prettierignore` sets.
+
+## The developer guide
+
+`docs/dev-guide.html` is a generated tour of the codebase. Open it in a browser to see the import map, the mount order in `src/main.js`, the packing layers of a save, and a checklist for a pull request.
+
+Do not edit the page by hand. Rebuild it with this command:
+
+```bash
+pnpm run guide
+```
+
+The build reads counts, import edges, the mount order, registry entries, storage keys, code snippets, and save sizes from the repository. The prose and the classifications live in `scripts/dev-guide/content.mjs`. The build checks every file and symbol that the prose names, so a rename fails the build and does not leave stale text.
+
+## Benchmarks
+
+`pnpm bench` and the four `pnpm run bench:*` scripts measure the app in Chrome and the pure modules in Node. [bench/README.md](bench/README.md) describes each harness, its options, and its output.
+
+## Production build and deploy
+
+Build the production files:
+
+```bash
+pnpm run build
+```
+
+The build writes minified bundles to `dist/`. Each bundle name has a content hash, so a browser never serves a cached bundle from an older deploy with a newer `index.html`. The build also copies `assets/`, `CNAME`, and `library/campaign-library.json`.
+
+> **Warning:** `pnpm run deploy` force-pushes `dist/` to the `gh-pages` branch of the public repository, and it replaces the published site. Only a maintainer runs it.
+
+The deploy script installs the exact versions in the lockfile, builds, tags the source commit as `deploy-v<version>` in your local clone, and pushes. Push the tag yourself with the release.
+
+## Send a change
+
+- Keep each pull request to one feature or one fix.
+- Add unit tests for new pure logic.
+- If you change the UI or the canvas, open the app in a browser and check the change. Read the browser console for errors.
+- Make sure that the tests, the linter, and the typecheck pass before you open the pull request.

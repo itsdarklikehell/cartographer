@@ -36,32 +36,46 @@ export const DIRECTORY_META = {
     kind: 'pure',
     role: 'Serialize, pack, migrate, and the delta history. Browser APIs are confined to thin wrappers.',
   },
-  combat: { kind: 'pure', role: 'Initiative order, attack resolution, and loadout reads.' },
+  combat: {
+    kind: 'pure',
+    role: 'Initiative order, attack resolution, the action budget, reactions, and loadout reads.',
+  },
   dice: {
     kind: 'pure',
     role: 'roll(selection, rng). The generator is an argument, so a test can pass a stub.',
   },
-  party: { kind: 'pure', role: 'Party position and split-party tokens. Moving the party reveals fog.' },
-  quest: { kind: 'pure', role: 'Quest records and their status transitions.' },
+  party: {
+    kind: 'pure',
+    role: 'Party position and split-party tokens. Moving the party reveals fog.',
+  },
+  quest: { kind: 'pure', role: 'Quest records, objectives, links, and status transitions.' },
   library: {
     kind: 'pure',
     role: 'Merges the built-in catalogs with the GM customs, tagging each entry default, override, or custom.',
   },
   campaign: { kind: 'pure', role: 'Blank and example campaign builders, and the initial load.' },
-  handout: { kind: 'pure', role: 'Handout records and their defaults.' },
-  time: { kind: 'pure', role: 'The in-game clock and rest handling.' },
-  log: { kind: 'pure', role: 'Travelogue entries and the incremental read the panel renders from.' },
-  view: { kind: 'pure', role: 'View rules that a widget reads: stat bars, the shortcut table.' },
-  data: { kind: 'data', role: 'Frozen catalogs: classes, races, backgrounds, skills, spells.' },
+  handout: { kind: 'pure', role: 'Handout records, visibility filters, and dialog helpers.' },
+  time: { kind: 'pure', role: 'The in-game clock of watches and days.' },
+  log: {
+    kind: 'pure',
+    role: 'Travelogue entries and the incremental read the panel renders from.',
+  },
+  view: {
+    kind: 'mixed',
+    role: 'View rules that a widget reads: stat bars, the shortcut table, the theme, the player lock. CharacterClaim.js builds the Player-tab picker and is the glue half.',
+  },
+  data: {
+    kind: 'data',
+    role: 'Frozen catalogs: abilities, classes, races, backgrounds, skills, spells, feats, creatures, and challenge ratings.',
+  },
   util: {
     kind: 'pure',
-    role: 'Clamping, identity memos, deep freeze, seeded random. Imports nothing.',
+    role: 'Clamping, identity memos, deep freeze, seeded random, idle scheduling, and text helpers. Imports nothing.',
   },
   types: {
     kind: 'types',
     role: 'Declaration files only, with no runtime code. The .js files point here through JSDoc, so no import edge leads to this directory.',
   },
-  platform: { kind: 'pure', role: 'Storage and file adapters behind one interface.' },
 };
 
 export const KIND_GROUPS = [
@@ -79,7 +93,7 @@ export const KIND_GROUPS = [
 export const STAGE_NOTES = {
   raw: 'Every tile and every entity written in full, the way they sit in memory.',
   tiles:
-    'packTile deletes default-valued fields from a copy, so a field added later still survives the round trip, and withTileDefaults puts the defaults back on load.',
+    'packTile deletes default-valued fields from a copy, so a field added later keeps its value through the round trip, and withTileDefaults puts the defaults back on load.',
   entities:
     'packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier.',
   assets:
@@ -231,7 +245,7 @@ export const CHECKLIST = [
   ],
   [
     'Lint, suite, and typecheck all pass',
-    'The pre-commit hook runs all three, plus the formatter.',
+    'The pre-commit hook runs the formatter and then all three.',
     [],
   ],
 ];
@@ -242,7 +256,10 @@ export const CHECKLIST = [
  */
 export const COMMANDS = [
   { command: 'pnpm install', note: 'Development tools only.' },
-  { script: 'dev', note: 'Live-reloading dev server. Rebuilds on every source change.' },
+  {
+    script: 'dev',
+    note: 'Dev server on 127.0.0.1:8080. Rebuilds on every source change. Reload the page to see the change.',
+  },
   {
     command: 'node --test tests/Character.test.js',
     note: 'One file while you iterate.',
@@ -250,13 +267,16 @@ export const COMMANDS = [
   { script: 'test', note: 'The whole suite. Run it before every commit.' },
   { script: 'coverage', note: 'Line, branch, and function coverage across all of src/.' },
   {
-    command: 'pnpm --package=typescript dlx tsc --noEmit',
-    note: 'The real typecheck. Not pnpx tsc, which resolves a placeholder package and checks nothing.',
+    script: 'typecheck',
+    note: 'Typechecks src/ and docs/gallery/. Do not use pnpx tsc, which downloads a placeholder package and checks nothing.',
   },
   { script: 'lint', note: 'ESLint over the tree.' },
   { script: 'build', note: 'Minified production output in dist/.' },
   { script: 'guide', note: 'Rebuilds this page from the source tree.' },
-  { command: 'git config core.hooksPath hooks', note: 'Once per clone. Turns on the pre-commit gate.' },
+  {
+    command: 'git config core.hooksPath hooks',
+    note: 'Once per clone. Turns on the pre-commit gate.',
+  },
 ];
 
 /** Snippets, named by file and symbol so they follow the code when it moves. */

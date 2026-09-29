@@ -1,102 +1,169 @@
 # Benchmarks
 
-The project has five benchmark harnesses. Each one measures a different part
-of the app.
+*Reference.*
 
-- `pnpm bench` drives the real app in Chrome and reports what a tab costs: DOM
-  nodes, listeners, heap, layout and script time, long tasks, and a sampled CPU
-  profile per scenario.
-- `pnpm bench:pure` times the pure modules in Node, with no browser. Generation,
-  serialization, fog reveal, and the world tree run here.
-- `pnpm bench:scale` times the whole-state paths as the world grows, from the
-  example campaign up to four hundred extra generated regions. Its table shows
-  which paths grow with the world and where each one crosses the 50 ms line
-  that a GM feels as a stall. Its `adopt` column times the full read that a
-  follower tab takes, with the live nodes passed to `deserialize`, against a
-  save with one changed node. Run it before and after a change to the save,
-  diff, or reconcile paths.
-- `pnpm bench:step` times one Play-mode party step on square nodes from 48 to
-  400 cells on a side. Its table shows whether a step grows with the node.
-- `pnpm bench:commit` is the fast check that the pre-commit hook runs. It times
-  the same whole-state paths at one large world size and compares each median
-  against a budget from `budgets.json`. It runs in under a second.
+The harnesses in this directory measure how fast the app runs and how much
+memory it uses. None of them adds a dependency.
 
-None of them adds a dependency. The browser harness talks the Chrome DevTools
-Protocol over the `WebSocket` that Node 22 ships, so there is no Playwright or
-Puppeteer install.
+| Command | What it measures | Where it runs |
+| --- | --- | --- |
+| `pnpm bench` | What a tab costs in the real app: DOM nodes, listeners, heap, layout and script time, long tasks, and a sampled CPU profile for each scenario | Chrome |
+| `pnpm bench:pure` | The pure modules: generation, serialization, fog reveal, and the world tree | Node |
+| `pnpm bench:scale` | The whole-state paths as the world grows, from the example campaign up to 400 extra generated regions | Node |
+| `pnpm bench:step` | One Play-mode party step on square nodes from 48 to 400 cells on a side | Node |
+| `pnpm bench:commit` | The whole-state paths at one large world size, against the budgets in `budgets.json`. The pre-commit hook runs it | Node |
 
-## Running the browser harness
+The `bench:scale` table shows which paths grow with the world, and where
+each one passes 50 ms, the length of a stall that a GM notices. Its `adopt`
+column times the full read that a follower tab does: `deserialize` of a
+save with one changed node, with the live nodes passed in. Run it before
+and after a change to the save, diff, or reconcile paths.
+
+The `bench:step` table shows whether a party step grows with the size of
+the node. `bench:commit` finishes in about one second.
+
+## Run the browser harness
+
+You need Google Chrome. If Chrome is not in the usual place for your
+platform, set `CHROME_PATH` to the executable.
 
 ```
-pnpm bench                          every scenario, headless
-pnpm bench -- --headful             the same run in a visible window
-pnpm bench -- --only=paint-stroke   one scenario
-pnpm bench -- --port=8934           a dev server that is already running
-pnpm bench -- --budget=120000       a longer per-scenario cap
+pnpm bench                                every scenario, headless
+pnpm bench -- --headful                   the same run in a visible window
+pnpm bench -- --only=paint-stroke         one scenario
+pnpm bench -- --only=paint-stroke,zoom-pan  two scenarios
+pnpm bench -- --port=9000                 a server that already runs on port 9000
+pnpm bench -- --budget=120000             a longer time cap for each scenario, in ms (default 60000)
 ```
 
-The harness serves the repository with a small Node static server when the
-port is closed, and it stops only a server that it started. The app fetches
-about 340 modules at once on boot, and `python3 -m http.server` resets some of
-those connections, which leaves the page with no app. Chrome runs with a
-throwaway profile, so your own browser stays closed and every run starts with an
-empty localStorage.
+The harness uses port 8934 unless you pass `--port`. If no server listens on
+the port, the harness serves the repository with a small Node static
+server, and it stops only a server that it started. Do not use
+`python3 -m http.server` as the server. The app requests about 340 modules
+at once on boot, and that server resets some of the connections, so the
+page loads with no app.
 
-Set `CHROME_PATH` when Chrome is not in the usual place for the platform.
+Chrome runs with a new, empty profile for each run. Your own browser
+profile stays untouched, and every run starts with an empty localStorage.
 
-## What a run writes
+The harness talks the Chrome DevTools Protocol over the `WebSocket` global
+of Node 22, so it needs no Playwright or Puppeteer install.
 
-Each run makes one directory under `bench/results/`:
+## Output of a run
 
-- `summary.md`: the table to read, and the ten hottest functions per scenario.
-- `metrics.json`: every reading, for a diff between two runs.
-- `<scenario>.cpuprofile`: a sampled profile at 100 microseconds. Open it in the
-  DevTools Performance panel for a flame chart. Chrome loads the file through
-  the Load button in that panel.
+Each run writes one directory under `bench/results/`. Git ignores this
+directory.
 
-Results are not committed.
+| File | Contents |
+| --- | --- |
+| `summary.md` | The table to read, and the ten functions with the most self time in each scenario |
+| `metrics.json` | Every reading, so that you can compare two runs |
+| `<scenario>.cpuprofile` | A CPU profile sampled every 100 microseconds |
+
+To see a flame chart, open the DevTools Performance panel in Chrome, click
+the Load button, and pick a `.cpuprofile` file.
+
+## Scenarios
+
+| Scenario | What it does |
+| --- | --- |
+| `boot` | A cold load, up to the first mounted panel |
+| `load-example` | Builds the example campaign, saves it, and reloads onto it |
+| `paint-stroke` | One authoring stroke of 24 cells |
+| `generate-map` | Procedural generation through the Generate dialog |
+| `zoom-pan` | Twenty wheel-zoom steps at the center of the canvas |
+| `play-pan` | One right-drag pan across the fog-revealed map in Play mode |
+| `panel-tabs` | Thirty sidebar tab switches |
+| `rehydrate` | Fifty cross-tab save adoptions, each a full read of the save |
+| `combat-turns` | Starts a fight, advances twenty turns, and ends it |
+| `rehydrate-focus` | Ten cross-tab save adoptions, and a check that keyboard focus stays in place. It reports `focusKept`, not a time |
+
+The runner always adds `boot`, because `boot` opens the app. The scenarios
+after `load-example` read the example campaign. If `--only` names one of
+them without `load-example`, the runner adds `load-example` in front and
+prints a note. Without it, those scenarios would drive an empty campaign
+and measure nothing. `rehydrate-focus` reloads onto a seed save, so it runs
+last.
+
+A scenario reports `skipped` when the control that it needs is absent, and
+the run continues. For example, the fight scenario needs an encounter on
+the party's tile, so it first loads a save that puts the party there
+(`seed.js`). `load-example` is the only scenario marked `prerequisite`. If
+it skips or fails, the runner stops and exits with status 1, because the
+scenarios after it have no campaign to read.
+
+Every scenario drives the UI as a GM does, with a click, a drag, a wheel
+gesture, or a `storage` event. No scenario reads or writes app state
+directly, so each number covers the same code that a real action runs.
+
+## Reading the numbers
+
+| Column | Meaning |
+| --- | --- |
+| Wall | The whole scenario, including the waits of the harness. Compare it between runs, not against a budget |
+| Script, Layout, Style | The change in the Chrome counters over the scenario. A scenario that reloads the document resets these counters, so its row reads `(reload)` |
+| Long tasks | The tasks over 50 ms, which a GM notices as a stall. A row with no long tasks can still be slow in total |
+| Frame p95 | The 95th percentile gap between animation frames. A p95 far above the p50 shows a stall that a mean hides |
+| Nodes, Listeners | The signal for a leak. `rehydrate` and `panel-tabs` repeat one rebuild many times and end where they started, so growth in those two rows points to something that a rebuild does not release |
+| Hot functions | Self time from the sampled profile. `(program)` and `(idle)` are the browser itself, not app code |
 
 ## The commit check
 
-The pre-commit hook runs `bench:commit` when a commit touches `src/`. The
-check is informational. The table prints on every run. A path over its budget
-prints a loud warning, and the commit still goes through. The warning is a
-prompt to look at the change before you push it.
+The pre-commit hook runs `bench:commit` when a commit changes `src/`. The
+check prints its table on every run. If a path is over its budget, it
+prints a warning, and the commit still goes through. Look at the change
+before you push it.
 
-The budgets live in `budgets.json`. They sit well above the medians of a
-healthy run, so machine speed and background noise do not trip them. A breach
-means a code path does more work than before. When a change moves a cost on
-purpose,
-re-measure with `pnpm bench:commit` and raise the budget in the same commit.
+The budgets in `budgets.json` are well above the medians of a normal run,
+so machine speed and background load do not trip them. A path over its
+budget does more work than the budget allows. If a change adds cost on
+purpose, run `pnpm bench:commit` again and raise the budget in the same
+commit.
 
-The `heapPerTile` row is a memory budget, in bytes. It loads the campaign
-from its save, saves it once, and divides the heap that the result keeps by
-the tile count (`heap.js`). The reading covers the live tiles and every cache
-that a load and a save fill, and it sits near 150 bytes. A cache that keeps
-one record per tile for the whole session puts it over its budget of 220 bytes:
-a cache of packed tiles in V8's dictionary mode reads about 690.
+| Row | Budget | Normal reading | What it measures |
+| --- | --- | --- | --- |
+| `heapPerTile` | 220 bytes | about 150 bytes | The heap that a load and one save keep, divided by the tile count (`heap.js`) |
+| `adopt` | 12 ms | about 5 ms | The full read of a follower tab when the undo log cannot supply the change |
+| `partyStep` | 0.3 ms | about 0.01 ms | One party step on the example world node |
+| `partyStep200` | 0.3 ms | about 0.04 ms | One party step on a fogged 200x200 node |
 
-The `adopt` row times the full read that a follower tab takes when the log
-cannot carry it: `deserialize` of a save with one changed node, given the
-live nodes, then `reconcile`. Each unchanged node matches its cached
-encoded form and keeps the live object, so the row reads about 5 ms. A read
-that decodes every node reads about 25 ms, the same as the `reconcile` row,
-and is over its budget of 12 ms.
+The other rows (`serialize`, `deserialize`, `toTileGrid`, `reconcile`,
+`diffWarm`, `diffCold`, `fogReveal`, and `worldTree`) time one path each,
+with the budgets in `budgets.json`.
+
+### `heapPerTile`
+
+This row loads the campaign from its save, saves it once, and divides the
+heap that the result keeps by the tile count. The reading covers the live
+tiles and every cache that a load and a save fill. A cache that keeps one
+record per tile for the whole session puts the row over its budget. For
+example, a cache of packed tiles in the dictionary mode of V8 reads about
+690 bytes.
+
+### `adopt`
+
+This row runs `deserialize` of a save with one changed node, with the live
+nodes passed in, and then `reconcile`. Each unchanged node matches its
+cached encoded form and keeps its live object, so the row reads about 5 ms.
+A read that decodes every node reads about 25 ms, the same as the
+`reconcile` row, and goes over the budget.
+
+### `partyStep` and `partyStep200`
 
 The `partyStep` row and the `step ms` column of the scale table time one
-Play-mode party step on the example world node, averaged over a walk along
-its middle row. A step is the fog reveal plus the values that the next frame
-and the map description read: the region groups, slots, outlines, and image
-chunks, the revealed-id lookup, the span blocks, and `describeNode`
-(`party-step.js`). The region caches key on tile stamps, so a step that only
-reveals fog costs about 0.01 ms. A cache that keys on the node instead
+Play-mode party step, averaged over a walk along the middle row of the
+node. A step is the fog reveal plus the values that the next frame and the
+map description read: the region groups, slots, outlines, and image chunks,
+the lookup of revealed ids, the span blocks, and `describeNode`
+(`party-step.js`). The region caches key on tile stamps, so a step that
+only reveals fog costs about 0.01 ms. A cache that keys on the node
 rebuilds on every step.
 
 The `partyStep200` row walks the same step on a fogged 200x200 node
-(`sweepNode` in `party-step.js`), where it costs about 0.04 ms. A step
-reader that scans every tile makes the row read about 0.9 ms, which is over
-its budget of 0.3 ms, while the example world node is too small to show the
-scan. `pnpm bench:step` prints the same walk at each node size:
+(`sweepNode` in `party-step.js`). A step reader that scans every tile makes
+this row read about 0.9 ms, over its budget. The example world node is too
+small to show that scan. `pnpm bench:step` prints the same walk at each
+node size:
 
 | Node | Tiles | Step with the fog readers | Step with a scan of every tile |
 | --- | --- | --- | --- |
@@ -105,66 +172,19 @@ scan. `pnpm bench:step` prints the same walk at each node size:
 | 200x200 | 40,000 | 0.037 ms | 0.891 ms |
 | 400x400 | 160,000 | 0.120 ms | 3.473 ms |
 
-The step cost that still grows with the node is the copy of the tile array
-in `withTilesReplaced`.
+The part of a step that still grows with the node is the copy of the tile
+array in `withTilesReplaced`.
 
-## The scenarios
+## Add a scenario
 
-| Scenario | What it drives |
-| --- | --- |
-| `boot` | A cold load, up to the first mounted panel |
-| `load-example` | Build the example campaign, persist it, reload onto it |
-| `paint-stroke` | One authoring stroke of 24 cells |
-| `generate-map` | Procedural generation through the Generate dialog |
-| `zoom-pan` | Twenty wheel-zoom steps at the canvas center |
-| `play-pan` | One right-drag pan across the fog-revealed map in Play mode |
-| `panel-tabs` | Thirty sidebar tab switches |
-| `rehydrate` | Fifty cross-tab save adoptions, each a full re-read of the save |
-| `combat-turns` | Start a fight, advance twenty turns, end it |
-
-Order matters. `load-example` reloads onto the example campaign, and the
-scenarios after it read that campaign. When `--only` names one of those
-scenarios without `load-example`, the runner adds `load-example` in front
-and says so. Without it, the selected scenarios would drive an empty campaign
-and report nothing. The runner always adds `boot`, because `boot` is the
-scenario that opens the app. Every scenario drives the UI the way a
-GM does, through a click, a drag, a wheel gesture, or a `storage` event. None of
-them reach into app state, so the numbers cover the same code a real action
-runs.
-
-A scenario reports `skipped` when the control it needs is absent. That is not a
-failure. The fight scenario, for example, needs an encounter on the party's
-tile, so it loads a save that puts the party there (`seed.js`) before it gives
-up. The exception is a scenario marked `prerequisite`, which is only
-`load-example`. The scenarios after it read the example campaign, so when it
-skips or fails, the runner stops and exits with status 1.
-
-## Reading the numbers
-
-- **Wall** is the whole scenario, including the harness waits. Compare it
-  between runs, not against a budget.
-- **Script, Layout, Style** come from Chrome's own counters, as a delta over the
-  scenario. A scenario that reloads the document resets those counters, so its
-  row reads `(reload)`.
-- **Long tasks** are the entries over 50 ms. These are what a GM feels as a
-  stall. A row with none can still be slow in total.
-- **Frame p95** is the 95th percentile gap between animation frames. A p95 far
-  above the p50 means a stall, which a mean would hide.
-- **Nodes and Listeners** are the leak signal. `rehydrate` and `panel-tabs` both
-  repeat one rebuild many times and finish where they started, so growth in
-  those two rows points at something a rebuild does not release.
-- **Hot functions** are self time from the sampled profile. `(program)` and
-  `(idle)` are the browser itself, not app code.
-
-## Adding a scenario
-
-Add an entry to `SCENARIOS` in `scenarios.js` with a `name`, a `description`,
-and an async `run(page, ctx)`. Use the helpers on `page`: `clickSelector`,
-`clickText`, `box`, `mouse`, `wheel`, `waitFor`, and `eval`. Return a small
-record of what the scenario did, or `{ skipped: reason }`.
-
-Two rules keep a scenario honest. Drive the UI, never app internals. If the
-action reloads the document, use `page.clickForReload`, because the evaluation
-that ran the click dies with the old document and never answers. If the click
-reloads only sometimes, start `page.nextLoad()` before the click and await it
-after.
+1. Add an entry to `SCENARIOS` in `scenarios.js`, with a `name`, a
+   `description`, and an async `run(page, ctx)`.
+2. Drive the UI with the helpers on `page`: `clickSelector`, `clickText`,
+   `box`, `mouse`, `wheel`, `waitFor`, and `eval`. Do not call app
+   internals, because the numbers then stop matching what a real action
+   costs.
+3. If the action reloads the document, use `page.clickForReload`. A plain
+   click never returns, because its evaluation ends with the old document.
+4. If the click reloads the document only sometimes, call `page.nextLoad()`
+   before the click, and await the result after it.
+5. Return a small record of what the scenario did, or `{ skipped: reason }`.
