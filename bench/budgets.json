@@ -12,5 +12,8 @@
     "partyStep": 0.3,
     "partyStep200": 0.3,
     "worldTree": 5
+  },
+  "budgetsBytes": {
+    "heapPerTile": 300
   }
 }

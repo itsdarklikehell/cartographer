@@ -67,6 +67,13 @@ means a code path does more work than before. When a change moves a cost on
 purpose,
 re-measure with `pnpm bench:commit` and raise the budget in the same commit.
 
+The `heapPerTile` row is a memory budget, in bytes. It loads the campaign
+from its save, saves it once, and divides the heap that the result keeps by
+the tile count (`heap.js`). The reading covers the live tiles and every cache
+that a load and a save fill, and it sits near 200 bytes. A cache that keeps
+one record per tile for the whole session puts it over its budget of 300 bytes:
+a cache of packed tiles in V8's dictionary mode reads about 690.
+
 The `partyStep` row and the `step ms` column of the scale table time one
 Play-mode party step on the example world node, averaged over a walk along
 its middle row. A step is the fog reveal plus the values that the next frame

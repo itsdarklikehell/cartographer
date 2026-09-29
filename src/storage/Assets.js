@@ -134,6 +134,26 @@ function createHoister(hash) {
 }
 
 /**
+ * True when any tile of a node holds an inline image payload in its
+ * `imageRef` or its `overlayRef`, the refs that `hoistAssets` moves into
+ * the table.
+ * @param {Record<string, any>} node
+ * @returns {boolean}
+ */
+export function nodeHoldsPayload(node) {
+  if (!Array.isArray(node.tiles)) return false;
+  return node.tiles.some((/** @type {any} */ tile) => {
+    if (!tile || typeof tile !== 'object') return false;
+    const { overlayRef } = tile;
+    return (
+      isPayload(tile.imageRef) ||
+      isPayload(overlayRef) ||
+      (Array.isArray(overlayRef) && overlayRef.some(isPayload))
+    );
+  });
+}
+
+/**
  * Map every image ref of a tile through `convert`. The function returns the
  * same tile object when nothing changed, so an image-free save allocates
  * nothing. `overlayRef` is a single ref or a draw-ordered stack, per
@@ -176,9 +196,10 @@ function refsEqual(next, previous) {
  * Nodes that a previous `hoistAssets` pass walked and left unchanged. A node
  * is an immutable value, so a node that held no inline payload once holds
  * none forever, and a later save can skip its tiles without looking at
- * them. The save path packs a node once per node identity, so the same
- * packed node object arrives here on every save until the node changes.
- * Only the hoist keeps this set. The restore runs once per load, and its
+ * them. The undo log's `historyForm` hoists the live state, so the same
+ * node object arrives here on every save until the node changes. The save
+ * path hoists only the nodes that `nodeHoldsPayload` flags, and those always
+ * change. Only the hoist keeps this set. The restore runs once per load, and its
  * nodes are fresh objects each time.
  * @type {WeakSet<object>}
  */

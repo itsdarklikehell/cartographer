@@ -6,7 +6,7 @@ import {
 } from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
-import { hoistAssets, restoreAssets } from './Assets.js';
+import { hoistAssets, nodeHoldsPayload, restoreAssets } from './Assets.js';
 import { detachAssets, persistAssets, storeAssets } from './AssetStore.js';
 import { mirrorActive, pruneMirror, stageAssets, storedAssetTable } from './AssetMirror.js';
 import { createEntityPacker } from './EntityPack.js';
@@ -14,7 +14,6 @@ import { restoreGear, tabulateGear } from './GearTable.js';
 import { restoreStrings, tabulateStrings } from './StringTable.js';
 import { noteTruncation } from './ShortenedLoad.js';
 import { encodeNodeTiles, decodeNodeList, decodeNodeTiles } from './TileCodec.js';
-import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, removeStored, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
@@ -151,9 +150,13 @@ export function buildState(campaign) {
  * The inverse function is `withTileDefaults` (`map/TileGrid.js`), which
  * every load path already runs. It fills exactly these fields from absence,
  * so packing needs no second statement of what a default value is. The code
- * removes fields from a copy instead of picking fields into a fresh object,
- * so a field this function does not know about survives the round trip
- * instead of disappearing without warning.
+ * copies every field except the default-valued ones, instead of picking the
+ * known fields, so a field this function does not know about survives the
+ * round trip instead of disappearing without warning.
+ *
+ * The copy skips fields as it builds and never deletes one. A `delete`
+ * moves a V8 object to a hash-table property store, which costs about 224
+ * bytes per tile where a plain object with the same fields costs about 20.
  *
  * A packed tile exists only inside the serialized string. Nothing in memory
  * ever holds one, because the renderer reads `tile.metadata` without a
@@ -162,27 +165,65 @@ export function buildState(campaign) {
  * @returns {Record<string, any>}
  */
 function packTile(tile) {
+  return copyPacked(tile, (key, value) => {
+    if (key === 'overlayRef' || key === 'childNodeId') return value == null ? SKIP : value;
+    if (key === 'revealed') return value === true ? value : SKIP;
+    // An absent span and a span of 1 mean the same one-cell image, per `Tile`.
+    if (key === 'span') return typeof value === 'number' && value > 1 ? value : SKIP;
+    if (key === 'metadata') return packMetadata(value);
+    return value;
+  });
+}
+
+/**
+ * The metadata block of a packed tile, or `SKIP` when it is not a record or
+ * every field in it has its default value.
+ * @param {unknown} value
+ * @returns {unknown}
+ */
+function packMetadata(value) {
+  const source = record(value);
+  if (!source) return SKIP;
+  const packed = copyPacked(source, (key, field) => {
+    if (key === 'poiType') return field == null ? SKIP : field;
+    if (key === 'discoverable' || key === 'discovered') return field === true ? field : SKIP;
+    if (key === 'notes') return field ? field : SKIP;
+    return field;
+  });
+  return Object.keys(packed).length ? packed : SKIP;
+}
+
+/** The answer of a `copyPacked` field function for a field to leave out. */
+const SKIP = Symbol('skip');
+
+/**
+ * A copy of a tile or its metadata in the source's key order, with each
+ * field replaced by what `pack` returns for it, and left out where `pack`
+ * returns `SKIP`. An own `__proto__` key, which a parsed save can hold, is
+ * defined as a plain field, because an assignment to that key sets the
+ * prototype instead.
+ * @param {Record<string, any>} source
+ * @param {(key: string, value: unknown) => unknown} pack
+ * @returns {Record<string, any>}
+ */
+function copyPacked(source, pack) {
   /** @type {Record<string, any>} */
-  const packed = { ...tile };
-  if (packed.overlayRef == null) delete packed.overlayRef;
-  if (packed.revealed !== true) delete packed.revealed;
-  if (packed.childNodeId == null) delete packed.childNodeId;
-  // An absent span and a span of 1 mean the same one-cell image, per `Tile`.
-  if (!(typeof packed.span === 'number' && packed.span > 1)) delete packed.span;
-  const source = record(tile.metadata);
-  if (!source) {
-    delete packed.metadata;
-    return packed;
+  const out = {};
+  for (const key of Object.keys(source)) {
+    const value = pack(key, source[key]);
+    if (value === SKIP) continue;
+    if (key === '__proto__') {
+      Object.defineProperty(out, key, {
+        value,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } else {
+      out[key] = value;
+    }
   }
-  /** @type {Record<string, any>} */
-  const metadata = { ...source };
-  if (metadata.poiType == null) delete metadata.poiType;
-  if (metadata.discoverable !== true) delete metadata.discoverable;
-  if (metadata.discovered !== true) delete metadata.discovered;
-  if (!metadata.notes) delete metadata.notes;
-  if (Object.keys(metadata).length) packed.metadata = metadata;
-  else delete packed.metadata;
-  return packed;
+  return out;
 }
 
 /**
@@ -215,40 +256,64 @@ const ENTITY_PACKERS = Object.fromEntries(
 );
 
 /**
- * A node with its tiles packed, cached on the node's identity. Nodes are
- * immutable values (every map writer returns a new node), so a node object
- * that a previous save already packed packs to the same result. Autosave
- * serializes the whole world on every save, and without this cache the tile
- * pack and the codec below dominate that cost at large world sizes.
- * @type {(node: Record<string, any>) => Record<string, any>}
+ * The encoded form of each live node that holds no inline image payload,
+ * keyed on the live node. Nodes are immutable values (every map writer
+ * returns a new node), so a node object that a previous save already
+ * encoded encodes to the same result. Autosave serializes the whole world
+ * on every save, and without this cache the tile pack and the codec
+ * dominate that cost at large world sizes.
+ *
+ * The cache keeps only the encoded node: palette refs and index runs, a few
+ * hundred bytes per node. The packed tiles between the live node and its
+ * encoded form are garbage once the encode returns. A cache that kept them
+ * would keep one packed record per tile for the whole session, about 44 MB
+ * at 400 extra regions.
+ *
+ * A node with an inline payload is not cached. The asset hoist gives it a
+ * fresh object on every save, so it re-encodes every time, which keeps the
+ * asset table in step with the refs.
+ * @type {WeakMap<object, Record<string, any>>}
  */
-const packNodeTiles = memoizeByIdentity((node) => ({
-  ...node,
-  tiles: node.tiles.map(packTile),
-}));
+const encodedNodes = new WeakMap();
 
 /**
- * The tile codec, cached on the packed node's identity. `packNodeTiles`
- * returns the cached object for an unchanged node, and `hoistAssets` passes
- * a node through untouched when it holds no inline payload, so for the
- * common payload-free node this cache turns the encode into a lookup. A node
- * that carries inline image payloads gets a fresh object from the hoist on
- * every save and re-encodes every time, which keeps the asset table honest.
- * @type {(node: Record<string, any>) => Record<string, any>}
+ * A node with its tiles packed.
+ * @param {Record<string, any>} node
+ * @returns {Record<string, any>}
  */
-const encodePackedNode = memoizeByIdentity(encodeNodeTiles);
+function packNode(node) {
+  return { ...node, tiles: node.tiles.map(packTile) };
+}
+
+/**
+ * One live node on its way into a save: its cached encoded form, or the
+ * encode of a payload-free node, which is cached here, or the packed node
+ * of a node that holds an inline payload, which still needs the hoist.
+ * @param {Record<string, any>} node a node whose `tiles` is an array
+ * @returns {{ encoded: Record<string, any> } | { packed: Record<string, any> }}
+ */
+function packForSave(node) {
+  const cached = encodedNodes.get(node);
+  if (cached) return { encoded: cached };
+  const packed = packNode(node);
+  if (nodeHoldsPayload(packed)) return { packed };
+  const encoded = encodeNodeTiles(packed);
+  encodedNodes.set(node, encoded);
+  return { encoded };
+}
 
 /**
  * One node in the form a save stores it: tiles packed, then encoded by
- * `TileCodec.js`. The undo log stores a whole node in this form, and both
- * caches above apply, so a node that a save already packed costs two
- * lookups. The node's image refs stay as they are, so a node that still
+ * `TileCodec.js`. The undo log stores a whole node in this form, and it
+ * reads the cache above, so a node that a save already encoded costs one
+ * lookup. The node's image refs stay as they are, so a node that still
  * contains an inline payload keeps it.
  * @param {Record<string, any>} node a node whose `tiles` is an array
  * @returns {Record<string, any>}
  */
 export function encodeHistoryNode(node) {
-  return encodePackedNode(packNodeTiles(node));
+  const slot = packForSave(node);
+  return 'encoded' in slot ? slot.encoded : encodeNodeTiles(slot.packed);
 }
 
 /**
@@ -270,30 +335,34 @@ export function decodeHistoryNode(node) {
  * every palette string of those nodes moved into a `strings` table. The
  * function is pure. It never touches the state passed in.
  *
- * The tile codec runs after the asset hoist. This order keeps
- * `Assets.js` unaware of the codec. The hoist walks `node.tiles[].imageRef`,
- * a field an encoded node no longer has. Running the codec afterward means
- * its palette holds already-hoisted `asset:` references, not the payloads
- * themselves. The string table (`StringTable.js`) runs last, over the
- * encoded nodes, so the encoded form of one node stays self-contained.
- * Exported so a test can observe that an unchanged node's encode is the
- * cached object; `serialize` is the production entry point.
+ * For a node with an inline payload, the tile codec runs after the asset
+ * hoist. This order keeps `Assets.js` unaware of the codec. The hoist walks
+ * `node.tiles[].imageRef`, a field an encoded node no longer has. Running
+ * the codec afterward means its palette holds already-hoisted `asset:`
+ * references, not the payloads themselves. A payload-free node skips the
+ * hoist, which would pass it through unchanged, and encodes at once. The
+ * string table (`StringTable.js`) runs last, over the encoded nodes, so the
+ * encoded form of one node stays self-contained. Exported so a test can
+ * observe that an unchanged node's encode is the cached object; `serialize`
+ * is the production entry point.
  * @param {CampaignState} state
  * @returns {Record<string, any>}
  */
 export function packState(state) {
+  const slots = state.nodes.map(packForSave);
   /** @type {Record<string, any>} */
   const packed = {
     ...state,
-    nodes: state.nodes.map(packNodeTiles),
+    nodes: slots.flatMap((slot) => ('packed' in slot ? [slot.packed] : [])),
   };
   for (const [key, pack] of Object.entries(ENTITY_PACKERS)) {
     const list = packed[key];
     if (Array.isArray(list)) packed[key] = pack(list);
   }
   const hoisted = hoistAssets(tabulateGear(packed));
-  const nodes = hoisted.nodes;
-  if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodePackedNode);
+  const withPayload = /** @type {Record<string, any>[]} */ (hoisted.nodes).map(encodeNodeTiles);
+  let next = 0;
+  hoisted.nodes = slots.map((slot) => ('encoded' in slot ? slot.encoded : withPayload[next++]));
   return tabulateStrings(hoisted);
 }
 
@@ -310,7 +379,10 @@ export function packState(state) {
  */
 export function warmPackSteps(state) {
   /** @type {(() => unknown)[]} */
-  const steps = state.nodes.map((node) => () => encodePackedNode(packNodeTiles(node)));
+  const steps = state.nodes.map((node) => () => {
+    const slot = packForSave(node);
+    return 'encoded' in slot ? slot.encoded : slot.packed;
+  });
   for (const [key, pack] of Object.entries(ENTITY_PACKERS)) {
     const list = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (state))[key];
     if (!Array.isArray(list)) continue;

@@ -198,9 +198,14 @@ loaded tiles have the same 2 hidden classes as tiles built in memory.
 Packing drops no field that the packer does not know about, and a packed
 tile never reaches live state:
 
-- `packTile` deletes keys from a *copy* of the tile, instead of picking named
-  fields into a new object. As a result, a `Tile` member added later stays
-  in a save, even when the packer does not know about it.
+- `packTile` copies every field of the tile except the default-valued ones,
+  instead of picking named fields into a new object. As a result, a `Tile`
+  member added later stays in a save, even when the packer does not know
+  about it.
+- The copy skips fields as it builds, and it never deletes one. A `delete`
+  moves a V8 object to a hash-table property store. A packed tile in that
+  store costs about 236 bytes, where a plain object with the same two fields
+  costs about 20.
 - Packed tiles exist only inside the serialized string. The renderer reads
   `tile.metadata` without a guard, so a packed tile in live state throws on
   its first draw. An explicit `span: 1` comes back absent, and the `Tile` type defines
@@ -212,7 +217,7 @@ The entity collections pack the same way, one level up, through
 `storage/EntityPack.js`, but with a difference. `packEntity(entity,
 withDefaults)` does not read a table of default values. It omits a field only
 after it *proves* that the entity's own `withDefaults` restores that exact
-value. It deletes the field from a copy, runs `withDefaults`, and keeps the
+value. It copies the entity without the field, runs `withDefaults`, and keeps the
 omission only when the result matches the loaded form of the original exactly.
 The same trial runs for fields inside nested records, such as the lists in a
 character's `proficiencies`. An empty `expertise` list goes because the load
@@ -322,10 +327,13 @@ The table follows these rules:
 - The table is rebuilt from the refs that are present on every serialize. As
   a result, it prunes itself, and an image-free campaign gets no `assets`
   field at all.
-- A node that one hoist found free of payloads is remembered in a `WeakSet`.
-  Nodes are immutable, and the save path packs a node once per identity, so
-  a later save skips the tiles of an unchanged node instead of walking them
-  again.
+- The save path hoists only the nodes that hold an inline payload
+  (`nodeHoldsPayload`). A payload-free node goes straight to the tile codec,
+  and its encoded form is cached on the live node (see Packing layer 4).
+- The undo log hoists the whole live state (`historyForm`). A node that one
+  hoist found free of payloads is remembered in a `WeakSet`. Nodes are
+  immutable, so a later save skips the tiles of an unchanged node instead of
+  walking them again.
 - A module-level map keeps the hash of each payload that the last hoist
   met, so a save hashes only a payload that is new since the previous save.
   Each hoist starts a new map, so a payload that leaves the campaign leaves
@@ -592,8 +600,8 @@ represent and writes whatever it does not represent out of line:
   per-cell form, instead of being forced into the grid. Nodes that are sparse
   but still gridded (interiors often are this way, and `barrow` is 94 tiles
   in a 14x14) encode through a reserved `-1` index that means "no tile here".
-- **The leftover list is built by deleting the fields that the codec
-  represents itself**, exactly as `packTile` does. As a result, a `Tile`
+- **The leftover list is built by removing the fields that the codec
+  represents itself**, the same rule that `packTile` follows. As a result, a `Tile`
   member added later stays in the leftover record, instead of being dropped.
   A `childNodeId` that is not a string stays there too.
 
@@ -608,8 +616,17 @@ The codec also follows these rules:
   entry skips its cell, and an unreadable run ends the stream. Import
   persists what it reads before it reloads, so an error thrown here produces
   a save that cannot start.
-- **Ordering.** The codec runs after the asset hoist in `packState`, and
-  before the asset restore in `deserialize`. The hoist's
+- **The cache.** `packState` caches the encoded form of each payload-free
+  node on the live node, in a `WeakMap`, so a node that no edit touched
+  costs one lookup per save. The cache keeps only the encoded node, a few
+  hundred bytes. The packed tiles between the live node and its encoded form
+  are garbage once the encode returns. A cache that kept them would keep one
+  packed record per tile for the whole session, about 44 MB at 400 extra
+  regions. `warmPackSteps` fills this cache in idle time after a load, and
+  `encodeHistoryNode` reads it.
+- **Ordering.** For a node with an inline payload, the codec runs after the
+  asset hoist in `packState`, and before the asset restore in `deserialize`.
+  A payload-free node skips the hoist. The hoist's
   traversal walks `node.tiles[].imageRef`, and an encoded node no longer has
   this field. Running the codec after the hoist means the palette contains refs that are
   already hoisted to `asset:` form, so `Assets.js` needs no knowledge of the

@@ -72,6 +72,37 @@ function* fieldPaths(record, prefix = []) {
 }
 
 /**
+ * A copy of the record without one key, built by copying every other key.
+ * A `delete` on a copy moves a V8 object to a hash-table property store,
+ * which costs memory for as long as the save cache keeps the packed entity.
+ * It also makes `JSON.stringify` leave its fast path when it reaches the
+ * object and start the whole save string again on its slow path. An own
+ * `__proto__` key is defined as a plain field, because an assignment to that
+ * key sets the prototype instead.
+ * @param {Record<string, any>} record
+ * @param {string} omitted
+ * @returns {Record<string, any>}
+ */
+function omitKey(record, omitted) {
+  /** @type {Record<string, any>} */
+  const copy = {};
+  for (const key of Object.keys(record)) {
+    if (key === omitted) continue;
+    if (key === '__proto__') {
+      Object.defineProperty(copy, key, {
+        value: record[key],
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } else {
+      copy[key] = record[key];
+    }
+  }
+  return copy;
+}
+
+/**
  * A copy of the record with the field at `path` removed. Every record along
  * the path is copied, so the input is never changed. When the path does not
  * exist, because an earlier removal took its parent, the same record comes
@@ -83,11 +114,7 @@ function* fieldPaths(record, prefix = []) {
 function withoutPath(record, path) {
   const [head, ...rest] = path;
   if (!(head in record)) return record;
-  if (rest.length === 0) {
-    const copy = { ...record };
-    delete copy[head];
-    return copy;
-  }
+  if (rest.length === 0) return omitKey(record, head);
   const child = record[head];
   if (!isRecord(child)) return record;
   const next = withoutPath(child, rest);

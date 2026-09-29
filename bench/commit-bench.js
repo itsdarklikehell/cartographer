@@ -36,6 +36,7 @@ import { encodeNodeTiles } from '../src/storage/TileCodec.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { mulberry32 } from '../src/util/Rng.js';
 import { partyPath, sweepNode, walkParty } from './party-step.js';
+import { heapPerTile } from './heap.js';
 
 /**
  * Time a function over several rounds and keep the median.
@@ -129,6 +130,17 @@ for (const [name, budget] of Object.entries(budgets.budgetsMs)) {
   if (ms > budget) over.push(name);
   process.stdout.write(
     `  ${name.padEnd(12)} ${ms.toFixed(ms < 1 ? 2 : 1).padStart(7)} ms   budget ${String(budget).padStart(4)} ms${mark}\n`,
+  );
+}
+
+/** @type {Record<string, number>} */
+const measuredBytes = { heapPerTile: heapPerTile(json, state) };
+for (const [name, budget] of Object.entries(budgets.budgetsBytes)) {
+  const bytes = measuredBytes[name];
+  const mark = bytes > budget ? '  << OVER BUDGET' : '';
+  if (bytes > budget) over.push(name);
+  process.stdout.write(
+    `  ${name.padEnd(12)} ${bytes.toFixed(0).padStart(7)} B    budget ${String(budget).padStart(4)} B${mark}\n`,
   );
 }
 
