@@ -45,10 +45,14 @@ is a requirement: a new mutation path keeps replacing the node, because
 mutating tiles in place leaves the cached layout pointing at positions the
 node no longer has.
 
-The layout contains only position data, an id-to-position map plus a flat
-cell-to-position buffer over the node's extent, and no tiles at all, which
-lets a mutation hand the new node the previous node's maps instead of
-re-indexing from scratch. `withTileReplaced`, `withTilesReplaced`, and
+The layout contains only position data and no tiles at all. A flat
+cell-to-position buffer over the node's extent answers both a coordinate
+lookup and a lookup of a grid id such as "3,4", because the code reads the
+cell from the characters of the id. A small id-to-position map covers only
+the other ids, such as "loose" or "01,2". A 200x200 node then needs about
+4 bytes of layout per tile, where a map entry for every tile costs about 47.
+Because the layout keeps only positions, a mutation can hand the new node the
+previous node's maps instead of re-indexing from scratch. `withTileReplaced`, `withTilesReplaced`, and
 `withTileAppended` are the three helpers that pass the layout forward, and
 `setTile` and the fog writers build on them, so a paint or fog drag costs
 O(cells crossed) across the whole stroke instead of a full re-index for each

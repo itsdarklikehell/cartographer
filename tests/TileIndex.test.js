@@ -5,6 +5,7 @@ import {
   tileAt,
   tileAtXY,
   tilePosition,
+  withNodeTiles,
   withTileAppended,
   withTileReplaced,
   withTilesReplaced,
@@ -175,4 +176,57 @@ test('setTileRevealed flips one tile and no-ops when already set or missing', ()
   assert.equal(getTile(revealed, '1,1').revealed, false);
   assert.equal(setTileRevealed(revealed, '0,0', true), revealed); // same state
   assert.equal(setTileRevealed(revealed, '9,9', true), revealed); // no tile
+});
+
+/** A 4x4 node with tiles of the given ids in order, each with a numbered image. */
+function listed(...ids) {
+  const tiles = ids.map((id, i) => createTile(id, `t${i}.png`));
+  return withNodeTiles(createMapNode('n', 'Node', null, 4, 4), tiles);
+}
+
+test('a grid tile whose cell a lenient id takes still resolves by id', () => {
+  const node = listed('1,2', '01,2');
+  assert.equal(tilePosition(node, '1,2'), 0);
+  assert.equal(tilePosition(node, '01,2'), 1);
+  assert.equal(tileAtXY(node, 1, 2)?.id, '01,2'); // the later tile draws at the cell
+  const flipped = listed('01,2', '1,2');
+  assert.equal(tilePosition(flipped, '1,2'), 1);
+  assert.equal(tilePosition(flipped, '01,2'), 0);
+  assert.equal(tileAtXY(flipped, 1, 2)?.id, '1,2');
+});
+
+test('the last tile of a duplicated id wins, through any displacement', () => {
+  assert.equal(tilePosition(listed('1,2', '1,2'), '1,2'), 1);
+  assert.equal(tilePosition(listed('1,2', '01,2', '1,2'), '1,2'), 2);
+  const node = listed('1,2', '01,2', '1,2', '01,2');
+  assert.equal(tilePosition(node, '1,2'), 2);
+  assert.equal(tilePosition(node, '01,2'), 3);
+  assert.equal(tilePosition(listed('01,2', '01,2', '1,2'), '01,2'), 1);
+});
+
+test('a grid id finds no tile when only a lenient id sits at its cell', () => {
+  const node = listed('01,2', 'loose', '9,9');
+  assert.equal(tilePosition(node, '1,2'), undefined);
+  assert.equal(tilePosition(node, 'loose'), 1);
+  assert.equal(tilePosition(node, '9,9'), 2); // past the width, found by id
+  assert.equal(tileAtXY(node, 1, 2)?.id, '01,2');
+});
+
+test('an append onto a taken cell keeps both tiles reachable', () => {
+  const ids = [];
+  for (let y = 0; y < 4; y++) for (let x = 0; x < 3; x++) ids.push(`${x},${y}`);
+  const node = listed(...ids, '03,0');
+  tileAt(node, '0,0'); // index the node, so the appends reuse its layout
+  const onBase = withTileAppended(node, createTile('3,0', 'a.png'));
+  assert.equal(tileAt(onBase, '3,0')?.imageRef, 'a.png');
+  assert.equal(tilePosition(onBase, '03,0'), 12);
+
+  const once = withTileAppended(node, createTile('03,1', 'b.png'));
+  tileAt(once, '0,0');
+  const onAdded = withTileAppended(once, createTile('3,1', 'c.png'));
+  assert.equal(tileAt(onAdded, '3,1')?.imageRef, 'c.png');
+  assert.equal(tileAt(onAdded, '03,1')?.imageRef, 'b.png');
+  const free = withTileAppended(once, createTile('3,2', 'd.png'));
+  assert.equal(tileAt(free, '3,2')?.imageRef, 'd.png');
+  assert.equal(tileAtXY(free, 3, 2)?.imageRef, 'd.png');
 });

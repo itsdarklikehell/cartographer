@@ -1,4 +1,4 @@
-import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
+import { gridCellOf, inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { freezeTile, freezeTiles } from './TileFreeze.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -11,11 +11,18 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * structures without a change.
  *
  * `cellPos` is the grid-coordinate structure. It has one entry per cell of the
- * node's width x height extent. Each entry holds the array position of the
+ * node's width x height extent. Each entry keeps the array position of the
  * tile at that cell, or -1 for an empty cell. This structure turns a per-frame
- * `x,y` string build and hash into two array reads. The value is null when the
- * node extent is unusable or too large, and coordinate lookups then fall back
- * to the id map.
+ * `x,y` string build and hash into two array reads. An id lookup for a grid id
+ * such as "3,4" also reads this structure, after it reads the cell from the
+ * characters of the id. The value is null when the node extent is unusable or
+ * too large, and coordinate lookups then fall back to the id map.
+ *
+ * `posById` maps only the ids that `cellPos` cannot answer: an id that is not
+ * a canonical in-bounds grid id (such as "loose", "01,2", or a cell past the
+ * width), and a grid tile whose cell another tile with a different id took.
+ * A grid tile costs no map entry, which saves about 43 bytes per tile. When
+ * `cellPos` is null, `posById` maps every tile.
  *
  * `addedById` and `addedCells` hold overrides for tiles appended after the
  * base maps were built. Each override belongs to one node entry only, and no
@@ -85,14 +92,30 @@ function build(node) {
   if (Number.isFinite(cells) && cells > 0 && cells <= MAX_GRID_CELLS) {
     cellPos = new Int32Array(cells).fill(-1);
   }
-  node.tiles.forEach((tile, i) => {
-    posById.set(tile.id, i);
-    if (!cellPos) return;
-    const coords = parseCoords(tile.id);
-    if (coords && inBounds(node, coords.x, coords.y)) {
-      cellPos[coords.y * node.width + coords.x] = i;
+  const { tiles, width, height } = node;
+  for (let i = 0; i < tiles.length; i++) {
+    const id = tiles[i].id;
+    if (!cellPos) {
+      posById.set(id, i);
+      continue;
     }
-  });
+    let cell = gridCellOf(id, width, height);
+    if (cell >= 0) {
+      // A later tile with this id wins, as the lookup of a duplicate id does.
+      if (posById.size) posById.delete(id);
+    } else {
+      posById.set(id, i);
+      // A lenient id such as "01,2" still draws at its cell.
+      const coords = parseCoords(id);
+      if (!coords || !inBounds(node, coords.x, coords.y)) continue;
+      cell = coords.y * width + coords.x;
+    }
+    const prev = cellPos[cell];
+    if (prev >= 0 && tiles[prev].id !== id && gridCellOf(tiles[prev].id, width, height) === cell) {
+      posById.set(tiles[prev].id, prev);
+    }
+    cellPos[cell] = i;
+  }
   return { posById, cellPos, addedById: null, addedCells: null, links: {}, art: {}, fog: {} };
 }
 
@@ -185,7 +208,14 @@ export function fogStamp(node) {
  */
 export function tilePosition(node, tileId) {
   const entry = layout(node);
-  return entry.addedById?.get(tileId) ?? entry.posById.get(tileId);
+  const pos = entry.addedById?.get(tileId) ?? entry.posById.get(tileId);
+  if (pos !== undefined || !entry.cellPos) return pos;
+  const cell = gridCellOf(tileId, node.width, node.height);
+  if (cell < 0) return undefined;
+  // An appended tile never takes an occupied cell (see withTileAppended), so
+  // the base cell is enough here.
+  const at = entry.cellPos[cell];
+  return at >= 0 && node.tiles[at].id === tileId ? at : undefined;
 }
 
 /**
@@ -293,7 +323,8 @@ export function withTilesReplaced(node, changes) {
  * records the appended id in this node's own override maps. Once the
  * overrides grow past about the square root of the tile count, the code
  * leaves the new node uncached. The next lookup then rebuilds a flat layout
- * instead of paying a growing copy cost for each appended tile. The `links`
+ * instead of paying a growing copy cost for each appended tile. An append onto
+ * a cell that a tile already takes also leaves the new node uncached. The `links`
  * stamp stays when the new tile links to no child, because a tile with no
  * link joins no region group, and the `fog` stamp stays when the new tile is
  * not revealed. The `art` stamp is always new.
@@ -315,7 +346,11 @@ export function withTileAppended(node, tile) {
     addedCells = new Map(entry.addedCells);
     const coords = parseCoords(tile.id);
     if (coords && coords.x < next.width && coords.y < next.height) {
-      addedCells.set(coords.y * next.width + coords.x, pos);
+      const cell = coords.y * next.width + coords.x;
+      // An append onto a taken cell would hide the tile there from an id
+      // lookup, which reads the base cell. A rebuild resolves the overlap.
+      if (addedCells.has(cell) || entry.cellPos[cell] >= 0) return next;
+      addedCells.set(cell, pos);
     }
   }
   cache.set(next, {
