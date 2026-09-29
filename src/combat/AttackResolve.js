@@ -4,6 +4,7 @@ import { creatureProficiencyBonus } from '../entities/CreatureChecks.js';
 import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { characterProficiency } from '../entities/Multiclass.js';
+import { isProficientWeapon } from '../entities/Proficiencies.js';
 
 /**
  * The 5e rules a weapon attack resolves by. This module stays apart from the
@@ -44,6 +45,23 @@ export function attackerProficiency(attacker) {
   return isCreature(attacker)
     ? creatureProficiencyBonus(/** @type {import('../types/creature.js').Creature} */ (attacker))
     : characterProficiency(/** @type {import('../types/entities.js').Character} */ (attacker));
+}
+
+/**
+ * Whether the attacker adds its proficiency bonus to an attack with this
+ * weapon. A creature always does, because its attack bonus includes
+ * proficiency the way a 5e stat block does. A creature's `proficiencies`
+ * field lists trained saves and skills, not weapons, so it is never read here.
+ * A character is proficient when its weapon lists name the weapon or its
+ * category.
+ * @param {import('../types/creature.js').Creature | import('../types/entities.js').Character} attacker
+ * @param {{ name: string, category?: import('../types/class.js').WeaponCategory | null }} weapon
+ * @returns {boolean}
+ */
+export function attackerProficientWith(attacker, weapon) {
+  if (isCreature(attacker)) return true;
+  const character = /** @type {import('../types/entities.js').Character} */ (attacker);
+  return isProficientWeapon(character, weapon.name, weapon.category ?? undefined);
 }
 
 /**

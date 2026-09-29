@@ -3,7 +3,6 @@ import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
-import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
 import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
 import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
@@ -16,6 +15,7 @@ import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.j
 import {
   abilityModOf,
   attackerProficiency,
+  attackerProficientWith,
   attackerStats,
   damageModifier,
   damageParts,
@@ -291,12 +291,7 @@ export function rollWeaponAttack(
   // A character reads the level ladder. A rated creature reads the challenge
   // rating ladder, the same one its saves and spells use.
   const proficiency = attackerProficiency(attacker);
-  // Only a character carries proficiency lists, so only a character can lack
-  // proficiency with a weapon. A creature's attack bonus bakes proficiency in,
-  // the way a 5e stat block does.
-  const proficient = attacker.proficiencies
-    ? isProficientWeapon(attacker, weapon.name, weapon.category ?? undefined)
-    : true;
+  const proficient = attackerProficientWith(attacker, weapon);
   // An attack roll is a d20 test, so exhaustion takes 2 off it for each level.
   // Both kinds of attacker carry the level, so a tired foe swings worse too.
   // Damage is untouched: the penalty is on the roll, not on the hit.

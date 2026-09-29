@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   abilityModOf,
   attackerProficiency,
+  attackerProficientWith,
   attackerStats,
   damageModifier,
   damageParts,
@@ -13,6 +14,7 @@ import {
 import { createCharacter, addItem } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
 import { createCreature } from '../src/entities/Creature.js';
+import { withProficiencies } from '../src/entities/Proficiencies.js';
 
 /** @param {number} count @param {number} sides @param {string} damageType */
 function part(count, sides, damageType) {
@@ -207,4 +209,23 @@ test("attackerStats folds a creature's worn armor into its AC", () => {
   });
   assert.equal(attackerStats(guard).STR, 15);
   assert.equal(attackerStats(guard).AC, 14);
+});
+
+test('a creature with trained saves and skills is proficient with every weapon', () => {
+  const scout = createCreature('e1', 'Goblin Scout', {
+    proficiencies: { saves: ['DEX'], skills: ['stealth'] },
+  });
+  const blade = { name: 'Scimitar', category: 'martial' };
+  assert.equal(attackerProficientWith(scout, blade), true, 'the save and skill lists are not read');
+  assert.equal(attackerProficientWith(createCreature('e2', 'Rat', {}), blade), true);
+});
+
+test('a character is proficient with a weapon by category or by name', () => {
+  const hero = withProficiencies(createCharacter('h1', 'Nim'), {
+    weapons: { categories: ['simple'], named: ['longsword'] },
+  });
+  assert.equal(attackerProficientWith(hero, { name: 'Club', category: 'simple' }), true);
+  assert.equal(attackerProficientWith(hero, { name: 'Longsword', category: 'martial' }), true);
+  assert.equal(attackerProficientWith(hero, { name: 'Greataxe', category: 'martial' }), false);
+  assert.equal(attackerProficientWith(hero, { name: 'Greataxe', category: null }), false);
 });
