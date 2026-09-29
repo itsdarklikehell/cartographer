@@ -2,16 +2,30 @@
 
 *Explanation. Back to the [architecture overview](../architecture.md).*
 
-`src/entities/` contains the things that a campaign's rules operate on:
-creatures, resource pools, and characters, which all follow one update
-style.
+`src/entities/` contains the values that the campaign's rules act on:
+creatures, resource pools, and characters. Every module in the directory is
+pure logic, and every write returns a new value. The plain data catalogs that
+these modules read (classes, races, backgrounds, skills, spells, feats, the
+challenge-rating tables, and the built-in creatures) live in `src/data/`.
+
+| Topic | Sections |
+| --- | --- |
+| The models | [Immutable updates](#immutable-updates), [The creature](#the-creature), [The character foundation](#the-character-foundation) |
+| Weapons and armor | [Damage terms](#damage-terms), [The weapon property model](#the-weapon-property-model), [Armor class](#armor-class), [Armor proficiency](#armor-proficiency) |
+| Spells | [Spell timing](#spell-timing), [Multi-projectile spells](#multi-projectile-spells), [Material components](#material-components), [Ritual casting](#ritual-casting), [Known and prepared casters](#known-and-prepared-casters) |
+| Rolls and lasting states | [Saving throws](#saving-throws), [Exhaustion](#exhaustion), [Concentration](#concentration), [Death saves](#death-saves) |
+| Effects that spells leave | [Conditions a spell imposed](#conditions-a-spell-imposed), [Summoned creatures](#summoned-creatures), [Condition effects](#condition-effects), [Riders on later rolls](#riders-on-later-rolls) |
+| The DOM layer | [The UI layer over entities](#the-ui-layer-over-entities) |
+
+The fight itself, with its turn order and action budget, is in
+[Combat](combat.md).
 
 ## Immutable updates
 
 `entities/Creature.js`, `entities/Resource.js`, and `entities/Character.js`
-(types in `src/types/creature.ts` and `src/types/entities.ts`) are all plain
+(types in `src/types/creature.ts` and `src/types/entities.ts`) are
 immutable-update modules. Each function takes a value and returns a new
-value. It does not change the original:
+value, and it does not change the original:
 
 ```js
 const hurt   = applyDamage(creature, 7);    // new creature, old one untouched
@@ -45,12 +59,13 @@ separately:
 HP, spell slots, pact slots, and hit dice are ordinary `ResourcePool`s under
 ids that the app reserves, so spending a spell slot and spending an arrow run
 through the same `spend`/`restore` code.
-`entities/PoolIds.js` defines those ids (`hp`, the `slots-`/`pact-` prefixes, the
-`hit-dice-d` prefix) and imports nothing. The three modules that own the rules
-for them, `Character.js`, `SpellSlots.js`, and `HitDice.js`, can all read the
-same string no matter where they sit in the import graph. Each module
-re-exports the ids that it owns, so `HP_RESOURCE_ID` is still imported from
-`Character.js`.
+
+`entities/PoolIds.js` defines those ids: `hp`, the `slots-` and `pact-`
+prefixes, and the `hit-dice-d` prefix. The module imports nothing, so the
+three modules that own the rules for the pools (`Character.js`,
+`SpellSlots.js`, and `HitDice.js`) can all import it without an import cycle.
+Each of the three re-exports the ids that it owns, so callers import
+`HP_RESOURCE_ID` from `Character.js`.
 
 A pool is reserved when its maximum is derived rather than typed in. The
 deriving writers move a maximum through `Resource.js`:
@@ -74,1458 +89,1610 @@ out inline.
 ## The creature
 
 `entities/Creature.js` and `entities/CreatureMap.js` (types in
-`src/types/creature.ts`) define the one model for everything the party can
-meet on the map. One `Creature` covers a foe, a townsperson, and anything
-between, and its `disposition` field decides its side in a fight: a hostile
-creature fights the party, and every other creature stands with it. The state
-has one `creatures` list, which every combat, map, and story panel reads.
+`src/types/creature.ts`) define one model for everything that the party can
+meet on the map. One `Creature` covers a foe, a townsperson, and everything
+between them. Its `disposition` field decides its side in a fight. A hostile
+creature fights the party, and every other creature stands with the party.
+The state has one `creatures` list, which every combat, map, and story panel
+reads.
 
 A creature has `maxHP`, `currentHP`, a `stats` block, a `weapon`, an
-`armor`, `conditions`, a `location`, and a `met` flag. `level` and `tier` are
-optional authoring inputs that pick the default stats and gear for a new foe,
-and a townsperson has no level.
+`armor`, `conditions`, a `location`, and a `met` flag. Optional fields add a
+`role` and `notes`, a challenge rating, saves and skills, damage defenses, and
+spellcasting, which the subsections below describe. `level` and `tier` are
+optional authoring inputs that pick the default stats and gear for a new foe.
+A townsperson has no level.
 
 `createCreature` resolves the weapon and the armor once, at creation. An
-absent value takes the level default when the creature has a level and null
-when it has none, so a stored null means unarmed or unarmored on purpose.
-`withDefaults` backfills gear to null only, and no read path derives gear
-from the level again, so an absent field has one meaning everywhere.
+absent value takes the level default when the creature has a level, and null
+when it has none. A stored null therefore means unarmed or unarmored on
+purpose. `withDefaults` fills absent gear with null only, and no read path
+derives gear from the level again, so an absent field has one meaning
+everywhere.
 
-`isCreature(entity)` tells a creature from a character: a creature always
-has a `disposition`, and a character never does. Every caller that tells
-the two apart uses this one test.
+`isCreature(entity)` tells a creature from a character. A creature always has
+a `disposition`, and a character never has one. Every caller that tells the
+two apart uses this one test.
 
-`effectiveStatBlock(creature)` is the one AC read: the closed stat block,
+### Creature AC
+
+`effectiveStatBlock(creature)` is the only AC read. It returns the stat block
 with the worn armor in place of the unarmored 10 + DEX, plus every active
-timed stat modifier. The stored AC is the AC without armor. `EnemyArmor.js`
-keeps the armor rule: the armor's `baseAC` plus the DEX modifier that its
-`armorWeight` allows (all of it for light, at most +2 for medium, none for
-heavy), with any authored AC above 10 + DEX added on top. A flat bonus over
-the unarmored AC gives a DEX 16 creature in Plate an AC of 21, where the
-rule gives 18.
+timed stat modifier. The stored AC is the AC without armor.
 
-`CreatureMap.js` has the placement reads. `meetCreatures` marks every
-creature on the party's tile as met. `knownCreaturesAt` is the player view of
-the non-hostile roster. `discoveredHostiles` is the player view of the hostile
-roster, through the fog of war. `fromTemplate` reads older template formats on
-purpose, because a library file has no version field.
+`EnemyArmor.js` has the armor rule. The AC is the armor's `baseAC`, plus the
+DEX modifier that its `armorWeight` allows (all of it for light, at most +2
+for medium, and none for heavy). Any authored AC above 10 + DEX adds on top.
+A flat bonus over the unarmored AC would give a DEX 16 creature in plate an AC
+of 21, where the rule gives 18.
 
-Every creature follows the same combat rules. `maxHP` defaults to 4, the 5e
-commoner, and hit points are never absent. 0 HP is defeat with no death
-saves, which only characters roll. The combat code branches on `isCreature`,
-so a character and a creature never convert into each other.
+### Placement and templates
+
+`CreatureMap.js` has the placement reads and writes. `meetCreatures` marks
+every creature on the party's tile as met. `knownCreaturesAt` is the player
+view of the non-hostile creatures, and `discoveredHostiles` is the player view
+of the hostile creatures, through the fog of war.
+
+`Creature.fromTemplate` builds a creature from a library template, and
+`toTemplate` builds a template from a creature. A library file has no version
+field, so `fromTemplate` reads every template format that a file can contain.
+A `statBlock` field reads as `stats`, and a template with no disposition reads
+as hostile.
+
+### Defeat and cleanup
+
+Every creature follows the same combat rules. `maxHP` defaults to 4, the HP of
+the 5e commoner, and hit points are never absent. A creature at 0 HP is
+defeated, with no death saves, because only characters roll them. The combat
+code branches on `isCreature`, so a character and a creature never convert
+into each other.
 
 A defeated creature stays in `state.creatures` until the GM removes it. Each
-defeated foe costs the save about 500 characters, and every save packs it.
-`CreatureMap.clearableDefeated` picks the hostile creatures at 0 HP placed
-in one node that no running fight lists. The Build rail passes it the node
-in view, and `app/creatureForm.js`'s `clearDefeated` removes them after one
-confirm. It writes through `commitCreatures`, the same path
-as a single delete, so `pruneCreatureLinks` takes their quest links off. The
-travelogue note it writes uses `nameTally` ("Goblin x3, Wolf"), and the
-campaign keeps no other record of the removed foes. A foe in the order of a
-running fight stays, because the fight end still counts its experience
-points.
+defeated foe adds about 500 characters to the save, and every save packs it.
+`CreatureMap.clearableDefeated` picks the hostile creatures at 0 HP in one
+node that no running fight lists. The Build rail passes it the node in view,
+and `clearDefeated` in `app/creatureForm.js` removes them after one confirm.
 
-The authoring side is one dialog over one model. `app/creatureFields.js`
-describes the fields, and `app/creatureForm.js` writes `state.creatures`
-through `createCreature` and `editCreature`. A blank level marks a
-townsperson: it stores no level and no tier, and the gear pickers start at
-None. A typed level pre-fills the pickers and the `STAT_KEYS` inputs with
-the level's defaults. The read-back has no gear fallback, so what the picker
-shows is what the creature gets, and an empty picker means unarmed.
+`clearDefeated` writes through `commitCreatures`, the same path as a single
+delete, so `pruneCreatureLinks` removes their quest links. The travelogue note
+uses `nameTally` ("Goblin x3, Wolf"), and the campaign keeps no other record
+of the removed foes. A foe in the order of a running fight stays, because the
+fight end still counts its experience points.
+
+### Authoring
+
+One dialog edits the one model. `app/creatureFields.js` describes the fields,
+and `app/creatureForm.js` writes `state.creatures` through `createCreature`
+and `editCreature`. A blank level marks a townsperson, which stores no level
+and no tier, and its gear pickers start at None. A typed level fills the
+pickers and the `STAT_KEYS` inputs with the defaults of that level. The
+read-back has no gear fallback, so the creature gets what the picker shows,
+and an empty picker means unarmed.
 
 ### The challenge rating
 
-`src/data/challenge.js` has the rating tables. A rating is a plain number,
-so the four ratings below 1 are stored as `0`, `0.125`, `0.25`, and `0.5`.
-`crLabel` prints the fractions the conventional way, and `crOptions` builds
-the picker. `crXP` is the SRD experience-point table, which the difficulty
-hint adds up. A rating of 0 is worth 10 XP, which is one of the two values
-the rules give it.
+`src/data/challenge.js` has the rating tables. A rating is a plain number, so
+the four ratings below 1 are stored as `0`, `0.125`, `0.25`, and `0.5`.
+`crLabel` prints the fractions in the usual way (`1/8`), and `crOptions` builds
+the picker. `crXP` is the SRD experience-point table, which the difficulty hint
+and the XP award at the end of a fight both add up. A rating of 0 is worth
+10 XP, which is one of the two values that the rules give it.
 
 `Modifiers.crProficiencyBonus` is the proficiency bonus of a rating. It calls
 `proficiencyBonus` at the rating, because the rating ladder and the character
-level ladder take the same steps, so the ladder has one implementation.
+level ladder take the same steps, so one function computes both.
 
 The `cr` field on a creature is optional, and an absent field means unrated.
-An unrated creature falls back to its level for proficiency, then to its
-caster level, and it counts for no XP. `CreatureChecks.creatureProficiencyBonus`
-is the one reader of that ladder. Saves, skills, spells, and weapon attacks
-(`AttackResolve.attackerProficiency`) all call it, so a creature swings and
-saves with the same bonus. `coerceCR` is the one gate. It accepts a number or a written
-rating such as `"1/4"`, and it drops anything that names no defined step
-rather than snapping the value to a nearby one. `Creature.js` runs every
-write path (`createCreature`, `editCreature`, `withDefaults`, `toTemplate`,
-and `fromTemplate`) through it, and `Library.normalizeLibrary` runs library
-entries through it. A save needs no migration step, because an old creature
-simply has no field.
+`CreatureChecks.creatureProficiencyBonus` is the only reader of the ladder. A
+rated creature reads it at its rating. An unrated creature reads it at its
+level, then at its caster level, and at 1 when it has neither. Saves, skills,
+spells, and weapon attacks (`AttackResolve.attackerProficiency`) all call this
+function, so a creature swings and saves with the same bonus. An unrated
+creature is worth no XP.
+
+`coerceCR` is the only gate for the field. It accepts a number or a written
+rating such as `"1/4"`, and it drops any value that is not a defined step. It
+does not round the value to a nearby step. `Creature.js` runs every write path
+(`createCreature`, `editCreature`, `withDefaults`, `toTemplate`, and
+`fromTemplate`) through it, and `Library.normalizeLibrary` runs library entries
+through it. A saved creature with no `cr` field is unrated, so the field needs
+no migration step.
 
 Each built-in hostile creature has the rating of its SRD counterpart. The
-built-in townsfolk stay unrated, because nothing fights them.
+built-in townsfolk are unrated.
 
 ### The difficulty hint
 
-`src/entities/EncounterDifficulty.js` rates a fight by the 5e
-experience-point budget. `XP_THRESHOLDS` lists the four thresholds for each
-level from 1 to 20, and `partyThresholds` sums the row of every character.
-`rateEncounter` counts the living characters only: a dead character buys no
-budget and does not count toward the party size, while a dying one still does.
-`adjustedXP` adds up what the foes are worth through `crXP` and multiplies by
-the count, from 1 for a lone foe to 4 for fifteen or more. The party size moves
-one step along that multiplier ladder rather than scaling the value: a party of
-one or two steps up, a party of six or more steps down. The ladder's end rungs,
-0.5 and 5, are reachable through that shift alone.
+`src/entities/EncounterDifficulty.js` rates a fight by the 5e experience-point
+budget. `XP_THRESHOLDS` lists the four thresholds (easy, medium, hard, and
+deadly) for each level from 1 to 20, and `partyThresholds` adds up the row of
+each character. `rateEncounter` counts living characters only. A dead
+character adds no budget and does not count toward the party size, but a dying
+character counts.
 
-`rateEncounter` compares the two and names the band. A threshold counts as met,
-so a total exactly on the medium line is medium. Below the easy threshold the
-band is `Trivial`, which the rules leave unnamed. An unrated foe is worth no
-experience points but still counts toward the multiplier, because it still takes
-a turn, and `rateEncounter` reports how many such foes there are so the hint can
-say the number is short.
+`adjustedXP` adds up the `crXP` of the foes and multiplies the sum by a
+multiplier for the foe count. The multiplier is 1 for a single foe and 4 for
+fifteen or more. The party size moves the multiplier one step along the ladder
+instead of scaling the value. A party of one or two moves it one step up, and a
+party of six or more moves it one step down. The end steps of the ladder, 0.5
+and 5, are reachable only through that shift.
 
-`difficultyLine` is the one line the Encounters panel prints for the GM, over
-the same live creature list the Active tab shows. The hint acts on nothing,
-awards no experience points, and never blocks a fight.
+`rateEncounter` compares the adjusted XP with the thresholds and names the
+band. A total that meets a threshold is in that band, so a total exactly on the
+medium line is medium. Below the easy threshold, the band is `Trivial`, which
+the rules leave unnamed. An unrated foe is worth no XP but still counts toward
+the multiplier, because it still takes a turn. `rateEncounter` reports the
+number of unrated foes, so the hint can say that its total is low.
+
+`difficultyLine` is the line that the Encounters panel prints for the GM, over
+the same live creature list that the Active tab shows. The hint changes
+nothing, awards no XP, and never blocks a fight. The XP award at the end of a
+fight is separate (see [Combat](combat.md#ending-a-fight)).
 
 ### A creature's saves and skills
 
 A creature has an optional `proficiencies` field with two lists: the saving
-throws it is trained in and the skills it is trained in. This is the slim half
-of a character's record. A creature records no armor, weapon, tool, or language
-training, because nothing gates a creature on those, and it has no expertise.
-An absent field means trained in nothing.
+throws it is trained in, and the skills it is trained in. A creature records
+no armor, weapon, tool, or language training, because no rule checks a
+creature for those, and it has no expertise. An absent field means that the
+creature is trained in nothing.
 
 `Proficiencies.normalizeCreatureProficiencies` cleans the set, and the write
-paths spread `creatureProficiencyFields`. A creature trained
-in nothing stores no field at all, so clearing both pickers removes the record.
-An entry that names no ability and no skill is dropped, so nothing can put a
-bonus on something the app cannot roll. The same two functions gate
-`Library.normalizeLibrary`, so a hand-edited library file goes through one
-cleaner.
+paths spread `creatureProficiencyFields`. A creature trained in nothing stores
+no field, so clearing both pickers removes the record. The cleaner drops an
+entry that names no ability and no skill, so no bonus can apply to a roll that
+the app cannot make. The same two functions gate `Library.normalizeLibrary`,
+so a hand-edited library file goes through the same cleaner.
 
 `src/entities/CreatureChecks.js` derives the numbers. `creatureSaveBonus` and
-`creatureCheckBonus` are the creature counterparts of `Checks.saveBonus` and
+`creatureCheckBonus` are the creature versions of `Checks.saveBonus` and
 `Checks.checkBonus`. Each is the ability modifier from `effectiveStatBlock`,
-plus `creatureProficiencyBonus` where the creature is trained, less the
-exhaustion penalty. `creatureProficiencyBonus` reads the ladder at the challenge
-rating, and falls back to the level, then to 1, for an unrated creature.
-`proficiencySummary` is the one line both creature panels print.
+plus `creatureProficiencyBonus` where the creature is trained, minus the
+exhaustion penalty. `proficiencySummary` is the line that both creature panels
+print.
 
-The two modules are split rather than one function that branches, because a
-creature keeps its scores in a different field and climbs the ladder by rating
-rather than by level. Merging them would also make `Checks.js` import
-`Creature.js`, which imports `Character.js`, which reaches `Checks.js` again.
+The creature and character functions are separate because a creature keeps
+its scores in a different field and reads the ladder by rating, not by level.
+One merged function would also make `Checks.js` import `Creature.js`, which
+imports `Character.js`, and the imports of `Character.js` lead back to
+`Checks.js`, which is an import cycle.
 
-Nothing stores a bonus. `combatants.targetSaveBonus` derives one for either kind
-of combatant, so the cast dialog does not ask the GM to type a foe's save. The
-number the panel prints and the number the save rolls come from the same
-function, and an edit to a rating or a stat cannot leave a stale bonus behind.
+No creature stores a bonus. `combatants.targetSaveBonus` derives one for
+either kind of combatant, so the cast dialog does not ask the GM to type a
+foe's save. The panel and the save roll get the number from the same function,
+so an edit to a rating or a stat cannot leave an old bonus behind.
 
-A derived bonus can sit below the one an SRD stat block prints. A printed bonus
-can include a trait this app does not model, such as the goblin's Nimble
-Escape.
+A derived bonus can be lower than the bonus in an SRD stat block. A printed
+bonus can include a trait that this app does not model, such as the goblin's
+Nimble Escape.
 
 ### Damage defenses
 
 A creature has an optional `defenses` field with three lists of damage types:
-`resist`, `vulnerable`, and `immune`. `entities/DamageDefenses.js` cleans
-the lists with `normalizeDefenses`, and the write paths and
-`Library.normalizeLibrary` spread `defenseFields`, so a creature with no
-defenses stores no field. A party character keeps no lists of its own.
-`defensesOf` reads its resistances from the race snapshot in `raceTraits`.
+`resist`, `vulnerable`, and `immune`. `entities/DamageDefenses.js` cleans the
+lists with `normalizeDefenses`. The write paths and `Library.normalizeLibrary`
+spread `defenseFields`, so a creature with no defenses stores no field. A party
+character has no lists of its own, and `defensesOf` reads its resistances from
+the race snapshot in `raceTraits`.
 
 `applyDefenses(groups, defenses, { halve })` takes the `byType` groups of a
-damage roll and returns the total taken and a note for each defense that
-changed a type. `halve` is a successful save against a spell that deals half
-damage, and it comes before the defenses, which is the 5e order. When no
-defense touches the hit, the function halves the whole total rather than
-each type, so a spell of two damage types rounds down once. `combatants.defendedDamage` finds
-the target by id and calls it. The weapon path, the spell attack path (once
-for each ray), and the save path all apply its total. Damage typed into an HP
-stepper has no damage type, so no defense reads it.
+damage roll. It returns the total damage taken and a note for each defense
+that changed a type. `halve` means a successful save against a spell that
+deals half damage, and the function applies it before the defenses, which is
+the 5e order. When no defense applies, the function halves the whole total and
+not each type, so a spell with two damage types rounds down once.
+
+`combatants.defendedDamage` finds the target by id and calls `applyDefenses`.
+The weapon path, the spell attack path (once for each ray), and the save path
+all apply its total. Damage typed into an HP stepper has no damage type, so no
+defense applies to it.
 
 ### Creature casters
 
-A creature casts through the same class machinery as a character. It has
-one scalar `class` with an optional `subclass`, a `casterLevel`, a `spellbook`,
-and slot pools in its `resources`. `entities/Caster.js` is the bridge.
-`toCaster` presents any combatant in the field layout that the pure spell
-helpers read, and it reads the scalar pair as a one-entry class list at the
-caster level. `withCasterFields` stamps the fields on a create or an edit, and
-it rebuilds the slot pools from the class and the level.
+A creature casts through the same class rules as a character. It has one
+scalar `class` with an optional `subclass`, a `casterLevel`, a `spellbook`,
+and slot pools in its `resources`. `entities/Caster.js` connects the two
+models. `toCaster` presents any combatant in the field layout that the pure
+spell helpers read, and it reads the scalar pair as a class list with one
+entry at the caster level. `withCasterFields` writes the fields on a create or
+an edit, and it rebuilds the slot pools from the class and the level.
 
-The subclass can make the creature a caster (see
+A subclass can make a creature a caster (see
 [Subclass casting](#subclass-casting)). `withCasterFields`,
 `ensureCasterFields`, and `casterTemplateFields` ask
-`ClassCasting.castsAs(class, subclass, level)`, so a fighter with an
-Eldritch Knight subclass at caster level 3 or more gets slots. A template
+`ClassCasting.castsAs(class, subclass, level)`. A fighter with the Eldritch
+Knight subclass at caster level 3 or more therefore gets slots. A template
 with no caster level is judged at level 20, because its spawn level is not
-known yet. In the creature form, `app/casterFields.js` offers the casting
-subclasses as options such as "Fighter (Eldritch Knight)". The option value
-is `fighter:eldritch-knight` (`casterValue` and `parseCasterValue`), and
+known.
+
+In the creature form, `app/casterFields.js` offers each casting subclass as an
+option such as "Fighter (Eldritch Knight)". The option value is
+`fighter:eldritch-knight` (`casterValue` and `parseCasterValue`).
 `readCasterOptions` raises a caster level under 3 to the subclass level. An
-edit keeps a stored subclass while the class stays the same, because the
-form sends a subclass only for a casting one.
+edit keeps a stored subclass while the class stays the same, because the form
+sends a subclass only for a casting subclass.
 
 A rated creature takes the proficiency bonus for its spells from the rating
-ladder. `toCaster` stamps a `proficiency` field on the view from
-`crProficiencyBonus`, and `Classes.spellSaveDC` and `spellAttackBonus` prefer
-that field over the level ladder. This is the same source that
-`creatureProficiencyBonus` gives the saves and the skills above. A character
-never has the field, so a character's spell numbers do not change. An
-unrated creature keeps the level ladder, read at its caster level.
+ladder. `toCaster` writes a `proficiency` field on the view from
+`crProficiencyBonus`, and `Classes.spellSaveDC` and `spellAttackBonus` use that
+field in place of the level ladder. The saves and skills above use the same
+source. A character never has the field, so the field does not change a
+character's spell numbers. An unrated creature uses the level ladder at its
+caster level.
 
-`Caster.casterSummary` is one line with the class and its level, the spell
-save DC, the spell attack bonus, and each slot pool as current over max. Both
-creature panels print it under the proficiency line. The combat card shows
-the same two numbers through the `spellStats` field of the loadout
-(`combat/Loadout.js`). The field stays null for a viewer with public access,
+`Caster.casterSummary` is one line with the class and its level, the spell save
+DC, the spell attack bonus, and each slot pool as current over maximum. Both
+creature panels print it under the proficiency line. The combat card shows the
+DC and the attack bonus through the `spellStats` field of the loadout
+(`combat/Loadout.js`). The field is null for a viewer with public access, by
 the same rule that hides spells and slots.
 
-The built-in creatures include three caster foes: the Acolyte, the Cult
-Fanatic, and the Mage. The templates live in `src/data/creatures.js` with the
-rest of the built-in creatures. A template stores no slot pools, because the
-pools rebuild from the class and the caster level on spawn. A spellbook id
-that the default spell list lacks is swapped for a near spell, and a comment
-on the entry records the swap.
+The built-in creatures include three casters: the Acolyte, the Cult Fanatic,
+and the Mage. Their templates are in `src/data/creatures.js` with the other
+built-in creatures. A template stores no slot pools, because the pools rebuild
+from the class and the caster level on spawn. Where the default spell list
+lacks a spell of the SRD stat block, the template uses a similar spell, and a
+comment on the entry records the swap.
 
 ## The character foundation
 
-Beyond its stats and inventory, a `Character` has a class list, a race, a
-background, proficiency lists, hit dice, and a level-up flow, each a pure
-module beside `Character.js` that follows the same take-a-value,
-return-a-value pattern.
+Besides its stats and inventory, a `Character` has a class list, a race, a
+background, proficiency lists, hit dice, and a level-up flow. Each of these
+is a pure module beside `Character.js`, and each takes a value and returns a
+new value.
 
 ```
   data catalogs (plain data, no logic)
     data/classes.js      hit die, proficiencies, skill choices, caster type,
                          subclasses (with subclass casting),
-                         subclass level, ASI levels, features-by-level
+                         subclass level, ASI levels, features by level
     data/races.js        races and their traits
     data/backgrounds.js  backgrounds
-    data/skills.js       the 18 skills' abilities
+    data/skills.js       the ability of each of the 18 skills
+    data/feats.js        the built-in feat catalog
           |
           v
   entity modules (pure logic over character values)
-    ClassCasting.js      a class membership's caster fields, subclass applied
+    ClassCasting.js      the caster fields of a class membership, with the
+                         subclass applied
     Classes.js           caster reads: spellSaveDC, spellAttackBonus,
-                         cantrip/prepared limits
+                         cantrip and prepared limits
     SpellLearning.js     which spells each caster class can learn at its level
     Multiclass.js        the class-list accessor (see below)
     Races.js             resolveRace: catalog first, stored snapshot fallback
     Backgrounds.js       resolve a stored id to its definition
-    Proficiencies.js     assemble + edit the six proficiency lists
+    Proficiencies.js     assemble and edit the seven proficiency lists
     HitDice.js           max HP derivation, hit dice as resource pools
-    LevelUp.js           pending levels, ASI/feat choices, unlocked features
+    Experience.js        the SRD table of XP per level
+    LevelUp.js           pending levels, ASI and feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
     Subclass.js          set or clear a subclass, then resync slots and spells
+    FeatChoices.js       the picks of the take-feat dialog, and feat riders
+    FeatRequirement.js   check the ability, armor, and spellcasting
+                         requirements of a feat
     FeatureGrants.js     apply and undo the grants of a structured feature
-    GrantLedger.js       the grant records of feats and features; rebuild on undo
-    FeatRequirement.js   check a feat's ability, armor, and spellcasting requirement
-    Features.js          class features as numbers the combat paths use
+    GrantLedger.js       the grant records of feats and features, rebuilt
+                         on undo
+    Features.js          class features as numbers that the combat paths use
+    Progression.js       the writers that app and UI code call, each followed
+                         by derive
           |
           v
-    Character.js         the character value itself; withDefaults is the
-                         load-time migration point
+    Character.js         the character value itself; withDefaults runs on
+                         every load
 ```
 
-The catalogs describe what a class or race *is*, and the entity modules
-describe what happens when a character *has* one. The catalog types are declared in `types/class.ts` and `types/race.ts`.
+The catalogs describe what a class or a race *is*, and the entity modules
+describe what happens when a character *has* one. `types/class.ts`,
+`types/race.ts`, and `types/feat.ts` declare the catalog types.
+
+### Derived pools
+
+Spell slots, hit dice, and maximum HP are functions of the class list, the
+character level, the ability scores, and the class catalog. The app stores
+them as resource pools and does not compute them again on read. Every write
+that can change an input therefore has to derive them again, or the pools
+stay wrong.
+
+`Progression.derive` is that step. It runs `syncSlotsToLevel`, then
+`syncHitDice`, then `reconcileMaxHP`, and it keeps what the character already
+spent from each pool. A character whose pools already match comes back as the
+same object.
+
+`Progression.js` also exports the writers that app and UI code call:
+`withClasses`, `withRace`, `withCustomRace`, `withProficiencies`, `withExpertise`, `applyASI`,
+`takeFeat`, `undoLastChoice`, `applyFeatureGrant`, `undoFeatureGrant`,
+`setStat`, and `withEquipped`. Each is the writer of a lower module followed
+by `derive`. The lower modules keep the raw writers so that they can stay
+plain list arithmetic. A call to a raw writer from app code skips the
+reconcile and leaves the pools out of date.
 
 ### Classes and multiclassing
 
 `entities/Multiclass.js` is the class-list accessor. `getClasses` returns the
-memberships. It folds an older save's scalar `class`/`subclass` fields into a
-one-entry list at read time. `withClasses` sanitizes writes, and
-`primaryClass`, `classLevelOf`, and `pendingLevels` read across the list.
-Everything class-aware goes through this accessor rather than touching
-`character.classes` directly, which keeps the single-class and multiclass
-paths identical: a fighter is a character whose class list has one entry.
+memberships. A save that stores scalar `class` and `subclass` fields reads as
+a list with one entry. `withClasses` cleans each write, and `primaryClass`,
+`classLevelOf`, and `pendingLevels` read across the list. Every class-aware
+function goes through this accessor and does not read `character.classes`
+directly. The single-class and multiclass paths are then the same path,
+because a fighter is a character whose class list has one entry.
 
 `entities/Races.js` and `entities/Backgrounds.js` resolve a stored id to its
-definition. `resolveRace` prefers the live catalog and falls back to a stored
-`raceTraits` snapshot, so a hand-typed or since-deleted race still round-trips.
+definition. `resolveRace` uses the live catalog first and falls back to the
+stored `raceTraits` snapshot. A hand-typed race, or a race that the GM deleted
+from the catalog, therefore still loads and saves with its traits.
 
 ### Subclass casting
 
 A class membership (`ClassRef`) stores its subclass as a name. Each class in
-`data/classes.js` lists its catalog subclasses in `subclasses`, and each
-entry has an `id` and a `name`. A subclass with a `casting` entry replaces
-the caster fields of its class: `casterType`, `spellAbility`, `spellListId`,
+`data/classes.js` lists its catalog subclasses in `subclasses`, and each entry
+has an `id` and a `name`. A subclass with a `casting` entry replaces these
+caster fields of its class: `casterType`, `spellAbility`, `spellListId`,
 `knownRule`, `cantripsKnown`, and the ritual flags. The Fighter's Eldritch
-Knight and the Rogue's Arcane Trickster use this entry. Both are `'third'`
-casters on the wizard list with INT.
+Knight and the Rogue's Arcane Trickster have this entry. Both are `'third'`
+casters on the wizard list, with INT.
 
 `entities/ClassCasting.js` resolves a membership to its caster fields.
 `casterDefFor(ref)` returns the class definition, or a frozen merge of the
-class and its subclass `casting`. The match compares the stored name with
-the subclass `id` or `name`, without case, so an imported `'eldritch-knight'`
-and a typed `'Eldritch Knight'` resolve the same. The merge applies only from
-the class's `subclassLevel`. A Fighter 2 with an Eldritch Knight subclass on
-record reads the plain Fighter definition, so it has no spell ability and no
-slots. Each class and subclass pair has one merged object, so `withSubclass`
-and the creature edit compare two results by identity to find a change in
-casting.
+class and the `casting` entry of its subclass. The match compares the stored
+name with the subclass `id` or `name` and ignores case, so an imported
+`'eldritch-knight'` and a typed `'Eldritch Knight'` resolve the same.
+
+The merge applies only from the class's `subclassLevel`. A Fighter 2 with an
+Eldritch Knight subclass on record reads the plain Fighter definition, so it
+has no spell ability and no slots. Each class and subclass pair has one merged
+object, so `withSubclass` and the creature edit can compare two results by
+identity to find a change in casting.
 
 Every reader of caster fields takes the membership, not the class id alone.
-`casterTypeOf`, `isCasterRef`, `spellListOf`, and `casterName` are the
-small readers. `Classes.casterDefOf(character, classId)` finds the
-character's membership for a class id, because the spellbook's `sources` map
-and the cast paths record a class id. SpellSlots.js imports ClassCasting.js
-and not Classes.js, because Classes.js imports SpellSlots.js.
-ClassCasting.js imports only the class data, so no cycle can form.
-`Classes.isCasterClass(classId)` still answers for the class alone, and a
-creature caster or a template asks `ClassCasting.castsAs(classId, subclass,
-level)` instead.
+`casterTypeOf`, `isCasterRef`, `spellListOf`, and `casterName` are the small
+readers. `Classes.casterDefOf(character, classId)` finds the character's
+membership for a class id, because the spellbook's `sources` map and the cast
+paths record a class id. `Classes.isCasterClass(classId)` answers for the
+class alone. A creature caster or a template asks
+`ClassCasting.castsAs(classId, subclass, level)` instead.
 
-The third-caster slot table in SpellSlots.js starts with two 1st-level slots
-at class level 3 and ends with one 4th-level slot at 19. In a multiclass,
-`casterLevelContribution('third', n)` adds `floor(n / 3)`. `characterSlots`
-counts only the classes whose own table grants slots at their level, which
-is the 5e rule that a class counts once it has its Spellcasting feature.
-Without this filter, a Fighter 4 (Eldritch Knight) / Paladin 1 reads the
-combined table at level 1 and gets two slots in place of three.
+`SpellSlots.js` imports `ClassCasting.js` and not `Classes.js`, because
+`Classes.js` imports `SpellSlots.js`. `ClassCasting.js` imports only the class
+data, so it cannot close an import cycle.
 
-`entities/Subclass.js` writes the subclass. `withSubclass(character,
-classId, text)` stores the catalog name for a catalog match and the trimmed
-text for any other name, and an empty text clears the subclass. The write
-re-derives only when the casting changes, so naming a cleric's domain keeps
-its spent slots. A class that stops casting loses the spellbook entries that
-`sources` records under it. A character with no caster class left loses all
-slot and pact pools. `syncSlotsToLevel` returns a martial character
-unchanged and does not strip these pools, because `derive` runs on every
-load and would remove pools that a GM added by hand.
+The third-caster slot table in `SpellSlots.js` starts with two 1st-level slots
+at class level 3 and ends with one 4th-level slot at level 19. In a
+multiclass, `casterLevelContribution('third', n)` adds `floor(n / 3)`.
+`characterSlots` counts only the classes whose own table grants slots at their
+level, which is the 5e rule that a class counts once it has its Spellcasting
+feature. Without this filter, a Fighter 4 (Eldritch Knight) / Paladin 1 would
+read the combined table at level 1 and get two slots in place of three.
+
+`entities/Subclass.js` writes the subclass. `withSubclass(character, classId,
+text)` stores the catalog name for a catalog match and the trimmed text for
+any other name. An empty text clears the subclass. The write derives again
+only when the casting changes, so naming a cleric's domain keeps its spent
+slots.
+
+A class that stops casting loses the spellbook entries that `sources` records
+under it. A character with no caster class left loses all slot and pact
+pools. `syncSlotsToLevel` returns a martial character unchanged and does not
+remove these pools, because `derive` runs on every load and would remove pools
+that a GM added by hand.
 
 `LevelAssign.hasChoiceAt` counts a set subclass as a claim on the class's
-subclass level. The donor path moves a class's newest level to a new class,
-and an Eldritch Knight moved from level 3 to 2 would keep a subclass that
-casts nothing.
+subclass level. The donor path moves a class's newest level to a new class.
+Without the claim, an Eldritch Knight moved from level 3 to level 2 would keep
+a subclass that casts nothing.
 
 ### Proficiencies
 
-`entities/Proficiencies.js` assembles the seven proficiency lists from class,
-race, and background (`assembleProficiencies`). It applies or hand-edits them
-with `withProficiencies`, and it sets the expertise list on its own with
-`withExpertise`. Both writers run `normalizeProficiencies`, which is the one
-place that deduplicates the lists and cuts expertise down to the skills the
-character is proficient in. Expertise doubles a proficiency, so it
-cannot exist without one, and no writer has to remember to prune. A patch that
-names no expertise keeps whatever the character already had, so editing the
-tool list does not clear a player's picks.
+`entities/Proficiencies.js` assembles the seven proficiency lists (saves,
+skills, expertise, weapons, armor, tools, and languages) from the class, the
+race, and the background (`assembleProficiencies`). `withProficiencies`
+applies or edits the lists, and `withExpertise` sets the expertise list on its
+own. The weapons list has two parts, the categories (`simple`, `martial`) and
+the named weapons.
 
-A save with a top-level `Character.expertise` field loads with the list
-folded inside the proficiencies, so no migration step is involved. The
-`isProficient*` and `hasExpertise` predicates return `false` for a legacy
-character with no lists at all.
+Both writers run `normalizeProficiencies`, which is the only place that
+removes duplicates and cuts expertise down to the skills that the character is
+proficient in. Expertise doubles a proficiency, so it cannot exist without
+one, and no writer has to prune it. A patch that names no expertise keeps the
+character's expertise, so an edit to the tool list does not clear a player's
+picks.
+
+A save with a top-level `Character.expertise` field loads with that list
+inside the proficiencies, so the field needs no migration step. The
+`isProficient*` predicates and `hasExpertise` return `false` for a character
+with no proficiency lists.
 
 ### Hit points and hit dice
 
 `entities/HitDice.js` derives max HP from the class hit die plus the CON
 modifier per level (`classMaxHP`, the 5e average rule). It also models hit
-dice as spendable resource pools sized to the assigned class levels.
-`withHitDice` creates them, `syncHitDice` re-derives them while it keeps the
-spent count, and `spendHitDie` heals on a short rest. `restoreHitDice` gives
-back half of the total dice on a long rest, shared across the die sizes
-with the largest first.
+dice as resource pools sized to the assigned class levels. `withHitDice`
+creates the pools, and `syncHitDice` derives them again and keeps the spent
+count. `spendHitDie` heals on a short rest. `restoreHitDice` gives back half of
+the total dice on a long rest, largest die size first.
 
 ### Leveling up
 
-`entities/LevelUp.js` and `entities/LevelAssign.js` run the level-up flow.
-`addXP` leaves each earned level *pending* for a classed character rather than
-applying it silently. `assignLevel` commits a pending level to a chosen class:
-it grows HP, adds a hit die, and advances spell slots. Crossing a class ASI
-level leaves a pending improvement, spent later by `applyASI` or `takeFeat`. A
-choice is stored against the class and class level that earned it (`slotKey`
-builds that key), so a slot can have at most one choice. Each choice also
-records the order in which the player made it, for `undoLastChoice` to read.
+`entities/LevelUp.js` and `entities/LevelAssign.js` run the level-up flow. For
+a character with a class, `addXP` leaves each earned level *pending* and does
+not apply it. `assignLevel` commits a pending level to a chosen class. It
+grows HP, adds a hit die, and advances spell slots.
+
+A class ASI level leaves a pending improvement, which `applyASI` or `takeFeat`
+spends. The app stores each choice against the class and class level that
+earned it (`slotKey` builds that key), so a slot can have at most one choice.
+Each choice also records its order, which `undoLastChoice` reads.
+
 A single-class character with no pending level can move their newest level
 into a new class. `assignLevel` refuses that move while an ASI, feat, or
-feature record claims the level (`hasChoiceAt`), because the moved level
-would leave the record and its increases with no level to claim them. The
-assign dialog lists each new class disabled and asks the player to undo the
+feature record claims the level (`hasChoiceAt`). The moved level would
+otherwise leave the record and its increases with no level to claim them. The
+assign dialog lists each new class as disabled and asks the player to undo the
 choice first.
 
-A feat choice stores a stamp of what it did, not a reference to the catalog.
-`takeFeat` takes either a plain name or a `FeatStamp` (`types/feat.ts`): the
-resolved picks of a library feat. It applies the ability increases to the
-stats, merges the proficiency grants through `normalizeProficiencies`, and
-records on the choice the increases, the rider, every proficiency the feat
-asked for (`requested`), and the entries the merge added (`granted`). This
-mirrors how a race applies its increases: `undoLastChoice` and the sheet read
-the stamp, so a later edit to the library entry does not reach a character
-that already took the feat. Undo subtracts the increases and hands the
-proficiencies to `GrantLedger.rebuildGrants`. That function takes the current
-lists, removes every entry any feat or feature record added, and merges the
-requests of the records that stay back on top. A proficiency that two records
-both ask for therefore stays through the undo of either one. Each record that stays
-is stamped again with what it added in that replay, so the next undo reads an
-accurate diff. An expertise that rode a removed skill prunes with it. A
-matching grant made by hand between take and undo comes off anyway, the same
-hazard a stat edit poses to an ASI undo. A choice written before these fields
-has none of them and undoes as a bare name. A choice
-with `granted` but no `requested` reads its `granted` list as its request.
-
-`entities/FeatChoices.js` has the arithmetic behind the take-feat dialog:
-`availableFeats` filters the catalog to what the character has not taken
-(a repeatable feat stays on offer), `abilityPool` and `choicePool` compute
-each pick's options minus what the character already has, and `buildStamp`
-folds the picks and the feat's fixed grants into the stamp `takeFeat`
-applies. `entities/FeatRequirement.js` checks the structured `requires` field
-of a feat (minimum scores, an armor proficiency, the ability to cast), and
-`featOptions` lists an unmet feat last and disabled, with its prerequisite
-text. A feat with only prerequisite text, such as one the GM wrote, is open
-to everyone. The dialogs live in `ui/EffectPicks.js`, and the class-feature
-grant flow runs its choices through the same engine, so a feat and a
-feature with the same effects prompt the same way. A pick whose pool has
-no more options than the count grants outright with no prompt, and the
-expertise prompt runs after the skill picks because its options depend on
-them. `ui/CharacterProgress.js` wires both flows to the sheet.
-
-`LevelAssign.js` also builds the picks that the assign dialog offers.
+`LevelAssign.js` also builds the options of the assign dialog.
 `assignOptions(character)` lists every held class one level up and every new
-class that the prerequisites allow. It then appends the classes that the
-character cannot take, as disabled entries that name what they want. The
-requirement quoted is the new class's own, unless the block is a held class
-whose prerequisite has since been lost. 5e gates leaving a class the same way
-as entering one. `prereqText` writes that phrasing ("STR 13 or DEX 13"), and
-`className` resolves a class id for display.
+class that the prerequisites allow. It then adds the classes that the
+character cannot take, as disabled entries that name the requirement. The
+requirement is the new class's own, unless the blocked entry is a held class
+whose prerequisite the character no longer meets. In 5e, the prerequisites
+gate leaving a class the same way as they gate entering one. `prereqText`
+writes the requirement ("STR 13 or DEX 13"), and `className` resolves a class
+id for display.
+
+### Feats
+
+A feat choice stores a stamp of what the feat did, not a reference to the
+catalog. `takeFeat` takes a plain name or a `FeatStamp` (`types/feat.ts`),
+which holds the resolved picks of a library feat. It applies the ability
+increases to the stats and merges the proficiency grants through
+`normalizeProficiencies`. It records these fields on the choice:
+
+- the ability increases and the roll rider
+- `requested`, every proficiency that the feat asked for
+- `granted`, the entries that the merge added
+
+`undoLastChoice` and the sheet read the stamp, as they do for the increases of
+a race. A later edit to the library entry therefore does not change a
+character that already took the feat.
+
+Undo subtracts the increases and passes the proficiencies to
+`GrantLedger.rebuildGrants`. That function takes the current lists, removes
+every entry that a feat or feature record added, and merges the requests of
+the remaining records back on top. A proficiency that two records both ask for
+therefore stays through the undo of either one. Each remaining record is
+stamped again with what it added in that replay, so the next undo reads the
+right difference. An expertise on a removed skill goes with the skill.
+
+The rebuild has limits. A matching grant that the GM made by hand between the
+take and the undo also comes off, which is the same risk that a stat edit
+poses to an ASI undo. A choice with none of the stamp fields undoes as a bare
+name, and a choice with `granted` but no `requested` reads its `granted` list
+as its request.
+
+`entities/FeatChoices.js` computes the take-feat dialog. `availableFeats`
+filters the catalog to the feats that the character has not taken, and a
+repeatable feat stays on offer. `abilityPool` and `choicePool` compute the
+options of each pick minus what the character already has. `buildStamp` folds
+the picks and the fixed grants of the feat into the stamp that `takeFeat`
+applies.
+
+`entities/FeatRequirement.js` checks the structured `requires` field of a feat:
+minimum scores, an armor proficiency, or the ability to cast. `featOptions`
+lists an unmet feat last and disabled, with its prerequisite text. A feat with
+only prerequisite text, such as one that the GM wrote, is open to everyone.
+
+The dialogs are in `ui/EffectPicks.js`. The class-feature grant flow uses the
+same picks, so a feat and a feature with the same effects prompt the same way.
+A pick whose pool has no more options than the count grants them all with no
+prompt. The expertise prompt runs after the skill picks, because its options
+depend on them. `ui/CharacterProgress.js` connects both flows to the sheet.
 
 ### Class features
 
-A class feature in `featuresByLevel` (`data/classes.js`) is a plain name or
-a `{ name, effects }` object (`ClassFeatureDef` in `types/class.ts`). The
-effects use the feat effect vocabulary from `types/feat.ts`. A plain name is
+A class feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
+`{ name, effects }` object (`ClassFeatureDef` in `types/class.ts`). The effects
+use the feat effect vocabulary from `types/feat.ts`. A plain name is for
 display only. `LevelUp.unlockedFeatures` collects the entries that the class
 levels of a character reach, and the sheet prints that list.
 
-`entities/FeatureGrants.js` owns the grant lifecycle of a structured
-feature. An unlocked feature with effects and no record in
-`character.featureChoices` is *pending*. Nothing stores that state, so a
-character created at level 1, an imported save, and a hand-edited class list
-all show their unclaimed grants the same way. `applyFeatureGrant` merges
-the picks through `normalizeProficiencies` and records what the feature asked
-for and what the merge added, the same stamp a feat choice records.
-`undoFeatureGrant` rebuilds the lists through `GrantLedger.rebuildGrants`,
-so a pick that a feat or another feature also grants stays, and the feature
-turns pending again. A grant the character already had from the GM is never
-stamped as added, so undo cannot take it away. `featureRiders` feeds a feature's standing roll
-riders into `FeatChoices.riderSources`, which every roll site already calls.
-The Rogue grants Expertise this way at levels 1 and 6, and the Bard at
-levels 3 and 10.
+`entities/FeatureGrants.js` owns the grant lifecycle of a structured feature.
+An unlocked feature with effects and no record in `character.featureChoices`
+is *pending*. The app stores no pending flag, so a character created at
+level 1, an imported save, and a hand-edited class list all show their
+unclaimed grants the same way.
 
-`entities/Features.js` reads the level-scaling names as numbers.
-`attacksPerAction` gives 2 to a character with 'Extra Attack', and 3 or 4
-for the numbered follow-ups of the Fighter. It takes the best count across
-the class list, because Extra Attack does not stack in 5e. `sneakAttackDice`
-gives the count of d6 that Sneak Attack adds, from the level in the class
-that granted it. `hasFeature` and `featureSource` are the exact-name lookups
-below both.
+`applyFeatureGrant` merges the picks through `normalizeProficiencies`. It
+records what the feature asked for and what the merge added, the same stamp
+that a feat choice records. `undoFeatureGrant` rebuilds the lists through
+`GrantLedger.rebuildGrants`, so a pick that a feat or another feature also
+grants stays, and the feature becomes pending again. The stamp never lists a
+grant that the character already had from the GM, so undo cannot remove it.
+`featureRiders` adds the standing roll riders of a feature to
+`FeatChoices.riderSources`, which every roll site calls. The Rogue grants
+Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
 
-A structured effect models a one-time grant, while a value that scales with
-the class level stays a name match, because it is derived on read instead of
-granted once. A homebrew class that uses the same
-names gets the same mechanics.
+`entities/Features.js` reads the names of level-scaling features as numbers.
+`attacksPerAction` gives 2 for 'Extra Attack', and 3 or 4 for the numbered
+Fighter features that follow it. It takes the best count across the class
+list, because Extra Attack does not stack in 5e. `sneakAttackDice` gives the
+number of d6 that Sneak Attack adds, from the level in the class that granted
+it. `hasFeature` and `featureSource` are the exact-name lookups under both.
 
-### Loading old saves
+A structured effect models a grant made once. A value that scales with the
+class level stays a name match, because the app derives it on each read. A
+homebrew class that uses the same names gets the same rules.
 
-`entities/Character.js`'s `withDefaults` is the one load-time migration point.
-It folds all of the above onto an older save. A legacy scalar class becomes a
-list, a missing proficiency scaffold is created empty, and a race string is
-preserved. `campaign/Campaigns.js` maps every loaded character through it.
+### Load-time defaults
+
+`Character.withDefaults` runs on every character that the app loads, and
+`campaign/Campaigns.js` maps every loaded character through it. It converts a
+scalar class to a list, creates an empty proficiency structure where one is
+missing, and keeps a race string as it is. It also reconciles the loaded pools
+through `Progression.derive`, so a save that was edited by hand comes back
+with pools that match its class list, level, and CON.
 
 ## Damage terms
 
-A weapon's damage and a spell's damage or healing are the same thing: a list
-of `DamagePart`s. Each part rolls `count` dice of `sides` in a damage type,
-plus an optional flat `bonus` that rides that term (Magic Missile's `1d4+1`).
-An absent bonus means no bonus, so a term written before the field existed
-needs no repair. `Equipment.normalizeDamagePart` is the single validator. It
-decides how a term with a bonus and a term without one are each repaired:
+A weapon's damage and a spell's damage or healing use the same type, a list of
+`DamagePart`s. Each part rolls `count` dice of `sides` in a damage type, plus
+an optional flat `bonus` on that term (the `1d4+1` of Magic Missile). An absent
+bonus means no bonus, so a stored term without the field needs no repair.
 
-- A term with a bonus can roll no dice, which is how the app writes a
-  fixed amount with no dice behind it (Revivify's one hit point). A term
-  without a bonus always rolls at least one die, so a garbled count reads as
-  `1` rather than as an empty term.
-- The app stores the bonus only when it is nonzero. This keeps an unbonused
-  term identical to what it was before.
+`Equipment.normalizeDamagePart` is the only validator. It repairs a term with a
+bonus and a term without one differently:
 
-The validator also takes the vocabulary of types that a term can have, and it
-defaults to the 13 damage types. Healing is not one of them, because a weapon
-that dealt it would heal on a hit. A spell's restorative dice normalize against
-`HEALING_TYPES` instead, and the authoring form pins them to that one type
-rather than offering a picker. Validating healing dice against the damage list
-would rewrite a heal spell's dice as slashing whenever a GM edited or
-imported it.
+- A term with a bonus can roll no dice. The app writes a fixed amount this way,
+  such as the one hit point of Revivify.
+- A term without a bonus always rolls at least one die, so a garbled count
+  reads as `1` and not as an empty term.
+- The app stores the bonus only when it is not zero, so a term with no bonus
+  has no `bonus` field.
+
+The validator also takes the list of types that a term can have, and the
+default is the 13 damage types. Healing is not one of them, because a weapon
+with healing dice would heal on a hit. The restorative dice of a spell
+normalize against `HEALING_TYPES` instead, and the authoring form sets them to
+that one type with no picker. A check against the damage list would rewrite
+the dice of a heal spell as slashing each time a GM edited or imported it.
 
 A heal effect with `addsModifier` adds the caster's spellcasting ability
-modifier to the roll (`Casting.castSpell` takes it as `spellModifier`).
-Cure Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass
-Cure Wounds ship with it, and the spell form offers it as the "Add
-spellcasting modifier" box.
+modifier to the roll (`Casting.castSpell` takes it as `spellModifier`). Cure
+Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure
+Wounds ship with it, and the spell form offers it as the "Add spellcasting
+modifier" box.
 
-`DiceRoller.rollDamage` groups terms by damage type and adds each term's bonus
-to its own group. The `modifier` argument (the attacker's ability modifier)
-joins the first group only, per 5e. Both land in one `bonus` number per group,
-so a readout shows `7 slashing [2,3 +2]` rather than two separate signs.
-Doubling a term on a critical hit multiplies its dice and leaves its bonus
-alone, which the callers in `weaponAttack.js` and `Casting.js` already do by
-touching `count`. No group can go below zero, so a negative rider
-cannot heal.
+`DiceRoller.rollDamage` groups the terms by damage type and adds the bonus of
+each term to its own group. The `modifier` argument (the attacker's ability
+modifier) joins the first group only, as 5e says. Both go into one `bonus`
+number per group, so a readout shows `7 slashing [2,3 +2]` and not two
+separate signs. No group can go below zero, so a negative rider cannot heal.
 
-`damageReadout` builds the `text` and `detail` lines from those groups.
-`Casting.js`'s projectile merge reuses it, so a hit made of three darts
-reads like a single roll.
+A critical hit doubles the dice of a term and not its bonus.
+`AttackResolve.damageParts` and `Casting.js` do this by doubling `count`.
+
+`damageReadout` builds the `text` and `detail` lines from the groups. The
+projectile merge in `Casting.js` uses it too, so a hit made of three darts
+reads like one roll.
 
 ## The weapon property model
 
 A weapon has `kind`, `category`, `properties`, `range`, and
-`versatileDamage`. `entities/Weapons.js` owns the vocabularies and the reads:
+`versatileDamage` fields. `entities/Weapons.js` owns the vocabularies and
+these reads:
 
 - `weaponKind(weapon)` returns `'melee'` or `'ranged'`. An absent `kind`
   reads as melee.
 - `hasWeaponProperty(weapon, property)` reads the `properties` list. The nine
-  flags are the 5e set: finesse, versatile, two-handed, light, heavy, reach,
-  thrown, ammunition, and loading.
-- `attackAbility(weapon, stats)` picks the ability behind an attack. A ranged
+  properties are the 5e set: finesse, versatile, two-handed, light, heavy,
+  reach, thrown, ammunition, and loading.
+- `attackAbility(weapon, stats)` picks the ability for an attack. A ranged
   weapon uses DEX, a finesse weapon uses the higher of the roller's STR and
   DEX, and every other weapon uses STR.
-- `abilityLabel(weapon)` is the label for a weapon shown without a roller. A
+- `abilityLabel(weapon)` is the label for a weapon shown with no roller. A
   finesse weapon reads `STR/DEX`, because the choice depends on who holds it.
 
 `category` is `'simple'` or `'martial'`, the 5e proficiency categories. A
-weapon with no category is a natural weapon, for example a bite. A versatile
+weapon with no category is a natural weapon, such as a bite. A versatile
 weapon stores its two-handed dice as a full `versatileDamage` array, so the
-damage pipeline handles it with no special case, and a permanent rider term
+damage code needs no special case for it. A permanent rider term therefore
 appears in both arrays.
 
-The property strings `light` and `heavy` also exist as armor weight classes.
-The two vocabularies live in separate constants (`WEAPON_PROPERTIES` in
-`Weapons.js`, `ARMOR_WEIGHTS` in `Equipment.js`) and never mix.
+The strings `light` and `heavy` are also armor weight classes. The two
+vocabularies are separate constants (`WEAPON_PROPERTIES` in `Weapons.js` and
+`ARMOR_WEIGHTS` in `Equipment.js`), and the code never mixes them.
 
-`clampWeaponRange(value, fallback)` reads a range as whole feet, with the long
-range kept at or above the normal one. A field under one foot, or one that does
-not read as a number, takes the matching fallback from `DEFAULT_RANGES`, which
-is 80/320 feet for a ranged weapon and 20/60 for a thrown melee one. The item
-form and the legacy coercer both limit the range here, so an imported file
-cannot have a range the form refuses to produce.
+`clampWeaponRange(value, fallback)` reads a range as whole feet and keeps the
+long range at or above the normal range. A field under one foot, or a field
+that is not a number, takes the matching fallback from `DEFAULT_RANGES`:
+80/320 feet for a ranged weapon, and 20/60 feet for a thrown melee weapon. The
+item form and `coerceWeapon` both limit the range through this function, so an
+imported file cannot contain a range that the form cannot produce.
 
-`EquipmentPresets.coerceWeapon` reads a weapon-like value from any era and
-returns the current fields. The `kind` field says which era the value comes
-from, because every value the coercer returns has one. A value that has it
-keeps its own fields, filtered to the known vocabulary. A value without it is
-legacy: a name match against `WEAPON_PRESETS` adopts the preset's property
-fields and keeps the value's own damage dice, because a GM can edit them, and
-an unmatched one maps from its `handling` and gets the simple category, which
-keeps the old always-proficient rolls unchanged. Reading `kind` first lets a
-GM edit a copy of a built-in weapon: the copy shares the built-in's
-name, and the library gate coerces every entry on every load, so a preset read
-over the top would undo the edit each time.
+### Weapon coercion
 
-Migration step 6 runs saved weapons through the coercer once. The library
-normalize gate runs its entries through it on every load, because library
-files have no version.
+`EquipmentPresets.coerceWeapon` reads any weapon-like value and returns the
+current fields. Every value that it returns has a `kind` field, so the field
+shows whether the input is already in the current format.
+
+- A value with `kind` keeps its own fields, filtered to the known vocabulary.
+- A value without `kind` that matches a name in `WEAPON_PRESETS` takes the
+  preset's property fields and keeps its own damage dice, because a GM can
+  edit the dice.
+- Any other value without `kind` maps from its `handling` field and gets the
+  simple category. Every class is proficient with simple weapons, so the
+  character keeps the proficiency bonus on those attacks.
+
+The `kind` check comes first so that a GM can edit a copy of a built-in
+weapon. The copy has the same name as the built-in weapon, and the library
+gate coerces every entry on every load. A preset match before the `kind`
+check would undo the edit on each load.
+
+Migration step 6 in `storage/Migrations.js` runs the weapons of a campaign save
+through the coercer once. The library gate runs library entries through it on
+every load, because a library file has no version.
 
 ## Armor class
 
-`entities/Armor.js` has the rules for wearing armor: what the worn pieces
-do to AC, to Stealth, and to a character who is not trained for them. These
-rules read the character's classes and proficiency lists, which the item
-readers in `Equipment.js` never do, so they sit in their own module.
-`Equipment.js` keeps the slots, the equip rules, and the per-item field
-readers such as `armorTraits` and `itemACBonus`.
+`entities/Armor.js` has the rules for wearing armor: what the worn pieces do
+to AC, to Stealth, and to a character who is not trained for them. These rules
+read the character's classes and proficiency lists, and the item readers in
+`Equipment.js` never do, so the rules have their own module. `Equipment.js`
+keeps the slots, the equip rules, and the field readers for one item, such as
+`armorTraits` and `itemACBonus`.
 
-`Armor.armorClass(character)` is the only place that derives the AC of a
-character. Equipped body armor replaces the unarmored baseline with its own
-`baseAC`, and its weight class fixes how much DEX it adds. Without body armor
-the AC is `character.baseAC`, which is 10 unless an effect such as Mage Armor
-raised it, plus the full DEX modifier. Every other equipped piece then adds
+`Armor.armorClass(character)` is the only function that derives the AC of a
+character. Equipped body armor replaces the unarmored base with its own
+`baseAC`, and its weight class sets how much DEX it adds. Without body armor,
+the AC is `character.baseAC` plus the full DEX modifier. `baseAC` is 10 unless
+an effect such as Mage Armor raised it. Every other equipped piece then adds
 its own `acBonus`.
 
-A shield is one of those pieces. It stores its bonus in `acBonus`, the same
-field a helmet or a ring uses, so a homebrew tower shield can add more than
-the 5e standard. `SHIELD_AC` is the value an absent field reads as, not a
-fixed rule. The item form gives a shield a minimum of 1 and fills 2 when the
-GM picks that type, so a stored 0 cannot happen and absence always means the
-GM never touched the field. `SHIELD_PRESETS` puts one entry in the preset
-picker.
+### Shields
 
-The form is not the only writer, though. A library file or a hand-edited save
-can store anything in `acBonus`, so `Equipment.itemACBonus` reads the field
-tolerantly, the same way `armorTraits` reads the armor traits. A value that
-is not a whole number reads as absent: a shield then adds `SHIELD_AC`, and
-any other piece adds nothing.
+A shield is one of those other pieces. It stores its bonus in `acBonus`, the
+same field that a helmet or a ring uses, so a homebrew tower shield can add
+more than the 5e standard. `SHIELD_AC` is the value that an absent field reads
+as, not a fixed rule. The item form gives a shield a minimum of 1 and fills in
+2 when the GM picks that type. A stored 0 therefore cannot come from the form,
+and an absent field means that the GM never set it. `SHIELD_PRESETS` adds one
+entry to the preset picker.
 
-A Barbarian or a Monk also gets an unarmored defense formula, which is
-10 plus the DEX modifier plus the modifier of one more ability. The ability
-and whether a shield cancels the formula are stored on the class definition as
-`unarmoredDefense`, and `Classes.unarmoredDefenses(character)` gathers the
-grants of the whole class list. `armorClass` takes whichever is higher, the
-plain unarmored AC or the formula, so a raised `baseAC` from Mage Armor still
-wins when it beats the class feature. The formula needs an empty chest slot,
-because a chest item with no `baseAC` still means the character wears
-something, and a `baseAC` of at least 10, because a GM who lowers it as a
-curse would otherwise see the formula erase the debuff. A Monk who takes a shield loses the formula but
-still gains the AC the shield adds.
+A library file or a hand-edited save can store any value in `acBonus`, so
+`Equipment.itemACBonus` reads the field with tolerance, the same way that
+`armorTraits` reads the armor traits. A value that is not a whole number reads
+as absent. A shield then adds `SHIELD_AC`, and any other piece adds nothing.
 
-Body armor has two more traits, both optional and both absence-defaulted.
-`stealthDisadvantage` slants every Stealth check of the wearer, and `strength`
-is the Strength score the armor needs. `Equipment.armorTraits(item)` is the one
-place that reads either field, because a library file can store anything in
-them, and it treats only a literal `true` and a positive whole number as set.
-`Armor.stealthPenalty(character)` names the worn armor when it is noisy,
-which `app/checkRolls.js` turns into a disadvantage slant and the skill block
-turns into a marker on the Stealth row. Nothing migrates: armor already in a
-save has neither trait until the GM re-picks it from the presets or ticks
-the box.
+### Unarmored defense
+
+A Barbarian or a Monk also gets an unarmored defense formula: 10, plus the DEX
+modifier, plus the modifier of one more ability. The class definition stores
+the ability, and whether a shield cancels the formula, as `unarmoredDefense`.
+`Classes.unarmoredDefenses(character)` collects the grants of the whole class
+list. `armorClass` takes the higher of the plain unarmored AC and the formula,
+so a `baseAC` raised by Mage Armor wins when it is higher.
+
+The formula has two conditions. The chest slot has to be empty, because a
+chest item with no `baseAC` still means that the character wears something.
+`baseAC` has to be at least 10, because a GM can lower it as a curse, and the
+formula would otherwise remove that penalty. A Monk with a shield loses the
+formula but still gets the AC that the shield adds.
+
+### Stealth and Strength
+
+Body armor has two more traits, both optional, and each absent trait means
+"not set". `stealthDisadvantage` gives disadvantage on every Stealth check of
+the wearer, and `strength` is the Strength score that the armor needs.
+`Equipment.armorTraits(item)` is the only reader of either field, because a
+library file can store anything in them. It treats only a literal `true` and
+a positive whole number as set.
+
+`Armor.stealthPenalty(character)` names the worn armor when it is noisy.
+`app/checkRolls.js` turns that into a disadvantage slant, and the skill block
+turns it into a marker on the Stealth row. No migration adds the traits, so
+armor in a save has neither trait until the GM picks it again from the
+presets or ticks the box.
+
+### Walking speed
 
 `entities/Movement.js` owns walking speed. `baseSpeed` reads the speed of the
 race through `Races.resolveRace`, so a catalog edit reaches every character of
-that race, and a hand-typed race walks `DEFAULT_SPEED`. `armorSpeedPenalty`
-costs 10 feet when the effective Strength, buffs included, falls short of what
-the armor asks. `walkSpeed` subtracts both that penalty and the exhaustion
-penalty, and it floors the result at 0. `speedNote` is the sentence that the
-sheet badge shows, and it names each cause that applies. The module is
-separate from `Equipment` because more rules will cut a speed, and each one
-belongs in `walkSpeed` rather than in a second speed calculation. Nothing
-moves a token by feet yet, so the value is informational.
+that race, and a hand-typed race walks at `DEFAULT_SPEED`.
+`armorSpeedPenalty` costs 10 feet when the effective Strength, buffs included,
+is below what the armor needs. `walkSpeed` subtracts that penalty and the
+exhaustion penalty, with a floor of 0. `speedNote` is the sentence that the
+sheet badge shows, and it names each cause that applies.
 
-## Exhaustion
-
-`entities/Exhaustion.js` owns exhaustion in its 2024 form, where one rule
-scales with the level instead of a table of six different penalties: each
-level costs 2 on every d20 test and 5 feet of speed, and the sixth level
-kills.
-
-The level is one number, `exhaustion`, on the character or the creature.
-Nothing else is stored. `exhaustionLevel` reads that number and limits it to
-the range 0 through `MAX_EXHAUSTION`. A hand-edited save therefore cannot go
-past death or under zero. `d20Penalty` and `speedPenalty` derive from the
-level. `atDeathLevel` reports the fatal level, and `exhaustionNote` is the
-sentence for a badge or a log line.
-
-`setExhaustion`, `gainExhaustion`, and `easeExhaustion` are the writers. Each
-one limits the result to the same range.
-
-The penalty reaches a roll through the bonus rather than through a condition
-chip with a rider on it, because a rider appears only after dice are thrown
-while the sheet prints its saving-throw and skill bonuses without dice, so a
-chip would leave the sheet at +5 where the roll gave -1.
-
-`Checks.saveBonus` and `Checks.checkBonus` include the penalty instead, so the
-printed number and the rolled number agree, and a passive score gets the
-penalty with no extra code.
-
-The other bonus sites include the penalty as well, one for each remaining
-kind of d20 test. `app/weaponAttack.js` subtracts it from the attack bonus,
-and both a character and a creature have a level there. `Classes.spellAttackBonus`
-subtracts it from a spell attack. `Classes.spellSaveDC` does not, because a DC
-is a number the target rolls against and not a roll the caster makes.
-`DeathSaves.deathSaveBonus` is the whole bonus of a death save, and the two
-death-save paths both read it.
-
-The app logs the penalty as its own part, next to the ability modifier and the
-proficiency bonus. `app/checkRolls.js` therefore subtracts the penalty back out
-of the bonus to get the ability part. Without that step the log prints a
-modifier that the stat block does not have.
-
-`combat/InitiativeRoll.js` subtracts it from the initiative roll that the
-setup dialog fills. A creature's saving throw derives through
-`creatureSaveBonus`, which subtracts it as described above.
-
-The module imports `Conditions.js` and nothing else, because `Checks.js`
-reads this module and `DeathSaves.js` is built on `Checks.js`, so an import
-of either one from here would close a cycle. The rules that mix exhaustion
-with death therefore live with their callers.
-
-`app/exhaustion.js` has the write that kills. `setCombatantExhaustion` sets
-the level of one combatant by id, writes a log line for what the level costs,
-and then applies the sixth level, which the two kinds of combatant take
-differently.
-
-A character gets three failed death saves from `DeathSaves.killOutright`,
-because three failures is what the whole app reads as dead, and the
-Unconscious chip goes on beside them. HP is untouched, because exhaustion
-kills without damage, and a damage write would show a wound that the fiction
-does not have.
-
-A creature goes to 0 HP through `Creature.applyDamage`, which is the only way a
-creature leaves a fight, and `logDefeatTransition` names it. A combatant that is
-already dead takes the level and nothing else. A second write therefore cannot
-write a second death line.
-
-A revive applies the opposite rule, because a combatant that comes back at
-the sixth level would be alive and dead at the same time, so one level comes
-off.
-`DeathSaves.clearDying` does this for a character. That covers a heal above 0 HP
-and a natural 20 on a death save. `Creature.heal` does it for a creature that the
-heal brings off 0 HP. This half is not in `app/exhaustion.js`, because a revive
-happens in more places than that module can see.
-
-`Character.longRest` applies the third rule of this kind: a long rest calls
-`easeExhaustion` for one level, and a dead character keeps the level that
-killed it. The guard is in `longRest` and not at its call site, because the Time panel
-rests every character at once and does not ask who is alive. A short rest eases
-nothing.
-
-`exhaustionFields` is the load-path coercion for a save that stores
-exhaustion as a hand-added condition chip with no level behind it, and both
-`withDefaults` functions call it. A chip with no stored level reads as level 1, which is the
-least a GM can mean by the chip. The chip then comes off. A stored level wins
-over a stray chip beside it, and the chip still comes off. The two values
-therefore can never disagree.
+The module is separate from `Equipment.js` so that every rule that cuts speed
+goes into `walkSpeed`, and the app has one speed calculation. Nothing moves a
+token by feet, so the value is for display only.
 
 ## Armor proficiency
 
 `Proficiencies.isProficientArmor(character, weight)` reads the armor list.
-The list contains weight classes plus `'shield'`, so a shield goes through the
-same check as a breastplate. `Armor.unproficientWear(character)` turns
-the check into phrases: it reads the memoized `equippedIndex`, checks the
-chest piece against its weight class and an off-hand shield against the
-shield grant, and returns a list such as `['heavy armor', 'a shield']`. Those
-two slots cover every case, because `armorClass` reads body armor from the
-chest slot and `EQUIPMENT_SLOTS` admits a shield to the off hand alone. A
-character without proficiency lists returns an empty list,
-the same rule the weapon gate applies.
+The list has the weight classes plus `'shield'`, so a shield goes through the
+same check as a breastplate.
 
-The call sites act on the list as follows. `app/checkRolls.js` folds a disadvantage
-slant into a STR or DEX save or check, through the `extra` parameter of
-`rollMode`, so a chip that grants advantage cancels it. `app/weaponAttack.js`
-folds the same slant into every weapon attack, because an attack rolls off STR
-or DEX whatever the weapon is. `app/spellCast.js` refuses a cast before the
-resolver runs, so a refused cast spends no slot, and the dialog offers an
-"Ignore armor" opt-out beside the component one.
-The same module marks a character target of a STR or DEX save spell with
-`armorPenalty`, and the resolver folds that slant into the target's save
-through the `extra` parameter of `saveOutcome`. The AC of the armor is not
-touched: wearing armor untrained changes rolls, not the armor.
+`Armor.unproficientWear(character)` turns the check into phrases. It reads the
+memoized `equippedIndex`, checks the chest piece against its weight class and
+an off-hand shield against the shield grant, and returns a list such as
+`['heavy armor', 'a shield']`. Those two slots cover every case, because
+`armorClass` reads body armor from the chest slot, and `EQUIPMENT_SLOTS` allows
+a shield in the off hand only. A character with no proficiency lists gets an
+empty list.
+
+The call sites act on the list in these ways:
+
+- `app/checkRolls.js` adds a disadvantage slant to a STR or DEX save or check,
+  through the `extra` parameter of `rollMode`, so a chip that grants advantage
+  cancels it.
+- `app/weaponAttack.js` adds the same slant to every weapon attack, because an
+  attack uses STR or DEX whatever the weapon is.
+- `app/spellCast.js` refuses a cast before the resolver runs, so a refused cast
+  spends no slot. The dialog offers an "Ignore armor" opt-out beside the
+  components opt-out.
+- `app/spellCast.js` also marks a character that is the target of a STR or DEX
+  save spell with `armorPenalty`. The resolver adds that slant to the target's
+  save through the `extra` parameter of `saveOutcome`.
+
+Untrained armor changes rolls only. The AC of the armor stays the same.
+
+### Weapon proficiency
+
+`Proficiencies.isProficientWeapon(character, name, category)` is true when the
+weapons list grants the whole category or names the weapon. The comparison of
+names ignores case, because the list stores a named grant in lowercase and the
+GM can type an item name in any case. `app/weaponAttack.js` adds the
+proficiency bonus to the attack only when this check passes. An attacker with
+no `proficiencies` field is always proficient, because a creature's attack
+bonus includes proficiency, the way a 5e stat block does.
 
 ## Spell timing
 
-A `Spell` (`types/spell.ts`) lives in the library rather than in a campaign
-save, so it has no version number and no migration chain (see
-[Persistence](persistence.md) for how the library merges), and the app
-therefore reads its two timing fields, `castingTime` and `duration`, rather
-than assuming them.
+A `Spell` (`types/spell.ts`) lives in the library and not in a campaign save,
+so it has no version number and no migration chain (see
+[Persistence](persistence.md) for how the library merges). The app therefore
+parses its two timing fields, `castingTime` and `duration`, on every read.
 
-Both are structured values rather than text. A `castingTime` is a kind (`action`,
-`bonus`, `reaction`, `minutes`, `hours`) with an amount for the counted kinds
-and a trigger clause for a reaction. A `duration` is a kind
-(`instantaneous`, `rounds`, `minutes`, `hours`, `days`, `until-dispelled`) with
-an amount and an `upTo` flag for a duration that the caster can end early.
+Both fields are structured values, not text. A `castingTime` has a kind
+(`action`, `bonus`, `reaction`, `minutes`, or `hours`), an amount for the
+counted kinds, and a trigger clause for a reaction. A `duration` has a kind
+(`instantaneous`, `rounds`, `minutes`, `hours`, `days`, or `until-dispelled`),
+an amount, and an `upTo` flag for a duration that the caster can end early.
 `entities/SpellTiming.js` has these functions over them:
 
-- `parseCastingTime` and `parseDuration` accept either the structured object
-  or the printed string that an older library or a hand-written JSON file
-  contains, such as `1 bonus action`, `10 minutes`, or `Concentration, up to 1
-  minute`. The parsers drop a `Concentration, ` prefix, because the spell
-  already has `concentration` as its own flag. Anything that neither
-  parser can classify becomes `{ kind: 'special', text }`, so the app never
-  discards a phrase that a GM typed.
+- `parseCastingTime` and `parseDuration` accept the structured object or the
+  printed string that a library file can contain, such as `1 bonus action`,
+  `10 minutes`, or `Concentration, up to 1 minute`. The parsers drop a
+  `Concentration, ` prefix, because the spell has `concentration` as its own
+  flag. A phrase that neither parser can classify becomes
+  `{ kind: 'special', text }`, so the app keeps every phrase that a GM typed.
 - `formatCastingTime` and `formatDuration` turn a value back into the printed
-  phrasing that the detail modal shows. Pass `concentration` to
-  `formatDuration` to get the SRD's own `Concentration, up to 1 minute`
-  wording back.
+  text that the detail modal shows. Pass `concentration` to `formatDuration`
+  to get the SRD wording `Concentration, up to 1 minute`.
 - `castingCost` names the part of a turn that a cast spends, which the action
   budget of the combat screen then takes. A casting time of minutes or hours,
-  and a `special` one, return null: no part of a turn pays for them.
-- `durationInRounds` converts a duration into a round count, which puts a
-  timer on a condition that a spell imposes. Days and open-ended durations
-  return null, so the GM clears the chip by hand.
+  or of the `special` kind, returns null, because no part of a turn pays for
+  it.
+- `durationInRounds` converts a duration into a round count, which gives a
+  timer to a condition that a spell imposes. Days and open-ended durations
+  return null, and the GM clears the chip by hand.
 
-The authoring form and the library normalizer both route their raw values
-through the parsers, so a spell typed into the Library rail and one imported
-from a file are validated by the same code.
+The authoring form and the library normalizer both send their raw values
+through the parsers, so the same code validates a spell typed into the Library
+rail and a spell imported from a file.
 
 ## Multi-projectile spells
 
-Scorching Ray, Eldritch Blast, and Magic Missile each fire several
-projectiles from one cast, and each projectile rolls on its own. An attack
-effect states this with `projectiles: { count, perStep?, autoHit? }`. Its
-presence changes what the effect's `damage` means: what one projectile deals,
-rather than what the whole cast deals. An effect without the field rolls
-once, the same as every other attack spell, so a spell written without the field
-needs no migration.
+Scorching Ray, Eldritch Blast, and Magic Missile each fire several projectiles
+from one cast, and each projectile rolls on its own. An attack effect states
+this with `projectiles: { count, perStep?, autoHit? }`. When the field is
+present, the effect's `damage` is what one projectile deals, not what the
+whole cast deals. An effect without the field rolls once, like every other
+attack spell, so a spell without the field needs no migration.
 
-`entities/Casting.js` owns the rules over it:
+`entities/Casting.js` owns these rules:
 
 - `projectileCount(effect, steps)` returns `count` plus `perStep` for each
-  scaling increment. These increments are the same ones that damage scaling
-  uses: a slot level above the spell's own for a leveled spell, or a cantrip
-  breakpoint for a cantrip. `maxTargets` returns this value for a projectile
-  spell, because a creature cannot be picked without a projectile to send at
-  it.
+  scaling step. The steps are the same as for damage scaling: each slot level
+  above the spell's own level for a leveled spell, or each cantrip breakpoint
+  for a cantrip. `maxTargets` returns this value for a projectile spell,
+  because a target needs at least one projectile.
 - `allocateProjectiles(targets, count)` decides how many projectiles each
-  target catches. A target with a `projectiles` value states its own share,
-  limited in order so the total never exceeds what the spell fires. With
-  nothing stated, the projectiles spread as evenly as possible, which puts
-  all of them on the single target in the common case.
-- Resolution rolls one attack per projectile: its own d20, its own critical
-  hit that doubles only its own dice, or no roll at all when `autoHit` is
-  set. The outcome keeps each projectile's roll and damage under `shots`,
-  plus `fired` and `hits`, which lets the log read `2 of 3 hit Grelka`. The
-  merged damage per target feeds that log line. The app applies each ray that
-  lands as its own hit, so a concentrating target saves once per ray and a
-  dying one takes a failure per ray.
-- A target that holds a Paralyzed or Unconscious chip turns a hit from a
-  Touch-range spell into a critical hit, the same rule a melee weapon
-  follows. The cast path sets `autoCrit` on that target.
+  target gets. A target with a `projectiles` value states its own share, and
+  the function limits the shares in order so the total never exceeds what the
+  spell fires. With no stated shares, the projectiles spread as evenly as
+  possible, which puts all of them on the only target in the common case.
+- Resolution rolls one attack per projectile. Each projectile has its own d20
+  and its own critical hit, which doubles only its own dice, or it rolls
+  nothing when `autoHit` is set. The outcome keeps each projectile's roll and
+  damage under `shots`, plus `fired` and `hits`, so the log can read
+  `2 of 3 hit Grelka`. The app applies each ray that lands as its own hit, so
+  a concentrating target saves once per ray, and a dying target takes one
+  failure per ray.
+- A hit from a Touch-range spell on a target with a Paralyzed or Unconscious
+  chip is a critical hit, the same rule as for a melee weapon. The cast path
+  sets `autoCrit` on that target.
 
-The cast dialog offers the allocation grid instead of target checkboxes for
-these spells, because a checkbox cannot say "two rays here, one there". The
-grid also works as the target picker: a creature allocated no projectile is
-not a target. Its total is how many projectiles the cast fires at the level
-being cast. The total updates whenever the slot picker changes, so the GM is
-never offered a projectile that the cast cannot fire.
+For these spells, the cast dialog shows an allocation grid in place of target
+checkboxes, because a checkbox cannot say "two rays here, one there". The grid
+is also the target picker, so a creature with no projectiles is not a target.
+The grid's total is the number of projectiles that the cast fires at the
+chosen level. The total updates when the slot picker changes, so the grid
+never offers a projectile that the cast cannot fire.
 
 ## Material components
 
 A spell's `components` list has the component letters, such as
-`['V', 'S', 'M']`. Those letters alone cannot express what the material is,
-what it costs, or whether casting the spell destroys it, so a spell that
-needs a material describes it in `materials: { text, costGP?, consumed }`.
-Most spells have no such block, so the field is optional rather than
-migrated in: Revivify names its diamonds, and Fire Bolt has nothing to name.
+`['V', 'S', 'M']`. The letters cannot say what the material is, what it costs,
+or whether the cast destroys it. A spell that needs a material therefore
+describes it in `materials: { text, costGP?, consumed }`. Most spells have no
+such block, so the field is optional. Revivify names its diamonds, and Fire
+Bolt has nothing to name.
 
-Both `consumed` and `costGP` change what happens at the table.
 `Casting.materialCheck(caster, spell)` applies the rule and returns
-`{ required, satisfied, item, consumes }`: whether the caster has to hold the
-material, whether a stack of it is there, which stack it is, and whether the
-cast spends it.
+`{ required, satisfied, item, consumes }`. These fields say whether the caster
+has to hold the material, whether a stack of it is there, which stack it is,
+and whether the cast spends it.
 
-A material that the cast destroys has to be in the inventory, and so does one
-with a gp cost, because a pouch and a focus never cover a priced component.
-Anything else is covered, but only while the caster carries a component pouch
-or a spellcasting focus, and a caster with neither needs the printed material
-itself.
+The inventory has to contain a material that the cast destroys, and also a
+material with a gp cost, because a pouch or a focus never covers a priced
+component. A component pouch or a spellcasting focus covers any other
+material. A caster with neither needs the printed material itself.
 
 `required` and `consumes` are separate fields, because holding a material is
-not the same as spending it. Revivify's diamonds are destroyed and come off
-the stack. Chromatic Orb's 50 gp diamond has to be in hand and stays there.
+not the same as spending it. Revivify destroys its diamonds, and they come off
+the stack. The 50 gp diamond of Chromatic Orb has to be in the inventory, and
+it stays there.
 
 An item is a pouch or a focus when it sets `spellFocus`. The flag is the only
-signal, so a stack that a GM named "Component Pouch" without ticking the box
-is ordinary gear. `Equipment.isSpellFocus(item)` and
-`Equipment.carriesSpellFocus(inventory)` read it. `GEAR_PRESETS` ships four
-flagged entries (a component pouch and an arcane, druidic, and holy focus),
-and the item form offers the checkbox on every item type, because a staff is
-an arcane focus and an amulet is a holy symbol. Carrying the focus is enough.
-The app does not track which hand is free, and gear has no equipment slot.
+signal, so a stack that a GM named "Component Pouch" without the flag is
+ordinary gear. `Equipment.isSpellFocus(item)` and
+`Equipment.carriesSpellFocus(inventory)` read the flag. `GEAR_PRESETS` has four
+entries with the flag (a component pouch and an arcane, a druidic, and a holy
+focus). The item form offers the checkbox on every item type, because a staff
+can be an arcane focus and an amulet can be a holy symbol. The caster only has
+to carry the focus, because the app does not track which hand is free, and
+gear has no equipment slot.
 
-Matching a printed phrase against a stack name is inexact by nature, so the
-comparison is case-insensitive and runs in both directions: a stack named
-`Diamond` covers `diamonds worth 300 gp`. A material with no printed text
-names nothing to look for and is never required. A creature has no
-inventory at all, and the app never asks it for a component.
+A printed phrase does not always match a stack name exactly. The comparison
+therefore ignores case and runs in both directions, so a stack named
+`Diamond` covers `diamonds worth 300 gp`. A material with no printed text names
+nothing to look for and is never required. A creature has no inventory, and
+the app never asks it for a component.
 
-`app/spellCast.js` acts on the result. A cast whose material is missing stops
-before `castSpell` runs, which keeps a refused cast from spending a slot. The
-refusal names the missing material, or the missing pouch, whichever is the
-cheaper fix. A cast that succeeds takes one item from the stack, but only
-when `consumes` is true, in the same write-back that stores the spent slot,
-and reports it through `InventoryLog`'s `use` verb. The cast dialog also
-offers an "Ignore components" checkbox, which skips both the check and the
-consumption, for tables that treat components as flavor.
+`app/spellCast.js` acts on the result. A cast with a missing material stops
+before `castSpell` runs, so a refused cast spends no slot. The refusal names
+the missing material or the missing pouch, whichever is the cheaper fix. When
+`consumes` is true, a cast that succeeds takes one item from the stack, in the
+same write that stores the spent slot. `InventoryLog` reports the item with its
+`use` verb. The cast dialog also offers an "Ignore components" checkbox, which
+skips the check and the consumption, for tables that treat components as
+flavor.
 
-`normalizeSpell` adds the `M` letter to any entry that names a material
-without listing it, because the authoring form shows the material fields only
-under a ticked M. If the app skips this repair, an imported spell loses its
-material the first time a GM edits it. The app reads `costGP` only as the
-signal that a focus cannot cover the component. It never charges the party
-for it, because nothing in the app tracks how much money a party has.
+`normalizeSpell` adds the `M` letter to any entry that names a material but
+does not list the letter, because the authoring form shows the material fields
+only when M is ticked. Without this repair, an imported spell would lose its
+material the first time a GM edited it. The app reads `costGP` only as the
+signal that a focus cannot cover the component. It never charges the party,
+because the app does not track money.
 
 ## Ritual casting
 
-A ritual cast takes ten minutes longer than normal and spends no spell slot.
-It needs both halves of the rule: the spell has `ritual: true`, and the
-caster has a class with the ritual-casting feature. `data/classes.js` marks
-that feature on bard, cleric, druid, and wizard.
-`Classes.hasRitualCasting(character)` is true when any of the character's
-caster classes has it.
+A ritual cast takes ten minutes longer than a normal cast and spends no spell
+slot. The spell has to have `ritual: true`, and the caster has to have a class
+with the ritual-casting feature. `data/classes.js` gives that feature to the
+bard, cleric, druid, and wizard. `Classes.hasRitualCasting(character)` is true
+when any caster class of the character has it.
 
-`Casting.castSpell` takes `{ ritual: true }`. The cast resolves at the
-spell's own level, because there is no slot to upcast from, and returns
-`spent: false` with the caster value unchanged. Asking for a ritual cast of a
-spell that has no ritual, or of a cantrip, returns
-`{ ok: false, reason: 'not-ritual' }`.
+`Casting.castSpell` takes `{ ritual: true }`. The cast resolves at the spell's
+own level, because no slot is spent that could raise it, and returns
+`spent: false` with the caster value unchanged. A ritual cast of a spell with
+no ritual, or of a cantrip, returns `{ ok: false, reason: 'not-ritual' }`.
 
-The cast dialog offers a "Cast as ritual" checkbox when both halves line up.
-Ticking it hides the slot picker. For a caster with no slots left, a ritual
-is the one cast still available, so the dialog drops the slot picker rather
-than refusing to open, and the box starts ticked.
+The cast dialog offers a "Cast as ritual" checkbox when both conditions are
+true. Ticking it hides the slot picker. For a caster with no slots left, a
+ritual is the only cast still available, so the dialog opens with no slot
+picker and the box ticked.
 
-The game clock divides a day into six named watches of four hours each
-(`time/GameClock.js`), so it cannot represent ten minutes, and a ritual does
-not advance it. The session log states the extra time instead
-(`casts Detect Magic as a ritual (10 minutes longer)`), and the GM adjudicates
-it.
+A wizard can also cast a ritual from the spellbook without preparing it. The
+Wizard's class entry sets `ritualFromBook`, and `SpellView.isRitualOnly` is
+true for a known, unprepared ritual of such a class. `Casting.castSpell`
+accepts that spell as a ritual cast only, and the cast dialog offers no slot
+and opens with the ritual box ticked.
 
-In 5e, a wizard can also ritual-cast a spell from the spellbook without
-preparing it. `canCast` requires a prepared caster's spell to be prepared,
-ritual or not, so the app does not yet support this piece of the rule. No
-built-in spell in `src/data/spells.js` is a ritual either, so the flag
-currently serves only GM-authored and imported spells. See
+The game clock divides a day into six named watches (`time/GameClock.js`), so
+it cannot count ten minutes, and a ritual does not advance it. The session log
+states the extra time instead (`casts Detect Magic as a ritual (10 minutes
+longer)`), and the GM decides what it costs.
+
+No built-in spell in `src/data/spells.js` is a ritual, so the flag applies only
+to spells that a GM writes or imports. See
 [the curated-spells note](../spells-missing.md) for what the built-in list
 covers.
 
 ## Known and prepared casters
 
 Each caster class manages its leveled spells as a prepared caster or as a
-known caster, and `data/classes.js` records which as `knownRule`. A *prepared* caster (cleric,
-druid, paladin, wizard) keeps a wider book and readies a daily subset. Only
-the spellbook's `prepared` list is castable, and `Classes.preparedLimit` caps
-it at the spell-ability modifier plus caster level, per prepared-rule class.
-The caster level is the class level for a cleric, druid, or wizard, and half
-the class level, rounded down, for a paladin. The cap is at least 1. A
-*known* caster (bard, ranger, sorcerer, warlock) casts everything it knows.
-The `known` list is castable directly, and there is no prepare step at all.
-Cantrips sit outside this distinction in their own list.
+known caster, and `data/classes.js` records the rule as `knownRule`.
 
-`SpellView.spellRule(character, spellId)` says which rule governs a spell.
-It uses the rule of the class that the character learned the spell under
-(the spellbook's `sources` map), falls back to the first caster class when no
-source was recorded, and falls back to `'known'` when even that is missing,
-so a legacy character keeps casting what it knows. `isSpellCastable` and
-`castableLeveledIds` apply the rule, and `Casting.canCast` delegates to them,
-so the cast validator, the sheet's spell section, and the combat screen's
-action bar all agree on what is castable.
+- A *prepared* caster (cleric, druid, paladin, wizard) keeps a larger book and
+  readies a subset each day. Only the spellbook's `prepared` list is castable.
+  `Classes.preparedLimit` sets the size of that list for each prepared-rule
+  class: the spell-ability modifier plus the caster level, with a minimum of 1.
+  The caster level is the class level for a cleric, druid, or wizard, and half
+  the class level, rounded down, for a paladin.
+- A *known* caster (bard, ranger, sorcerer, warlock) casts every spell that it
+  knows. The `known` list is castable directly, with no prepare step.
 
-The Spellbook tab follows the same rule. Prepare and Unprepare actions and
-the prepared count appear only for a character with a prepared-rule class
-(`Classes.hasPreparedCaster`). A known caster's entries show Learn and Forget
-alone. A multiclass character mixes the two rules per spell, and each learned
-spell follows its own class's rule.
+Cantrips are in their own list, outside both rules.
 
-Creature casters are not affected. Their authoring dialogs stamp every
-picked leveled spell into both `known` and `prepared` (`spellbookFromIds`),
-so whichever list their class reads, the whole picked set stays castable.
+`SpellView.spellRule(character, spellId)` says which rule applies to a spell.
+It uses the rule of the class that the character learned the spell under (the
+spellbook's `sources` map). When no source is recorded, it uses the first
+caster class, and when that is missing too, it uses `'known'`, so a character
+with no recorded rule keeps casting what it knows. `isSpellCastable` and
+`castableLeveledIds` apply the rule, and `Casting.canCast` calls them. The cast
+validator, the spell section of the sheet, and the action bar of the combat
+screen therefore agree on what is castable.
+
+The Spellbook tab follows the same rule. The Prepare and Unprepare actions and
+the prepared count show only for a character with a prepared-rule class
+(`Classes.hasPreparedCaster`). The entries of a known caster show only Learn
+and Forget. A multiclass character mixes the two rules, and each learned spell
+follows the rule of its own class.
+
+The rule does not limit creature casters. Their authoring dialogs write every
+picked leveled spell into both `known` and `prepared` (`spellbookFromIds`), so
+the whole picked set is castable whichever list the class reads.
+
+### Learning spells
 
 `SpellLearning.js` decides which spells the Spellbook tab offers. Each caster
-class learns as a single-class caster of its own class level, which is the
-5e multiclass rule. `classSpellLevelCap` reads the top row of the class's
-own slot table, or the pact slot level for a warlock. Its optional
-`subclass` argument applies a casting subclass, so an Eldritch Knight 7
-learns 2nd-level spells. `canLearnSpell` then requires a class whose spell
-list (`ClassCasting.spellListOf`, the wizard list for an Eldritch Knight)
-has the spell and whose cap reaches its level. A cleric 3 /
-wizard 3 has third-level slots on the combined table, but neither class
-reaches Fireball. The module never reads the character's slot pools, because
-the combined slot level is the wrong cap for learning.
+class learns as a single-class caster of its own class level, which is the 5e
+multiclass rule. `classSpellLevelCap` reads the top row of the class's own slot
+table, or the pact slot level for a warlock. Its optional `subclass` argument
+applies a casting subclass, so an Eldritch Knight 7 learns 2nd-level spells.
 
-Known casters have no spells-known cap, because the app does not model a
-per-level spells-known curve. The school limits of the Eldritch Knight and
-the Arcane Trickster are not modeled either, so both learn from the whole
-wizard list. Prepared casters swap their list freely,
-rather than only on a long rest.
+`canLearnSpell` then needs a class whose spell list has the spell
+(`ClassCasting.spellListOf`, which is the wizard list for an Eldritch Knight)
+and whose cap reaches the spell's level. A cleric 3 / wizard 3 has 3rd-level
+slots on the combined table, but neither class can learn Fireball. The module
+never reads the character's slot pools, because the combined slot level is not
+the limit for learning.
+
+The app does not model these parts of the rules:
+
+- the number of spells that a known caster can know at each level, so a known
+  caster has no limit
+- the school limits of the Eldritch Knight and the Arcane Trickster, so both
+  learn from the whole wizard list
+- the long-rest limit on changing prepared spells, so a prepared caster can
+  change the list at any time
 
 ## Saving throws
 
 `entities/Checks.js` has both halves of a save. `saveBonus(character, ability)`
-returns what a character adds: the ability modifier taken from the
-equipment-adjusted scores, plus the proficiency bonus when the class granted
-that save. `resolveSave(bonus, dc, { mode, rng, conditions })` rolls one d20
-through the shared dice roller and reports
-`{ roll, total, dc, natural, success, rider }`. It succeeds on a tie with the
-DC. `savingThrow(character, ability, dc, opts)` composes the two functions and
-adds `proficient`, so a readout can state why the number is what it is.
-`conditions` are the chips the roller has (see
-[Riders on later rolls](#riders-on-later-rolls) below).
+returns what a character adds: the ability modifier from the scores with
+equipment applied, plus the proficiency bonus when a class granted that save.
+`resolveSave(bonus, dc, { mode, rng, conditions })` rolls one d20 through the
+shared dice roller and returns `{ roll, total, dc, natural, success, rider }`.
+A total equal to the DC succeeds. `savingThrow(character, ability, dc, opts)`
+combines the two functions and adds `proficient`, so a readout can explain the
+number. `conditions` are the chips of the roller (see
+[Riders on later rolls](#riders-on-later-rolls)).
 
-The two entry points exist because a character does not always roll a save.
-`Casting.js`'s save effect resolves every target through `resolveSave`, and
-its targets can be creatures, which do not record ability scores the way a
-character does and have no proficiency lists. The resolver therefore
-takes a bonus that the caller worked out, and only the character path goes
-through `saveBonus`.
+The two entry points exist because not every save is a character's save. The
+save effect in `Casting.js` resolves every target through `resolveSave`, and a
+target can be a creature, which keeps its scores in a different field and
+reads proficiency by challenge rating. The resolver therefore takes a bonus
+that the caller computed, and only the character path goes through
+`saveBonus`.
 
-The cast dialog reflects that split. `app/combatants.js`'s `targetSaveBonus`
-returns a derived bonus for either kind of combatant, and nothing only for a
-target deleted while the dialog sat open.
-`app/spellCast.js` decorates a save spell's targets with whatever comes back,
-shows it in the target picker (`Rook (WIS +6)`, in place of the AC that a
-save never reads), and asks for one hand-entered number to cover the targets
-that have none. When every target has its own bonus, the app leaves the
-field out. The session log names the bonus beside the roll, matching how a
-weapon attack's log names the ability and proficiency behind its total.
+The cast dialog follows that split. `targetSaveBonus` in `app/combatants.js`
+returns a derived bonus for either kind of combatant. It returns nothing only
+for a target that was deleted while the dialog was open. `app/spellCast.js`
+adds the returned bonus to each target of a save spell and shows it in the
+target picker, such as `Rook (WIS +6)`, in place of the AC that a save never
+reads. The dialog asks for one typed number for the targets that have no
+bonus, and it leaves that field out when every target has one. The session log
+names the bonus beside the roll, in the same way that the log of a weapon
+attack names the ability and the proficiency behind its total.
 
 A natural 1 and a natural 20 are ordinary results on a save, unlike on an
-attack roll, so the app reports `natural` for the log rather than acting on
-it.
+attack roll, so the app reports `natural` for the log and takes no other
+action on it.
 
-Ability checks work the same way. `checkBonus` is the ability modifier plus the
-proficiency bonus for a skill the character is proficient in, doubled where the
-character has expertise. `checkAbility` says which ability a key rolls: a skill
-id resolves through `data/skills.js`, and one of the six ability keys stands for
-itself, which is how a bare Strength check works. `resolveCheck` and
-`abilityCheck` mirror the two save entry points, and the DC is nullable, because
-a GM often calls for a check with no number in mind and reads the total out
-loud. `passiveScore` is 10 plus a bonus, plus or minus 5 for advantage or
-disadvantage, and `passivePerception` applies it to the Perception bonus.
+### Ability checks
 
-`ui/CharacterChecks.js` puts the six saves and the 18 skills on the sheet, with
-a training dot that reads hollow, solid, or ringed for untrained, proficient, or
-expertise, and passive Perception under the skills. A row is a button when the
-host wires `onCheck`, and a plain line otherwise, which is a spectator's sheet.
-`app/checkRolls.js` is that handler. It takes the bonus from the pure helpers,
-rolls the rider dice, and hands one flat modifier to the dice tray, so the tray
-throws the only d20 and the log line breaks the number back down. A sheet roll
-has no DC.
+Ability checks work the same way. `checkBonus` is the ability modifier, plus
+the proficiency bonus for a skill that the character is proficient in, doubled
+where the character has expertise. `checkAbility` says which ability a key
+uses. A skill id resolves through `data/skills.js`, and each of the six ability
+keys stands for itself, which is how a plain Strength check works.
+`resolveCheck` and `abilityCheck` match the two save entry points. Their DC can
+be null, because a GM often calls for a check with no number in mind and reads
+the total out loud. `passiveScore` is 10 plus a bonus, plus or minus 5 for
+advantage or disadvantage, and `passivePerception` applies it to the
+Perception bonus.
 
-Expertise reaches a character in two ways. The Expertise features of the
-Rogue and the Bard grant it through the pending-grant flow (see Class
-features above). The Set expertise button on the Progression section is the
-GM's hand grant for subclasses and homebrew: a multiselect over the
-character's proficient skills, committed through `Progression.withExpertise`.
-A creature has no expertise, so its bonus comes from its training alone.
+`ui/CharacterChecks.js` shows the six saves and the 18 skills on the sheet,
+with passive Perception under the skills. A training dot is hollow for
+untrained, solid for proficient, and ringed for expertise. A row is a button
+when the host sets `onCheck`, and a plain line otherwise, which is the sheet
+that a spectator sees.
+
+`app/checkRolls.js` is the `onCheck` handler. It takes the bonus from the pure
+helpers, rolls the rider dice, and gives one flat modifier to the dice tray.
+The tray therefore throws the only d20, and the log line breaks the number
+back into its parts. A roll from the sheet has no DC.
+
+A character gets expertise in two ways. The Expertise features of the Rogue
+and the Bard grant it through the pending-grant flow (see
+[Class features](#class-features)). The Set expertise button in the Progression
+section lets the GM grant it by hand, for subclasses and homebrew. The button
+opens a multiselect over the character's proficient skills and commits through
+`Progression.withExpertise`. A creature has no expertise, so its bonus comes
+from its training alone.
+
+## Exhaustion
+
+`entities/Exhaustion.js` models exhaustion by the 2024 rule, where one rule
+scales with the level in place of a table of six different penalties. Each
+level costs 2 on every d20 test and 5 feet of speed, and the sixth level kills.
+
+The level is one number, `exhaustion`, on the character or the creature, and
+nothing else is stored. `exhaustionLevel` reads the number and limits it to
+the range 0 through `MAX_EXHAUSTION` (6), so a hand-edited save cannot go past
+death or below zero. `d20Penalty` and `speedPenalty` derive from the level.
+`atDeathLevel` reports the fatal level, and `exhaustionNote` is the sentence
+for a badge or a log line. `setExhaustion`, `gainExhaustion`, and
+`easeExhaustion` are the writers, and each limits its result to the same
+range.
+
+The module imports nothing. `Checks.js` imports this module, and `DeathSaves.js`
+is built on `Checks.js`, so an import of either one from here would close a
+cycle. The rules that combine exhaustion with death therefore live with their
+callers.
+
+### The penalty on rolls
+
+The penalty reaches a roll through the bonus and not through a condition chip
+with a rider. A rider applies only when dice are thrown, but the sheet prints
+its saving-throw and skill bonuses without dice. A chip would therefore leave
+the sheet at +5 while the roll gave -1.
+
+`Checks.saveBonus` and `Checks.checkBonus` include the penalty, so the printed
+number and the rolled number agree, and a passive score gets the penalty with
+no extra code. Each other kind of d20 test includes the penalty too:
+
+- `app/weaponAttack.js` subtracts it from the attack bonus, for a character or
+  a creature.
+- `Classes.spellAttackBonus` subtracts it from a spell attack.
+  `Classes.spellSaveDC` does not, because the target rolls against a DC and the
+  caster does not roll it.
+- `DeathSaves.deathSaveBonus` is the whole bonus of a death save, and both
+  death-save paths read it.
+- `combat/InitiativeRoll.js` subtracts it from the initiative roll that the
+  setup dialog fills.
+- `creatureSaveBonus` subtracts it from a creature's saving throw.
+
+The app logs the penalty as its own part, next to the ability modifier and the
+proficiency bonus. `app/checkRolls.js` therefore subtracts the penalty from the
+bonus to get the ability part. Without that step, the log would print a
+modifier that the stat block does not have.
+
+### The sixth level
+
+`app/exhaustion.js` has the write that kills. `setCombatantExhaustion` sets the
+level of one combatant by id, logs what the level costs, and then applies the
+sixth level, which differs by the kind of combatant.
+
+A character gets three failed death saves from `DeathSaves.killOutright`,
+because the whole app reads three failures as dead, and the Unconscious chip
+goes on with them. HP does not change, because exhaustion kills without damage,
+and a damage write would show a wound that did not happen.
+
+A creature goes to 0 HP through `Creature.applyDamage`, which is the only way
+that a creature leaves a fight, and `logDefeatTransition` names it. A combatant
+that is already dead takes the level and nothing else, so a second write
+cannot log a second death.
+
+A revive removes one level, because a combatant that comes back at the sixth
+level would be alive and dead at the same time. `DeathSaves.clearDying` does
+this for a character, which covers a heal above 0 HP and a natural 20 on a
+death save. `Creature.heal` does it for a creature that the heal brings above
+0 HP. This rule is not in `app/exhaustion.js`, because a revive happens in more
+places than that module can see.
+
+A long rest removes one level through `Character.longRest`, and a dead
+character keeps the level that killed it. The guard is in `longRest` and not
+at the call site, because the Time panel rests every character at once and
+does not check who is alive. A short rest removes no level.
+
+### Exhaustion stored as a chip
+
+`exhaustionFields` coerces a save that stores exhaustion as a hand-added
+condition chip with no level, and both `withDefaults` functions call it. A chip
+with no stored level reads as level 1, the least that a GM can mean by the
+chip, and the chip comes off. A stored level wins over a chip beside it, and
+the chip still comes off. The level and the chip therefore can never disagree.
 
 ## Concentration
 
-Many spells last only as long as the caster keeps concentrating on them, and
-a caster holds only one at a time. `entities/Concentration.js` models this
-over a `concentration` field on the caster, a party character or a creature.
-The field records the spell's id and name, the level it was cast at, and
-`remaining`, the rounds left. A caster concentrating on nothing has this
-field set to null or absent.
+Many spells last only while the caster concentrates on them, and a caster can
+concentrate on only one spell at a time. `entities/Concentration.js` models
+this with a `concentration` field on the caster, which can be a party
+character or a creature. The field records the spell's id and name, the level
+it was cast at, and `remaining`, the rounds left. The field is null or absent
+when the caster concentrates on nothing.
 
-- `begin(character, spell, slotLevel)` starts one. It takes `remaining` from
-  the spell's duration through `durationInRounds`. A duration that no round
-  counter fits, such as open-ended or measured in days, reads null and lasts
-  until something breaks it. Beginning a second spell ends the first. The
-  displaced spell comes back in `dropped`, so the caller can state what was
-  lost and clear its effects.
-- `drop(character)` ends concentration, however it ended.
+- `begin(character, spell, slotLevel)` starts concentration. It takes
+  `remaining` from the spell's duration through `durationInRounds`. A duration
+  that no round count fits, such as an open-ended one or one in days, reads as
+  null and lasts until something breaks it. A second spell ends the first, and
+  the ended spell comes back in `dropped`, so the caller can report it and
+  clear its effects.
+- `drop(character)` ends concentration for any reason.
 - `dropIfHelpless(character)` ends concentration when the character's chips
   leave it unable to act, such as Paralyzed, Stunned, or the Unconscious chip
-  that a death adds. It returns the ended spell, so the caller can free what
-  the spell held.
-- `concentrationDC(damage)` is 10, or half the damage when that amount is
-  more. `checkOnDamage(character, damage, opts)` rolls the CON save against
-  it through `savingThrow`, and drops the spell on a failure. It reports the
-  whole save, so the log can show the DC and the roll behind the outcome.
+  that a death adds. It returns the ended spell, so the caller can release
+  what the spell held.
+- `concentrationDC(damage)` is 10, or half the damage when that is more.
+  `checkOnDamage(character, damage, opts)` rolls the CON save against that DC
+  through `savingThrow` and drops the spell on a failure. It returns the whole
+  save, so the log can show the DC and the roll.
 - `tick(character)` spends one round of the duration and reports `expired`
   when the duration runs out.
 
-The `Concentrating` chip beside the state is a display element only. `begin`
-writes it, `drop` removes it, and `tick` rewrites its counter from
-`remaining` rather than decrementing it. The round wrap calls
-`TimedEffects.passRound`, which ticks the chips of the list first and then
-calls `tick`, so the number the GM reads afterward is the state's own.
-`Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
-modules agree on the spelling.
+The `Concentrating` chip is for display only. `begin` writes it, `drop`
+removes it, and `tick` writes its counter again from `remaining` instead of
+counting it down. The round wrap calls `TimedEffects.passRound`, which ticks
+the chips first and then calls `tick`, so the GM reads the counter of the
+state. `Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
+modules use the same spelling.
 
-`app/spellCastResolve.js` begins concentration when a cast of a
-concentration spell succeeds. It writes this onto the same entity that the
-spent slot and the consumed component are written to, so one store call
-covers all three.
-`app/combatants.js`'s `applyToTarget` calls for the save on damage. This
-covers weapon hits and spell damage alike, because both arrive through this
-function. A character knocked to 0 HP loses the spell outright without
-rolling. The round wrap in `app/encounterWiring.js` ticks the duration and
-logs a spell that ran out.
-`storeCharacterChips` in the same module stores a character whose chips
-changed through `dropIfHelpless`. A spell that paralyzes the caster and a
-death from exhaustion both go through it. The character sheet's conditions
-bar ends the spell the same way when the GM adds a chip that stops actions.
+### Where concentration begins and ends
 
-Every damage path tests a character's concentration, the character sheet's
-`-1 HP` button included, because they all go through
-`CharacterHit.hitCharacter` (see the death saves below).
+- `app/spellCastResolve.js` begins concentration when a cast of a
+  concentration spell succeeds. It writes the field onto the same entity as
+  the spent slot and the consumed component, so one store call covers all
+  three.
+- `applyToTarget` in `app/combatants.js` calls for the save on damage. Weapon
+  hits and spell damage both arrive through this function. A character
+  knocked to 0 HP loses the spell with no roll.
+- The round wrap in `app/encounterWiring.js` ticks the duration and logs a
+  spell that ran out.
+- `storeCharacterChips` in `app/combatants.js` stores a character whose chips
+  changed, through `dropIfHelpless`. A spell that paralyzes the caster and a
+  death from exhaustion both go through it.
+- The conditions bar of the character sheet ends the spell in the same way
+  when the GM adds a chip that stops actions.
 
-A creature caster holds its spell the same way. `entities/CreatureHit.js`
-exports `settleConcentration(prev, next)`, which reads one write to a creature
-and ends its spell on a drop to 0 HP, on a failed CON save after damage, on a
-chip that stops it acting, or when the GM removes the `Concentrating` chip by
-hand. The save uses the creature's own bonus from `creatureSaveBonus`.
-`storeCreature` in `app/combatants.js` applies it to every creature write:
-`applyToTarget`, `applyConditionToTarget`, the exhaustion stepper, and the
-`onUpdate` of the Encounters and NPC panels. The combat screen's Drop control
-works for a creature caster too, and the round wrap ticks its duration.
+Every damage path checks a character's concentration, the `-1 HP` button of
+the character sheet included, because all of them go through
+`CharacterHit.hitCharacter` (see [Death saves](#death-saves)).
+
+A creature caster concentrates in the same way. `settleConcentration(prev,
+next)` in `entities/CreatureHit.js` reads one write to a creature. It ends the
+creature's spell on a drop to 0 HP, a failed CON save after damage, a chip that
+stops it acting, or a hand removal of the `Concentrating` chip. The save uses
+the creature's own bonus from `creatureSaveBonus`. `storeCreature` in
+`app/combatants.js` applies it to every creature write: `applyToTarget`,
+`applyConditionToTarget`, the exhaustion stepper, and the `onUpdate` of the
+Encounters and NPC panels. The Drop control of the combat screen works for a
+creature caster too, and the round wrap ticks its duration.
 
 ## Death saves
 
 A party character at 0 HP is not dead yet. It rolls death saves until three
-succeed or three fail. `entities/DeathSaves.js` models this over a
+succeed or three fail. `entities/DeathSaves.js` models this with a
 `deathSaves` field on the character, which records `successes`, `failures`,
-and `stable`. A character who is not dying has this field set to null.
+and `stable`. The field is null for a character who is not dying.
 
-- `isDying`, `isStable`, and `isDead` read the four positions apart: standing,
+- `isDying`, `isStable`, and `isDead` tell the four states apart: standing,
   rolling, out of danger at 0 HP, and killed by three failures.
 - `dropToDying(character)` starts the tracker. A second call on a character
   who already has one changes nothing, so the failures already rolled stay.
-- `clearDying(character)` takes the tracker away, which is what a heal above 0
-  HP and a natural 20 both do.
+- `clearDying(character)` removes the tracker, which a heal above 0 HP and a
+  natural 20 both do.
 - `stabilize(character)` sets `stable` and resets the counters. The character
-  stays at 0 HP and stays unconscious. A dead character cannot be stabilized.
+  stays at 0 HP and unconscious. A dead character cannot be stabilized.
 - `judgeDeathSave(state, roll)` maps one rolled d20 to the next tracker state
   and names the outcome: `revive`, `success`, `stable`, `failure`, or `dead`.
 - `applyJudged(character, state)` writes a judged tracker back. A revive
   restores 1 HP and then calls `clearDying`.
 - `rollDeathSave(character, opts)` rolls the save and applies the outcome. It
-  is the headless path, for tests and for callers with no dice tray.
-- `recordDamage(character, { crit })` is damage on a character already at 0 HP.
+  is the path for tests and for callers with no dice tray.
+- `recordDamage(character, { crit })` applies damage to a character already at
+  0 HP.
+
+### The roll
 
 The DC is a flat 10. A natural 20 revives the character at 1 HP, whatever the
 counters say. A natural 1 counts as two failures, and it fails even when a
-rider pushes the total past the DC. Otherwise the total beats the DC on a tie,
-as every other save does.
+rider raises the total past the DC. Otherwise, a total equal to the DC
+succeeds, as on every other save.
 
 The roll goes through `Checks.resolveSave` with a bonus of 0, because a death
-save adds no ability modifier and no proficiency, and going through that
-function lets a rider such as Bless reach the roll. No ability key is passed, so
+save adds no ability modifier and no proficiency. Going through that function
+lets a rider such as Bless reach the roll. The call passes no ability key, so
 the automatic failure that unconsciousness imposes on Strength and Dexterity
-saves does not catch a death save.
+saves does not apply to a death save.
 
-A heal above 0 HP clears the tracker whatever it recorded, a dead one included.
-Nothing else brings a dead character back, so this is the GM's way of deciding
-that the death did not stand. That rule lives in `Character.restoreResource`,
-because that is the one function every heal in the app goes through: the combat
-screen's heal control, the sheet's HP stepper, a healing spell, and a rest. A
-character standing at 5 HP can therefore never still read as dying.
+### Damage and healing at 0 HP
 
-Damage on a character who is already at 0 HP skips the roll and is an
-automatic failure, and a critical hit counts as two. Damage on a stable
-character makes it dying again, with that failure against it, which is the 2014
-rule. The hit that drops the character to 0 HP in the first place costs no
-failure. Damage left over past 0 HP that is at least the HP maximum kills
-outright, which is the 5e massive damage rule. Bonus HP soaks the hit first,
-so it does not count toward the leftover. The rule applies both to the hit
-that drops the character and to a hit on a character already at 0 HP.
+A heal above 0 HP clears the tracker, whatever it recorded, a dead tracker
+included. Nothing else brings a dead character back, so a heal is how the GM
+decides that the death did not happen. The rule is in
+`Character.restoreResource`, because every heal in the app goes through that
+function: the heal control of the combat screen, the HP stepper of the sheet,
+a healing spell, and a rest. A character at 5 HP can therefore never read as
+dying.
 
-`Unconscious` goes on with the tracker and comes off with it, so no caller tracks
-both halves. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
-That chip gives an attacker advantage and a melee hit an automatic crit,
-through the condition-effect table below, so the crit rule needs no special
-case here.
+Damage on a character already at 0 HP is an automatic failure with no roll,
+and a critical hit counts as two failures. Damage on a stable character makes
+it dying again, with that failure against it, which is the 2014 rule. The hit
+that drops the character to 0 HP costs no failure.
 
-`entities/CharacterHit.js` decides all of this. `hitCharacter` and
-`healCharacter` return the character after the change, the events to log
-(the drop to 0, massive damage, a failure while down, a heal back above 0,
-and the concentration outcome), and the spell the hit ended. The consequence
-folds into the same write as the HP change. `app/combatants.js`'s
-`applyToTarget` calls them and logs the events. Every hit and every heal
-arrives through that one function, the character sheet's HP steppers
-included, which reach it through the sheet's `hpStep` host.
-`applyToTarget` takes `opts.crit` for the doubled failure, and
-`app/weaponAttack.js` passes it. Spell damage does not crit here and leaves
-it off.
+Damage left over past 0 HP that is at least the HP maximum kills at once,
+which is the 5e massive damage rule. Bonus HP (temporary hit points) absorbs
+the hit first, so it does not count toward the leftover. The rule applies to
+the hit that drops the character and to a hit on a character already at 0 HP.
 
-The roll itself comes from a button, on the combat screen's active column and
-on the character sheet, not from the turn advance. `retryImposedSaves`
-auto-rolls bookkeeping saves, but a death save is the player's roll, and the
-dice-tray convention wants a throw that somebody asked for.
-`app/deathSaves.js` owns both controls. It follows the split that
-`app/checkRolls.js` describes: the riders roll app-side, the tray throws the
-only d20, and `judgeDeathSave` reads the result. Because the tray throws the
-d20, this path does not call `rollDeathSave`, which would throw a second one.
+The `Unconscious` chip goes on with the tracker and comes off with it, so no
+caller tracks both. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
+The chip gives an attacker advantage and makes a melee hit a critical hit,
+through the condition-effect table, so the crit rule needs no special case
+here.
 
-`view/DeathSaveView.js` turns one tracker into the words and the pip counts a
-panel draws, and `ui/DeathSaveBlock.js` builds the line from it. The combat
-screen and the character sheet both call that builder, so neither can describe
-the same state differently. `CombatantRow.deathSaves` brings the tracker onto
-the board, where a card shows a Dying, Stable, or Dead chip beside its
-conditions.
+### Where the rules run
+
+`entities/CharacterHit.js` applies these rules. `hitCharacter` and
+`healCharacter` return the character after the change, the events to log, and
+the spell that the hit ended. The events are the drop to 0, massive damage, a
+failure while down, a heal above 0, and the concentration outcome. The
+consequences go into the same write as the HP change.
+
+`applyToTarget` in `app/combatants.js` calls these functions and logs the
+events. Every hit and every heal arrives through that function, including the
+HP steppers of the character sheet, which reach it through the sheet's
+`hpStep` host. `applyToTarget` takes `opts.crit` for the doubled failure, and
+`app/weaponAttack.js` passes it. Spell damage does not pass it.
+
+The death save roll comes from a button, in the active column of the combat
+screen and on the character sheet, and not from the turn advance.
+`retryImposedSaves` rolls bookkeeping saves automatically, but a death save is
+the player's roll, and the dice tray shows only throws that someone asked for.
+`app/deathSaves.js` owns both buttons. It follows the same split as
+`app/checkRolls.js`: the riders roll in the app, the tray throws the only d20,
+and `judgeDeathSave` reads the result. This path does not call
+`rollDeathSave`, because that function would throw a second d20.
+
+`view/DeathSaveView.js` turns one tracker into the words and pip counts that a
+panel draws, and `ui/DeathSaveBlock.js` builds the line from them. The combat
+screen and the character sheet both call that builder, so they always describe
+a tracker the same way. `CombatantRow.deathSaves` puts the tracker on the
+board, where a card shows a Dying, Stable, or Dead chip beside its conditions.
 
 Only characters roll death saves. A creature is defeated at 0 HP.
 
 ## Conditions a spell imposed
 
-A failed save against a spell can leave the target with a condition, and
-that chip records where it came from. `Condition.source` records the spell's
-id and name, the caster's id, and the ability, DC, and bonus that the save
-was rolled with. A chip that the GM adds by hand has no source, so nothing
-below applies to it. `entities/ImposedConditions.js` owns the rules over
-that record:
+A failed save against a spell can leave a condition on the target, and that
+chip records where it came from. `Condition.source` records the spell's id and
+name, the caster's id, and the ability, DC, and bonus of the save. A chip that
+the GM adds by hand has no source, so the rules in this section do not apply
+to it. `entities/ImposedConditions.js` owns the rules over the record:
 
 - `removeImposed(list, casterId, spellId)` removes every chip that one cast
-  wrote, reports them, and hands the original list straight back when none
-  matched.
-- `repeatSaves(list, { bonusOf, rng })` rolls one save per chip whose source
-  says that the save ends the effect, against the DC recorded on it, and
-  drops the chips that succeeded. `bonusOf` decides what the creature adds.
-  It defaults to the bonus stamped at cast time, which is all there is for a
-  foe.
+  wrote and reports them. It returns the original list when no chip matches.
+- `repeatSaves(list, { bonusOf, rng })` rolls one save for each chip whose
+  source says that a save ends the effect, against the DC on the chip, and
+  drops the chips whose save succeeded. `bonusOf` gives the bonus. The default
+  is the bonus recorded at cast time, which is the only bonus a foe has.
 
-Both matches need the caster and the spell to agree, because a caster with
-two spells running ends one at a time, and two casters that land the same
-spell on one target keep their own chips.
+Both functions match on the caster and the spell. A caster with two spells
+running ends one at a time, and two casters that put the same spell on one
+target each keep their own chips.
 
-`app/combatants.js` drives them, because only the wiring can see every
-collection that a target lives in. `endSpellEffects(app, casterId, spellId)`
-sweeps the characters and the creatures, then logs each one
-that walked free. It also despawns the creatures that the cast summoned, which
-the section below covers. It runs whenever a caster stops holding a spell: the sheet's
-Drop control and its hand-removed `Concentrating` chip (through
-`onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
-drop to 0 HP in `applyToTarget`, a chip that stops the caster acting, a
-displacing cast in
-`app/spellCastResolve.js`, and a duration that runs out at the round wrap.
+### The sweep
+
+`app/combatants.js` runs these functions, because only the wiring can see
+every collection that a target can be in. `endSpellEffects(app, casterId,
+spellId)` sweeps the characters and the creatures and logs each one that the
+sweep freed. It also removes the creatures that the cast summoned (see
+[Summoned creatures](#summoned-creatures)). It runs whenever a caster stops
+concentrating on a spell:
+
+- the Drop control of the sheet, or a hand removal of its `Concentrating`
+  chip, through `onConcentrationEnd` in `app/partyWiring.js`
+- a failed CON save or a drop to 0 HP in `applyToTarget`
+- a chip that stops the caster acting
+- a new concentration cast in `app/spellCastResolve.js`
+- a duration that runs out at the round wrap
+
+The sweep always runs after the write that it follows. Both writes change
+`state.characters` and `state.creatures`, so a copy stored before the sweep
+would bring the chips back.
+
+### Repeated saves
+
 `retryImposedSaves(app, combatantId)` rolls the repeated saves.
-`app/turnAdvance.js` calls it from the turn advance (`advanceCombatTurn`)
-for whoever's turn is ending, and for each held combatant the pointer
-steps past. A Paralyzed or Stunned combatant never takes a turn, so
-without the second call it never rolls to shake off Hold Person. A party
-character rolls its live bonus there rather than the stamped one, so a save
-granted since the cast counts.
+`app/turnAdvance.js` calls it from the turn advance (`advanceCombatTurn`) for
+the combatant whose turn ends, and for each held combatant that the pointer
+steps past. A Paralyzed or Stunned combatant never takes a turn, so without
+the second call it would never roll to end Hold Person. A party character
+rolls its current bonus there, not the recorded one, so a save proficiency
+gained after the cast counts.
 
-The sweep always runs after the write that it follows, because both touch
-`state.characters` and `state.creatures`, and a stored pre-sweep copy would
-bring the chips back.
+A spell allows the repeated save with `saveEnds` on its save effect.
+`Library.normalizeSpell` keeps the flag when the effect names a condition and
+drops it otherwise. The spell form offers it as the "Save ends each turn" box,
+which shows once a save names a condition, and `SpellDraft.assembleEffect`
+follows the same rule. Hold Person, Blindness/Deafness, Fear, Hold Monster,
+Power Word Stun, and Sunburst ship with it.
 
-A spell states that its condition allows the retry with `saveEnds` on its
-save effect. `Library.normalizeSpell` accepts this alongside a condition and
-drops it when there is no condition. The spell form offers it as the "Save ends each
-turn" box, which shows once a save names a condition, and
-`SpellDraft.assembleEffect` keeps it under the same rule. Hold Person and
-Power Word Stun ship with it.
-
-The retry, the effect table below, and the rider are the rules that read a
-chip. A spell whose only target shook the effect off also leaves the caster
-concentrating, because nothing tracks how many targets a cast has left.
+The repeated save, the condition-effect table, and the rider are the rules
+that read a chip. A spell whose only target ended the effect still leaves the
+caster concentrating, because nothing tracks how many targets a cast has left.
 
 ## Summoned creatures
 
 A spell can put new creatures on the map. Its `summons` effect names one
-library creature template and a count. `entities/Summons.js` owns the rules
-over a `summonedBy` field on the creature. The field records the spell's id
-and name, and the caster's id, the same record that a spell-imposed chip has
-in `Condition.source`, so one sweep ends both halves of a spell. A creature
-that the GM placed has no such field.
+library creature template and a count, and Conjure Animals ships with one.
+`entities/Summons.js` owns the rules over a `summonedBy` field on the
+creature. The field records the spell's id and name and the caster's id,
+which is the same record that `Condition.source` keeps. One sweep therefore
+ends both the chips and the summons of a spell. A creature that the GM placed
+has no such field.
 
 - `summonCount(effect, steps)`, in `Casting.js`, is the base `count` plus
-  `countPerStep` for each scaling increment.
-- `stampSummon(creature, source)` writes the record onto a fresh creature.
-- `isSummonedBy(creature, casterId, spellId)` matches one cast. Both halves
-  have to agree, for the same reason `removeImposed` needs both.
-- `despawnSummons(list, casterId, spellId)` removes every creature of one
-  cast, reports them, and hands the original list back when none matched.
+  `countPerStep` for each scaling step.
+- `stampSummon(creature, source)` writes the record onto a new creature.
+- `isSummonedBy(creature, casterId, spellId)` matches one cast, on both the
+  caster and the spell, for the same reason as `removeImposed`.
+- `despawnSummons(list, casterId, spellId)` removes every creature of one cast
+  and reports them. It returns the original list when no creature matches.
 
-The template reference is a name, not an id. The library merges creature
-entries by name, so a name still finds the template after a GM customizes it.
-`Library.activeCreatureByName` is the lookup. `castPlan` refuses a cast whose
-name matches no template. That refusal lands before the dialog opens, which is
+The effect names its template, and does not use an id. The library merges
+creature entries by name, so the name still finds the template after a GM
+customizes it. `Library.activeCreatureByName` is the lookup. `castPlan`
+refuses a cast whose name matches no template, before the dialog opens and so
 before a slot is spent.
 
-`app/summons.js` has the spawn. `spawnSummons` reads the template, builds one
-creature per count through `Creature.fromTemplate`, and puts them all on the
-tile of the party. That tile is the only place a cast can reach, because the
-app cannot measure distance between two tokens. Each creature takes its own id.
-The side it fights on is the disposition of the template, so a hostile template
-fights the party. A GM who wants a summon that stands with the party writes a
-friendly template.
+`spawnSummons` in `app/summons.js` reads the template, builds one creature per
+count through `Creature.fromTemplate`, and puts all of them on the party's
+tile. That tile is the only place that a cast can reach, because the app
+cannot measure the distance between two tokens. Each creature gets its own id.
+Its side is the disposition of the template, so a hostile template fights the
+party. For a summon that stands with the party, the GM writes a friendly
+template.
 
-`endSpellEffects` despawns them, in the same pass that sweeps the condition
-chips. The despawn runs before the guard that returns early on an empty sweep,
-because a summoning spell usually imposes no chip at all. A defeated summon
-leaves with the living ones. The log names each creature that vanishes.
-
-A cast that nothing concentrates on still spawns its creatures, and the log
-marks that cast untracked. The GM removes those by hand.
+`endSpellEffects` removes the summons in the same pass that sweeps the chips.
+The removal runs before the early return for an empty sweep, because a
+summoning spell usually imposes no chip. A defeated summon leaves with the
+living ones, and the log names each creature that vanishes. A summoning spell
+without concentration still spawns its creatures, and the log marks the cast
+as untracked. The GM removes those creatures by hand.
 
 A summons cast during a fight joins the running order.
-`Initiative.addParticipant` sorts the newcomer in and keeps the turn on whoever
-has it. The initiative is a straight d20 plus the DEX modifier, the same roll
-the setup dialog fills. A newcomer that sorts above the current combatant
-therefore acts for the first time on the next round. Despawning the last
-creature staged on the tile of the party ends the fight, through
-`syncCombatLocation`.
+`Initiative.addParticipant` sorts the new creature in and keeps the turn on
+the combatant that has it. The initiative is a plain d20 plus the DEX
+modifier, the same roll that the setup dialog makes. A new creature that sorts
+above the current combatant therefore acts first on the next round. When the
+removal takes away the last creature on the party's tile, the fight ends
+through `syncCombatLocation`.
 
 ## Condition effects
 
-`Conditions.js` owns the pick-list and the list algebra and says which names
-exist, and `entities/ConditionEffects.js` says what those names do.
-`CONDITION_EFFECTS` is a table keyed by the lowercased name, so a chip a GM
-typed by hand matches a row when it happens to spell one of them, and has no
-rule when it does not. A row has up to seven fields:
+`Conditions.js` owns the pick-list and the list operations, and it says which
+names exist. `entities/ConditionEffects.js` says what those names do.
+`CONDITION_EFFECTS` is a table keyed by the lowercased name. A chip that a GM
+typed by hand gets the rule of a row when its name matches one, and no rule
+when it does not. A row has up to seven fields:
 
-- `attacks` slants the attack rolls its holder makes.
-- `attacksAgainst` slants the attack rolls made at its holder. It is one slant,
-  or a `{ melee, ranged }` pair for prone, which is the only condition that
-  helps one reach and hurts the other.
-- `checks` slants the holder's ability checks.
-- `saves` names the abilities whose saving throws the holder rolls at
-  disadvantage, and `autoFailSaves` names the abilities that fail with no roll.
-- `meleeAutoCrit` turns any melee hit on the holder into a critical one.
-- `noActions` costs the holder its turn.
+| Field | Effect |
+| --- | --- |
+| `attacks` | Slants the attack rolls that the holder makes |
+| `attacksAgainst` | Slants the attack rolls made against the holder. It is one slant, or a `{ melee, ranged }` pair for Prone, the only condition that helps one reach and hurts the other |
+| `checks` | Slants the holder's ability checks |
+| `saves` | Names the abilities whose saves the holder rolls with disadvantage |
+| `autoFailSaves` | Names the abilities whose saves fail with no roll |
+| `meleeAutoCrit` | Makes any melee hit on the holder a critical hit |
+| `noActions` | Costs the holder its turn |
 
-Eleven of the fifteen names in the pick-list have a row. Charmed and grappled
-do not: charmed needs a charmer to point at, and no part of the app relates two
-combatants, while grappled sets speed to zero and nothing tracks movement.
-Deafened costs only hearing. Concentrating is a display chip over the
-concentration state described above. Exhaustion is not in the pick-list at
-all, because it is a level rather than an on-or-off state, and `Exhaustion.js`
-owns it.
+Eleven of the fifteen names in the pick-list have a row. Charmed has none,
+because it needs a charmer, and no part of the app relates two combatants.
+Grappled has none, because it sets speed to zero and nothing tracks movement.
+Deafened costs only hearing, and Concentrating is a display chip for the
+concentration state. Exhaustion is not in the pick-list, because it is a
+level and not an on-or-off state, and `Exhaustion.js` owns it.
 
-The reads over that table are pure and take chip lists only:
+The reads over the table are pure and take chip lists only:
 
 - `conditionEffect(name)` is the table lookup, and `effectsOf(conditions)`
-  pairs each chip that has a row with it, dropping the rest.
-- `combineModes(slants)` folds a set of slants by the 5e rule: any advantage
-  and any disadvantage cancel to a straight roll, and otherwise the one kind
-  present wins. Counting rather than pairing makes the arrival order
-  irrelevant. It returns null, not `'normal'`, when nothing applies, because
-  the dice tray injects its standing advantage toggle whenever a caller names
-  no mode, and a helper that always returned a mode would cancel that toggle
-  on every roll.
-- `rollMode({ roller, target, kind, melee, ability })` is the mode one roll
-  takes from the chips on both sides. Only an attack reads the target's chips.
-  A save or a check is rolled against a number, and whoever set that number
-  does not slant it.
+  pairs each chip that has a row with its row and drops the rest.
+- `combineModes(slants)` combines a set of slants by the 5e rule. Any
+  advantage and any disadvantage cancel to a straight roll, and otherwise the
+  one kind present wins. The function counts the kinds, so the order of the
+  slants does not matter. It returns null, not `'normal'`, when nothing
+  applies. The dice tray adds its own advantage toggle when a caller names no
+  mode, and a function that always returned a mode would cancel that toggle on
+  every roll.
+- `rollMode({ roller, target, kind, melee, ability })` is the mode that one
+  roll gets from the chips on both sides. Only an attack reads the target's
+  chips, because a save or a check rolls against a number that the other side
+  does not change.
 - `modeReasons(query)` names the chips behind the mode, so a log line can
-  explain a cancelled pair rather than printing a straight roll with no reason.
+  explain a cancelled pair instead of printing a straight roll with no reason.
 - `canAct(conditions)` is false when any chip has `noActions`.
-- `autoCrits(conditions, { melee })` is true when a melee hit on the holder
-  crits. The printed rule is a hit from within 5 feet. The app measures no
-  distance by design, and a melee weapon is as close as it gets.
-- `saveOutcome(conditions, ability)` reports `{ autoFail, failedBy, mode }` for
-  one save. The caller checks `autoFail` first, because that save never reaches
-  the dice.
+- `autoCrits(conditions, { melee })` is true when a melee hit on the holder is
+  a critical hit. The printed rule is a hit from within 5 feet. The app
+  measures no distance, so it uses a melee attack as the closest match.
+- `saveOutcome(conditions, ability)` returns `{ autoFail, failedBy, mode }` for
+  one save. The caller checks `autoFail` first, because that save never
+  reaches the dice.
 
-The sites that read the table:
+These sites read the table:
 
 - `app/weaponAttack.js` builds one query from both combatants and takes the
-  reach from the weapon's kind (`Weapons.weaponKind`). It also asks
-  `autoCrits` for the defender, so a paralyzed target crits on any hit.
-- `app/spellCastResolve.js` folds the chips' mode with the GM's dialog choice
-  through `combineModes`, so neither overrides the other. A save spell stamps
-  `autoFailSave` on a target that fails outright, and an attack spell treats a
-  touch range as melee reach. The caster view has no chips, so the real
-  combatant's list arrives as `casterConditions`.
+  reach from the weapon's kind (`Weapons.weaponKind`). It also asks `autoCrits`
+  about the defender, so any hit on a paralyzed target is a critical hit.
+- `app/spellCastResolve.js` combines the mode from the chips with the GM's
+  choice in the dialog through `combineModes`, so neither replaces the other.
+  A save spell marks a target that fails with no roll with `autoFailSave`, and
+  an attack spell treats a touch range as melee reach. The caster view has no
+  chips, so the list of the real combatant arrives as `casterConditions`.
 - `app/checkRolls.js` handles a save or a check rolled from the sheet. An
   automatic failure logs and stops before the tray opens.
 - `combat/CombatView.js` asks `canAct`. `skipsTurn(found)` is true for a
   combatant that is downed, that resolves to nothing, or that cannot act, and
-  `app/encounterWiring.js` passes it to `advanceTurn`. The same answer marks the
+  `app/turnAdvance.js` passes it to `advanceTurn`. The same answer marks the
   row `incapacitated`, which is how a card and a ribbon chip show a combatant
-  that keeps its place in the order and loses the turn.
+  that keeps its place in the order but loses its turn.
 
 Every attack, check, and save in the app reaches one of those sites, so a chip
-applies wherever the roll is thrown. Nothing writes a chip from a roll: the
-sites read, and the GM or a spell writes.
+applies wherever the roll happens. The sites only read chips. The GM or a
+spell writes them.
 
 ## Riders on later rolls
 
-A chip can change the rolls its holder makes afterwards. Bless adds 1d4 to an
-ally's attack rolls and saving throws. Bane subtracts the same from a foe's.
-`Condition.rider` records that as `{ rolls, dice, die, flat }`: which rolls it
-touches, how many dice, which die, and a flat amount. The dice count is
-signed, so Bane is Bless with a minus sign and there is no second field for
-the direction. `entities/Riders.js` owns the model:
+A chip can change the later rolls of its holder. Bless adds 1d4 to an ally's
+attack rolls and saving throws, and Bane subtracts 1d4 from a foe's.
+`Condition.rider` records this as `{ rolls, dice, die, flat, once }`: the rolls
+it changes, the number of dice, the die, a flat amount, and whether the first
+roll uses it up. The dice count is signed, so Bane is Bless with a minus sign,
+and no second field is needed for the direction. `entities/Riders.js` owns the
+model:
 
-- `normalizeRider(value)` coerces a written block, the same tolerant parse
-  that every other spell field gets. A rider that touches no roll, or that
-  adds neither dice nor a flat amount, reads as absent.
-- `chipRider(condition)` reads a stored chip's rider through that parse.
-  Chips live in the campaign save and nothing validates their fields on the way
-  in, so a hand-edited save can contain a rider with no roll list or with a
-  die that does not exist. Every read of a stored rider goes through this
-  function, and a rider the app cannot use reads as a chip that has none.
-- `activeRiders(sources, kind)` picks the sources that touch one roll kind
+- `normalizeRider(value)` cleans a written block, with the same tolerant
+  parse as every other spell field. A rider that changes no roll, or that adds
+  neither dice nor a flat amount, reads as absent.
+- `chipRider(condition)` reads the rider of a stored chip through that parse.
+  Chips are in the campaign save, and nothing checks their fields on load, so a
+  hand-edited save can contain a rider with no roll list or with a die that
+  does not exist. Every read of a stored rider goes through this function, and
+  a rider that the app cannot use reads as no rider.
+- `activeRiders(sources, kind)` picks the sources that change one kind of roll
   and pairs each with its cleaned rider.
 - `rollRiders(sources, kind, rng)` rolls them and returns
-  `{ modifier, note }`. The note names each source and the faces it rolled,
-  so a log line can explain the number.
-- `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
-  readout.
+  `{ modifier, note, spent }`. The note names each source and the faces it
+  rolled, so a log line can explain the number. `spent` names each source
+  whose rider has `once` set.
+- `spendRiders(conditions, spent)` removes the chips that a roll used up.
+- `riderText` and `riderSummary` describe a rider for a chip tooltip or a
+  spell readout.
 
+### Rider sources
 
-A source is anything with a name and a rider. A condition chip is one, and so
-is a taken feat's stamp. `FeatChoices.featRiders` reads a character's stamped
-feat riders as sources, and `FeatChoices.riderSources` joins them with the
-condition list. The roll sites below call `riderSources` instead of reading
-`conditions` directly, so a feat bonus and a chip bonus travel the same path
-and print in the same note. A feat rider lasts as long as the feat: it is a
-standing bonus with no duration and no chip on the conditions bar. The
-condition-effect table in `ConditionEffects.js` matches chips by name, so a
-feat source never enters a list that table scans, and a feat that shares a
-condition's name cannot slant a roll. A cast's target therefore has its
-chips in `conditions` and its feat riders in a separate `riders` field. Both
-join its saving throw, and only the chips decide advantage or an automatic
-failure.
+A source is anything with a name and a rider. A condition chip is a source,
+and so is the stamp of a taken feat. `FeatChoices.featRiders` reads the feat
+riders of a character as sources, and `FeatChoices.riderSources` joins them
+with the condition list. The roll sites call `riderSources` and do not read
+`conditions` directly, so a feat bonus and a chip bonus take the same path and
+print in the same note.
 
+A feat rider lasts as long as the feat. It is a standing bonus, with no
+duration and no chip on the conditions bar. The condition-effect table matches
+chips by name, and a feat source never enters a list that the table scans, so
+a feat with the same name as a condition cannot slant a roll. The target of a
+cast therefore has its chips in `conditions` and its feat riders in a separate
+`riders` field. Both apply to its saving throw, but only the chips decide
+advantage or an automatic failure.
 
-The rider dice roll inside `rollRiders` rather than joining the caller's own
-dice selection. A bonus and a penalty then resolve the same way, and a save,
-which has no dice tray, works identically to an attack, which has one.
+The rider dice roll inside `rollRiders`, not in the caller's own dice
+selection. A bonus and a penalty therefore resolve the same way, and a save,
+which has no dice tray, works the same as an attack, which has one.
 
-The roll sites that read riders:
+### Roll sites
 
 - `app/weaponAttack.js` reads the attacker's own chips before it loads the
   tray, and puts the note in the log beside the dialog's own modifiers.
 - `Casting.js` rolls the caster's chips once per projectile, because each
-  projectile is its own attack roll. An auto-hit projectile rolls no attack,
-  so no rider touches it. The caster view has no conditions, so
-  `app/spellCast.js` passes them in from the real combatant as
-  `casterConditions`. Its log lines name every ray's dice, because the tally
-  line prints no to-hit numbers of its own.
+  projectile is its own attack roll. An auto-hit projectile rolls no attack, so
+  no rider applies to it. The caster view has no conditions, so
+  `app/spellCast.js` passes in the chips of the real combatant as
+  `casterConditions`. The log lines name the dice of every ray, because the
+  tally line prints no to-hit numbers of its own.
 - `Checks.resolveSave` rolls the roller's chips. Every save in the app goes
-  through it, so `savingThrow`, a spell's save effect, and a repeated save all
-  get riders from that one place. `savingThrow` reads the character's own
-  chips without being asked, so a blessed caster keeps concentration through
-  damage more easily.
-- `app/checkRolls.js` reads the roller's chips for a save or a check rolled from
-  the sheet. It calls `rollRiders` itself rather than going through
-  `resolveSave`, because the tray owns the d20 there, and the log names the
-  faces beside the ability modifier and the proficiency.
+  through it, so `savingThrow`, the save effect of a spell, and a repeated
+  save all get riders from that one place. `savingThrow` reads the
+  character's own chips, so a blessed caster has a better chance to keep
+  concentration through damage.
+- `app/checkRolls.js` reads the roller's chips for a save or a check rolled
+  from the sheet. It calls `rollRiders` itself and not `resolveSave`, because
+  the tray throws the d20 there. The log names the faces beside the ability
+  modifier and the proficiency.
 
-A rider lasts as long as its chip. Nothing spends a rider after one roll, so a
-spell that grants a die to a single roll is wider here than in print. Guidance
-is the built-in case: its chip stays until the duration runs out or the caster
-stops concentrating, and the GM takes it off after the check it paid for. The
-roll sites read chips and never write them, and `Condition.rider` has no uses
-field, so a per-use rider would need a counter on the chip and a decrement at
-every one of those sites. A chip ends by its duration, a concentration drop,
-or a GM removal.
+### How long a rider lasts
 
-A rider reaches a target either through a save spell's `effect.rider`, which
-rides the chip that a failed save imposes (how Bane works), or through a
-`buff` effect, which puts a chip on each willing target with no roll at all
-(how Bless and Guidance work). A buff names its chip through `effect.condition`, and
-`Casting.buffCondition` falls back to the spell's own name when it names none.
-The chip has the same `ConditionSource` a failed save writes, so
-`endSpellEffects` sweeps a buff off every recipient when the caster stops
-concentrating.
+A rider lasts as long as its chip, unless it has `once` set. Guidance and
+Resistance ship with `once`, so the first check or save that the rider changes
+uses up the chip. `spendRollRiders` in `app/riderSpend.js` removes those chips
+after the roll. `app/weaponAttack.js`, `app/checkRolls.js`, and
+`app/spellCastResolve.js` call it: the last for the caster's attack rolls and
+for each target's save. A chip without `once` ends by its duration, a
+concentration drop, or a GM removal. The spell form offers the flag as the
+"One roll only" box.
 
-Two riders on one creature both apply, so Bless and Bane cancel out over the
-long run rather than one winning. Two chips of the same name cannot coexist:
-`addCondition` matches case-insensitively, and the newer chip replaces the
-older one along with its source and its rider.
+A rider reaches a target in one of two ways:
 
-The hand-add dialog in `ui/ConditionsBar.js` takes a name and a duration only.
-A chip a GM adds by hand has no rider, and a chip merely named `Bless`
-changes no roll. The dice tray already takes a bonus die for that case.
+- a save spell's `effect.rider`, which goes onto the chip that a failed save
+  imposes (Bane works this way)
+- a `buff` effect, which puts a chip on each willing target with no roll
+  (Bless, Guidance, and Resistance work this way)
+
+A buff names its chip through `effect.condition`, and `Casting.buffCondition`
+uses the spell's own name when the effect names none. The chip has the same
+`ConditionSource` that a failed save writes, so `endSpellEffects` sweeps a buff
+off every recipient when the caster stops concentrating.
+
+Two riders on one creature both apply, so Bless and Bane cancel out on average
+and neither one wins. Two chips of the same name cannot exist together.
+`addCondition` matches names without case, and the newer chip replaces the
+older one with its source and its rider.
+
+The hand-add dialog in `ui/ConditionsBar.js` takes only a name and a duration.
+A chip that a GM adds by hand has no rider, so a chip named `Bless` by hand
+changes no roll. For that case, the dice tray already takes a bonus die.
 
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are
-the DOM-wiring layer over these modules. They follow the same mount-function
-pattern as `ui/DiceTray.js`. Each keeps a local mutable copy of its entity,
-re-renders after every interaction, and reports the updated value through an
-`onChange` callback for a caller to persist. The sheet re-renders by writing
-values into the DOM that it already has whenever the structure has not
-changed, as
+the DOM layer over these modules. They follow the same mount-function pattern
+as `ui/DiceTray.js`. Each keeps a local mutable copy of its entity, renders
+again after every interaction, and reports the new value through an
+`onChange` callback for a caller to save. When the structure has not changed,
+the sheet renders by writing values into the DOM that it already has, as
 [UI components](ui-components.md#the-character-sheets-structure-check)
 describes.
 
-The sheet's parts live in their own modules: the ability badges and their
-breakdown popover in `ui/CharacterStatBadge.js`, the HP bar and slot pips in
-`ui/CharacterBars.js`, the castable-spell list in `ui/CharacterSpells.js`, and
-the progression section in `ui/CharacterProgress.js` (class rows with
-subclass, the pending-level class assignment, pending ASI/feat choices,
-unlocked features, and the hit-dice pool). What the HP bar and the slot pips
-*say* is split off into `view/StatBars.js`: the fill percentage, the low-HP
-threshold, the column headings, and every string that a screen reader gets.
-`ui/CharacterBars.js` keeps the elements and the update loop.
+The parts of the sheet have their own modules:
+
+| Module | Part |
+| --- | --- |
+| `ui/CharacterStatBadge.js` | The ability badges and their breakdown popover |
+| `ui/CharacterBars.js` | The HP bar and the slot pips (the elements and the update loop) |
+| `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
+| `ui/CharacterSpells.js` | The castable-spell list |
+| `ui/CharacterProgress.js` | The class rows with subclass, the pending-level assignment, pending ASI and feat choices, feature grants, unlocked features, and the hit-dice pool |
+
+`view/StatBars.js` decides what the HP bar and the slot pips *say*: the fill
+percentage, the low-HP threshold, the column headings, and every string that a
+screen reader gets.
 
 The two Library authoring forms split the same way. `ui/ItemForm.js` and
-`ui/SpellForm.js` read their controls. `entities/ItemDraft.js` and
+`ui/SpellForm.js` read their controls, and `entities/ItemDraft.js` and
 `entities/SpellDraft.js` decide what the values mean. `assembleItem` and
-`assembleSpell` take the strings and booleans that a form has and return
-the finished item or spell. They drop the fields that the chosen type or
-effect kind does not use, so switching type before submitting cannot leave
-armor fields on a rope or a save ability on an attack. Both run the same
-tolerant parsers that a library import does, which keeps a typed entry and
-an imported one agreeing about what a value means.
+`assembleSpell` take the strings and booleans of a form and return the
+finished item or spell. They drop the fields that the chosen type or effect
+kind does not use, so a type change before submit cannot leave armor fields on
+a rope or a save ability on an attack. Both run the same tolerant parsers as a
+library import, so a typed entry and an imported entry read a value the same
+way.
 
-The app stores the background name and the assembled proficiency lists, but
-does not yet render them. They are meant to appear inside saving-throw and
-skill blocks rather than as a static list.
+The app stores the background and the assembled proficiency lists, but the
+sheet shows only part of them. Save and skill training shows in the check rows
+of `ui/CharacterChecks.js`. The background name and the weapon, armor, tool,
+and language lists do not show on the sheet.
