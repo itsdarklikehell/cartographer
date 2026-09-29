@@ -3,10 +3,12 @@
  *
  * `pure-bench.js` measures how fast each path is on the example campaign.
  * This file measures which paths grow with the world, and where a large
- * campaign first crosses the 50 ms line that a GM feels as a stall. Each step adds generated 40x40 nodes and placed creatures to
- * the example campaign, then times the whole-state paths: the autosave unit,
- * the load path, the cross-tab reconcile, and the undo diff. Fog reveal and
- * the world tree run too, as the control group that should stay flat.
+ * campaign first crosses the 50 ms line that a GM feels as a stall. Each row
+ * adds generated 22x22 nodes (the "large" generator size) and placed
+ * creatures to the example campaign, then times the whole-state paths: the
+ * autosave unit, the load path, the cross-tab reconcile, and the undo diff.
+ * Fog reveal, one party step on the world node (see `party-step.js`), and the
+ * world tree run too, as the control group that should stay flat.
  *
  * Usage:
  *   pnpm bench:scale
@@ -33,6 +35,7 @@ import { reconcile } from '../src/storage/Reconcile.js';
 import { encodeNodeTiles } from '../src/storage/TileCodec.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { mulberry32 } from '../src/util/Rng.js';
+import { partyPath, walkParty } from './party-step.js';
 
 /**
  * Time a function over several rounds and keep the median. A scaling table
@@ -83,8 +86,9 @@ function scaledCampaign(extraNodes, extraCreatures) {
   return campaign;
 }
 
+const exampleNodes = buildExampleCampaign(palette).grid.nodes.size;
 const steps = [
-  { label: 'example (7 nodes)', nodes: 0, creatures: 0 },
+  { label: `example (${exampleNodes} nodes)`, nodes: 0, creatures: 0 },
   { label: '+25 nodes, 150 creatures', nodes: 25, creatures: 150 },
   { label: '+50 nodes, 300 creatures', nodes: 50, creatures: 300 },
   { label: '+100 nodes, 600 creatures', nodes: 100, creatures: 600 },
@@ -101,6 +105,7 @@ const header =
   'diffW ms'.padStart(10) +
   'diffC ms'.padStart(10) +
   'fog ms'.padStart(8) +
+  'step ms'.padStart(9) +
   'tree ms'.padStart(9);
 process.stdout.write(`${header}\n`);
 
@@ -123,6 +128,7 @@ for (const step of steps) {
     nodes: state.nodes.map((n) => (n.id === 'world' ? encodeNodeTiles(revealed) : n)),
   };
   const coldBefore = JSON.parse(JSON.stringify(state));
+  const path = partyPath(worldNode);
 
   const row = {
     ser: medianMs(() => serialize(buildState(campaign)), 7),
@@ -135,6 +141,7 @@ for (const step of steps) {
     diffWarm: medianMs(() => diffState(state, after), 7),
     diffCold: medianMs(() => diffState(coldBefore, after), 7),
     fog: medianMs(() => revealAround(worldNode, '16,16', 3), 50),
+    step: medianMs(() => walkParty(worldNode, path), 9) / path.length,
     tree: medianMs(() => buildWorldTree(liveNodes), 50),
   };
 
@@ -149,6 +156,7 @@ for (const step of steps) {
     row.diffWarm.toFixed(1).padStart(10) +
     row.diffCold.toFixed(1).padStart(10) +
     row.fog.toFixed(2).padStart(8) +
+    row.step.toFixed(2).padStart(9) +
     row.tree.toFixed(2).padStart(9);
   process.stdout.write(`${cells}\n`);
   if (isNearQuota(bytes)) {

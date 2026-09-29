@@ -9,6 +9,7 @@
     "diffWarm": 5,
     "diffCold": 120,
     "fogReveal": 5,
+    "partyStep": 1,
     "worldTree": 5
   }
 }

@@ -35,6 +35,7 @@ import { reconcile } from '../src/storage/Reconcile.js';
 import { encodeNodeTiles } from '../src/storage/TileCodec.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { mulberry32 } from '../src/util/Rng.js';
+import { partyPath, walkParty } from './party-step.js';
 
 /**
  * Time a function over several rounds and keep the median.
@@ -95,6 +96,7 @@ const after = {
   nodes: state.nodes.map((n) => (n.id === 'world' ? encodeNodeTiles(revealed) : n)),
 };
 const coldBefore = JSON.parse(JSON.stringify(state));
+const path = partyPath(worldNode);
 
 /** @type {Record<string, number>} */
 const measured = {
@@ -108,6 +110,7 @@ const measured = {
   diffWarm: medianMs(() => diffState(state, after), 3),
   diffCold: medianMs(() => diffState(coldBefore, after), 3),
   fogReveal: medianMs(() => revealAround(worldNode, '16,16', 3), 20),
+  partyStep: medianMs(() => walkParty(worldNode, path), 5) / path.length,
   worldTree: medianMs(() => buildWorldTree(liveNodes), 20),
 };
 

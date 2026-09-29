@@ -63,6 +63,15 @@ means a code path does more work than before. When a change moves a cost on
 purpose,
 re-measure with `pnpm bench:commit` and raise the budget in the same commit.
 
+The `partyStep` row and the `step ms` column of the scale table time one
+Play-mode party step on the example world node, averaged over a walk along
+its middle row. A step is the fog reveal plus the values that the next frame
+and the map description read: the region groups, slots, outlines, and image
+chunks, the revealed-id set, the span blocks, and `describeNode`
+(`party-step.js`). The region caches key on tile stamps, so a step that only
+reveals fog costs about 0.05 ms. A cache that keys on the node instead
+rebuilds on every step, and the row then reads above 1 ms.
+
 ## The scenarios
 
 | Scenario | What it drives |
