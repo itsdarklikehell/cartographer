@@ -35,7 +35,7 @@ import { reconcile } from '../src/storage/Reconcile.js';
 import { encodeNodeTiles } from '../src/storage/TileCodec.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { mulberry32 } from '../src/util/Rng.js';
-import { partyPath, walkParty } from './party-step.js';
+import { partyPath, sweepNode, walkParty } from './party-step.js';
 
 /**
  * Time a function over several rounds and keep the median.
@@ -97,6 +97,10 @@ const after = {
 };
 const coldBefore = JSON.parse(JSON.stringify(state));
 const path = partyPath(worldNode);
+// The same walk on a 200x200 node. A step that scans every tile costs about
+// 0.9 ms here, where the example world node is too small to show it.
+const bigNode = sweepNode(200);
+const bigPath = partyPath(bigNode);
 
 /** @type {Record<string, number>} */
 const measured = {
@@ -111,6 +115,7 @@ const measured = {
   diffCold: medianMs(() => diffState(coldBefore, after), 3),
   fogReveal: medianMs(() => revealAround(worldNode, '16,16', 3), 20),
   partyStep: medianMs(() => walkParty(worldNode, path), 5) / path.length,
+  partyStep200: medianMs(() => walkParty(bigNode, bigPath), 5) / bigPath.length,
   worldTree: medianMs(() => buildWorldTree(liveNodes), 20),
 };
 
@@ -123,7 +128,7 @@ for (const [name, budget] of Object.entries(budgets.budgetsMs)) {
   const mark = ms > budget ? '  << OVER BUDGET' : '';
   if (ms > budget) over.push(name);
   process.stdout.write(
-    `  ${name.padEnd(12)} ${ms.toFixed(1).padStart(7)} ms   budget ${String(budget).padStart(4)} ms${mark}\n`,
+    `  ${name.padEnd(12)} ${ms.toFixed(ms < 1 ? 2 : 1).padStart(7)} ms   budget ${String(budget).padStart(4)} ms${mark}\n`,
   );
 }
 

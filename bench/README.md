@@ -1,6 +1,6 @@
 # Benchmarks
 
-The project has four benchmark harnesses. Each one measures a different part
+The project has five benchmark harnesses. Each one measures a different part
 of the app.
 
 - `pnpm bench` drives the real app in Chrome and reports what a tab costs: DOM
@@ -13,6 +13,8 @@ of the app.
   which paths grow with the world and where each one crosses the 50 ms line
   that a GM feels as a stall. Run it before and after a change to the save,
   diff, or reconcile paths.
+- `pnpm bench:step` times one Play-mode party step on square nodes from 48 to
+  400 cells on a side. Its table shows whether a step grows with the node.
 - `pnpm bench:commit` is the fast check that the pre-commit hook runs. It times
   the same whole-state paths at one large world size and compares each median
   against a budget from `budgets.json`. It runs in under a second.
@@ -67,10 +69,26 @@ The `partyStep` row and the `step ms` column of the scale table time one
 Play-mode party step on the example world node, averaged over a walk along
 its middle row. A step is the fog reveal plus the values that the next frame
 and the map description read: the region groups, slots, outlines, and image
-chunks, the revealed-id set, the span blocks, and `describeNode`
+chunks, the revealed-id lookup, the span blocks, and `describeNode`
 (`party-step.js`). The region caches key on tile stamps, so a step that only
-reveals fog costs about 0.05 ms. A cache that keys on the node instead
-rebuilds on every step, and the row then reads above 1 ms.
+reveals fog costs about 0.01 ms. A cache that keys on the node instead
+rebuilds on every step.
+
+The `partyStep200` row walks the same step on a fogged 200x200 node
+(`sweepNode` in `party-step.js`), where it costs about 0.04 ms. A step
+reader that scans every tile makes the row read about 0.9 ms, which is over
+its budget of 0.3 ms, while the example world node is too small to show the
+scan. `pnpm bench:step` prints the same walk at each node size:
+
+| Node | Tiles | Step with the fog readers | Step with a scan of every tile |
+| --- | --- | --- | --- |
+| 48x48 | 2,304 | 0.010 ms | 0.060 ms |
+| 100x100 | 10,000 | 0.010 ms | 0.225 ms |
+| 200x200 | 40,000 | 0.037 ms | 0.891 ms |
+| 400x400 | 160,000 | 0.120 ms | 3.473 ms |
+
+The step cost that still grows with the node is the copy of the tile array
+in `withTilesReplaced`.
 
 ## The scenarios
 

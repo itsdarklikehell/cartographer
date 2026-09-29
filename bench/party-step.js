@@ -16,8 +16,32 @@ import { groupOutline, regionSlots } from '../src/map/RegionOutline.js';
 import { spanBlocks } from '../src/map/TilePaint.js';
 import { describeNode } from '../src/map/MapDescription.js';
 import { tileIdAt } from '../src/map/MapGeometry.js';
+import { revealedIds, withNodeTiles } from '../src/map/TileIndex.js';
+import { createMapNode, createTile } from '../src/map/TileGrid.js';
 
 /** @typedef {import('../src/types/map.js').MapNode} MapNode */
+
+/**
+ * A fogged square node with a 4x4 region link block every 40 cells and a
+ * point of interest every 25 cells, for timing a step against node size.
+ * @param {number} size cells on a side
+ * @returns {MapNode}
+ */
+export function sweepNode(size) {
+  const tiles = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const linked = x % 40 < 4 && y % 40 < 4;
+      const poi = x % 25 === 12 && y % 25 === 12;
+      const tile = createTile(tileIdAt(x, y), 'grass.png', {
+        childNodeId: linked ? `child-${Math.floor(x / 40)}-${Math.floor(y / 40)}` : null,
+      });
+      if (poi) tile.metadata = { ...tile.metadata, poiType: 'shrine' };
+      tiles.push(tile);
+    }
+  }
+  return withNodeTiles(createMapNode(`sweep-${size}`, 'Sweep', null, size, size), tiles);
+}
 
 /**
  * The tile ids of a walk along the middle row of a node, one per step. The
@@ -50,8 +74,7 @@ export function walkParty(node, path) {
       groupOutline(group);
       groupImageChunks(current, group);
     }
-    const revealed = new Set();
-    for (const tile of current.tiles) if (tile.revealed) revealed.add(tile.id);
+    revealedIds(current).has(tileId);
     spanBlocks(current);
     describeNode(current, { nodeId: current.id, tileId }, { markerVisible: () => true });
   }
