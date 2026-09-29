@@ -13,6 +13,25 @@ import {
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
+ * The metadata of a tile with no point of interest, no discovery flags, and
+ * no notes: almost every tile of a campaign. Every such tile shares this one
+ * object, which saves one object per tile, about 6 MB at 400 extra regions.
+ *
+ * The object is frozen in every build, not only while development freezing
+ * is on (`TileFreeze.js`). A write to it in place would change the metadata
+ * of every default tile at once. Module code runs in strict mode, so such a
+ * write throws a TypeError at the write instead. Every writer replaces a
+ * tile's `metadata` with a new object (`{ ...tile.metadata, poiType }`).
+ * @type {Readonly<TileMetadata>}
+ */
+export const DEFAULT_TILE_METADATA = Object.freeze({
+  poiType: null,
+  discoverable: false,
+  discovered: false,
+  notes: '',
+});
+
+/**
  * Create a tile with default metadata, not yet revealed.
  * @param {string} id
  * @param {string} imageRef
@@ -24,7 +43,7 @@ export function createTile(id, imageRef, overrides = {}) {
     id,
     imageRef,
     overlayRef: null,
-    metadata: { poiType: null, discoverable: false, discovered: false, notes: '' },
+    metadata: DEFAULT_TILE_METADATA,
     revealed: false,
     childNodeId: null,
     ...overrides,
@@ -109,8 +128,6 @@ function overlayRefOf(value) {
  */
 export function withTileDefaults(tile) {
   const source = /** @type {Record<string, any>} */ (tile);
-  const raw = source.metadata;
-  const metadata = raw !== null && typeof raw === 'object' ? raw : {};
   const span = source.span;
   const cells = typeof span === 'number' && Number.isFinite(span) ? Math.floor(span) : 0;
   /** @type {Record<string, any>} */
@@ -118,18 +135,36 @@ export function withTileDefaults(tile) {
     id: source.id,
     imageRef: typeof source.imageRef === 'string' ? source.imageRef : '',
     overlayRef: overlayRefOf(source.overlayRef),
-    metadata: {
-      poiType: typeof metadata.poiType === 'string' ? metadata.poiType : null,
-      discoverable: metadata.discoverable === true,
-      discovered: metadata.discovered === true,
-      notes: typeof metadata.notes === 'string' ? metadata.notes : '',
-    },
+    metadata: metadataOf(source.metadata),
     revealed: source.revealed === true,
     childNodeId: typeof source.childNodeId === 'string' ? source.childNodeId : null,
   };
   if (hasUnknownField(source)) next = { ...next, ...unknownFields(source) };
   if (cells > 1) next.span = cells;
   return /** @type {Tile} */ (next);
+}
+
+/**
+ * A loaded tile's metadata with every field checked for type:
+ * `DEFAULT_TILE_METADATA` when each field has its default value, and a new
+ * record otherwise.
+ * @param {unknown} raw
+ * @returns {TileMetadata}
+ */
+function metadataOf(raw) {
+  const metadata = /** @type {Record<string, any>} */ (
+    raw !== null && typeof raw === 'object' ? raw : {}
+  );
+  const poiType = /** @type {TileMetadata['poiType']} */ (
+    typeof metadata.poiType === 'string' ? metadata.poiType : null
+  );
+  const discoverable = metadata.discoverable === true;
+  const discovered = metadata.discovered === true;
+  const notes = typeof metadata.notes === 'string' ? metadata.notes : '';
+  if (poiType === null && !discoverable && !discovered && notes === '') {
+    return DEFAULT_TILE_METADATA;
+  }
+  return { poiType, discoverable, discovered, notes };
 }
 
 /** The fields of a tile that `withTileDefaults` states itself. */

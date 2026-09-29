@@ -86,6 +86,14 @@ out both by reference.
 mutating freshly created tiles and only then hand the list over, which stays
 legal while no node contains those tiles.
 
+The one exception is `DEFAULT_TILE_METADATA` (`TileGrid.js`), the metadata of
+every tile with no point of interest, no discovery flags, and no notes.
+`createTile` and `withTileDefaults` give every such tile this one object,
+which saves about 6 MB at 400 extra regions. It is frozen in every build,
+because a write to it in place would change every default tile at once. A
+generator that marks a tile therefore replaces the record, as in
+`tile.metadata = { ...tile.metadata, poiType }`.
+
 Freezing is on in development and off elsewhere, because a throw that reaches
 a GM mid-session stops the session, while the stale render it replaces does
 not. `setTileFreezing` overrides this detection.

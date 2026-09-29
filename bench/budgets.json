@@ -14,6 +14,6 @@
     "worldTree": 5
   },
   "budgetsBytes": {
-    "heapPerTile": 300
+    "heapPerTile": 220
   }
 }
