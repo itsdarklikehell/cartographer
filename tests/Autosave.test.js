@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   shouldAutosave,
+  markMovedOn,
   storageMovedOn,
   AUTOSAVE_IDLE_MS,
   AUTOSAVE_MAX_WAIT_MS,
@@ -38,4 +39,11 @@ test('storage moved on only when another string replaced the held one', () => {
   assert.equal(storageMovedOn('a', 'b'), true);
   assert.equal(storageMovedOn(null, 'b'), true);
   assert.equal(storageMovedOn('a', null), false, 'nothing stored is nothing to overwrite');
+});
+
+test('markMovedOn compares two known marks and knows nothing without one', () => {
+  assert.equal(markMovedOn('a', 'a'), false);
+  assert.equal(markMovedOn('a', 'b'), true);
+  assert.equal(markMovedOn(null, 'b'), null);
+  assert.equal(markMovedOn('a', null), null);
 });

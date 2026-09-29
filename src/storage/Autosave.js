@@ -43,3 +43,17 @@ export function shouldAutosave({ dirty, now, lastMutationAt, dirtySince }) {
 export function storageMovedOn(held, stored) {
   return stored !== null && stored !== held;
 }
+
+/**
+ * Whether the save mark shows a write from another tab since this tab last
+ * matched storage, or null when either mark is missing and only the save
+ * strings can tell. `held` is the mark of the save this tab loaded, wrote,
+ * or adopted, and `stored` the mark in storage now. Comparing marks spares
+ * a read of the whole save string on every automatic write.
+ * @param {string | null} held
+ * @param {string | null} stored
+ * @returns {boolean | null}
+ */
+export function markMovedOn(held, stored) {
+  return held === null || stored === null ? null : held !== stored;
+}

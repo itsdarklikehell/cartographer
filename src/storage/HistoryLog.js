@@ -43,14 +43,17 @@
  *
  * A diff needs the previous state as a value, and parsing the stored save
  * on every push costs a whole campaign's parse. This module caches the last
- * persisted state in memory, stamped with the raw string it came from. In
- * the normal case, this costs one `getItem` call and one string comparison.
+ * persisted state in memory, stamped with the raw string it came from and
+ * the save mark stored with it. In the normal case, this costs one read of
+ * the short save mark, and the whole save string is read only when the mark
+ * is missing or differs.
  * The stamp also guards the diff. A tab that declines the cross-tab reload
  * prompt keeps editing against a save that another tab has since replaced.
- * Comparing the raw string catches this case. A plain cache would diff
+ * A new mark or a new raw string catches this case. A plain cache would diff
  * against a state that is no longer stored.
  *
- * Every write in this module happens after the campaign write, never before.
+ * Every history write in this module happens after the campaign write,
+ * never before. Only the removal of the save mark comes first.
  * An index that describes a state that was not stored applies a delta to
  * the wrong base. A quota failure costs undo depth rather than the whole
  * log, and this module reports the failure. Without the report, undo drops
@@ -70,6 +73,8 @@ import {
   STORAGE_KEY,
   deserialize,
   packState,
+  clearSaveMark,
+  readSaveMark,
   trySaveToLocalStorage,
   writeSaveMark,
 } from './SaveManager.js';
@@ -138,10 +143,38 @@ function newLogId() {
 /**
  * The last persisted campaign as a value. This module stamps it with the raw
  * string it was parsed from, so a save from another tab invalidates the
- * cache.
- * @type {{ raw: string, state: CampaignState } | null}
+ * cache. `mark` is the save mark that was stored with that string, or null
+ * when it is not known. While the stored mark equals it, the stored string
+ * is still `raw`, and a read skips the whole save string.
+ * @type {{ raw: string, state: CampaignState, mark: string | null } | null}
  */
 let cached = null;
+
+/**
+ * Write a campaign with `trySaveToLocalStorage`, and cache it on success.
+ * The save mark goes first, so for the time between this write and the new
+ * mark no tab reads the old mark as proof that nothing moved.
+ * @param {CampaignState} state
+ * @param {Parameters<typeof trySaveToLocalStorage>[2]} [options]
+ * @returns {ReturnType<typeof trySaveToLocalStorage>}
+ */
+function writeCampaign(state, options) {
+  clearSaveMark();
+  const save = trySaveToLocalStorage(state, STORAGE_KEY, options);
+  if (save.ok) cached = { raw: save.json, state, mark: null };
+  return save;
+}
+
+/**
+ * Write a new save mark after a step that stored a campaign, and remember
+ * it beside the cache.
+ * @returns {string | null}
+ */
+function markSave() {
+  const mark = writeSaveMark();
+  if (cached) cached.mark = mark;
+  return mark;
+}
 
 /**
  * @param {number} seq
@@ -274,9 +307,9 @@ function nextSeq(index) {
 
 /**
  * The persisted campaign as a value, or null when nothing is stored. This
- * function reuses the cache only when the stored string still matches the
- * string the cache was built from. Otherwise it parses the save and caches
- * the result. An unreadable save throws, as `deserialize` does.
+ * function reuses the cache when the stored save mark is the cached one, or
+ * when the stored string still matches the string the cache was built from.
+ * Otherwise it parses the save and caches the result. An unreadable save throws, as `deserialize` does.
  *
  * The startup path loads through this function instead of
  * `loadFromLocalStorage`, so the cache is warm from the first save on. The
@@ -288,11 +321,18 @@ function nextSeq(index) {
  * @returns {CampaignState | null}
  */
 export function loadPersistedCampaign() {
+  // The mark is read before the save string. A save that lands between the
+  // two reads removed that mark first, so it can never match this cache.
+  const mark = readSaveMark();
+  if (cached && mark !== null && cached.mark === mark) return cached.state;
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw === null) return null;
-  if (cached && cached.raw === raw) return cached.state;
+  if (cached && cached.raw === raw) {
+    cached.mark = mark;
+    return cached.state;
+  }
   const state = deserialize(raw, loadAssetTable());
-  cached = { raw, state };
+  cached = { raw, state, mark };
   return state;
 }
 
@@ -306,12 +346,14 @@ export function loadPersistedCampaign() {
  * states that share no object, which at 200 extra regions costs more than a
  * hundred milliseconds.
  * @param {CampaignState} state
- * @returns {string | null} the stored save string
+ * @returns {{ raw: string | null, mark: string | null }} the stored save
+ *   string and save mark
  */
 export function adoptPersisted(state) {
+  const mark = readSaveMark();
   const raw = localStorage.getItem(STORAGE_KEY);
-  cached = raw === null ? null : { raw, state };
-  return raw;
+  cached = raw === null ? null : { raw, state, mark };
+  return { raw, mark };
 }
 
 /**
@@ -545,8 +587,12 @@ function dropForSave() {
  * Nothing is recorded when nothing readable is stored to diff against: a
  * first save, or a stored save that this app cannot read. Either way, the
  * campaign is now the oldest state there is.
+ *
+ * `mark` is the save mark written after the save, or null when the save or
+ * the mark write failed. A tab keeps it to tell a later write from another
+ * tab apart without reading the save string.
  * @param {CampaignState} state
- * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult }}
+ * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult, mark: string | null }}
  */
 export function saveCampaign(state) {
   const before = lastPersisted();
@@ -563,12 +609,11 @@ export function saveCampaign(state) {
     dropped ||= freed;
     return freed;
   };
-  const save = trySaveToLocalStorage(state, STORAGE_KEY, { keepPrevious, makeRoom });
-  if (!save.ok) return { ...save, history: { ok: !dropped, evictedAll: dropped } };
-  cached = { raw: save.json, state };
+  const save = writeCampaign(state, { keepPrevious, makeRoom });
+  if (!save.ok) return { ...save, history: { ok: !dropped, evictedAll: dropped }, mark: null };
   const history = record ? recordStep(record) : { ok: true, evictedAll: false };
-  writeSaveMark();
-  return { ...save, history: dropped ? { ...history, evictedAll: true } : history };
+  const mark = markSave();
+  return { ...save, history: dropped ? { ...history, evictedAll: true } : history, mark };
 }
 
 /** @typedef {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState }} StepResult */
@@ -619,9 +664,8 @@ function applyDelta(index, direction, ops) {
     clearHistoryLog();
     return null;
   }
-  const save = trySaveToLocalStorage(restored);
+  const save = writeCampaign(restored);
   if (!save.ok) return { save, state: restored };
-  cached = { raw: save.json, state: restored };
   if (!writeIndex({ ...index, cursor: index.cursor + direction })) clearHistoryLog();
   return { save, state: restored };
 }
@@ -651,9 +695,8 @@ function swapSnapshot(index, at, direction, snapshot) {
     return null;
   }
   // The new record references the images of the save this write replaces.
-  const save = trySaveToLocalStorage(restored, STORAGE_KEY, { keepPrevious: true });
+  const save = writeCampaign(restored, { keepPrevious: true });
   if (!save.ok) return { save, state: restored };
-  cached = { raw: save.json, state: restored };
   const seq = nextSeq(index);
   const cursor = index.cursor + direction;
   /** @type {{ deltas: number[], cursor: number }} */
@@ -738,7 +781,7 @@ export function planAdoption(held) {
  * @returns {StepResult | null}
  */
 function marked(result) {
-  if (result?.save.ok) writeSaveMark();
+  if (result?.save.ok) markSave();
   return result;
 }
 

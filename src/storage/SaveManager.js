@@ -14,7 +14,7 @@ import { restoreStrings, tabulateStrings } from './StringTable.js';
 import { noteTruncation } from './ShortenedLoad.js';
 import { encodeNodeTiles, decodeNodeList, decodeNodeTiles } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
-import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
+import { recordExternalWrite, removeStored, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
@@ -39,10 +39,16 @@ const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
 
 /**
- * The localStorage key that ends every save bundle. `HistoryLog.js` writes a
- * fresh value here after the campaign key and the undo history, so a
- * follower tab that acts on this key reads a history that matches the
- * campaign. See `SaveFollower.js`.
+ * The localStorage key that ends every save bundle. `HistoryLog.js` removes
+ * it before the campaign write, and writes a fresh value here after the
+ * campaign key and the undo history, so a follower tab that acts on this
+ * key reads a history that matches the campaign. See `SaveFollower.js`.
+ *
+ * A tab that knows the mark of the save it holds compares marks instead of
+ * whole save strings. A mark that is missing tells it nothing, and it then
+ * compares the strings. The removal before the write covers the time
+ * between the campaign write and the new mark, when the old mark still
+ * names a save that is gone.
  */
 export const SAVE_MARK_KEY = 'campaign-builder:save-mark';
 
@@ -50,18 +56,34 @@ export const SAVE_MARK_KEY = 'campaign-builder:save-mark';
 let markSeq = 0;
 
 /**
- * Write a new save mark. A failure is ignored: a follower that sees no mark
- * adopts on its fallback timer.
+ * Write a new save mark, and return it. A failed write removes the old
+ * mark and returns null. A follower that sees no mark adopts on its
+ * fallback timer. An old mark left in place would tell another tab that
+ * nothing moved, and its autosave would write over this save.
+ * @returns {string | null}
  */
 export function writeSaveMark() {
+  const mark = `${Date.now()}:${(markSeq += 1)}:${Math.random().toString(36).slice(2, 8)}`;
   try {
-    writeStored(
-      SAVE_MARK_KEY,
-      `${Date.now()}:${(markSeq += 1)}:${Math.random().toString(36).slice(2, 8)}`,
-    );
+    writeStored(SAVE_MARK_KEY, mark);
+    return mark;
   } catch {
-    // The follower's fallback timer covers a missing mark.
+    clearSaveMark();
+    return null;
   }
+}
+
+/** Remove the save mark. `HistoryLog.js` calls this before a campaign write. */
+export function clearSaveMark() {
+  removeStored(SAVE_MARK_KEY);
+}
+
+/**
+ * The save mark stored now, or null when none is stored.
+ * @returns {string | null}
+ */
+export function readSaveMark() {
+  return localStorage.getItem(SAVE_MARK_KEY);
 }
 
 /**

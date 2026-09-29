@@ -117,7 +117,8 @@ test('adoptPersisted makes the live state the base of the next diff', () => {
   // objects it already holds.
   const raw = serialize(deserialize(serialize(state)));
   localStorage.setItem('campaign-builder:save', raw);
-  assert.equal(adoptPersisted(state), raw);
+  localStorage.setItem('campaign-builder:save-mark', 'other-tab');
+  assert.deepEqual(adoptPersisted(state), { raw, mark: 'other-tab' });
   assert.equal(loadPersistedCampaign(), state, 'the cache keeps the live objects');
   const edited = { ...state, quests: [{ ...state.quests[0], done: true }] };
   assert.equal(
@@ -129,6 +130,6 @@ test('adoptPersisted makes the live state the base of the next diff', () => {
 
 test('adoptPersisted with nothing stored leaves no cache', () => {
   const state = freshState();
-  assert.equal(adoptPersisted(state), null);
+  assert.deepEqual(adoptPersisted(state), { raw: null, mark: null });
   assert.equal(loadPersistedCampaign(), null);
 });

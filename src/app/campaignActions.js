@@ -16,6 +16,7 @@ import {
   buildState,
   onExternalSave,
   packState,
+  readSaveMark,
   warmPackSteps,
 } from '../storage/SaveManager.js';
 import {
@@ -43,7 +44,12 @@ import {
   adoptPersisted,
   replaceIsUndoable,
 } from '../storage/HistoryLog.js';
-import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
+import {
+  shouldAutosave,
+  markMovedOn,
+  storageMovedOn,
+  AUTOSAVE_POLL_MS,
+} from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
 import { isGM } from '../view/ViewRole.js';
 import { wirePlayerPatches } from './playerPatches.js';
@@ -92,6 +98,13 @@ export function wireCampaignActions(app) {
    * @type {string | null}
    */
   let heldPosition = historyPosition();
+  /**
+   * The save mark of the save this tab last matched in storage, or null when
+   * it is not known. It is read before `heldSave`, so a save that lands
+   * between the two reads has removed it and cannot match it.
+   * @type {string | null}
+   */
+  let heldMark = readSaveMark();
   /**
    * The save string this tab last matched in storage: the one it loaded,
    * wrote, or adopted. An automatic write checks storage against it first.
@@ -293,6 +306,7 @@ export function wireCampaignActions(app) {
       return false;
     }
     heldSave = result.json;
+    heldMark = result.mark;
     heldPosition = historyPosition();
     patches.rebase();
     reportHistory(result.history);
@@ -588,7 +602,7 @@ export function wireCampaignActions(app) {
     try {
       if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
       heldPosition = historyPosition();
-      heldSave = adoptPersisted(buildCurrentState());
+      ({ raw: heldSave, mark: heldMark } = adoptPersisted(buildCurrentState()));
       patches.rebase();
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);
@@ -642,7 +656,10 @@ export function wireCampaignActions(app) {
    * @returns {boolean}
    */
   function externalWriteBlocks() {
-    if (!storageMovedOn(heldSave, localStorage.getItem(STORAGE_KEY))) return false;
+    const moved =
+      markMovedOn(heldMark, readSaveMark()) ??
+      storageMovedOn(heldSave, localStorage.getItem(STORAGE_KEY));
+    if (!moved) return false;
     if (syncPromptOpen) return true;
     if (!syncPromptDeclined) {
       void promptExternalSave();

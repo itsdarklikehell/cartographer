@@ -761,9 +761,22 @@ The log's own rules keep it from corrupting the campaign that it describes:
    on every poll, and it shows the error once until a write lands.
 
 A diff needs the previous state as a *value*, not a string. `HistoryLog`
-caches this value, stamped with the raw string it was parsed from, so the steady state
-costs only a string compare. A tab that declined the cross-tab reload prompt
-cannot diff against a save that another tab replaced.
+caches this value, stamped with the raw string it was parsed from and the
+save mark stored with it. A tab that declined the cross-tab reload prompt
+cannot diff against a save that another tab replaced, because a save from
+another tab writes a new mark, and a new string fails the compare.
+
+In the steady state the cache reads only the mark. While the stored mark
+equals the cached one, the stored save is the cached string, so
+`loadPersistedCampaign` skips the `getItem` of the whole save and the
+string compare. `app/campaignActions.js` checks for another tab's write
+the same way (`Autosave.markMovedOn`), so a steady-state autosave reads
+the save string zero times, where a string compare reads it twice. A
+missing mark tells neither side anything, and both fall back to the string
+compare. Every write of the campaign key first removes the mark, so for
+the time between the campaign write and the new mark, the old mark cannot
+name a save that is gone. `writeSaveMark` also removes the mark when
+its own write fails, and a follower ignores the removal event.
 
 The cache is warm from the start of a session. `Campaigns.loadInitialCampaign`
 reads the save through `HistoryLog.loadPersistedCampaign`, which parses the
