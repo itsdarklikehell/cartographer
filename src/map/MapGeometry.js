@@ -36,6 +36,47 @@ export function tileIdAt(x, y) {
 }
 
 /**
+ * The cell index `y * width + x` of a grid tile id, or -1 when the id is not
+ * the id that tileIdAt writes for a cell inside a width x height grid. So
+ * "01,2" and "1,2,3" give -1, although parseCoords reads the first as (1, 2).
+ * Each cell then has exactly one id. The function reads the id one character
+ * at a time and allocates nothing, so a loop over every tile of a node can
+ * call it where a parseCoords call per tile costs a regular expression match
+ * and an object.
+ * @param {string} id
+ * @param {number} width
+ * @param {number} height
+ * @returns {number}
+ */
+export function gridCellOf(id, width, height) {
+  const comma = id.indexOf(',');
+  const x = decimalAt(id, 0, comma);
+  if (x < 0 || x >= width) return -1;
+  const y = decimalAt(id, comma + 1, id.length);
+  if (y < 0 || y >= height) return -1;
+  return y * width + x;
+}
+
+/**
+ * The value of `text[start, end)` as a decimal integer with no sign and no
+ * leading zero, or -1 when the range is empty or holds anything else.
+ * @param {string} text
+ * @param {number} start
+ * @param {number} end
+ * @returns {number}
+ */
+function decimalAt(text, start, end) {
+  if (end <= start || (text.charCodeAt(start) === 48 && end - start > 1)) return -1;
+  let value = 0;
+  for (let i = start; i < end; i++) {
+    const digit = text.charCodeAt(i) - 48;
+    if (digit < 0 || digit > 9) return -1;
+    value = value * 10 + digit;
+  }
+  return value;
+}
+
+/**
  * The four orthogonal neighbor offsets as `[dx, dy]` pairs, and the eight
  * that add the diagonals. Everything that walks a cell's neighbors iterates
  * one of these lists instead of writing the values inline, so the order

@@ -2,13 +2,12 @@ import { groupImageChunks } from './RegionGroups.js';
 import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
-import { tileAtXY } from './TileIndex.js';
+import { fogStamp, tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { INK } from './CanvasInk.js';
 import { renderRegionOverlays } from './RegionOverlay.js';
-import { memoizeByIdentity } from '../util/memoize.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
 // the PNG export, resolve a ref through this module.
@@ -18,17 +17,28 @@ export { imageSrcForRef };
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
- * The revealed tile ids on a node, memoized on the node object. This relies
- * on the same immutable-replacement rule that TileIndex relies on.
- * Rebuilding this Set every frame ran a full tile scan on every pan or zoom frame.
- * @type {(node: MapNode) => Set<string>}
+ * The revealed tile ids of each `TileIndex.fogStamp`. The stamp stands for
+ * the tile ids and their `revealed` flags, so a pan or zoom frame, a paint
+ * stroke, and a region link all find the set of the node before them. Only a
+ * fog change makes the next frame scan every tile again.
+ * @type {WeakMap<object, Set<string>>}
  */
-const revealedIdsOf = memoizeByIdentity((node) => {
-  /** @type {Set<string>} */
-  const ids = new Set();
-  for (const t of node.tiles) if (t.revealed) ids.add(t.id);
+const revealedCache = new WeakMap();
+
+/**
+ * @param {MapNode} node
+ * @returns {Set<string>}
+ */
+function revealedIdsOf(node) {
+  const stamp = fogStamp(node);
+  let ids = revealedCache.get(stamp);
+  if (!ids) {
+    ids = new Set();
+    for (const t of node.tiles) if (t.revealed) ids.add(t.id);
+    revealedCache.set(stamp, ids);
+  }
   return ids;
-});
+}
 
 /**
  * Whether any of a block's tiles is revealed, and so whether the block

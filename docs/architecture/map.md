@@ -91,8 +91,8 @@ contiguous (touching along an edge, not only at a corner) forms one **region
 group**, which is what counts as one landmark.
 
 `RegionGroups.findRegionGroups(node)` (`src/map/RegionGroups.js`) computes
-these groups. It is a pure flood-fill over the node's tiles, and for each
-group it returns:
+these groups. It is a pure flood-fill over a flat grid of the node's cells,
+which keeps the child link of each cell, and for each group it returns:
 
 ```js
 { childNodeId, tileIds, cells, minX, minY, maxX, maxY }

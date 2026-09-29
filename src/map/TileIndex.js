@@ -23,10 +23,11 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * maps with its ancestors without a later append on one branch becoming
  * visible on the other branch.
  *
- * `links` and `art` are stamps: empty objects that stand for one state of
- * some tile fields. Two nodes share a stamp only when every position holds
- * the same tile id and the same values of those fields. `links` covers
- * `childNodeId`, and `art` covers `imageRef` and `metadata.poiType`. A cache
+ * `links`, `art`, and `fog` are stamps: empty objects that stand for one
+ * state of some tile fields. Two nodes share a stamp only when every position
+ * holds the same tile id and the same values of those fields. `links` covers
+ * `childNodeId`, `art` covers `imageRef` and `metadata.poiType`, and `fog`
+ * covers `revealed`. A cache
  * of a value derived from those fields keys on the stamp instead of the node.
  * A fog reveal or a paint stroke then keeps the region caches, because it
  * makes a new node but keeps the `links` stamp.
@@ -37,6 +38,7 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * @property {Map<number, number> | null} addedCells
  * @property {object} links
  * @property {object} art
+ * @property {object} fog
  */
 
 /**
@@ -91,7 +93,7 @@ function build(node) {
       cellPos[coords.y * node.width + coords.x] = i;
     }
   });
-  return { posById, cellPos, addedById: null, addedCells: null, links: {}, art: {} };
+  return { posById, cellPos, addedById: null, addedCells: null, links: {}, art: {}, fog: {} };
 }
 
 /**
@@ -99,7 +101,7 @@ function build(node) {
  * a replacement changes a tile id, so that the new node builds its own. The
  * positions stay the same, so the result shares the maps of `entry`. A stamp
  * stays when no replaced tile changes a field it covers, and is new
- * otherwise. The result is `entry` itself when both stamps stay.
+ * otherwise. The result is `entry` itself when every stamp stays.
  * @param {TileLayout} entry
  * @param {MapNode} node the node before the replacement
  * @param {Iterable<[number, Tile]>} changes
@@ -108,6 +110,7 @@ function build(node) {
 function forward(entry, node, changes) {
   let sameLinks = true;
   let sameArt = true;
+  let sameFog = true;
   for (const [pos, tile] of changes) {
     const old = node.tiles[pos];
     if (old.id !== tile.id) return null;
@@ -115,12 +118,14 @@ function forward(entry, node, changes) {
     if (old.imageRef !== tile.imageRef || old.metadata.poiType !== tile.metadata.poiType) {
       sameArt = false;
     }
+    if (old.revealed !== tile.revealed) sameFog = false;
   }
-  if (sameLinks && sameArt) return entry;
+  if (sameLinks && sameArt && sameFog) return entry;
   return {
     ...entry,
     links: sameLinks ? entry.links : {},
     art: sameArt ? entry.art : {},
+    fog: sameFog ? entry.fog : {},
   };
 }
 
@@ -158,6 +163,16 @@ export function linkStamp(node) {
  */
 export function artStamp(node) {
   return layout(node).art;
+}
+
+/**
+ * The stamp of a node's tile ids and `revealed` flags. The renderer's
+ * revealed-id set keys on it, so a paint stroke keeps the set.
+ * @param {MapNode} node
+ * @returns {object}
+ */
+export function fogStamp(node) {
+  return layout(node).fog;
 }
 
 /**
@@ -280,7 +295,8 @@ export function withTilesReplaced(node, changes) {
  * leaves the new node uncached. The next lookup then rebuilds a flat layout
  * instead of paying a growing copy cost for each appended tile. The `links`
  * stamp stays when the new tile links to no child, because a tile with no
- * link joins no region group. The `art` stamp is always new.
+ * link joins no region group, and the `fog` stamp stays when the new tile is
+ * not revealed. The `art` stamp is always new.
  * @param {MapNode} node
  * @param {Tile} tile
  * @returns {MapNode}
@@ -309,6 +325,7 @@ export function withTileAppended(node, tile) {
     addedCells,
     links: tile.childNodeId ? {} : entry.links,
     art: {},
+    fog: tile.revealed ? {} : entry.fog,
   });
   return next;
 }
