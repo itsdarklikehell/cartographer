@@ -12,6 +12,7 @@ import { effectiveStats } from './Equipment.js';
 import { d20Penalty } from './Exhaustion.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from './Proficiencies.js';
 import { rollRiders } from './Riders.js';
+import { rollMode } from './ConditionEffects.js';
 import { riderSources } from './FeatChoices.js';
 import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
 
@@ -98,13 +99,24 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  * `conditions` are the chips the roller holds. Any of them that rides on a
  * save rolls here and joins the bonus, so Bless and Bane reach every save in
  * the app through this one function.
+ *
+ * With `ability` and no `mode`, the chips also slant the roll, so Restrained
+ * gives disadvantage on a DEX save, and Haste gives advantage on one. A
+ * caller that passes `mode` has already folded the chips in.
  * @param {number} bonus
  * @param {number} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
+ * @param {{
+ *   mode?: RollMode,
+ *   rng?: RandomFn,
+ *   conditions?: import('./Riders.js').RiderSource[],
+ *   ability?: string,
+ * }} [opts]
  * @returns {SaveResult}
  */
-export function resolveSave(bonus, dc, opts = {}) {
-  return /** @type {SaveResult} */ (resolveD20(bonus, dc, 'save', opts));
+export function resolveSave(bonus, dc, { ability, ...opts } = {}) {
+  const slant = ability ? rollMode({ roller: opts.conditions, kind: 'save', ability }) : null;
+  const mode = opts.mode ?? slant ?? 'normal';
+  return /** @type {SaveResult} */ (resolveD20(bonus, dc, 'save', { ...opts, mode }));
 }
 
 /**
@@ -126,6 +138,7 @@ export function savingThrow(character, ability, dc, opts = {}) {
   return {
     ...resolveSave(saveBonus(character, ability), dc, {
       conditions: riderSources(character),
+      ability,
       ...opts,
     }),
     proficient: isProficientSave(character, ability),

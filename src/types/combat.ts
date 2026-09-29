@@ -49,6 +49,11 @@ export interface ActionBudget {
   attacked: boolean;
   /** Whether Sneak Attack damage was already added once this turn. */
   sneak: boolean;
+  /**
+   * Whether the extra action of a chip such as Haste is spent. The extra
+   * action buys one weapon swing, and nothing banks behind it.
+   */
+  extra: boolean;
 }
 
 /** How a participant is presented, derived from the entity holding its id. */

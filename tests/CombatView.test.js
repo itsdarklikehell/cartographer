@@ -199,6 +199,25 @@ test('buildCombatView reads the extra swings of an Extra Attack fighter', () => 
   assert.equal(view.rows[0].attacksLeft, 3, 'an unspent Attack action buys all three');
 });
 
+test('buildCombatView counts the extra swing of a Haste chip', () => {
+  const { hero } = fixtures();
+  const hasted = {
+    ...hero,
+    conditions: [{ name: 'Haste', rounds: 10, mods: { ac: 2, extraAction: true } }],
+  };
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [{ id: 'hero', initiative: 12, modifier: 2, used: { action: true } }],
+  };
+  const view = buildCombatView(
+    combat,
+    resolver(/** @type {any} */ ({ hero: { kind: 'character', entity: hasted } })),
+    { gm: true },
+  );
+  assert.equal(view.rows[0].attacksLeft, 1, 'the action is spent, and Haste buys one more swing');
+});
+
 test('buildCombatView carries a death-save tracker, and only from a character', () => {
   const { hero, goblin } = fixtures();
   const dying = {

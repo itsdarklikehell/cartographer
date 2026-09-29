@@ -144,6 +144,17 @@ test('saveOutcome fails a body save outright and names the chip', () => {
   });
 });
 
+test('a chip with a save advantage gives advantage on that save only', () => {
+  const haste = { ...createCondition('Haste', 10), mods: { saveAdvantage: ['DEX'] } };
+  assert.equal(saveOutcome([haste], 'dex').mode, 'advantage');
+  assert.equal(saveOutcome([haste], 'WIS').mode, null);
+  assert.equal(modeReasons({ roller: [haste], kind: 'save', ability: 'DEX' }), 'Haste advantage');
+  // Restrained gives disadvantage on the same save, so the two cancel.
+  assert.equal(saveOutcome([haste, ...chips('Restrained')], 'DEX').mode, 'normal');
+  // The advantage reads on a save only.
+  assert.equal(rollMode({ roller: [haste], kind: 'check', ability: 'DEX' }), null);
+});
+
 test('saveOutcome leaves the other abilities to a roll', () => {
   assert.deepEqual(saveOutcome(chips('Paralyzed'), 'WIS'), {
     autoFail: false,

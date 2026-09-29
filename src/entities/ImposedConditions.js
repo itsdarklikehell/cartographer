@@ -104,6 +104,7 @@ export function repeatSaves(
     const save = resolveSave(bonusOf(source), source.saveDC ?? 10, {
       rng,
       conditions: [...list, ...riders],
+      ability: source.saveAbility,
     });
     results.push({ condition, save, ended: save.success });
     return !save.success;

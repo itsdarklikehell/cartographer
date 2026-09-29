@@ -186,3 +186,10 @@ test('the detail of an HP buff names its raise and its temporary HP', () => {
     'Heroism — immune to Frightened, spell modifier as temp HP each turn',
   );
 });
+
+test('the detail of Haste names its AC, its save advantage, and its extra action', () => {
+  assert.equal(
+    effectSummary(spellById('haste'), null),
+    'Haste — +2 AC, advantage on DEX saves, an extra action for one weapon attack',
+  );
+});

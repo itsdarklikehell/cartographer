@@ -21,8 +21,9 @@ import { clamp } from '../util/num.js';
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
 
 /** Anything a rider can ride on: a condition chip, or a feat stamp read as
- * `{ name, rider }`. The name is what the log line prints.
- * @typedef {{ name: string, rider?: RollRider }} RiderSource */
+ * `{ name, rider }`. The name is what the log line prints. A chip's `mods`
+ * come along, because a save advantage (Haste) reads from them.
+ * @typedef {{ name: string, rider?: RollRider, mods?: import('../types/entities.js').ChipMods }} RiderSource */
 
 /**
  * The rolls a rider can touch, in the order the authoring form lists them.

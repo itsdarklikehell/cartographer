@@ -13,6 +13,7 @@ import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
 import { canAct } from '../entities/ConditionEffects.js';
 import { attacksPerAction } from '../entities/Features.js';
+import { hasExtraAction } from '../entities/ChipMods.js';
 import { attacksAvailable, budgetOf } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -219,9 +220,16 @@ export function buildCombatView(combat, resolve, viewer) {
       // existed carries none, and reads as a whole turn.
       used: budgetOf(participant.used),
       // How many weapon swings are left, counting the one an unspent Attack
-      // action buys. Extra Attack raises it. A row that nothing resolves has
-      // no feature list to read, so it offers no swing.
-      attacksLeft: found ? attacksAvailable(participant, attacksPerAction(found.entity)) : 0,
+      // action buys. Extra Attack raises it, and so does the extra action of
+      // Haste. A row that nothing resolves has no feature list to read, so it
+      // offers no swing.
+      attacksLeft: found
+        ? attacksAvailable(
+            participant,
+            attacksPerAction(found.entity),
+            hasExtraAction(found.entity.conditions),
+          )
+        : 0,
     };
   });
   return { round: combat.round, turnIndex: combat.index, rows };

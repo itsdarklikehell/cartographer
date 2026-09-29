@@ -1,4 +1,5 @@
 import { clampInt } from '../util/num.js';
+import { ABILITY_SCORES } from './Modifiers.js';
 
 /**
  * What a condition chip changes on its holder besides a d20 roll. A buff
@@ -6,8 +7,9 @@ import { clampInt } from '../util/num.js';
  * leaves, and the AC readers (`Armor.armorClass` for a character,
  * `Creature.effectiveStatBlock` for a creature) fold the chips in. The HP
  * fields work through `entities/HPBuffs.js`, and `app/combatants.js` reads
- * the immunities when a chip lands. The chip goes away with its spell, so
- * the change ends with it. Every function here is pure.
+ * the immunities when a chip lands. `ConditionEffects.rollMode` reads the
+ * save advantage, and the weapon swing reads the extra action. The chip goes
+ * away with its spell, so the change ends with it. Every function here is pure.
  */
 
 /** @typedef {import('../types/entities.js').ChipMods} ChipMods */
@@ -41,6 +43,18 @@ function nameList(value) {
 }
 
 /**
+ * A written list of ability keys, uppercased, in the order of the six, with
+ * anything else dropped.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+function abilityList(value) {
+  if (!Array.isArray(value)) return [];
+  const keys = value.map((entry) => (typeof entry === 'string' ? entry.trim().toUpperCase() : ''));
+  return ABILITY_SCORES.filter((key) => keys.includes(key));
+}
+
+/**
  * A written mods block, or null when it changes nothing. A flat AC bonus can
  * be negative, for a chip that lowers AC. A base AC, a floor, an HP raise,
  * and a temporary HP grant below 1 name nothing, so they drop.
@@ -56,6 +70,7 @@ export function normalizeChipMods(value) {
   const maxHP = clampInt(raw.maxHP, 0, MAX_HP_BOOST);
   const immune = nameList(raw.immune);
   const tempHPEachTurn = clampInt(raw.tempHPEachTurn, 0, MAX_TEMP_EACH_TURN);
+  const saveAdvantage = abilityList(raw.saveAdvantage);
   const mods = {
     ...(ac !== 0 ? { ac } : {}),
     ...(acBase > 0 ? { acBase } : {}),
@@ -63,6 +78,8 @@ export function normalizeChipMods(value) {
     ...(maxHP > 0 ? { maxHP } : {}),
     ...(immune.length > 0 ? { immune } : {}),
     ...(tempHPEachTurn > 0 ? { tempHPEachTurn } : {}),
+    ...(saveAdvantage.length > 0 ? { saveAdvantage } : {}),
+    ...(raw.extraAction === true ? { extraAction: true } : {}),
   };
   return Object.keys(mods).length > 0 ? mods : null;
 }
@@ -91,6 +108,15 @@ export function immunityTo(conditions, name) {
   return (conditions ?? []).find((chip) =>
     (chip.mods?.immune ?? []).some((n) => n.toLowerCase() === key),
   );
+}
+
+/**
+ * Whether a chip on a holder gives it an extra action (Haste).
+ * @param {Condition[] | undefined} conditions
+ * @returns {boolean}
+ */
+export function hasExtraAction(conditions) {
+  return (conditions ?? []).some((chip) => chip.mods?.extraAction);
 }
 
 /**
@@ -142,5 +168,7 @@ export function modsSummary(mods) {
   if (mods.maxHP) parts.push(`+${mods.maxHP} max HP`);
   if (mods.immune) parts.push(`immune to ${mods.immune.join(' and ')}`);
   if (mods.tempHPEachTurn) parts.push(`${mods.tempHPEachTurn} temp HP each turn`);
+  if (mods.saveAdvantage) parts.push(`advantage on ${mods.saveAdvantage.join(' and ')} saves`);
+  if (mods.extraAction) parts.push('an extra action for one weapon attack');
   return parts.join(', ');
 }

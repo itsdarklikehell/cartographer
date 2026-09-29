@@ -29,6 +29,7 @@ import { abilityModifier } from '../entities/Modifiers.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { passRound } from '../entities/TimedEffects.js';
+import { hasExtraAction } from '../entities/ChipMods.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
@@ -38,6 +39,7 @@ import {
   endSpellEffects,
   findCombatant,
   logDefeatTransition,
+  noteLethargy,
   storeCreature,
 } from './combatants.js';
 import { advancePastHeld } from './turnAdvance.js';
@@ -136,24 +138,27 @@ export function wireEncounters(app) {
    * @param {string} id
    * @param {import('../types/combat.js').ActionCost
    *   | import('../types/combat.js').TurnFlag | 'attack'} cost
-   * @param {{ attacksPerAction?: number }} [options] how many swings one
-   *   Attack action buys for this combatant, for the 'attack' cost.
+   * @param {{ attacksPerAction?: number, extraAction?: boolean }} [options] how
+   *   many swings one Attack action buys for this combatant, and whether a
+   *   chip such as Haste gives it one more, for the 'attack' cost.
    * @returns {boolean}
    */
-  app.actions.spendBudget = (id, cost, { attacksPerAction = 1 } = {}) => {
+  app.actions.spendBudget = (id, cost, { attacksPerAction = 1, extraAction = false } = {}) => {
     const combat = current();
     if (!combat) return true;
     const index = combat.order.findIndex((p) => p.id === id);
     if (index < 0) return true;
     const participant = combat.order[index];
     if (cost === 'attack') {
-      if (attacksAvailable(participant, attacksPerAction) <= 0) return false;
+      if (attacksAvailable(participant, attacksPerAction, extraAction) <= 0) return false;
     } else if (!canSpend(participant, cost)) {
       return false;
     }
     const order = [...combat.order];
     order[index] =
-      cost === 'attack' ? spendAttack(participant, attacksPerAction) : spend(participant, cost);
+      cost === 'attack'
+        ? spendAttack(participant, attacksPerAction, extraAction)
+        : spend(participant, cost);
     setCombat({ ...combat, order });
     // The pips on the action bar are part of the combat screen, and the
     // sidebar card shows none of this, so only the screen redraws.
@@ -454,6 +459,8 @@ export function wireEncounters(app) {
   function tickRound() {
     /** @type {{ casterId: string, spellId: string }[]} */
     const expired = [];
+    /** @type {string[]} */
+    const lethargic = [];
     /**
      * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
      * @param {T[]} list
@@ -462,6 +469,11 @@ export function wireEncounters(app) {
     const tickAll = (list) => {
       const next = list.map((entity) => {
         const { entity: ticked, ended } = passRound(entity);
+        // A Haste chip that runs out on the tick leaves before its caster's
+        // concentration sweep can see it, so the tick notes the lethargy.
+        if (hasExtraAction(entity.conditions) && !hasExtraAction(ticked.conditions)) {
+          lethargic.push(entity.name);
+        }
         if (ended) {
           app.actions.logEvent(
             'combat',
@@ -482,6 +494,7 @@ export function wireEncounters(app) {
     // sweep writes to the same two collections. Run earlier, the tick's
     // own write restores its result.
     for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
+    for (const name of lethargic) noteLethargy(app, name);
   }
 
   // Turn advance and combat end are registered as actions. This lets the

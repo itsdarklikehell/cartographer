@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   heldBoost,
+  hasExtraAction,
   heldMods,
   immunityTo,
   modsSummary,
@@ -80,5 +81,27 @@ test('modsSummary names the HP fields', () => {
   assert.equal(
     modsSummary({ maxHP: 5, immune: ['Frightened', 'Charmed'], tempHPEachTurn: 3 }),
     '+5 max HP, immune to Frightened and Charmed, 3 temp HP each turn',
+  );
+});
+
+test('normalizeChipMods keeps the save advantage and the extra action of Haste', () => {
+  assert.deepEqual(
+    normalizeChipMods({ saveAdvantage: ['wis', ' dex ', 'LUCK', 'DEX', 3], extraAction: true }),
+    { saveAdvantage: ['DEX', 'WIS'], extraAction: true },
+  );
+  assert.equal(normalizeChipMods({ saveAdvantage: 'DEX', extraAction: 'yes' }), null);
+});
+
+test('hasExtraAction finds a chip that gives one', () => {
+  const haste = { ...createCondition('Haste', 10), mods: { extraAction: true } };
+  assert.equal(hasExtraAction([createCondition('Bless', 10), haste]), true);
+  assert.equal(hasExtraAction([createCondition('Bless', 10)]), false);
+  assert.equal(hasExtraAction(undefined), false);
+});
+
+test('modsSummary names the save advantage and the extra action', () => {
+  assert.equal(
+    modsSummary({ ac: 2, saveAdvantage: ['DEX'], extraAction: true }),
+    '+2 AC, advantage on DEX saves, an extra action for one weapon attack',
   );
 });

@@ -344,3 +344,21 @@ test('a rolled save and check carry the exhaustion penalty in the total', () => 
   const check = abilityCheck(tired, 'DEX', 10, { rng: seq([face(20, 10)]) });
   assert.equal(check.total, 5, '10 on the die, +1 DEX, less 6');
 });
+
+test('resolveSave with an ability reads the slant of the chips', () => {
+  const haste = { name: 'Haste', mods: { saveAdvantage: ['DEX'] } };
+  const faces = () => seq([face(20, 5), face(20, 16)]);
+  const up = resolveSave(0, 15, { ability: 'DEX', conditions: [haste], rng: faces() });
+  assert.equal(up.total, 16, 'advantage keeps the higher die');
+  assert.equal(up.roll.selection.mode, 'advantage');
+  // A mode from the caller has the chips folded in already, so it wins.
+  const set = resolveSave(0, 15, {
+    ability: 'DEX',
+    conditions: [haste],
+    mode: 'normal',
+    rng: faces(),
+  });
+  assert.equal(set.total, 5);
+  // With no ability, the chips add riders only.
+  assert.equal(resolveSave(0, 15, { conditions: [haste], rng: faces() }).total, 5);
+});

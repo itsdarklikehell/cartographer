@@ -39,6 +39,7 @@ test('freshBudget spends nothing', () => {
     attacksLeft: 0,
     attacked: false,
     sneak: false,
+    extra: false,
   });
 });
 
@@ -50,7 +51,14 @@ test('budgetOf reads a missing budget as a fresh turn', () => {
 
 test('budgetOf keeps only the true booleans and a whole attack count', () => {
   assert.deepEqual(
-    budgetOf({ action: true, bonus: 'yes', attacksLeft: 2.7, attacked: 'sure', sneak: 1 }),
+    budgetOf({
+      action: true,
+      bonus: 'yes',
+      attacksLeft: 2.7,
+      attacked: 'sure',
+      sneak: 1,
+      extra: 'yes',
+    }),
     {
       action: true,
       bonus: false,
@@ -58,6 +66,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       attacksLeft: 2,
       attacked: false,
       sneak: false,
+      extra: false,
     },
   );
 });
@@ -149,9 +158,33 @@ test('attacksAvailable reports the bank once the action is spent', () => {
   assert.equal(attacksAvailable(at({ action: true }), 2), 0);
 });
 
+test('an extra action buys one swing after the action and its bank', () => {
+  // A fighter with Extra Attack and Haste swings three times: two for the
+  // Attack action and one for the extra action.
+  let p = at();
+  assert.equal(attacksAvailable(p, 2, true), 3);
+  p = spendAttack(p, 2, true);
+  assert.equal(attacksAvailable(p, 2, true), 2);
+  p = spendAttack(p, 2, true);
+  assert.equal(attacksAvailable(p, 2, true), 1);
+  p = spendAttack(p, 2, true);
+  assert.deepEqual(p.used, { ...freshBudget(), action: true, attacked: true, extra: true });
+  assert.equal(attacksAvailable(p, 2, true), 0);
+});
+
+test('an extra action still swings after a cast spent the action', () => {
+  const cast = at({ action: true });
+  assert.equal(attacksAvailable(cast, 2, true), 1);
+  assert.equal(attacksAvailable(cast, 2, false), 0);
+  // Nothing banks behind the extra swing, even with Extra Attack.
+  assert.equal(spendAttack(cast, 2, true).used?.attacksLeft, 0);
+  assert.equal(spendAttack(cast, 2, true).used?.extra, true);
+});
+
 test('isFresh is true only when nothing at all is spent', () => {
   assert.equal(isFresh(at()), true);
   assert.equal(isFresh(at({ sneak: true })), false);
+  assert.equal(isFresh(at({ extra: true })), false);
   assert.equal(isFresh(at({ attacksLeft: 1 })), false);
 });
 

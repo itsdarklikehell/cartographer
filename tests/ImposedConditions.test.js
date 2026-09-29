@@ -202,3 +202,15 @@ test('repeatSaves rolls extra rider sources without storing them as chips', () =
   assert.match(results[0].save.rider?.note ?? '', /Iron Will \+2/);
   assert.deepEqual(conditions, [], 'the shaken chip leaves and no rider source enters');
 });
+
+test('a retried save reads the slant of the chips for its ability', () => {
+  const held = createCondition('Restrained', 10, { source: source({ saveAbility: 'DEX' }) });
+  const haste = { ...createCondition('Haste', 10), mods: { saveAdvantage: ['DEX'] } };
+  // Haste gives advantage and Restrained disadvantage, so one die rolls.
+  const even = repeatSaves([held, haste], { rng: seq([face(20, 5), face(20, 18)]) });
+  assert.equal(even.results[0].save.total, 7);
+  const swift = { ...createCondition('Haste', 10), mods: { saveAdvantage: ['DEX'] } };
+  const slowed = createCondition('Grappled', 10, { source: source({ saveAbility: 'DEX' }) });
+  const up = repeatSaves([slowed, swift], { rng: seq([face(20, 5), face(20, 18)]) });
+  assert.equal(up.results[0].save.total, 20, 'advantage keeps the 18');
+});

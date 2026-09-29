@@ -514,7 +514,7 @@ function storeConditions(found, conditions) {
  */
 export function endSpellEffects(app, casterId, spellId) {
   const { state } = app;
-  /** @type {{ name: string, condition: string, repeat: boolean }[]} */
+  /** @type {{ name: string, condition: string, repeat: boolean, lethargic: boolean }[]} */
   const freed = [];
   /**
    * @template {Character | Creature} T
@@ -525,7 +525,12 @@ export function endSpellEffects(app, casterId, spellId) {
     const { conditions, removed } = removeImposed(entity.conditions, casterId, spellId);
     if (removed.length === 0) return entity;
     for (const c of removed) {
-      freed.push({ name: entity.name, condition: c.name, repeat: !!c.source?.repeat });
+      freed.push({
+        name: entity.name,
+        condition: c.name,
+        repeat: !!c.source?.repeat,
+        lethargic: !!c.mods?.extraAction,
+      });
     }
     // A chip that raised the HP maximum (Aid) takes the raise with it.
     return settleHPBuffs({ ...entity, conditions });
@@ -566,11 +571,12 @@ export function endSpellEffects(app, casterId, spellId) {
   app.actions.markDirty();
   // The chip a caster keeps for a repeat is not a condition it was under, so
   // its line names the spell that ends.
-  for (const { name, condition, repeat } of freed) {
+  for (const { name, condition, repeat, lethargic } of freed) {
     app.actions.logEvent(
       'combat',
       repeat ? `${name}'s ${condition} ends.` : `${name} is no longer ${condition}.`,
     );
+    if (lethargic) noteLethargy(app, name);
   }
   for (const creature of despawned) {
     app.actions.logEvent('combat', `${creature.name} vanishes as ${spellNameOf(creature)} ends.`);
@@ -764,4 +770,17 @@ function hitEventLine(name, event) {
         `(CON save ${event.total} vs DC ${event.dc}).`
       );
   }
+}
+
+/**
+ * Log the lethargy that Haste leaves when it ends. The GM runs the lost turn,
+ * so the log states the rule.
+ * @param {AppContext} app
+ * @param {string} name the combatant whose Haste ended
+ */
+export function noteLethargy(app, name) {
+  app.actions.logEvent(
+    'combat',
+    `${name} is lethargic and can't move or take actions until after its next turn.`,
+  );
 }

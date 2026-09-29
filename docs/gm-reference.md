@@ -1467,6 +1467,11 @@ grant. Heroism grants them at the start of each turn of its target, and it
 ends and blocks Frightened. The temporary hit points of a spell end with its
 chip. See [Hit points and immunity](spells-missing.md#hit-points-and-immunity).
 
+Haste gives its target +2 AC, advantage on DEX saves, and one more weapon
+swing on each of its turns. The combat card counts the extra swing in the
+swings left. When Haste ends, the log notes that the target is lethargic, and
+you skip its next turn. See [Speed of action](spells-missing.md#speed-of-action).
+
 A spell that the caster still keeps open from an earlier turn, such as Spiritual
 Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot
 picker and no ritual box. A repeat spends no slot and skips the component
@@ -1950,7 +1955,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 70 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 71 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

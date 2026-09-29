@@ -37,6 +37,7 @@ export function freshBudget() {
     attacksLeft: 0,
     attacked: false,
     sneak: false,
+    extra: false,
   };
 }
 
@@ -61,6 +62,7 @@ export function budgetOf(value) {
     attacksLeft: Math.max(0, Math.floor(count)),
     attacked: used.attacked === true,
     sneak: used.sneak === true,
+    extra: used.extra === true,
   };
 }
 
@@ -98,20 +100,26 @@ export function spend(participant, cost) {
 /**
  * Spend one weapon swing. The first swing of a turn costs the action and banks
  * the rest of the attacks the combatant's Extra Attack grants. Each later
- * swing draws on that bank and costs nothing. A swing past an empty bank
- * spends another Attack action; the app's write path refuses before that, so
- * only a direct caller of this function reaches it.
+ * swing draws on that bank and costs nothing. With the action and the bank
+ * both spent, a combatant with an extra action (Haste) spends that for one
+ * more swing, and nothing banks behind it. A swing past all of these spends
+ * another Attack action; the app's write path refuses before that, so only a
+ * direct caller of this function reaches it.
  *
  * Every swing marks `attacked`, which is what tells the Attack action apart
  * from an action spent on a cast. Two-weapon fighting reads that mark.
  * @param {Participant} participant
  * @param {number} [attacksPerAction] how many swings one Attack action buys
+ * @param {boolean} [extraAction] whether the combatant has an extra action
  * @returns {Participant}
  */
-export function spendAttack(participant, attacksPerAction = 1) {
+export function spendAttack(participant, attacksPerAction = 1, extraAction = false) {
   const used = budgetOf(participant.used);
   if (used.attacksLeft > 0) {
     return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1, attacked: true } };
+  }
+  if (used.action && extraAction && !used.extra) {
+    return { ...participant, used: { ...used, extra: true, attacked: true } };
   }
   const banked = Math.max(0, Math.floor(attacksPerAction) - 1);
   return {
@@ -122,15 +130,18 @@ export function spendAttack(participant, attacksPerAction = 1) {
 
 /**
  * How many swings the combatant can still take without a fresh Attack action,
- * counting the one the action itself buys.
+ * counting the ones the action itself buys and the one of an unspent extra
+ * action.
  * @param {Participant} participant
  * @param {number} [attacksPerAction]
+ * @param {boolean} [extraAction] whether the combatant has an extra action
  * @returns {number}
  */
-export function attacksAvailable(participant, attacksPerAction = 1) {
+export function attacksAvailable(participant, attacksPerAction = 1, extraAction = false) {
   const used = budgetOf(participant.used);
-  if (used.attacksLeft > 0) return used.attacksLeft;
-  return used.action ? 0 : Math.max(1, Math.floor(attacksPerAction));
+  const extra = extraAction && !used.extra ? 1 : 0;
+  if (used.attacksLeft > 0) return used.attacksLeft + extra;
+  return (used.action ? 0 : Math.max(1, Math.floor(attacksPerAction))) + extra;
 }
 
 /**
@@ -146,7 +157,8 @@ export function isFresh(participant) {
     !used.reaction &&
     used.attacksLeft === 0 &&
     !used.attacked &&
-    !used.sneak
+    !used.sneak &&
+    !used.extra
   );
 }
 

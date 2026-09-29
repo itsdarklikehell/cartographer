@@ -596,6 +596,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       buff.rows.ac,
       buff.rows.hp,
       buff.rows.temp,
+      buff.rows.turn,
       riderRow,
       riderRollsRow,
       riderOnceRow,

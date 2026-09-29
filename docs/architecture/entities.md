@@ -831,6 +831,23 @@ comes from an HP chip that ends.
 chip that blocks it, and a new chip with an immunity ends the chips it
 names.
 
+### Save and action chips
+
+`mods.saveAdvantage` lists the abilities whose saves the holder rolls with
+advantage (Haste's DEX). A chip of this kind is not one of the named
+conditions, so `ConditionEffects.rollMode` reads the list from the chip
+itself. `Checks.resolveSave` takes an `ability` and folds the chips in when
+the caller passes no mode, which covers the repeated save of
+`ImposedConditions.repeatSaves` and the concentration save of a character
+(through `Checks.savingThrow`) and of a creature. The spell resolver and the sheet
+roll already fold the chips into the mode they pass.
+
+`mods.extraAction` gives the holder one more weapon swing on each turn
+(Haste). `ChipMods.hasExtraAction` reads it, and the weapon swing passes the
+result to the action budget (see
+[the action budget](combat.md#the-action-budget)). The end of the spell and
+the round tick both log the lethargy that follows Haste.
+
 ### Stealth and Strength
 
 Body armor has two more traits, both optional, and each absent trait means

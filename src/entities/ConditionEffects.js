@@ -183,6 +183,15 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
     else if (key && effect.saves?.includes(key)) slant = 'disadvantage';
     if (slant) found.push({ condition, slant, from: 'roller' });
   }
+  // A buff chip such as Haste gives advantage on some saves. It is not a
+  // named condition, so it reads from the chip's own mods.
+  if (kind === 'save' && key) {
+    for (const condition of roller ?? []) {
+      if (condition?.mods?.saveAdvantage?.includes(key)) {
+        found.push({ condition, slant: 'advantage', from: 'roller' });
+      }
+    }
+  }
   // Only an attack reads the other side. A save or a check is rolled against
   // a number, and the creature that set the number does not slant it.
   if (kind !== 'attack') return found;

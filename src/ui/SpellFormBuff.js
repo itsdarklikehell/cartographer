@@ -2,6 +2,7 @@ import { setTip } from './Tooltip.js';
 import { labeled, fieldRow, numberField, checkbox, select } from './formFields.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import { DIE_SIZES } from '../entities/Equipment.js';
+import { ABILITY_SCORES } from '../entities/Modifiers.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
@@ -24,7 +25,8 @@ function number(value, min, max, tip) {
  * a flat AC bonus (Shield, Shield of Faith), a base AC for a holder without
  * body armor (Mage Armor), a floor under the holder's AC (Barkskin), a raise
  * to the HP maximum (Aid), temporary HP at the cast (False Life) or at the
- * start of each turn (Heroism), and a condition the holder can't take.
+ * start of each turn (Heroism), a condition the holder can't take, and the
+ * save advantage and extra action of Haste.
  * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
  * changes, and reads the values back with `read`. `entities/ChipMods.js` and
  * `entities/SpellFields.js` decide what they mean.
@@ -97,6 +99,17 @@ export function buildBuffControls(spell) {
   );
   const immuneField = labeled('Immune to', immune);
   setTip(immuneField, 'The holder ends this condition and cannot take it again, as with Heroism');
+  const advantage = select(
+    [{ value: '', label: 'None' }, ...ABILITY_SCORES],
+    mods.saveAdvantage?.[0] ?? '',
+  );
+  const advantageField = labeled('Save advantage', advantage);
+  setTip(advantageField, 'The holder rolls saves in this ability with advantage, as with Haste');
+  const extra = checkbox('Extra action', !!mods.extraAction);
+  setTip(
+    extra.label,
+    'The holder has one more action on each of its turns, good for one weapon attack, as with Haste',
+  );
 
   const rows = {
     ac: fieldRow(
@@ -116,6 +129,7 @@ export function buildBuffControls(spell) {
       labeled('Per slot level', tempPerStep),
       eachTurn.label,
     ),
+    turn: fieldRow(advantageField, extra.label),
   };
 
   /** @param {string} kind */
@@ -132,6 +146,8 @@ export function buildBuffControls(spell) {
         acMin: acMin.value,
         maxHP: maxHP.value,
         immune: immune.value ? [immune.value] : [],
+        saveAdvantage: advantage.value ? [advantage.value] : [],
+        extraAction: extra.input.checked,
       },
       modsPerStep: { maxHP: maxHPPerStep.value },
       tempHP: {

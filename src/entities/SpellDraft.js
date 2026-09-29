@@ -53,7 +53,10 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
  *   or a buff's chip
- * @property {{ ac: unknown, acBase: unknown, acMin: unknown, maxHP?: unknown, immune?: string[] }} [mods]
+ * @property {{
+ *   ac: unknown, acBase: unknown, acMin: unknown, maxHP?: unknown, immune?: string[],
+ *   saveAdvantage?: string[], extraAction?: boolean,
+ * }} [mods]
  *   what a buff's chip changes besides a roll
  * @property {{ maxHP: unknown }} [modsPerStep] how much more HP raise a buff
  *   gives per scaling increment

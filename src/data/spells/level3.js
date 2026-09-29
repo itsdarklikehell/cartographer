@@ -178,4 +178,24 @@ export const LEVEL_3 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'necrotic' }] },
     repeat: {},
   },
+  {
+    id: 'haste',
+    name: 'Haste',
+    level: 3,
+    school: 'transmutation',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a shaving of licorice root', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A willing creature has its speed doubled, +2 AC, and advantage on DEX saves. On each ' +
+      'of its turns it has one extra action, which it can use to Attack (one weapon attack ' +
+      "only), Dash, Disengage, Hide, or Use an Object. When the spell ends, the target can't " +
+      'move or take actions until after its next turn.',
+    effect: { kind: 'buff', mods: { ac: 2, saveAdvantage: ['DEX'], extraAction: true } },
+  },
 ];

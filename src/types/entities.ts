@@ -84,7 +84,10 @@ export interface OngoingDamage {
  * (Aid), and the highest one wins. `immune` names the conditions the holder
  * can't take (Heroism's Frightened). `tempHPEachTurn` is the temporary HP the
  * holder gains at the start of each of its turns (Heroism), stamped from the
- * caster's spell modifier at the cast. */
+ * caster's spell modifier at the cast. `saveAdvantage` names the abilities
+ * whose saves the holder rolls with advantage (Haste's DEX). `extraAction`
+ * gives the holder one more action on each of its turns, good for one weapon
+ * attack only (Haste). */
 export interface ChipMods {
   ac?: number;
   acBase?: number;
@@ -92,6 +95,8 @@ export interface ChipMods {
   maxHP?: number;
   immune?: string[];
   tempHPEachTurn?: number;
+  saveAdvantage?: string[];
+  extraAction?: boolean;
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

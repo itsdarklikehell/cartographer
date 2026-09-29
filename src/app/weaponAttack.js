@@ -6,6 +6,7 @@ import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
 import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
 import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
+import { hasExtraAction } from '../entities/ChipMods.js';
 import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
 import { offhandDamageModifier } from '../combat/TwoWeapon.js';
 import { formatModifier } from '../entities/Modifiers.js';
@@ -142,14 +143,16 @@ export function swingKind(tweaks) {
 /**
  * Whether the participant's turn can pay for the given swing. A main-hand swing
  * asks the attack bank, because Extra Attack buys more than one swing per
- * action. The other two ask for their own part of the turn.
+ * action and Haste adds one more. The other two ask for their own part of the
+ * turn.
  * @param {import('../types/combat.js').Participant} participant
  * @param {SwingKind} kind
  * @param {number} perAction how many swings one Attack action buys
+ * @param {boolean} [extraAction] whether a chip gives the swinger an extra action
  * @returns {boolean}
  */
-export function canSwing(participant, kind, perAction) {
-  if (kind === 'main') return attacksAvailable(participant, perAction) > 0;
+export function canSwing(participant, kind, perAction, extraAction = false) {
+  if (kind === 'main') return attacksAvailable(participant, perAction, extraAction) > 0;
   return canSpend(participant, SWINGS[kind].cost);
 }
 
@@ -285,7 +288,12 @@ export function rollWeaponAttack(
     const spent = app.actions.spendBudget(
       attacker.id,
       swing.cost,
-      swing.cost === 'attack' ? { attacksPerAction: attacksPerAction(attacker) } : {},
+      swing.cost === 'attack'
+        ? {
+            attacksPerAction: attacksPerAction(attacker),
+            extraAction: hasExtraAction(attacker.conditions),
+          }
+        : {},
     );
     if (!spent) {
       app.toasts.show(`${attacker.name} ${swing.blocked}.`);
@@ -565,6 +573,7 @@ export async function weaponAttack(
     participant,
     swingKind({ offhand, reaction }),
     attacksPerAction(attacker),
+    hasExtraAction(attacker.conditions),
   );
   const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
   const values = await promptModal(

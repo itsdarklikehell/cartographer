@@ -195,6 +195,13 @@ rest. `spendAttack` draws on the bank before it spends another action, and
 `attacked`, because a cast spends the `action` flag too, and two-weapon
 fighting needs to know that the action went to the Attack action.
 
+A chip with `mods.extraAction` (Haste) gives one more swing, which `extra`
+records. `spendAttack` and `attacksAvailable` take an `extraAction` flag, and
+the extra swing comes only once the action and the bank are both spent. So a
+cast on the action still leaves the extra swing, and nothing banks behind it.
+No other cost reads the flag, because the extra action of Haste can't pay for
+a cast.
+
 `advanceTurn` gives a whole budget back to the combatant the pointer lands
 on. The reaction resets there and not at the top of the round, because a 5e
 combatant gets its reaction back at the start of its own turn. A combatant

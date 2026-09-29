@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 70. Each shipped spell has rules that the
+319 spells, and the app ships 71. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -24,7 +24,7 @@ The paladin also has one spell of its own, Destructive Wave.
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Mage Armor, False Life, Heroism |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid |
-| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch |
+| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste |
 | 4th | Ice Storm, Blight, Phantasmal Killer |
 | 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
@@ -72,6 +72,8 @@ full. The resolver applies these rules:
 - A condition chip that raises the HP maximum of its holder, grants
   temporary hit points at the cast or at the start of each of its turns, or
   makes it immune to a condition.
+- A condition chip that gives its holder advantage on the saves of one
+  ability, or an extra action on each of its turns for one weapon attack.
 - Damage or effect scaling by spell slot level, and by caster level for
   cantrips. A spell can also scale once per two slot levels.
 
@@ -194,6 +196,24 @@ Frightened chip that the target has, and a later spell that imposes
 Frightened does not land. The log names the chip that blocks it. A chip that
 the GM adds by hand still lands.
 
+### Speed of action
+
+Haste gives its target +2 AC, advantage on DEX saves, and an extra action on
+each of its turns. The combat card counts one more weapon swing while the
+chip lasts. The extra swing comes after the Attack action and the swings
+that Extra Attack adds, or after an action spent on a cast. Nothing banks
+behind it, so a fighter with Extra Attack gets three swings in a turn. The extra action can't pay for a cast. Dash, Disengage, Hide, and
+Use an Object have no rule in the app, so the GM runs them. The doubled
+speed has no rule either, because nothing moves a token by feet.
+
+The advantage reads at every save that the app rolls: a spell's save, a
+save that a chip retries at the end of a turn, a concentration save, and a
+save from the character sheet. Restrained gives disadvantage on the same
+save, so a restrained target under Haste rolls one die.
+
+When Haste ends, the log notes that the target is lethargic and can't move
+or take actions until after its next turn. The GM skips that turn.
+
 ### Spells described in prose
 
 Three built-in spells have the `utility` effect kind: Light, Lesser
@@ -237,8 +257,8 @@ clauses of these spells need more:
 - Slow halves the speed of the target, but no rule moves a token by feet,
   so speed has no effect in a fight.
 - Slow also takes away an action. The combat screen tracks the action, the
-  bonus action, and the reaction of each turn, but no chip can change that
-  budget.
+  bonus action, and the reaction of each turn. A chip can add an action, as
+  Haste does, but no chip takes one away.
 - Banishment removes the creature from the map.
 - Dominate Person gives control of one creature to another.
 
@@ -257,13 +277,14 @@ rule keeps a zone on the map after the cast.
 
 ### Buffs outside d20 rolls
 
-Examples: the extra action of Haste and Enlarge/Reduce.
+Examples: Enlarge/Reduce.
 
 A rider on a d20 roll works. A chip can add or subtract dice and a flat
 amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
 Guidance, and Resistance do. A chip can also change AC, as Shield and
-Barkskin do, and hit points, as Aid, False Life, and Heroism do. A chip that
-changes the action budget or the size of a creature has no rule to change.
+Barkskin do, and hit points, as Aid, False Life, and Heroism do. A chip can
+give an extra action, as Haste does. The size of a creature has no rule, so
+a chip can't change it.
 
 ### Summon choice and control
 

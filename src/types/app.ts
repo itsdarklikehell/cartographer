@@ -129,7 +129,7 @@ export interface AppActions {
   spendBudget(
     id: string,
     cost: ActionCost | TurnFlag | 'attack',
-    options?: { attacksPerAction?: number },
+    options?: { attacksPerAction?: number; extraAction?: boolean },
   ): boolean;
   // encounterWiring: drop the running fight when nothing is staged on the
   // party's tile any more, because the party walked off or the last

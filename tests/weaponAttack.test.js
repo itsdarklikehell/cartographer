@@ -1172,7 +1172,9 @@ test('a swing spends the attack and banks the extra swings of Extra Attack', () 
     weapon: /** @type {any} */ (SWORD),
     rng: scripted([4 / 8]),
   });
-  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 2 }]);
+  assert.deepEqual(spends, [
+    { id: 'hero', cost: 'attack', attacksPerAction: 2, extraAction: false },
+  ]);
   assert.equal(app.rolls.length, 1, 'the swing went through');
 });
 
@@ -1339,7 +1341,7 @@ test('a sneak attack adds its d6, names them in the log, and spends the flag', (
     rng: scripted([4 / 8]),
   });
   assert.deepEqual(spends, [
-    { id: 'hero', cost: 'attack', attacksPerAction: 1 },
+    { id: 'hero', cost: 'attack', attacksPerAction: 1, extraAction: false },
     { id: 'hero', cost: 'sneak' },
   ]);
   const damage = app.log.find((entry) => entry.includes('hits Goblin'));
@@ -1372,7 +1374,9 @@ test('the sneak box does nothing for an attacker without the feature', () => {
     tweaks: { sneak: true },
     rng: scripted([4 / 8]),
   });
-  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 1 }]);
+  assert.deepEqual(spends, [
+    { id: 'hero', cost: 'attack', attacksPerAction: 1, extraAction: false },
+  ]);
   const damage = app.log.find((entry) => entry.includes('hits Goblin'));
   assert.equal(/sneak attack/.test(damage), false);
   assert.match(damage, /8 slashing/, 'the sword and STR +3, and no extra dice');
@@ -1436,7 +1440,9 @@ test('the sneak box adds nothing to a weapon that is neither finesse nor ranged'
     tweaks: { sneak: true },
     rng: scripted([4 / 8]),
   });
-  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 1 }]);
+  assert.deepEqual(spends, [
+    { id: 'hero', cost: 'attack', attacksPerAction: 1, extraAction: false },
+  ]);
   const damage = app.log.find((entry) => entry.includes('hits Goblin'));
   assert.equal(/sneak attack/.test(damage), false);
 });
