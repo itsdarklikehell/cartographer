@@ -115,6 +115,17 @@ commoner, and hit points are never absent. 0 HP is defeat with no death
 saves, which only characters roll. The combat code branches on `isCreature`,
 so a character and a creature never convert into each other.
 
+A defeated creature stays in `state.creatures` until the GM removes it. Each
+defeated foe costs the save about 500 characters, and every save packs it.
+`CreatureMap.clearableDefeated` picks the hostile creatures at 0 HP that no
+running fight lists, and `app/creatureForm.js`'s `clearDefeated` removes
+them after one confirm. It writes through `commitCreatures`, the same path
+as a single delete, so `pruneCreatureLinks` takes their quest links off. The
+travelogue note it writes uses `nameTally` ("Goblin x3, Wolf"), and the
+campaign keeps no other record of the removed foes. A foe in the order of a
+running fight stays, because the fight end still counts its experience
+points.
+
 The authoring side is one dialog over one model. `app/creatureFields.js`
 describes the fields, and `app/creatureForm.js` writes `state.creatures`
 through `createCreature` and `editCreature`. A blank level marks a

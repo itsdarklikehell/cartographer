@@ -240,3 +240,32 @@ export function formatLocation(location, getNodeName) {
   if (!location) return 'Everywhere';
   return `${getNodeName(location.nodeId) ?? location.nodeId}, ${describeTile(location.tileId)}`;
 }
+
+/**
+ * The foes that the Clear defeated action removes: hostile creatures at 0 HP
+ * that no running fight lists. A foe in the order of a running fight stays,
+ * because the fight still draws its chip and counts its experience points
+ * when it ends. This function is pure.
+ * @param {Creature[]} creatures
+ * @param {{ order: { id: string }[] } | null} combat
+ * @returns {Creature[]}
+ */
+export function clearableDefeated(creatures, combat) {
+  const fighting = new Set(combat?.order.map((p) => p.id));
+  return creatures.filter(
+    (c) => c.disposition === 'hostile' && isDefeated(c) && !fighting.has(c.id),
+  );
+}
+
+/**
+ * The names of the creatures with a count for each repeated name, in the
+ * order each name first appears: "Goblin x3, Wolf".
+ * @param {Creature[]} creatures
+ * @returns {string}
+ */
+export function nameTally(creatures) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const c of creatures) counts.set(c.name, (counts.get(c.name) ?? 0) + 1);
+  return [...counts].map(([name, n]) => (n > 1 ? `${name} x${n}` : name)).join(', ');
+}

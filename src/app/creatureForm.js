@@ -1,10 +1,11 @@
-import { promptModal, confirmDelete, alertModal } from '../ui/Modal.js';
+import { promptModal, confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
 import { createCreature, editCreature, fromTemplate } from '../entities/Creature.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
+import { clearableDefeated, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -114,6 +115,32 @@ export async function deleteCreature(app, creature) {
   if (!ok) return false;
   state.creatures = removeById(state.creatures, creature.id);
   app.actions.removeCombatant(creature.id);
+  commitCreatures(app);
+  return true;
+}
+
+/**
+ * Remove every defeated foe outside a running fight, after one confirm. The
+ * removal goes through `commitCreatures`, as a single delete does, so quest
+ * links to the removed foes go too. One travelogue line names what went,
+ * and Undo brings the foes back. Resolves to true if foes were removed.
+ * @param {AppContext} app
+ * @returns {Promise<boolean>}
+ */
+export async function clearDefeated(app) {
+  const { state } = app;
+  const gone = clearableDefeated(state.creatures, state.combat);
+  if (gone.length === 0) return false;
+  const noun = gone.length === 1 ? 'foe' : 'foes';
+  const tally = nameTally(gone);
+  const ok = await confirmModal(
+    `Remove ${gone.length} defeated ${noun} from the campaign? ${tally}.`,
+    { title: 'Clear defeated', variant: 'danger', confirmLabel: 'Remove' },
+  );
+  if (!ok) return false;
+  const ids = new Set(gone.map((c) => c.id));
+  state.creatures = state.creatures.filter((c) => !ids.has(c.id));
+  app.actions.logEvent('note', `Cleared ${gone.length} defeated ${noun}: ${tally}.`);
   commitCreatures(app);
   return true;
 }

@@ -287,6 +287,18 @@ keeps its current HP, stat block, and conditions.
 A campaign template is a snapshot, so later edits to the live encounter do
 not change it.
 
+### Clear defeated foes
+
+1. Switch to **Build** mode and open the **Encounters** card in the right
+   rail.
+2. Click **Clear defeated (N)**. N counts the hostile creatures at 0 HP on
+   every map. The button shows only while N is above zero.
+3. Confirm. The foes leave the campaign, and the travelogue records a note
+   that names them. A foe in a fight that is still open stays until you end
+   the fight.
+
+To bring the foes back, click **Undo**.
+
 ### Run a fight
 
 1. Move the party onto a tile with a live creature. A modal names

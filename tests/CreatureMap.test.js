@@ -16,6 +16,8 @@ import {
   creaturePlacementsIn,
   restoreCreaturePlacements,
   unplaceFrom,
+  clearableDefeated,
+  nameTally,
 } from '../src/entities/CreatureMap.js';
 
 const at = (nodeId, tileId) => ({ nodeId, tileId });
@@ -219,4 +221,28 @@ test('unplaceFrom returns the same roster when no creature stands there', () => 
   const roster = [placed('goblin', 'n1', '0,0'), createCreature('everywhere', 'everywhere')];
   assert.equal(unplaceFrom(roster, new Set(['n3'])), roster);
   assert.equal(unplaceFrom(roster, new Set()), roster);
+});
+
+test('clearableDefeated lists downed hostiles outside a running fight', () => {
+  const foe = (id, options = {}) =>
+    createCreature(id, 'Goblin', { disposition: 'hostile', ...options });
+  const down = (c) => applyDamage(c, c.maxHP);
+  const roster = [
+    down(foe('g1')),
+    foe('g2'),
+    down(foe('g3')),
+    down(createCreature('n1', 'Ferryman')),
+  ];
+  const ids = (list) => list.map((c) => c.id);
+  assert.deepEqual(ids(clearableDefeated(roster, null)), ['g1', 'g3']);
+  const combat = { order: [{ id: 'g3' }] };
+  assert.deepEqual(ids(clearableDefeated(roster, combat)), ['g1'], 'a foe in the fight stays');
+});
+
+test('nameTally counts repeated names in first-seen order', () => {
+  const list = ['Goblin', 'Wolf', 'Goblin', 'Goblin'].map((name, i) =>
+    createCreature(String(i), name),
+  );
+  assert.equal(nameTally(list), 'Goblin x3, Wolf');
+  assert.equal(nameTally([]), '');
 });

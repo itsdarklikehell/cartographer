@@ -23,12 +23,16 @@ import { describeTile } from '../map/TileCoords.js';
  *
  * This panel owns no roster state. getEncounters supplies the rows, already
  * scoped by the caller to the viewed node. Every change flows back through a
- * callback.
+ * callback. `defeatedCount` counts the defeated foes of the whole campaign,
+ * not only this node, and the Clear defeated button shows while it is above
+ * zero.
  * @param {HTMLElement} container
  * @param {{
  *   getEncounters: () => Encounter[],
  *   onAdd: () => Promise<unknown>,
  *   onAddFromTemplate?: () => Promise<unknown>,
+ *   onClearDefeated?: () => Promise<unknown>,
+ *   defeatedCount?: () => number,
  *   onEdit: (encounter: Encounter) => Promise<unknown>,
  *   onDelete: (encounter: Encounter) => Promise<unknown>,
  *   onUpdate: (encounter: Encounter) => void,
@@ -40,6 +44,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
   return mountListPanel(container, {
     className: 'build-encounters',
     getRows: () => callbacks.getEncounters(),
+    dependsOn: () => callbacks.defeatedCount?.() ?? 0,
     emptyMessage: 'No encounters on this map.',
     classes: { row: 'build-encounters__row u-col u-g1', head: 'u-row u-g2' },
     buildBody: (encounter) => {
@@ -113,10 +118,19 @@ export function mountBuildEncounterPanel(container, callbacks) {
     },
     // The button to spawn from a saved template, from the campaign bestiary
     // or the library, sits beside New encounter. Authoring belongs to the Build rail.
+    // Clear defeated removes the downed foes of every node in one step.
     addButtons: () => [
       { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd },
       callbacks.onAddFromTemplate
         ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
+        : null,
+      callbacks.onClearDefeated && (callbacks.defeatedCount?.() ?? 0) > 0
+        ? {
+            label: `Clear defeated (${callbacks.defeatedCount?.()})`,
+            icon: 'remove',
+            variant: 'danger',
+            onClick: callbacks.onClearDefeated,
+          }
         : null,
     ],
     // New encounter leads the panel and stays fixed while the list scrolls.

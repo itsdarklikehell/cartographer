@@ -523,6 +523,13 @@ none. A DEX 16 enemy in Plate has AC 18. The Play chip and the combat card
 show the AC with armor. A defeated encounter is styled
 as defeated, not deleted.
 
+A defeated foe stays in the campaign until you remove it. The **Clear
+defeated** button in the Build rail's Encounters card shows the count of hostile
+creatures at 0 HP across every map. It asks once, then removes all of them,
+except a foe in the order of a running fight. The removal also takes the foes
+off any quest links, and one travelogue note names the foes by count, for
+example "Cleared 4 defeated foes: Goblin x3, Wolf." Undo brings them back.
+
 The Encounters and NPCs panels print what the enemy is trained in, with the bonus it rolls in each,
 for example "Saves DEX +4 | Skills Stealth +6". The app works each bonus out
 from the ability score, the challenge rating, and any exhaustion, so there is no

@@ -7,6 +7,7 @@ import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import { effectiveStatBlock, isDefeated, toTemplate } from '../entities/Creature.js';
 import {
+  clearableDefeated,
   creaturesAt,
   creaturesNear,
   creaturesOnTile,
@@ -30,7 +31,7 @@ import { arrivalAlert } from '../combat/Arrival.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
-import { creatureForm, deleteCreature, addFromLibrary } from './creatureForm.js';
+import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
 import {
   commitCreatures,
   describeCombatant,
@@ -286,6 +287,8 @@ export function wireEncounters(app) {
         { disposition: 'hostile', level: 1 },
       ),
     onAddFromTemplate: () => addFromLibrary(app),
+    onClearDefeated: () => clearDefeated(app),
+    defeatedCount: () => clearableDefeated(state.creatures, current()).length,
     onEdit: (creature) => creatureForm(app, creature, null),
     onDelete: (creature) => deleteCreature(app, creature),
     // Persist base stat edits from the Build rail's chips. The Play panel
