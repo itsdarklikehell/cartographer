@@ -92,7 +92,7 @@ test('the end of Haste leaves its target lethargic', () => {
   cast(app, 'fighter');
   endSpellEffects(app, 'mage', 'haste');
   assert.equal(hasExtraAction(pc(app, 'fighter').conditions), false);
-  const at = app.log.indexOf('Fighter is no longer Haste.');
+  const at = app.log.indexOf('Fighter is no longer affected by Haste.');
   assert.ok(at >= 0);
   assert.equal(
     app.log[at + 1],

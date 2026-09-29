@@ -188,7 +188,7 @@ test("Acid Arrow burns its target at the end of that target's next turn, once", 
   assert.equal(creature(app, 'ogre').currentHP, hp - 8);
   assert.deepEqual(creature(app, 'ogre').conditions, []);
   assert.ok(app.log.some((l) => /^Acid Arrow deals .* to Ogre\.$/.test(l)));
-  assert.ok(app.log.includes('Ogre is no longer Acid Arrow.'));
+  assert.ok(app.log.includes('Ogre is no longer affected by Acid Arrow.'));
 });
 
 test('an Acid Arrow miss splashes for half and leaves no chip', () => {
@@ -280,7 +280,7 @@ test('the end of a fight drops every chip that waits on a turn boundary', () => 
   app.state.characters = [{ ...liveMage(app), conditions: [shield] }];
   dropTurnChips(app);
   assert.deepEqual(liveMage(app).conditions, []);
-  assert.ok(app.log.includes('Mage is no longer Shield.'));
+  assert.ok(app.log.includes('Mage is no longer affected by Shield.'));
 });
 
 test('a shorter chip of the same name from another cast leaves the longer one in place', () => {

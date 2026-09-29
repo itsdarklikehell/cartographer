@@ -3,6 +3,7 @@ import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
 import { isDowned } from '../combat/CombatView.js';
 import { settleHPBuffs } from '../entities/HPBuffs.js';
+import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
 import {
   applyToTarget,
@@ -144,6 +145,6 @@ function sweepChips(app, rule) {
   app.actions.markDirty();
   app.views.combatScreen.update();
   for (const { name, condition } of freed) {
-    app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
+    app.actions.logEvent('combat', `${endedLine(name, condition)}.`);
   }
 }

@@ -172,3 +172,18 @@ export function tickConditions(list) {
     .map((c) => (c.rounds === null ? c : { ...c, rounds: c.rounds - 1 }))
     .filter((c) => c.rounds === null || c.rounds > 0);
 }
+
+/**
+ * The log line for a chip that ends. A standard condition is an adjective,
+ * so it reads "Goblin is no longer Paralyzed." Any other chip is named after
+ * a spell or typed by the GM, and a name such as Haste has no adjective form
+ * the app can build, so it reads "Goblin is no longer affected by Haste."
+ * @param {string} holder
+ * @param {string} condition
+ * @returns {string}
+ */
+export function endedLine(holder, condition) {
+  const key = condition.trim().toLowerCase();
+  const standard = CONDITIONS.some((n) => n.toLowerCase() === key);
+  return `${holder} is no longer ${standard ? '' : 'affected by '}${condition}`;
+}

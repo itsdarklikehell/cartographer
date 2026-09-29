@@ -5,6 +5,7 @@ import {
   addCondition,
   removeCondition,
   tickConditions,
+  endedLine,
 } from '../src/entities/Conditions.js';
 
 test('addCondition appends a new condition', () => {
@@ -69,4 +70,10 @@ test('a replacement chip takes over the rider as well as the source', () => {
   assert.equal(plain.length, 1);
   assert.equal(plain[0].rider, undefined);
   assert.equal(plain[0].rounds, 3);
+});
+
+test('endedLine keeps a standard condition as an adjective and names any other chip', () => {
+  assert.equal(endedLine('Goblin', 'Paralyzed'), 'Goblin is no longer Paralyzed');
+  assert.equal(endedLine('Goblin', 'prone'), 'Goblin is no longer prone');
+  assert.equal(endedLine('Brannoc', 'Haste'), 'Brannoc is no longer affected by Haste');
 });

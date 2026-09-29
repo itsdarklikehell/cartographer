@@ -783,8 +783,8 @@ test('endSpellEffects frees a chip and despawns a summon in one pass', () => {
     ['goblin'],
   );
   assert.deepEqual(app.log, [
-    'Hero is no longer Blessed.',
-    'Wolf is no longer Blessed.',
+    'Hero is no longer affected by Blessed.',
+    'Wolf is no longer affected by Blessed.',
     'Wolf vanishes as Conjure Animals ends.',
   ]);
 });

@@ -4,7 +4,7 @@ import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/C
 import { armorClass, unproficientWear } from '../entities/Armor.js';
 import { equippedWeapons } from '../entities/Equipment.js';
 import { getHP, getSpellbook } from '../entities/Character.js';
-import { addCondition, createCondition, outlasts } from '../entities/Conditions.js';
+import { addCondition, createCondition, endedLine, outlasts } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
@@ -438,7 +438,7 @@ export function applyConditionToTarget(
   const kept = found.entity.conditions.filter((c) => !ended.includes(c));
   const conditions = addCondition(kept, name, rounds, extras);
   for (const c of ended) {
-    app.actions.logEvent('combat', `${found.entity.name} is no longer ${c.name}.`);
+    app.actions.logEvent('combat', `${endedLine(found.entity.name, c.name)}.`);
   }
   if (found.kind === 'character') {
     storeCharacterChips(app, found, settleHPBuffs({ ...found.entity, conditions }));
@@ -574,7 +574,7 @@ export function endSpellEffects(app, casterId, spellId) {
   for (const { name, condition, repeat, lethargic } of freed) {
     app.actions.logEvent(
       'combat',
-      repeat ? `${name}'s ${condition} ends.` : `${name} is no longer ${condition}.`,
+      repeat ? `${name}'s ${condition} ends.` : `${endedLine(name, condition)}.`,
     );
     if (lethargic) noteLethargy(app, name);
   }
@@ -673,7 +673,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
       if (!c.source?.endsOnDamage) continue;
       app.actions.logEvent(
         'combat',
-        `${found.entity.name} is no longer ${c.name} (${c.source.spellName}).`,
+        `${endedLine(found.entity.name, c.name)} (${c.source.spellName}).`,
       );
     }
   }
