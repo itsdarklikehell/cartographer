@@ -86,6 +86,8 @@ export const STAGE_NOTES = {
     'Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It saves space once a GM uploads art for a handout, and more once custom tile art ships.',
   codec:
     'Each node becomes an art palette, a row-major run-length list of indices, and a run-length fog track. The codec is opt-in per node, and when it meets an id it cannot parse it returns the same object and leaves the node alone.',
+  strings:
+    'Every palette string moves into one strings table at the top of the save, and each palette names it by index. Only the save string has the table, so one encoded node still decodes alone.',
 };
 
 /** The decision tree behind "where does my change go?". */

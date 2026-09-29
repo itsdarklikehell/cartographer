@@ -10,6 +10,7 @@ import { hoistAssets, restoreAssets } from './Assets.js';
 import { detachAssets, loadAssetTable, persistAssets, storeAssets } from './AssetStore.js';
 import { createEntityPacker } from './EntityPack.js';
 import { restoreGear, tabulateGear } from './GearTable.js';
+import { restoreStrings, tabulateStrings } from './StringTable.js';
 import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
@@ -212,15 +213,16 @@ const encodePackedNode = memoizeByIdentity(encodeNodeTiles);
  * The campaign in its on-disk form: the state, with every node's tiles
  * packed, every entity's default-valued fields omitted, every repeated gear
  * piece moved into a `gear` table, every inline image payload hoisted into an
- * `assets` table, and every node whose tiles fill a
- * grid encoded by position. The function is pure. It never touches the
- * state passed in.
+ * `assets` table, every node whose tiles fill a grid encoded by position, and
+ * every palette string of those nodes moved into a `strings` table. The
+ * function is pure. It never touches the state passed in.
  *
- * The tile codec runs last, after the asset hoist. This order keeps
+ * The tile codec runs after the asset hoist. This order keeps
  * `Assets.js` unaware of the codec. The hoist walks `node.tiles[].imageRef`,
  * a field an encoded node no longer has. Running the codec afterward means
  * its palette holds already-hoisted `asset:` references, not the payloads
- * themselves.
+ * themselves. The string table (`StringTable.js`) runs last, over the
+ * encoded nodes, so the encoded form of one node stays self-contained.
  * Exported so a test can observe that an unchanged node's encode is the
  * cached object; `serialize` is the production entry point.
  * @param {CampaignState} state
@@ -239,7 +241,7 @@ export function packState(state) {
   const hoisted = hoistAssets(tabulateGear(packed));
   const nodes = hoisted.nodes;
   if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodePackedNode);
-  return hoisted;
+  return tabulateStrings(hoisted);
 }
 
 /**
@@ -320,7 +322,9 @@ function entities(key, value) {
  * @returns {CampaignState}
  */
 export function deserialize(json, assets) {
-  const raw = restoreGear(record(JSON.parse(json)) ?? {});
+  // The string table is read back first, so every later step sees node
+  // palettes that hold strings, the same form one encoded node has alone.
+  const raw = restoreStrings(restoreGear(record(JSON.parse(json)) ?? {}));
   // Migrations run on the raw object, before the coercion below. A step can
   // repair a shape this validator otherwise flattens or removes. The
   // validator stays last, so a step that returns something other than a

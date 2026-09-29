@@ -424,9 +424,9 @@ test('serializing encodes a grid node positionally and loading reads it back', (
 
   assert.ok(json.includes('"cells":'), 'the run-length index stream is written');
   assert.equal(json.includes('"id":"1,0"'), false, 'a tile id is implicit in its position');
-  // Eight tiles use grass. A palette entry is the (imageRef, overlayRef) pair, so
-  // the path is restated once per distinct overlay combination and never per tile.
-  assert.equal(json.split('grass.svg').length - 1, 3);
+  // Eight tiles use grass under three overlay combinations. The save's string
+  // table states the path once, and each palette entry names it by index.
+  assert.equal(json.split('grass.svg').length - 1, 1);
 
   const restored = deserialize(json).nodes[0];
   const expected = state.nodes[0].tiles.map(loadedForm);

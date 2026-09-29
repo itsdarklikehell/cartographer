@@ -346,7 +346,7 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">05</span><h2>A campaign is one string</h2></div>
       <div class="prose">
         <p>
-          Saving flattens live state into a <code>CampaignState</code>, runs it through four
+          Saving flattens live state into a <code>CampaignState</code>, runs it through five
           packing layers, and only then calls <code>JSON.stringify</code>. Loading reverses the
           chain, with migrations first. The layers exist because localStorage refuses writes
           near 5 MB, and on the example campaign they remove ${shrink}% of the string.

@@ -12,6 +12,7 @@ import { buildState, serialize } from '../../src/storage/SaveManager.js';
 import { packEntities } from '../../src/storage/EntityPack.js';
 import { hoistAssets } from '../../src/storage/Assets.js';
 import { encodeNodeTiles } from '../../src/storage/TileCodec.js';
+import { tabulateStrings } from '../../src/storage/StringTable.js';
 import { withTileDefaults } from '../../src/map/TileGrid.js';
 import { withDefaults as withCharacterDefaults } from '../../src/entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../../src/entities/Creature.js';
@@ -45,6 +46,7 @@ export function measureSave() {
 
   const hoisted = hoistAssets(entitiesPacked);
   const encoded = { ...hoisted, nodes: hoisted.nodes.map(encodeNodeTiles) };
+  const tabulated = tabulateStrings(encoded);
 
   const stages = [
     { id: 'raw', name: 'in-memory state', size: JSON.stringify(state).length },
@@ -52,6 +54,7 @@ export function measureSave() {
     { id: 'entities', name: '2. entity defaults', size: JSON.stringify(entitiesPacked).length },
     { id: 'assets', name: '3. assets hoisted', size: JSON.stringify(hoisted).length },
     { id: 'codec', name: '4. tile codec', size: JSON.stringify(encoded).length },
+    { id: 'strings', name: '5. string table', size: JSON.stringify(tabulated).length },
   ];
 
   return {

@@ -22,6 +22,7 @@ take down the whole map.
       |  tabulateGear          repeated weapons, armor, items -> gear table
       |  hoistAssets           inline data: URLs -> asset:<key> + assets table
       |  encodeNodeTiles       tile codec: palette + run-length streams
+      |  tabulateStrings       palette strings -> one strings table
       v
   packed state ---- JSON.stringify ----> one string
       |                                        |
@@ -35,8 +36,8 @@ take down the whole map.
 ```
 
 Loading runs the same stages in reverse, with two extra steps at the front:
-schema migrations, then field coercion. The gear restore is the one stage
-that runs ahead of the migrations.
+schema migrations, then field coercion. The gear restore and the string
+restore run ahead of the migrations.
 
 The top-level type is `CampaignState` (`src/types/storage.ts`). It has a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
@@ -486,10 +487,10 @@ The codec also follows these rules:
   entry skips its cell, and an unreadable run ends the stream. Import
   persists what it reads before it reloads, so an error thrown here produces
   a save that cannot start.
-- **Ordering.** The codec runs last in `packState`, after the asset hoist,
-  and first in `deserialize`, before the asset restore. The hoist's
+- **Ordering.** The codec runs after the asset hoist in `packState`, and
+  before the asset restore in `deserialize`. The hoist's
   traversal walks `node.tiles[].imageRef`, and an encoded node no longer has
-  this field. Running the codec last means the palette contains refs that are
+  this field. Running the codec after the hoist means the palette contains refs that are
   already hoisted to `asset:` form, so `Assets.js` needs no knowledge of the
   encoding. Decoding ahead of `withNodeDefaults` likewise leaves a decoded
   tile still packed, so the codec states nothing about what a default value
@@ -499,6 +500,48 @@ The codec is the one place where the reader branches on whether a field is
 present instead of filling one from absence, so the app reads both forms
 indefinitely. `StateDiff` works on parsed state, and it never
 sees `cells` or `fog`.
+
+### The string table
+
+The node palettes of one campaign repeat the same refs. The example
+campaign has 3,390 palette strings, but only 119 distinct ones.
+`tabulateStrings` (`storage/StringTable.js`) runs last in `packState`. It
+lists each distinct palette string once, in a top-level `strings` array, and
+writes its index into every palette in its place:
+
+```
+  "strings": ["grass", "road-h", "asset:k1"],
+  "nodes": [{ "id": "world", "refs": [0, [0, [1, 2]]], "cells": [...] }]
+```
+
+On the example campaign, the palettes cost 12,187 characters and the table
+1,739, where palettes of strings cost 53,584. The whole example save is
+142,162 characters.
+
+`restoreStrings` runs first in `deserialize`, beside the gear restore. It
+puts the strings back and removes the table, so the migrations, the tile
+decoder, and the asset restore all read palettes of strings. Only the save
+string has the table. The output of `encodeNodeTiles` still names its
+strings, because the undo log stores encoded nodes and decodes each one
+alone, with no save around it. Code that needs one encoded node calls
+`encodeNodeTiles`, never `packState(...).nodes`.
+
+The table lists strings in the order of first use: the nodes in list order,
+then each palette in order. The same state therefore gives the same table,
+and an unchanged campaign saves to the same string, which the undo log and
+`storageMovedOn` compare. A new node joins the end of the node list, so its
+new refs join the end of the table. A new ref that a paint adds to an
+earlier node shifts the indices after it. The palettes of later nodes then
+change in the save string, but the parsed state stays the same, and the
+undo log diffs parsed state. Each tabulated node is cached on its encoded
+node, together with the indices it used, so an unchanged node whose
+indices stay the same tabulates to the same object on the next save.
+
+Reading is based on presence. A save with no `strings` array loads as it
+is, and a number in a palette is an index only when the table is present.
+An index that names no string stays a number, and the decoder skips it as
+an unreadable entry. `referencedAssetKeys` scans the raw save text, so an
+`asset:` key in the table still keeps its payload.
 
 ## Schema versions and migrations
 
@@ -511,8 +554,9 @@ this field existed).
 The migration chain runs on the raw parsed object *before* the coercion in
 `deserialize`. A step repairs data that coercion would flatten or drop. The chain also
 runs ahead of the asset restore, so a step sees hoisted refs and resolves a
-payload through the table itself. The gear restore runs before the chain,
-so a step sees each weapon, armor, and item inline. A
+payload through the table itself. The gear restore and the string restore
+run before the chain, so a step sees each weapon, armor, and item inline,
+and each palette as a list of strings. A
 save stamped newer than the app runs no migration steps, and the app reads it
 on a best-effort basis.
 
