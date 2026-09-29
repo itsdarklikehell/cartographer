@@ -11,6 +11,7 @@ import { detachAssets, loadAssetTable, persistAssets, storeAssets } from './Asse
 import { createEntityPacker } from './EntityPack.js';
 import { restoreGear, tabulateGear } from './GearTable.js';
 import { restoreStrings, tabulateStrings } from './StringTable.js';
+import { noteTruncation } from './ShortenedLoad.js';
 import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
@@ -342,14 +343,19 @@ export function deserialize(json, assets) {
   // place that states what a tile default is. A node stored in the
   // unencoded form passes through the decoder unchanged.
   const decoded = { ...migrated };
-  if (Array.isArray(decoded.nodes)) decoded.nodes = decodeNodeList(decoded.nodes);
+  let report = { dropped: 0, emptied: 0 };
+  if (Array.isArray(decoded.nodes)) {
+    const { nodes, dropped, emptied } = decodeNodeList(decoded.nodes);
+    decoded.nodes = nodes;
+    report = { dropped, emptied };
+  }
   if (assets && Object.keys(assets).length) {
     // The sidecar table is a fallback under whatever the string itself
     // carries, so a save holding its own table resolves from that table alone.
     decoded.assets = { ...assets, ...(record(decoded.assets) ?? {}) };
   }
   const parsed = restoreAssets(decoded);
-  return {
+  const state = {
     version: CURRENT_VERSION,
     nodes: withRepairedLinks(
       withRepairedParents(
@@ -370,6 +376,10 @@ export function deserialize(json, assets) {
     splitParty: parsed.splitParty === true,
     combat: combatState(parsed.combat),
   };
+  // The shortened map reaches the GM through `loadTruncation`
+  // (`ShortenedLoad.js`), so the next save does not store it unannounced.
+  noteTruncation(state, report);
+  return state;
 }
 
 /**

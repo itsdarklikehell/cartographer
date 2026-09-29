@@ -1,4 +1,5 @@
 import { isNearQuota } from './SaveManager.js';
+import { MAX_NODES, MAX_TOTAL_CELLS } from './TileCodec.js';
 
 /**
  * What the GM sees after a write. This module holds the decisions instead of
@@ -123,3 +124,50 @@ export function loadFailedMessage(undoSteps) {
     ? `${lead} Nothing has been overwritten: press Undo to restore the previous save, and export a backup before making changes.`
     : `${lead} The stored save stays in this browser until the next save overwrites it.`;
 }
+
+/**
+ * What a load that passed the decode limits left out, in one sentence. The
+ * limits come from `TileCodec.js`: `MAX_NODES` map areas, and
+ * `MAX_TOTAL_CELLS` tiles over the whole campaign.
+ * @param {import('./ShortenedLoad.js').Truncation} truncation
+ * @returns {string}
+ */
+export function truncationSummary({ dropped, emptied }) {
+  const areas = (/** @type {number} */ n) => `${n} map ${n === 1 ? 'area' : 'areas'}`;
+  const parts = [];
+  if (dropped > 0) {
+    parts.push(
+      `${areas(dropped)} past the first ${MAX_NODES.toLocaleString('en-US')} did not load`,
+    );
+  }
+  if (emptied > 0) {
+    parts.push(
+      `${areas(emptied)} loaded with no tiles, because the campaign has more than ${MAX_TOTAL_CELLS.toLocaleString('en-US')} tiles`,
+    );
+  }
+  return `This campaign is larger than the app can load: ${parts.join(', and ')}.`;
+}
+
+/**
+ * The boot notice for a stored save that loaded shortened. Saving is on
+ * hold while it shows.
+ * @param {import('./ShortenedLoad.js').Truncation} truncation
+ * @returns {string}
+ */
+export function shortenedBootMessage(truncation) {
+  return `${truncationSummary(truncation)} Saving is paused, so the full campaign stays stored in this browser. Changes you make are not saved until you keep the shortened map.`;
+}
+
+/**
+ * The import confirm for a file that loads shortened. Import stores what it
+ * reads at once, and the file itself is not changed.
+ * @param {import('./ShortenedLoad.js').Truncation} truncation
+ * @returns {string}
+ */
+export function shortenedImportMessage(truncation) {
+  return `${truncationSummary(truncation)} Importing stores the shortened map. The file itself is not changed.`;
+}
+
+/** The Save button's confirm while saving is paused. */
+export const SAVE_WHILE_HELD_MESSAGE =
+  'Saving now stores the shortened map over the full campaign in this browser.';

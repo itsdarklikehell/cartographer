@@ -44,6 +44,8 @@ import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Aut
 import { followerMode } from '../view/CombatMode.js';
 import { isGM } from '../view/ViewRole.js';
 import { wirePlayerPatches } from './playerPatches.js';
+import { savesHeld } from '../storage/ShortenedLoad.js';
+import { confirmSaveWhileHeld, confirmShortenedImport } from './shortenedLoadPrompts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -197,11 +199,13 @@ export function wireCampaignActions(app) {
    * own edit while a GM tab is open, and the GM tab merges and saves it. A
    * whole-campaign write from each tab loses one tab's change whenever both
    * change the campaign in the same window. Every other tab writes the
-   * campaign, after the check against another tab's save.
+   * campaign, after the check against another tab's save. Nothing is written
+   * while a shortened load keeps saves on hold (`storage/ShortenedLoad.js`).
    * @returns {boolean} whether the write landed
    */
   function writeOut() {
     if (patches.active()) return patches.send();
+    if (savesHeld()) return false;
     if (externalWriteBlocks()) return false;
     return persistState(buildCurrentState());
   }
@@ -409,7 +413,8 @@ export function wireCampaignActions(app) {
     if (ok) replaceCampaign(buildExampleCampaign(app.palette), 'Loaded the example campaign.');
   });
 
-  mustGetElement('save-btn').addEventListener('click', () => {
+  mustGetElement('save-btn').addEventListener('click', async () => {
+    if (!(await confirmSaveWhileHeld())) return;
     if (!persistState(buildCurrentState())) return;
     setDirty(false);
     app.toasts.show('Campaign saved.');
@@ -668,6 +673,7 @@ export function wireCampaignActions(app) {
       app.toasts.show('That file has no map, so it is not a campaign file.', { level: 'error' });
       return;
     }
+    if (!(await confirmShortenedImport(state))) return;
     // The confirm comes after the read, so a file that is not a campaign
     // gets its error without a question first.
     const replace =

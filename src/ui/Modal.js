@@ -469,10 +469,12 @@ export function alertModal(message, options = {}) {
  * styles the confirm button, and names the same variants a button does, so a
  * destructive confirm reads as `variant: 'danger'` here and everywhere else.
  * A danger confirm opens with focus on Cancel, so a stray Enter does not
- * delete or replace anything. The heading defaults to "Confirm".
+ * delete or replace anything. The heading defaults to "Confirm", and the
+ * dismiss button reads "Cancel" unless `cancelLabel` names what declining does.
  * @param {string} message
  * @param {{
  *   confirmLabel?: string,
+ *   cancelLabel?: string,
  *   variant?: 'primary' | 'danger',
  *   title?: string,
  *   returnFocus?: HTMLElement | null,
@@ -486,7 +488,7 @@ export function confirmModal(message, options = {}) {
     returnFocus: options.returnFocus,
     build: (close) => {
       const text = el('p', 'modal__message', message);
-      const cancel = textButton('Cancel', () => close('cancel'));
+      const cancel = textButton(options.cancelLabel ?? 'Cancel', () => close('cancel'));
       const confirm = textButton(options.confirmLabel ?? 'Confirm', () => close('confirm'), {
         variant,
       });

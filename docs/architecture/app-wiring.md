@@ -91,6 +91,14 @@ flag, `historyLoss` and `historyLossMessage` announce a shortened or cleared
 undo history once rather than on every write, and `footprintWarning` waits
 for the footprint to grow by ten percent before it warns again.
 
+`shortenedLoadPrompts.js` holds the prompts for a campaign that loaded
+shortened because it passes the decode limits (see "Shortened loads" in
+[Persistence](persistence.md)). This module calls two of them: the import
+handler asks `confirmShortenedImport` before it stores such a file, and the
+Save button asks `confirmSaveWhileHeld` while the save hold is on.
+`writeOut` checks `savesHeld` and skips the autosave and the flush during the
+hold. `main.js` calls the third, `holdShortenedBoot`, at boot.
+
 This module also handles cross-tab save adoption. When another browser tab
 saves (`SaveManager.onExternalSave` reports it once the save mark lands), a Play-mode tab with nothing unsaved adopts that campaign in place
 through `rehydrate.js`, without a page reload. Build mode, Library mode, and

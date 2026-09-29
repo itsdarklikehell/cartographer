@@ -465,9 +465,10 @@ test('decodeNodeList stops expanding nodes once the total cell limit is spent', 
     tiles: [{ id: '0,0', name: 'kept only when decoded' }],
   });
   const count = MAX_TOTAL_CELLS / 1_000_000 + 1;
-  const nodes = /** @type {any[]} */ (
-    decodeNodeList(Array.from({ length: count }, (_, i) => huge(`n${i}`)))
-  );
+  const result = decodeNodeList(Array.from({ length: count }, (_, i) => huge(`n${i}`)));
+  const nodes = /** @type {any[]} */ (result.nodes);
+  assert.equal(result.emptied, 1, 'the report counts the node loaded with no tiles');
+  assert.equal(result.dropped, 0);
   assert.deepEqual(
     nodes.map((node) => node.tiles.length),
     [...Array(count - 1).fill(1_000_000), 0],
@@ -478,7 +479,13 @@ test('decodeNodeList stops expanding nodes once the total cell limit is spent', 
 
 test('decodeNodeList passes per-tile nodes through and drops nodes past MAX_NODES', () => {
   const plain = { id: 'p', tiles: [] };
-  const list = decodeNodeList([plain, null, ...Array(MAX_NODES).fill(plain)]);
+  const {
+    nodes: list,
+    dropped,
+    emptied,
+  } = decodeNodeList([plain, null, ...Array(MAX_NODES).fill(plain)]);
+  assert.equal(dropped, 2, 'the report counts the nodes past the limit');
+  assert.equal(emptied, 0);
   assert.equal(list.length, MAX_NODES);
   assert.equal(list[0], plain);
   assert.equal(list[1], null);

@@ -120,6 +120,18 @@ save from a stepped-back position discards what was left to redo.
 Everything lives in the local storage of one browser, under one origin.
 There is no server and no account.
 
+### Campaign size limits
+
+The app loads at most 10,000 map areas and 2,000,000 tiles in all. A
+campaign that passes a limit loads shortened: the areas past the first
+10,000 are left out, and the areas past the tile limit load with no tiles.
+
+| When | What happens |
+| --- | --- |
+| Import of a file that passes a limit | A prompt says what will not load. Import the shortened map stores it, and Cancel keeps the current campaign. The file is not changed |
+| Start with a stored campaign that passes a limit | A prompt says what did not load, and saving is paused, so the full campaign stays stored. Keep the shortened map turns saving back on. Keep saving paused leaves autosave off for the session |
+| Save while saving is paused | A prompt asks first. Save the shortened map stores it and turns saving back on |
+
 ## The example campaign
 
 Load example replaces the campaign with a complete demo. Its world map is

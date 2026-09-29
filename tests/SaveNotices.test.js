@@ -10,6 +10,9 @@ import {
   historyLossMessage,
   loadFailedMessage,
   saveOutcome,
+  shortenedBootMessage,
+  shortenedImportMessage,
+  truncationSummary,
 } from '../src/storage/SaveNotices.js';
 
 test('a clean save says nothing', () => {
@@ -89,4 +92,23 @@ test('the load-failure notice names Undo only when a step exists to undo', () =>
   assert.match(loadFailedMessage(1), /press Undo/);
   assert.doesNotMatch(loadFailedMessage(0), /Undo/);
   assert.match(loadFailedMessage(0), /next save overwrites it/);
+});
+
+test('a shortened load names what it left out, and each limit', () => {
+  assert.equal(
+    truncationSummary({ dropped: 1, emptied: 0 }),
+    'This campaign is larger than the app can load: 1 map area past the first 10,000 did not load.',
+  );
+  assert.equal(
+    truncationSummary({ dropped: 0, emptied: 2 }),
+    'This campaign is larger than the app can load: 2 map areas loaded with no tiles, because the campaign has more than 2,000,000 tiles.',
+  );
+  const both = truncationSummary({ dropped: 3, emptied: 1 });
+  assert.match(both, /3 map areas past the first 10,000 did not load, and 1 map area loaded/);
+  const boot = shortenedBootMessage({ dropped: 3, emptied: 1 });
+  assert.ok(boot.startsWith(both));
+  assert.match(boot, /Saving is paused/);
+  const imported = shortenedImportMessage({ dropped: 3, emptied: 1 });
+  assert.ok(imported.startsWith(both));
+  assert.match(imported, /Importing stores the shortened map/);
 });

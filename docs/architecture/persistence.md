@@ -145,6 +145,28 @@ plus a notice. This
 leaves the stored save and the history log untouched, so Undo can still step
 back to the save before the broken one.
 
+### Shortened loads
+
+`decodeNodeList` (`TileCodec.js`) loads at most `MAX_NODES` nodes and
+`MAX_TOTAL_CELLS` tiles, because a run of `[index, count]` costs a few
+characters in the file and one tile object in memory per cell. It drops the
+nodes past the node limit, loads a node that does not fit in the cells left
+with no tiles, and returns both counts. `deserialize` notes a nonzero report
+in a `WeakMap` keyed on the state it returns, and `loadTruncation(state)` in
+`storage/ShortenedLoad.js` reads it. The report stays off the state, because
+`StateDiff` diffs every top-level field.
+
+A shortened state is a copy of the save with parts missing, and the next
+save stores it over the full campaign. The import handler therefore asks
+before it stores a file that loads shortened (`confirmShortenedImport` in
+`app/shortenedLoadPrompts.js`). At boot, `loadInitialCampaignSafe` returns the
+report as `truncated`, and `main.js` calls `holdShortenedBoot`, which turns
+on the save hold and asks the GM. While the hold is on, `writeOut` in
+`campaignActions.js` skips the autosave and the flush, and the Save button
+asks first. Keeping the shortened map, or saving it from the Save button,
+lifts the hold. The hold does not stop New, Load example, Import, or Undo,
+because each of those stores a campaign the GM chose.
+
 ## Packing layer 1: tile defaults
 
 The on-disk format differs from the in-memory format. `serialize` packs every

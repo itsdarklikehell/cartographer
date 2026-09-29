@@ -4,11 +4,13 @@ import { PartyTracker } from '../party/PartyTracker.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
+import { loadTruncation } from '../storage/ShortenedLoad.js';
 import { createClock } from '../time/GameClock.js';
 import { buildExampleWorld } from './ExampleWorld.js';
 import { buildExampleContent } from './ExampleContent.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('../storage/ShortenedLoad.js').Truncation} Truncation */
 
 /**
  * Everything that makes up one campaign's state at runtime. SaveManager's
@@ -99,11 +101,12 @@ export function buildExampleCampaign(palette) {
  *
  * The save is read through the history log, which keeps the parsed state
  * as the base for the first delta of the session. The grid then holds those
- * same node objects, so that first diff runs by identity.
+ * same node objects, so that first diff runs by identity. A caller that has
+ * already read the save passes it in.
+ * @param {import('../types/storage.js').CampaignState | null} [saved]
  * @returns {Campaign}
  */
-export function loadInitialCampaign() {
-  const saved = loadPersistedCampaign();
+export function loadInitialCampaign(saved = loadPersistedCampaign()) {
   if (!saved) return buildBlankCampaign();
   // A campaign with no map has nowhere to put the party or the map view.
   if (saved.nodes.length === 0) throw new Error('The saved campaign has no map nodes.');
@@ -189,14 +192,21 @@ export function partyOnGrid(party, grid) {
  * already the stored save, and the GM has no app left to press Undo
  * in. `failed` lets the caller report the error once the toasts mount. The
  * previous save is still in the undo history, and Undo restores it.
- * @returns {{ campaign: Campaign, navigator: MapNavigator, partyTracker: PartyTracker, failed: boolean }}
+ * `truncated` is what the load left out when the save passes the decode
+ * limits (`storage/ShortenedLoad.js`), or null.
+ * @returns {{ campaign: Campaign, navigator: MapNavigator, partyTracker: PartyTracker, failed: boolean, truncated: Truncation | null }}
  */
 export function loadInitialCampaignSafe() {
   try {
-    return { ...withTrackers(loadInitialCampaign()), failed: false };
+    const saved = loadPersistedCampaign();
+    return {
+      ...withTrackers(loadInitialCampaign(saved)),
+      failed: false,
+      truncated: loadTruncation(saved),
+    };
   } catch (error) {
     console.error('Could not load the saved campaign; starting blank.', error);
-    return { ...withTrackers(buildBlankCampaign()), failed: true };
+    return { ...withTrackers(buildBlankCampaign()), failed: true, truncated: null };
   }
 }
 

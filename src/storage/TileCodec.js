@@ -409,19 +409,28 @@ export const MAX_NODES = 10_000;
  * fit in the cells left keeps its other fields and loads with no tiles, so
  * links to it still resolve. A node in the per-tile form costs its file
  * size in memory and does not count.
- * @param {unknown[]} nodes
- * @returns {unknown[]}
+ *
+ * `dropped` counts the nodes past `MAX_NODES`, and `emptied` counts the
+ * nodes that load with no tiles because of the cell limit. The load path
+ * reports both, because the next save stores the shortened map.
+ * @param {unknown[]} list
+ * @returns {{ nodes: unknown[], dropped: number, emptied: number }}
  */
-export function decodeNodeList(nodes) {
+export function decodeNodeList(list) {
   let left = MAX_TOTAL_CELLS;
-  return nodes.slice(0, MAX_NODES).map((node) => {
+  let emptied = 0;
+  const nodes = list.slice(0, MAX_NODES).map((node) => {
     const record = /** @type {Record<string, any>} */ (node);
     if (!record || typeof record !== 'object' || !Array.isArray(record.cells)) return node;
     const size = gridSize(record);
-    if (size > left) return decodeNodeTiles({ ...record, cells: [], tiles: [] });
+    if (size > left) {
+      emptied += 1;
+      return decodeNodeTiles({ ...record, cells: [], tiles: [] });
+    }
     left -= size;
     return decodeNodeTiles(record);
   });
+  return { nodes, dropped: list.length - nodes.length, emptied };
 }
 
 /**

@@ -656,6 +656,8 @@ it with `aria-labelledby`, so a screen reader announces the title and not just
 "dialog". `confirmModal` and `alertModal` default their titles to "Confirm" and
 "Notice", and point `aria-describedby` at the message. A danger confirm opens
 with focus on Cancel, so a stray Enter cannot delete or replace anything.
+`confirmModal` takes a `cancelLabel` when the dismiss button does more than
+close, such as "Keep saving paused".
 
 Focus goes back to the opener when the dialog closes. A dialog often removes
 or rebuilds the control that opened it. In that case focus goes to the

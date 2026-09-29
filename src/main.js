@@ -25,6 +25,7 @@ import { wireSessionControls } from './app/sessionControls.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
+import { holdShortenedBoot } from './app/shortenedLoadPrompts.js';
 
 const palette = new TilePalette();
 const {
@@ -32,6 +33,7 @@ const {
   navigator,
   partyTracker,
   failed: loadFailed,
+  truncated,
 } = loadInitialCampaignSafe();
 const toasts = mountToasts(document.body);
 // One tooltip for the whole page. Its listeners are delegated, so a widget
@@ -115,5 +117,9 @@ if (loadFailed) {
     title: 'Could not load the saved campaign',
   });
 }
+
+// A save past the decode limits loads shortened, and the next autosave
+// stores the shortened map over the full one. Saving waits for the GM.
+if (truncated) void holdShortenedBoot(truncated);
 
 maybeShowOnboarding(app);
