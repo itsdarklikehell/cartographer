@@ -58,6 +58,19 @@ export function gridCellOf(id, width, height) {
 }
 
 /**
+ * Whether a tile id names a grid position, as `parseCoords` reads it. The
+ * canonical in-bounds id takes the fast path of `gridCellOf`, and only an id
+ * outside that form pays for the regular expression.
+ * @param {string} id
+ * @param {number} width
+ * @param {number} height
+ * @returns {boolean}
+ */
+export function hasCoords(id, width, height) {
+  return gridCellOf(id, width, height) >= 0 || parseCoords(id) !== null;
+}
+
+/**
  * The value of `text[start, end)` as a decimal integer with no sign and no
  * leading zero, or -1 when the range is empty or holds anything else.
  * @param {string} text

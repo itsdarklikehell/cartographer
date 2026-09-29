@@ -333,9 +333,10 @@ tell a real edit from a repeated autosave. It pairs a collection by element
 changed.
 
 The world's nodes go through the same `reconcile` call before
-`grid.replaceNodes`, because the map caches (`revealedIdsOf` in
-`map/MapRenderer.js`, `findRegionGroups` in `map/RegionGroups.js`, and
-`spanBlocks` in `map/TilePaint.js`) are keyed on node identity. A node the
+`grid.replaceNodes`, because the map caches are keyed on node identity. The
+tile layout in `map/TileIndex.js` is keyed on the node, and it keeps the
+stamps that `findRegionGroups` in `map/RegionGroups.js` and `spanBlocks` in
+`map/TilePaint.js` key on. A node the
 save did not change comes back as the object those caches already know, so
 an adoption that moved nothing leaves them warm.
 

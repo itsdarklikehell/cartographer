@@ -73,6 +73,7 @@ test('discoveredHostiles follows the fog for placed foes and met for unplaced on
   const roster = [
     placed('seen', 'n1', '0,0', { disposition: 'hostile' }),
     placed('fogged', 'n1', '5,5', { disposition: 'hostile' }),
+    placed('offGrid', 'n1', '9,9', { disposition: 'hostile' }),
     placed('friendly', 'n1', '0,0'),
     { ...createCreature('roamerMet', 'roamerMet', { disposition: 'hostile' }), met: true },
     createCreature('roamerUnmet', 'roamerUnmet', { disposition: 'hostile' }),

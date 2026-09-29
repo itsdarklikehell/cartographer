@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeCursor, describeNode } from '../src/map/MapDescription.js';
 import { createMapNode, createTile, setTile, updateTileMetadata } from '../src/map/TileGrid.js';
+import { setTileRevealed } from '../src/map/FogOfWar.js';
 
 function node() {
   let n = createMapNode('world', 'World', null, 4, 3);
@@ -103,6 +104,30 @@ test('describeNode ignores tiles whose ids are not grid coordinates', () => {
     'a non-grid tile is not a placed or revealed cell',
   );
   assert.deepEqual(points, [], 'and it has no position to narrate');
+});
+
+test('describeNode reads fog, discovery, and notes from each node that shares an art stamp', () => {
+  const hidden = node();
+  const gm = { showNotes: true };
+  assert.deepEqual(describeNode(hidden, null, gm).points, []);
+  // Each edit below keeps the art stamp, so the point list comes from the
+  // cached summary, and each node still reads its own tile fields.
+  const discovered = updateTileMetadata(hidden, '2,1', { discovered: true });
+  const noted = updateTileMetadata(discovered, '2,1', { notes: 'Closed for repairs' });
+  const stepped = setTileRevealed(noted, '1,0', true);
+  const fogged = setTileRevealed(stepped, '2,1', false);
+  assert.deepEqual(describeNode(noted, null, gm).points, [
+    'Tavern at column 3, row 2: Closed for repairs',
+  ]);
+  assert.match(describeNode(stepped, null).status, /3 of 12 tiles explored\./);
+  assert.deepEqual(describeNode(fogged, null).points, [], 'a fogged point is not named');
+  assert.match(describeNode(fogged, null).status, /2 of 12 tiles explored\./);
+  // The older nodes, as undo hands them back.
+  assert.deepEqual(describeNode(discovered, null, gm).points, [
+    'Tavern at column 3, row 2: The Prancing Pony',
+  ]);
+  assert.match(describeNode(noted, null).status, /2 of 12 tiles explored\./);
+  assert.deepEqual(describeNode(hidden, null, gm).points, []);
 });
 
 test('describeNode in Build mode counts placed tiles and includes unrevealed POIs', () => {

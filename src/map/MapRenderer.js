@@ -2,7 +2,7 @@ import { groupImageChunks } from './RegionGroups.js';
 import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
-import { fogStamp, tileAtXY } from './TileIndex.js';
+import { revealedIds as revealedIdsOf, tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
@@ -16,29 +16,7 @@ export { imageSrcForRef };
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
-/**
- * The revealed tile ids of each `TileIndex.fogStamp`. The stamp stands for
- * the tile ids and their `revealed` flags, so a pan or zoom frame, a paint
- * stroke, and a region link all find the set of the node before them. Only a
- * fog change makes the next frame scan every tile again.
- * @type {WeakMap<object, Set<string>>}
- */
-const revealedCache = new WeakMap();
-
-/**
- * @param {MapNode} node
- * @returns {Set<string>}
- */
-function revealedIdsOf(node) {
-  const stamp = fogStamp(node);
-  let ids = revealedCache.get(stamp);
-  if (!ids) {
-    ids = new Set();
-    for (const t of node.tiles) if (t.revealed) ids.add(t.id);
-    revealedCache.set(stamp, ids);
-  }
-  return ids;
-}
+/** @typedef {import('./TileIndex.js').RevealedIds} RevealedIds */
 
 /**
  * Whether any of a block's tiles is revealed, and so whether the block
@@ -46,7 +24,7 @@ function revealedIdsOf(node) {
  * everything draws. All three block passes gate on this. See _revealedIds
  * for why a fully-fogged block must draw nothing instead of being painted over.
  * @param {string[]} tileIds
- * @param {Set<string> | null} revealedIds
+ * @param {RevealedIds | null} revealedIds
  * @returns {boolean}
  */
 export function anyRevealed(tileIds, revealedIds) {
@@ -133,7 +111,7 @@ export class MapRenderer {
    * filled by the block passes and read by the grid pass, so the frame
    * object is also how those passes talk to each other within one draw.
    * @typedef {{
-   *   revealedIds: Set<string> | null,
+   *   revealedIds: RevealedIds | null,
    *   spanBlocks: import('./TilePaint.js').SpanBlock[],
    *   vectorBlocks: { x: number, y: number, w: number, h: number }[],
    * }} Frame
@@ -190,7 +168,7 @@ export class MapRenderer {
    * antialiased seams at fractional zoom, tracing the block's outline
    * through the fog in a color different from the map backdrop's grid.
    * @param {MapView} view
-   * @returns {Set<string> | null}
+   * @returns {RevealedIds | null}
    */
   _revealedIds(view) {
     if (view.revealAll || !view.node) return null;
@@ -530,7 +508,7 @@ export class MapRenderer {
   }
 
   /** @param {MapView} view
-   * @param {{ revealedIds: Set<string> | null }} frame */
+   * @param {{ revealedIds: RevealedIds | null }} frame */
   _renderRegionGroups(view, frame) {
     renderRegionOverlays(this.ctx, view, frame.revealedIds, this.tileSize, this.getNodeName);
   }

@@ -1,5 +1,6 @@
 import { withinRadius } from '../map/FogOfWar.js';
 import { describeTile } from '../map/TileCoords.js';
+import { tileAt } from '../map/TileIndex.js';
 import { isDefeated } from './Creature.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -74,7 +75,7 @@ export function discoveredHostiles(creatures, position, node) {
     if (c.location === null) return c.met === true;
     if (position === null || node === null || c.location.nodeId !== position.nodeId) return false;
     const { tileId } = c.location;
-    return node.tiles.some((t) => t.id === tileId && t.revealed);
+    return tileAt(node, tileId)?.revealed === true;
   });
 }
 

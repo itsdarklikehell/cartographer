@@ -97,7 +97,7 @@ alone follows the TileIndex pattern. The function is pure over an immutable
 node and caches its result in a WeakMap, so an entry never goes stale. The
 returned arrays and sets are shared, so treat them as read-only.
 
-The region caches, the span blocks, and the revealed-id set use narrower
+The region caches, the span blocks, and the map description use narrower
 keys than the node, because a fog reveal or a paint cell makes a new node
 while the fields they read stay the same. The TileIndex layout keeps three
 stamps, which are empty objects that stand for one state of some tile
@@ -106,8 +106,8 @@ fields. `linkStamp` covers the tile ids and their `childNodeId` values,
 point of interest types, and `fogStamp` covers the ids and their `revealed`
 flags. The replace helpers pass a stamp to the new node when no replaced
 tile changes a field it covers. Region groups (`findRegionGroups`) cache on
-the link stamp, span blocks (`TilePaint.spanBlocks`) cache on the art
-stamp, and the revealed-id set (`MapRenderer.js`) caches on the fog stamp.
+the link stamp. Span blocks (`TilePaint.spanBlocks`) and the placed count
+and point of interest positions of `describeNode` cache on the art stamp.
 The group outline (`groupOutline`), the color slots (`regionSlots`, keyed
 on the groups array), and the image chunks (`groupImageChunks`) cache on the
 group objects, and the chunks also record the art stamp. A party step then
@@ -136,8 +136,8 @@ A pass that visits every tile of a node reads each id through
 id and allocates nothing, and calls `parseCoords` only for an id outside
 that form. `describeNode` and the nearest-tile searches of `EntryPoint.js`
 follow this rule, and a lookup of one known id goes through `tileAt`, not
-`tiles.find`. On a 200x200 node `describeNode` costs 0.8 ms where a
-`parseCoords` call for each tile costs 2.6 ms.
+`tiles.find`. On a 200x200 node the scan behind `describeNode` costs 0.8 ms
+where a `parseCoords` call for each tile costs 2.6 ms.
 
 Derived data keeps the coordinates it already parsed, so the reader does not
 parse them again. A region group has a `cells` array that is index-aligned
@@ -175,6 +175,26 @@ the tile array once. It also returns the *same* node object when nothing was
 newly revealed, so the WeakMap caches above stay warm on a party step through
 explored ground. Other hot-path mutation helpers preserve identity on a no-op
 for the same reason.
+
+The reads that follow a reveal cost the cells it flips, and not the tiles of
+the node. The layout keeps an explored count (`TileIndex.exploredCount`),
+which is the number of revealed tiles with a grid id. The first read of a
+layout counts every tile, and each replace helper adds the flips of its
+replaced tiles to the count of the new layout. The renderer's revealed-id
+lookup (`TileIndex.revealedIds`) builds no set, because its `has` reads the
+`revealed` flag of the tile at the cell of the id. A lookup costs about
+25 ns where a hit in a `Set` of ids costs about 17 ns, and a frame makes at
+most one lookup for each cell of a visible region or block. Both readers
+answer from the node they are given, so an older node that undo or a
+cross-tab adoption brings back reads its own fog. `describeNode` reads the
+cached point of interest positions and then the tile at each position,
+because the art stamp does not cover `revealed`, `discovered`, or `notes`.
+
+On a 200x200 node a party step costs 0.04 ms where a scan of every tile
+costs 0.9 ms. The copy of the tile array in `withTilesReplaced` is the one
+part of a step that still grows with the node, at about 0.03 ms on a 200x200
+node and 0.11 ms on a 400x400 node. `pnpm bench:step` prints the step cost
+for each node size (see `bench/README.md`).
 
 ### Delta saves
 

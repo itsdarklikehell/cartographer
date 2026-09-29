@@ -1,4 +1,4 @@
-import { gridCellOf, inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
+import { gridCellOf, hasCoords, inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { freezeTile, freezeTiles } from './TileFreeze.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -37,6 +37,13 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * `fog` covers `revealed`. A cache of a value derived from those fields keys
  * on the stamp instead of the node. A fog reveal or a paint stroke then keeps
  * the region caches, because it makes a new node but keeps the `links` stamp.
+ *
+ * `explored` is the number of revealed tiles whose id names a grid position,
+ * or -1 until the first read counts them. The replace helpers add the change
+ * of each replaced tile to it, so the count of the next node after a fog
+ * reveal costs the flipped cells and not a scan of every tile. Each layout
+ * keeps its own number, so the count of an older node stays its own after a
+ * newer node takes a new layout.
  * @typedef {Object} TileLayout
  * @property {Map<string, number>} posById
  * @property {Int32Array | null} cellPos
@@ -45,6 +52,7 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * @property {object} links
  * @property {object} art
  * @property {object} fog
+ * @property {number} explored
  */
 
 /**
@@ -115,7 +123,16 @@ function build(node) {
     }
     cellPos[cell] = i;
   }
-  return { posById, cellPos, addedById: null, addedCells: null, links: {}, art: {}, fog: {} };
+  return {
+    posById,
+    cellPos,
+    addedById: null,
+    addedCells: null,
+    links: {},
+    art: {},
+    fog: {},
+    explored: -1,
+  };
 }
 
 /**
@@ -133,6 +150,7 @@ function forward(entry, node, changes) {
   let sameLinks = true;
   let sameArt = true;
   let sameFog = true;
+  let explored = entry.explored;
   for (const [pos, tile] of changes) {
     const old = node.tiles[pos];
     if (old.id !== tile.id) return null;
@@ -144,7 +162,11 @@ function forward(entry, node, changes) {
     ) {
       sameArt = false;
     }
-    if (old.revealed !== tile.revealed) sameFog = false;
+    if (old.revealed === tile.revealed) continue;
+    sameFog = false;
+    if (explored >= 0 && hasCoords(tile.id, node.width, node.height)) {
+      explored += tile.revealed ? 1 : -1;
+    }
   }
   if (sameLinks && sameArt && sameFog) return entry;
   return {
@@ -152,6 +174,7 @@ function forward(entry, node, changes) {
     links: sameLinks ? entry.links : {},
     art: sameArt ? entry.art : {},
     fog: sameFog ? entry.fog : {},
+    explored,
   };
 }
 
@@ -182,8 +205,8 @@ export function linkStamp(node) {
 
 /**
  * The stamp of a node's tile ids, `imageRef` and `span` values, and point of
- * interest types. The group image chunks and the span blocks key on it, so a
- * fog reveal keeps them.
+ * interest types. The group image chunks, the span blocks, and the map
+ * description's point of interest list key on it, so a fog reveal keeps them.
  * @param {MapNode} node
  * @returns {object}
  */
@@ -202,6 +225,59 @@ export function fogStamp(node) {
 }
 
 /**
+ * The number of revealed tiles whose id names a grid position. The map
+ * description reads this as the explored count on every party step. The
+ * first read of a layout counts every tile, and each later fog change adds
+ * only the tiles it flips (see `forward`).
+ * @param {MapNode} node
+ * @returns {number}
+ */
+export function exploredCount(node) {
+  const entry = layout(node);
+  if (entry.explored < 0) {
+    let count = 0;
+    for (const tile of node.tiles) {
+      if (tile.revealed && hasCoords(tile.id, node.width, node.height)) count++;
+    }
+    entry.explored = count;
+  }
+  return entry.explored;
+}
+
+/**
+ * The revealed tile ids of a node, as a set that answers `has` only. The
+ * answer reads the `revealed` flag of the tile with that id in this node, so
+ * the lookup builds nothing when the fog changes. An older node, such as one
+ * that undo brings back, answers from its own tiles. This makes the cost of
+ * a party step independent of the node size.
+ * @typedef {{ has(tileId: string): boolean }} RevealedIds
+ */
+
+/**
+ * The revealed tile ids of a node (see `RevealedIds`). A canonical grid id
+ * reads the cell structure and the tile with no map lookup. Any other id, and
+ * a node with appended tiles, goes through `tilePosition`.
+ * @param {MapNode} node
+ * @returns {RevealedIds}
+ */
+export function revealedIds(node) {
+  const entry = layout(node);
+  const { cellPos, addedById } = entry;
+  const { tiles, width, height } = node;
+  return {
+    has(tileId) {
+      if (cellPos && !addedById) {
+        const cell = gridCellOf(tileId, width, height);
+        const pos = cell < 0 ? -1 : cellPos[cell];
+        if (pos >= 0 && tiles[pos].id === tileId) return tiles[pos].revealed;
+      }
+      const pos = positionIn(entry, node, tileId);
+      return pos !== undefined && tiles[pos].revealed;
+    },
+  };
+}
+
+/**
  * The array position of a tile within node.tiles, or undefined if the tile
  * is absent. This lets a mutation helper replace one element of a copied
  * array instead of scanning the array again.
@@ -210,7 +286,17 @@ export function fogStamp(node) {
  * @returns {number | undefined}
  */
 export function tilePosition(node, tileId) {
-  const entry = layout(node);
+  return positionIn(layout(node), node, tileId);
+}
+
+/**
+ * The array position of a tile, read through a layout of the node.
+ * @param {TileLayout} entry
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @returns {number | undefined}
+ */
+function positionIn(entry, node, tileId) {
   const pos = entry.addedById?.get(tileId) ?? entry.posById.get(tileId);
   if (pos !== undefined || !entry.cellPos) return pos;
   const cell = gridCellOf(tileId, node.width, node.height);
@@ -364,6 +450,10 @@ export function withTileAppended(node, tile) {
     links: tile.childNodeId ? {} : entry.links,
     art: {},
     fog: tile.revealed ? {} : entry.fog,
+    explored:
+      entry.explored >= 0 && tile.revealed && hasCoords(tile.id, next.width, next.height)
+        ? entry.explored + 1
+        : entry.explored,
   });
   return next;
 }

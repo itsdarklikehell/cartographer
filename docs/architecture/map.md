@@ -737,6 +737,15 @@ tooltip runs for a pointer hover and for the keyboard cursor alike, and
 without that call either one would read out what the map leaves unmarked. GM
 notes are not gated, because they are not drawn on the map at all.
 
+The fog reads of a party step go through `TileIndex.js` and scan no tiles.
+`exploredCount(node)` is the "tiles explored" figure of the screen-reader
+description, kept on the tile layout and updated by the replace helpers
+from the tiles they flip. `revealedIds(node)` is the
+lookup that the renderer gates block art and region tints with, and it reads
+the `revealed` flag of the tile itself. Both answer from the node they are
+given, so a node that undo brings back reads its own fog. The
+[Conventions](conventions.md) guide gives the costs.
+
 ## The party
 
 `PartyTracker` (`src/party/PartyTracker.js`) owns the party's

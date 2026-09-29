@@ -1,6 +1,7 @@
 import { gridCellOf, parseCoords } from './MapGeometry.js';
 import { describeTile, toDisplay } from './TileCoords.js';
 import { getTile } from './TileGrid.js';
+import { artStamp, exploredCount } from './TileIndex.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -48,6 +49,48 @@ function poiNamed(tile, options) {
 }
 
 /**
+ * The placed count and the point of interest tiles of each
+ * `TileIndex.artStamp`. The stamp stands for the tile ids and point of
+ * interest types at each position, and those decide both values. A fog
+ * reveal keeps the stamp, so a party step reads this summary and then only
+ * the candidate tiles, instead of every tile. Each candidate keeps its array
+ * position, and the description reads the tile at that position in the
+ * current node, because the stamp does not cover `revealed`, `discovered`,
+ * or `notes`.
+ * @type {WeakMap<object, { placed: number, candidates: { pos: number, x: number, y: number }[] }>}
+ */
+const artSummaries = new WeakMap();
+
+/**
+ * @param {MapNode} node
+ */
+function artSummary(node) {
+  const stamp = artStamp(node);
+  let summary = artSummaries.get(stamp);
+  if (summary) return summary;
+  // gridCellOf reads a canonical id with no regular expression and no
+  // allocation. Only an id outside that form, such as "01,2" or a cell past
+  // the extent, pays for parseCoords. On a 200x200 node the pass costs 0.8 ms
+  // where a parseCoords call for each tile costs 2.6 ms.
+  const { tiles, width, height } = node;
+  let placed = 0;
+  const candidates = [];
+  for (let pos = 0; pos < tiles.length; pos++) {
+    const tile = tiles[pos];
+    const cell = gridCellOf(tile.id, width, height);
+    const coords = cell >= 0 ? null : parseCoords(tile.id);
+    if (cell < 0 && !coords) continue;
+    placed++;
+    if (!tile.metadata.poiType) continue;
+    const x = coords ? coords.x : cell % width;
+    candidates.push({ pos, x, y: coords ? coords.y : (cell - x) / width });
+  }
+  summary = { placed, candidates };
+  artSummaries.set(stamp, summary);
+  return summary;
+}
+
+/**
  * Build a plain-text description of a map node for screen readers and any
  * non-visual view, because the map itself is an opaque canvas. The
  * description comes in two parts. The `status` line reports the node name
@@ -71,43 +114,27 @@ export function describeNode(node, party, options = {}) {
   const revealAll = options.revealAll ?? false;
   const showNotes = revealAll || (options.showNotes ?? false);
   const total = node.width * node.height;
-
-  // This is one pass over the tiles. The placed count, the revealed count, and
-  // the points of interest all read the same grid-tile scan, and each needs
-  // the id parsed. Splitting the pass costs three filtered copies of the
-  // tile list, a fourth array for the description phrases, and a second parse
-  // per point of interest, on every party step and at the end of every stroke.
-  let placed = 0;
-  let revealed = 0;
+  const { placed, candidates } = artSummary(node);
   /** @type {{ poiType: POIType, x: number, y: number, notes: string }[]} */
   const pois = [];
-  // gridCellOf reads a canonical id with no regular expression and no
-  // allocation. Only an id outside that form, such as "01,2" or a cell past
-  // the extent, pays for parseCoords. On a 200x200 node the pass costs 0.8 ms
-  // where a parseCoords call for each tile costs 2.6 ms.
-  const { width } = node;
-  for (const tile of node.tiles) {
-    const cell = gridCellOf(tile.id, width, node.height);
-    const coords = cell >= 0 ? null : parseCoords(tile.id);
-    if (cell < 0 && !coords) continue;
-    placed++;
-    if (tile.revealed) revealed++;
-    if (poiNamed(tile, options)) {
-      const x = coords ? coords.x : cell % width;
-      pois.push({
-        poiType: /** @type {POIType} */ (tile.metadata.poiType),
-        x,
-        y: coords ? coords.y : (cell - x) / width,
-        notes: showNotes ? tile.metadata.notes : '',
-      });
-    }
+  for (const { pos, x, y } of candidates) {
+    const tile = node.tiles[pos];
+    if (!poiNamed(tile, options)) continue;
+    pois.push({
+      poiType: /** @type {POIType} */ (tile.metadata.poiType),
+      x,
+      y,
+      notes: showNotes ? tile.metadata.notes : '',
+    });
   }
   const kindPhrase = node.kind === 'interior' ? 'an interior' : 'a region';
   const environ = node.environ ? ` (${node.environ})` : '';
   const parts = [`${node.name}, ${kindPhrase}${environ}, ${node.width} by ${node.height} tiles.`];
 
   parts.push(
-    revealAll ? `${placed} of ${total} tiles placed.` : `${revealed} of ${total} tiles explored.`,
+    revealAll
+      ? `${placed} of ${total} tiles placed.`
+      : `${exploredCount(node)} of ${total} tiles explored.`,
   );
 
   if (party && party.nodeId === node.id) {

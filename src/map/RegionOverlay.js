@@ -24,7 +24,7 @@ const REGION_LABEL_PX = 12;
  * nothing, so the world map does not show where each unexplored region is.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
- * @param {Set<string> | null} revealedIds the revealed tile ids, or null in Build mode
+ * @param {import('./TileIndex.js').RevealedIds | null} revealedIds the revealed tile ids, or null in Build mode
  * @param {number} tileSize base tile size in buffer px at scale 1
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
  */
@@ -91,7 +91,7 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
  * name does not change spot when a pan moves another region off the canvas.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
- * @param {Set<string> | null} revealedIds
+ * @param {import('./TileIndex.js').RevealedIds | null} revealedIds
  * @param {number} size the on-screen tile size in buffer px
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
  */
