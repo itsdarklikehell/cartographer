@@ -1,20 +1,23 @@
-# Curated spells vs. the full SRD
+# Curated spells and the full SRD
 
 *Explanation. To add a spell of your own, follow the steps in the
 [GM guide](gm-guide.md#add-a-missing-spell).*
 
-The built-in spell corpus (`src/data/spells.js`) is a curated cross-section
-of the SRD, not the complete SRD. The SRD 5.1 lists 319 spells, and the app
-ships 54, because every spell it ships has rules that the resolver can apply
-in full or a description that says which clause it leaves to the GM.
+The built-in spell list in `src/data/spells.js` is a curated part of the
+System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
+319 spells, and the app ships 54. Each shipped spell has rules that the
+spell resolver applies in full, or a description that names the clause
+that the resolver leaves to the GM.
 
 ## The built-in list
 
-The list covers every level band from cantrip through 9th level, all six
-caster lists (bard, cleric, druid, sorcerer, warlock, and wizard), and all
-six effect kinds that the resolver handles: attack, save, heal, buff,
-summons, and utility. Paladin and ranger share entries from the leveled
-bands, and the paladin also has one of its own.
+The list covers each spell level from cantrip to 9th level. It includes
+spells for all six full caster classes: bard, cleric, druid, sorcerer,
+warlock, and wizard. It also uses all six effect kinds that the resolver
+handles: `attack`, `save`, `heal`, `buff`, `summons`, and `utility`.
+
+The paladin and the ranger share leveled spells with the other classes.
+The paladin also has one spell of its own, Destructive Wave.
 
 | Level | Spells |
 | ----- | ------ |
@@ -29,114 +32,177 @@ bands, and the paladin also has one of its own.
 | 8th | Power Word Stun, Sunburst |
 | 9th | Meteor Swarm |
 
-The selection favors spells whose rules the current mechanics can resolve in
-full. These rules are:
+The selection prefers spells whose rules the current mechanics resolve in
+full. The resolver applies these rules:
 
-- a d20 spell attack against AC
-- several separately rolled projectiles from one cast, split between the
-  creatures the caster picks
-- a save against the caster's DC, with damage that is halved or negated
-- dice of healing, or a flat amount of healing
-- a chip on the target that adds a die or a flat amount to its later attack
-  rolls, saving throws, and ability checks, for as long as the chip lasts
-- a chip that slants later d20 rolls, crits a melee hit, fails a save without
-  a roll, or costs the holder its turn, for the eleven standard condition
-  names that have rules
-- a chip that a failed save imposes, which the target can retry at the end of
-  each of its turns
-- a group of summoned creatures from one library template, which the
-  caster's concentration maintains
-- damage or effect scaling by spell slot level, and by caster level for
-  cantrips
+- A d20 spell attack against AC.
+- Several projectiles from one cast, each rolled on its own and split
+  between the creatures that the caster picks.
+- A save against the spell save DC of the caster, with damage that the save
+  halves or negates.
+- Dice of healing, or a flat amount of healing.
+- A condition chip that adds a die or a flat amount to the later attack
+  rolls, saving throws, or ability checks of the target.
+- A condition chip for one of the eleven standard conditions that have
+  rules. Such a chip gives advantage or disadvantage on later d20 rolls,
+  makes a melee hit a critical hit, fails a save with no roll, or costs
+  the holder its turn.
+- A condition chip that a failed save imposes, with a new save at the end
+  of each turn of the target.
+- A group of summoned creatures from one library template, which stay while
+  the caster keeps concentration.
+- Damage or effect scaling by spell slot level, and by caster level for
+  cantrips.
 
-A rider chip runs for the spell's whole duration, and nothing spends it
-after one roll, so Guidance and Resistance are the two built-in spells whose
-rider is wider than the printed rule. Each grants 1d4 to a single roll in
-print, while here the chip stays until its duration runs out or the caster
-stops concentrating. A check or a save rolled from the character sheet picks
-the die up on its own, and so does every roll after it, so take the chip off
-after the roll it paid for.
+A *condition chip* is the label on a creature or a character that records a
+condition, such as Blinded or Bless.
 
-The list also includes utility spells with rules that exist only as prose:
-Light, Mage Armor, Counterspell, and Revivify. These spells are common
-enough that a GM notices when they are missing, and their effects stay in
-the description text of each spell.
+### One-roll and lasting riders
 
-A few entries include a clause that the app cannot resolve beside a payload
-that it can. Chill Touch deals its damage and leaves the no-healing clause to
-the GM. Blindness/Deafness always blinds, because deafness has no rule
-here. Flame Strike raises its fire dice at a higher slot, where the printed
-spell offers a choice of two. Conjure Animals always summons wolves. The
-description of each one states the difference.
+A *rider* is the die or the flat amount that a chip adds to later rolls.
+Guidance and Resistance have a one-roll rider, as in the printed rules. The
+first matching roll uses the die, and the app then removes the chip.
+Guidance adds 1d4 to one ability check, and Resistance adds 1d4 to one
+saving throw.
+
+Bless and Bane have a lasting rider. The chip adds or subtracts 1d4 on each
+attack roll and saving throw until its duration ends or the caster stops
+concentrating.
+
+### Spells described in prose
+
+Four built-in spells have the `utility` effect kind: Light, Mage Armor,
+Lesser Restoration, and Counterspell. Their rules exist only as text in the
+description of each spell, and the GM applies them. They are in the list
+because a GM notices when a spell this common is missing.
+
+### Partial rules
+
+Some entries have one clause that the app cannot resolve beside a payload
+that it can. The description of each entry states the difference:
+
+- Chill Touch deals its damage and leaves the clause that stops healing to
+  the GM.
+- Blindness/Deafness always blinds, because deafness has no rule in the
+  app.
+- Flame Strike raises its fire dice at a higher slot. The printed spell
+  lets the caster choose the fire dice or the radiant dice.
+- Conjure Animals always summons wolves.
 
 ## Spells that need a missing mechanic
 
-Each omitted spell needs a mechanic that the app does not have yet, so
-adding the spell today would print rules that the app cannot apply.
+Each omitted spell needs a mechanic that the app does not have. If the
+list included such a spell, it would print rules that the app cannot
+apply.
 
-- **Spells that move a creature or spend its turn** (Slow, Banishment,
-  Command, Dominate Person, Confusion). A failed save adds a condition chip,
-  and that part works today: Hold Person, Hold Monster, Blindness/Deafness,
-  Fear, and Sunburst all ship. The rest of each spell's text needs more,
-  because Slow halves speed and cuts an action, Banishment removes the
-  creature from the map, and Dominate Person hands control to the caster.
-  None of movement, the action economy, or one creature driving another
-  exists yet.
-- **Lingering zones** (Web, Grease, Wall of Fire, Cloudkill, Moonbeam, Spirit
-  Guardians). Area targeting lets the caster pick the creatures that the
-  spell catches. A spell with `targetCount: 0` offers every reachable
-  combatant, and the caster selects whoever the blast covers, which is how
-  Fireball, Shatter, Circle of Death, and Fire Storm work. A cast resolves
-  once, and the app has no map-geometry template, so nothing keeps a zone on
-  the map after the cast ends.
-- **Damage that repeats on later turns** (Acid Arrow, Witch Bolt, Phantasmal
-  Killer, Sunbeam, Spiritual Weapon). One cast rolls one set of dice, and
-  nothing rolls the spell again on the turns that follow.
-- **A cast that resolves two mechanics at once** (Ray of Sickness, Vampiric
-  Touch, Heroism). A spell has one effect, so a cast cannot roll an attack
-  and a save together, and it cannot damage one creature and heal another.
-- **Spells that read the hit points of a target** (Sleep, Color Spray, Power
-  Word Kill). No effect kind compares a target's hit-point total against a
-  threshold, so the cast cannot decide who the spell takes.
-- **Buffs that change something other than a d20 roll** (Shield's +5 AC
-  reaction, Haste's extra action, Enlarge/Reduce, Barkskin, Aid). A rider on
-  a d20 roll works today: a chip can add or subtract dice and a flat amount
-  on attack rolls, saving throws, and ability checks, which is how Bless,
-  Bane, Guidance, and Resistance ship. A chip that changes AC, the action
-  economy, the hit-point maximum, or a creature's size has nothing to hook.
-- **Choosing a summon, and controlling it** (Find Familiar, Animate Dead).
-  Summoning itself works today. A `summons` effect names one library creature
-  template and a count, the cast puts those creatures on the tile of the
-  party, and they leave when the caster stops concentrating on the spell. A
-  cast cannot yet offer the caster a menu of templates, a summon takes its
-  own turn as a combatant with no player running it as a companion, and a
-  summon that no concentration maintains, such as an animated skeleton or a
-  familiar, stays until the GM removes it by hand.
-- **Exploration and social utility spells** (Detect Magic, Identify, Charm
-  Person, Suggestion, Divination, teleportation). These spells have rules
-  that exist only as prose, so they work today as `utility` entries. The
-  built-in list omits them only to stay small, and a GM can add this
-  category by hand more easily than any other.
-- **Eldritch invocations** are not modeled, so the built-in list leaves out
-  entries related to invocations beyond Eldritch Blast itself. Pact magic is
-  modeled: a warlock casts from its own pact pool, not from the standard slot
-  table.
+### Movement and turn control
+
+Examples: Slow, Banishment, Command, Dominate Person, and Confusion.
+
+A failed save can add a condition chip, and this part works. Hold Person,
+Hold Monster, Blindness/Deafness, Fear, and Sunburst all ship. The other
+clauses of these spells need more:
+
+- Slow halves the speed of the target, but no rule moves a token by feet,
+  so speed has no effect in a fight.
+- Slow also takes away an action. The combat screen tracks the action, the
+  bonus action, and the reaction of each turn, but no chip can change that
+  budget.
+- Banishment removes the creature from the map.
+- Dominate Person gives control of one creature to another.
+
+### Lingering zones
+
+Examples: Web, Grease, Wall of Fire, Cloudkill, Moonbeam, and Spirit
+Guardians.
+
+Area targeting lets the caster pick the creatures that the spell hits. A
+spell with `targetCount: 0` offers every reachable combatant, and the
+caster selects each creature in the area. Fireball, Shatter, Circle of
+Death, and Fire Storm work this way.
+
+A cast resolves once, and the app has no template for map areas. So no
+rule keeps a zone on the map after the cast.
+
+### Damage on later turns
+
+Examples: Acid Arrow, Witch Bolt, Phantasmal Killer, Sunbeam, and
+Spiritual Weapon.
+
+One cast rolls one set of dice. No rule rolls the spell again on the turns
+that follow.
+
+### Two mechanics in one cast
+
+Examples: Ray of Sickness, Vampiric Touch, and Heroism.
+
+A spell has one effect. A cast cannot roll an attack and a save together,
+and it cannot damage one creature and heal another.
+
+### Hit-point thresholds
+
+Examples: Sleep, Color Spray, and Power Word Kill.
+
+No effect kind compares the hit points of a target against a threshold, so
+the cast cannot decide which creatures the spell affects.
+
+### Buffs outside d20 rolls
+
+Examples: the +5 AC reaction of Shield, the extra action of Haste,
+Enlarge/Reduce, Barkskin, and Aid.
+
+A rider on a d20 roll works. A chip can add or subtract dice and a flat
+amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
+Guidance, and Resistance do. A chip that changes AC, the action budget,
+the hit-point maximum, or the size of a creature has no rule to change.
+
+### Summon choice and control
+
+Examples: Find Familiar and Animate Dead.
+
+Summoning works. A `summons` effect names one library creature template
+and a count. The cast puts those creatures on the tile of the party, and
+they leave when the caster stops concentrating on the spell.
+
+The app does not have these parts:
+
+- A menu of templates for the caster to choose from.
+- A summon that a player runs as a companion. A summon takes its own turn
+  as a combatant.
+- A summon that no concentration keeps, such as an animated skeleton or a
+  familiar. Such a summon stays until the GM removes it by hand.
+
+### Exploration and social spells
+
+Examples: Detect Magic, Identify, Charm Person, Suggestion, Divination, and
+teleportation.
+
+These spells have rules that exist only as text, so they work as `utility`
+entries. The built-in list leaves them out only to stay small. A GM can add
+spells of this group by hand with the least work of any group.
+
+### Eldritch invocations
+
+The app does not model eldritch invocations. The built-in list includes
+Eldritch Blast, but no entries that depend on invocations. Pact magic is
+modeled, so a warlock casts from its own pact pool and not from the standard slot
+table.
 
 ## Adding a spell by hand
 
-The built-in schema is identical to the schema for a GM-authored spell, so a
-missing spell needs no code change. The Spells rail in Library mode creates
-one, and a custom spell whose name matches a default replaces that default in
-place. A library export (`campaign-library.json`) is portable, so a shared
-file of extra spells merges into any browser.
+A built-in spell and a GM-authored spell use the same schema, so a missing
+spell needs no code change. The Spells rail in Library mode creates a
+spell. A custom spell whose name matches a default replaces that default.
 
-Attack, save, heal, buff, summons, and utility effects, together with scaling
-by slot level and by cantrip level, cover most of the mechanics in the SRD
-today. A spell outside them works as a `utility` entry with its rules in the
-description, and the GM adjudicates it by hand, the same way as at a
-physical table. The [GM guide](gm-guide.md#add-a-missing-spell)
-gives the steps.
+A library export, `campaign-library.json`, is portable. A shared file of
+extra spells merges into the library of any browser.
 
-When a mechanic lands, such as movement, a zone that outlives its cast, or an
-effect that rolls again on a later turn, the spells that wait on it belong in
-`src/data/spells.js`.
+The `attack`, `save`, `heal`, `buff`, `summons`, and `utility` effects,
+with scaling by slot level and by cantrip level, cover most mechanics in
+the SRD. A spell outside them works as a `utility` entry with its rules in
+the description. The GM applies those rules by hand, as at a physical
+table. The [GM guide](gm-guide.md#add-a-missing-spell) gives the steps.
+
+A new mechanic, such as movement, a lasting zone, or an effect that rolls
+again on a later turn, lets the list grow. Add the spells that need the
+mechanic to `src/data/spells.js` in the same change.

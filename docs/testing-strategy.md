@@ -3,97 +3,109 @@
 *Explanation. For the commands and the procedures, read
 [Testing a change](testing.md).*
 
-The suite tests pure logic with `node --test` and checks everything else by
-eye in a browser, and the coverage total is low because the report counts
-the browser half too.
+The suite tests pure logic with `node --test`, and a person checks
+everything else in a browser. The coverage total is lower than the scores
+of the pure modules, because the report also counts the DOM code that no
+Node test can run.
 
-## The pure and glue split
+## The split between pure logic and DOM glue
 
-Almost every module is either pure logic, which takes its inputs as
-arguments (including the random number generator and the current time) and
-returns new values, or DOM glue, which builds elements, mounts them, and
-wires events.
+Almost every module is either pure logic or DOM glue. Pure logic takes its
+inputs as arguments, including the random number generator and the current
+time, and returns new values. DOM glue builds elements, mounts them, and
+connects events.
 
 Pure modules get unit tests. Each `tests/*.test.js` file pairs with one
-`src/**/*.js` module, and the tests call the functions and classes directly
+module under `src/`. The tests call the functions and classes directly,
 with an injected random number generator or plain fixture data. They build
 no DOM, no canvas, and no mock of a browser API.
 
-Glue modules get a browser instead, because a mock of the DOM proves only
-that the code called the functions the mock expected, not that a GM can see
-the panel or click the button. The map, the panels, and the dialogs are
-checked by looking at them.
+Glue modules get a check in a browser instead. A mock of the DOM proves
+only that the code called the functions that the mock expected. It does not
+prove that a GM can see the panel or click the button, so a person looks at
+the map, the panels, and the dialogs.
 
-The same split leaves the project with no test framework and no browser
-polyfill in its dependencies, because nothing in the suite needs one.
+Because of this split, the project needs no test framework and no browser
+polyfill in its dependencies.
 
 ## The coverage total
 
-The coverage report counts only the files that a test loaded. A module that
-nothing imports does not appear at 0 percent but is missing from the table
-completely, so a naive total is an average over the tested files alone.
+The coverage report of Node counts only the files that a test loaded. A
+module that no test imports is missing from the table, and it does not
+appear at 0 percent. Without a fix, the total is an average over the tested
+files alone.
 
-`tests/moduleLoad.test.js` closes that gap by importing every file under
-`src/` except `main.js`, so every module has a row and the total covers the
-whole tree. That test doubles as a load check, because a renamed export or
-a circular import in a file with no test of its own fails there.
+`tests/moduleLoad.test.js` imports every file under `src/` except
+`main.js` and `boot.js`, so every other module has a row and the total
+covers the whole tree. This test is also a load check. A renamed export or
+a circular import fails there, even in a file with no test of its own.
 
-Because every file has a row, the total sits far below the per-file numbers
-of the pure modules. That low total is accurate, and these rows pull it
-down:
+`main.js` builds the app as it loads, and `boot.js` writes to the document
+as it loads. Both need a document, so neither is in the table.
 
-| What | Why it scores low |
+Because every other file has a row, the line total sits well below the
+per-file scores of the pure modules. For example, the line total is near
+78 percent, while each module in `src/entities/` covers 100 percent of its lines. These
+rows pull the total down:
+
+| Files | Reason for the low score |
 | --- | --- |
-| `src/ui/*` panels, dialogs, and widgets | They build and mount elements. A DOM-less runner can call almost none of it |
-| `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The per-feature logic that the suites do cover lives in the neighboring `src/app/` modules |
-| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, `MapExport` | They draw to a 2D context. Only a browser shows what they drew |
-| `src/storage/fileIO.js` | Download and upload primitives, which need a browser |
-| `src/main.js` | Not loaded at all. It builds the app on load, so it needs a document |
+| `src/ui/*` panels, dialogs, and widgets | They build and mount elements, and a runner with no DOM can call almost none of that code |
+| `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The other `src/app/` modules keep the per-feature logic, and the suites cover it there |
+| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, and `MapExport` | They draw to a 2D context, and only a browser shows what they drew |
+| `src/storage/fileIO.js` | It keeps the download and upload primitives, which need a browser |
 
-A low number on one of those files is expected, while a low number anywhere
-else is work to do.
+A low score on one of these files is expected. A low score on any other
+file shows missing tests.
 
-A high line count on a module that is mostly `el(...)` calls is easy to
-misread, because it means a test built the DOM and not that a test looked at
-what the DOM built.
+A high line score on a module that consists mostly of `el(...)` calls is
+not proof of a check. It shows that a test built the DOM, not that a test
+looked at what the DOM shows.
 
-The coverage script excludes `tests/**`. Without that flag, the runner
-reports the test files beside the modules they exercise, and a test file
-runs from top to bottom, so it always scores near 100 percent and raises
-the total several points above the real score of the app code.
+The coverage script excludes `tests/**`. A test file runs from top to
+bottom, so it scores near 100 percent. Without the exclusion, the report
+lists the test files beside the modules, and the total rises several points
+above the real score of the app code.
 
 ## Browser-only wrappers
 
-Some modules wrap browser APIs that the Node runner does not have:
-`trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`, and
-`readStateFromFile` in `storage/SaveManager.js`. They cannot get a unit
-test, not even with a DOM-less stub.
+Some modules wrap browser APIs that Node does not have. In
+`src/storage/SaveManager.js`, these are `trySaveToLocalStorage`,
+`loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. They
+cannot get a unit test, even with a stub that replaces the DOM.
 
-The project adds no polyfill and no mock dependency for them. It keeps them
-as thin wrappers over pure functions that already have tests, which are
-`serialize` and `deserialize`, and checks the wrapper itself in a real
-browser, where a save-then-load click sequence is an end-to-end check.
+The project adds no polyfill and no mock library for them. Each wrapper
+stays thin, and it calls pure functions that already have tests:
+`serialize` and `deserialize`. A person checks the wrapper in a real
+browser, where a save followed by a load is an end-to-end check.
 
-The same rule applies inside `src/ui/`. The pure helpers that happen to live
-there are tested where they sit: `fitDimensions` and `encodeAttempts` in
+The same rule applies inside `src/ui/`. The tests cover each pure helper in
+that directory where it lives: `fitDimensions` and `encodeAttempts` in
 `tests/imageField.test.js`, and `clampToViewport` in
-`tests/context-menu.test.js`. They are arithmetic, so they need no DOM.
+`tests/context-menu.test.js`. These helpers do arithmetic only, so they
+need no DOM.
 
 ## Preview pages
 
-The preview pages in `tests/` mount the real modules against hand-built
-fixtures, without the rest of the app. They exist because the full app is a
-poor place to find a rendering fault: a tile that does not abut its neighbor
-is obvious in a grid of every tile and hard to see on a map with a party on
-it.
+The preview pages in `tests/` mount the real modules over hand-built
+fixtures, without the rest of the app. A rendering fault is hard to find in
+the full app. For example, a grid of every tile shows at once a tile that
+does not join its neighbor. On a map with a party on it, the same fault is
+hard to see.
 
-A preview page costs maintenance, because it goes stale when a mount
-signature changes, and a stale page can mask the error it was built to
-show. Keep the pages current, or delete one when its module is gone.
+Each preview page needs upkeep. When a mount signature changes, the page
+goes stale, and a stale page can hide the error that it exists to show.
+Update a page when its module changes, and delete the page when its module
+goes away.
 
 ## Faults the suite cannot find
 
-The suite proves rules, not appearance. It cannot tell you that a panel
-overflows its column, that a contrast ratio is too low, that a focus ring
-disappeared, or that the map draws a line between two tiles. Those faults
-reach a GM, and only a browser finds them first.
+The suite proves rules, not appearance. It cannot find these faults:
+
+- A panel that overflows its column.
+- A contrast ratio that is too low.
+- A focus ring that is gone.
+- A line that the map draws between two tiles.
+
+A GM sees each of these faults, and only a check in a browser finds them
+first.
