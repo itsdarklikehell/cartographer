@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { heldMods, modsSummary, normalizeChipMods, withChipAC } from '../src/entities/ChipMods.js';
+import {
+  heldBoost,
+  heldMods,
+  immunityTo,
+  modsSummary,
+  normalizeChipMods,
+  withChipAC,
+} from '../src/entities/ChipMods.js';
 import { createCondition } from '../src/entities/Conditions.js';
 
 test('normalizeChipMods keeps the fields that change something', () => {
@@ -42,5 +49,36 @@ test('modsSummary names each change', () => {
   assert.equal(
     modsSummary({ acBase: 13, acMin: 16 }),
     'base AC 13 + DEX without armor, AC at least 16',
+  );
+});
+
+test('normalizeChipMods keeps the HP fields and the immunities', () => {
+  assert.deepEqual(
+    normalizeChipMods({
+      maxHP: '5',
+      immune: [' Frightened ', 'frightened', '', 3],
+      tempHPEachTurn: 4,
+    }),
+    { maxHP: 5, immune: ['Frightened'], tempHPEachTurn: 4 },
+  );
+  assert.equal(normalizeChipMods({ maxHP: 0, immune: 'Frightened', tempHPEachTurn: -1 }), null);
+  assert.deepEqual(normalizeChipMods({ maxHP: 500 }), { maxHP: 100 });
+});
+
+test('heldBoost keeps the highest raise, and immunityTo finds the chip', () => {
+  const aid = createCondition('Aid', 10, { mods: { maxHP: 5 } });
+  const big = createCondition('Aid II', 10, { mods: { maxHP: 10 } });
+  const hero = createCondition('Heroism', 10, { mods: { immune: ['Frightened'] } });
+  assert.equal(heldBoost(undefined), 0);
+  assert.equal(heldBoost([aid, big, hero]), 10);
+  assert.equal(immunityTo([aid, hero], 'frightened'), hero);
+  assert.equal(immunityTo([aid], 'Frightened'), undefined);
+  assert.equal(immunityTo(undefined, 'Frightened'), undefined);
+});
+
+test('modsSummary names the HP fields', () => {
+  assert.equal(
+    modsSummary({ maxHP: 5, immune: ['Frightened', 'Charmed'], tempHPEachTurn: 3 }),
+    '+5 max HP, immune to Frightened and Charmed, 3 temp HP each turn',
   );
 });

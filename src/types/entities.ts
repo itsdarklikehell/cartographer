@@ -79,11 +79,32 @@ export interface OngoingDamage {
  * holder's AC (Shield's +5, Shield of Faith's +2). `acBase` is the base AC of
  * a holder that wears no body armor, before its DEX modifier (Mage Armor's
  * 13). `acMin` is a floor under the finished AC (Barkskin's 16). Several
- * chips add their `ac` together, and the highest `acBase` and `acMin` win. */
+ * chips add their `ac` together, and the highest `acBase` and `acMin` win.
+ * `maxHP` raises the holder's HP maximum and current HP while the chip lasts
+ * (Aid), and the highest one wins. `immune` names the conditions the holder
+ * can't take (Heroism's Frightened). `tempHPEachTurn` is the temporary HP the
+ * holder gains at the start of each of its turns (Heroism), stamped from the
+ * caster's spell modifier at the cast. */
 export interface ChipMods {
   ac?: number;
   acBase?: number;
   acMin?: number;
+  maxHP?: number;
+  immune?: string[];
+  tempHPEachTurn?: number;
+}
+
+/** The fields that record what spell chips did to an entity's HP. Both a
+ * character and a creature have them. `entities/HPBuffs.js` writes them. */
+export interface HPBuffFields {
+  /** The HP maximum that a chip adds now (Aid), already counted in the
+   * stored maximum. When the chip goes, the maximum drops by this much.
+   * Absent reads as 0. */
+  hpBoost?: number;
+  /** The lowercase name of the chip that granted the current temporary HP
+   * (False Life, Heroism). The temporary HP end with that chip. Absent when
+   * the GM typed them or nothing granted any. */
+  bonusHPFrom?: string;
 }
 
 /** Which rolls a rider touches. `check` has no roller yet, so a check rider
@@ -479,7 +500,7 @@ export interface DeathSaveState {
   stable: boolean;
 }
 
-export interface Character {
+export interface Character extends HPBuffFields {
   id: string;
   name: string;
   /** The race's display name. A hand-typed race carries only this. A race

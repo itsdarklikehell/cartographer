@@ -445,8 +445,8 @@ export function fromTemplate(template, id, location = null) {
 }
 
 /**
- * Apply damage, clamped so currentHP never drops below 0. Any damage ends a
- * chip that damage ends (Sleep).
+ * Apply damage, clamped so currentHP never drops below 0. Temporary HP
+ * absorb the damage first. Any damage ends a chip that damage ends (Sleep).
  * @param {Creature} creature
  * @param {number} amount
  * @returns {Creature}
@@ -454,18 +454,25 @@ export function fromTemplate(template, id, location = null) {
 export function applyDamage(creature, amount) {
   const conditions =
     amount > 0 && creature.conditions ? endOnDamage(creature.conditions) : creature.conditions;
-  return { ...creature, conditions, currentHP: Math.max(0, creature.currentHP - amount) };
+  const temp = creature.bonusHP ?? 0;
+  const absorbed = Math.min(temp, Math.max(0, amount));
+  return {
+    ...creature,
+    conditions,
+    ...(absorbed > 0 ? { bonusHP: temp - absorbed } : {}),
+    currentHP: Math.max(0, creature.currentHP - (amount - absorbed)),
+  };
 }
 
 /**
  * Kill a creature outright, with no damage behind it (Power Word Kill). A
- * creature leaves a fight only at 0 HP, so this sets it there. It ends no
- * chip, because no damage lands.
+ * creature leaves a fight only at 0 HP, so this sets it there, and its
+ * temporary HP go too. It ends no chip, because no damage lands.
  * @param {Creature} creature
  * @returns {Creature}
  */
 export function slay(creature) {
-  return { ...creature, currentHP: 0 };
+  return { ...creature, currentHP: 0, ...(creature.bonusHP ? { bonusHP: 0 } : {}) };
 }
 
 /**

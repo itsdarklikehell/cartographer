@@ -1176,8 +1176,9 @@ The app follows the 5e rules for the rolls in this section.
 #### Damage and damage defenses
 
 The app applies the damage to the defender. An encounter or an NPC loses HP
-at once, and the log records a defeat. A character loses bonus HP first,
-then real HP.
+at once, and the log records a defeat. A character or a creature loses
+bonus HP first, then real HP. The combatant card shows bonus HP beside the
+HP bar.
 
 A weapon or spell hit checks the damage defenses of the defender first.
 
@@ -1460,6 +1461,12 @@ target. The chip of Shield, Shield of Faith, Mage Armor, or Barkskin changes
 the AC that the sheet, the combatant cards, and every later attack read. See
 [Armor class](spells-missing.md#armor-class).
 
+Aid raises the HP maximum and current HP of its targets while its chip lasts.
+False Life and Heroism grant temporary hit points, and the log records each
+grant. Heroism grants them at the start of each turn of its target, and it
+ends and blocks Frightened. The temporary hit points of a spell end with its
+chip. See [Hit points and immunity](spells-missing.md#hit-points-and-immunity).
+
 A spell that the caster still keeps open from an earlier turn, such as Spiritual
 Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot
 picker and no ritual box. A repeat spends no slot and skips the component
@@ -1538,7 +1545,7 @@ the "Open in new tab" menu of the browser also works on them.
 | HP and AC field | Meaning |
 | --- | --- |
 | Max HP | Overrides the calculated maximum, and lowers current HP to fit |
-| Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them |
+| Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them. A typed amount stays after the spell that granted the old amount ends |
 | Unarmored base AC | The unarmored baseline, normally 10 |
 
 ### Character detail card
@@ -1943,7 +1950,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 67 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 70 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

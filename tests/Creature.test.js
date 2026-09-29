@@ -559,3 +559,13 @@ test('effectiveStatBlock folds in the AC chips a creature holds', () => {
   const barked = { ...bare, conditions: [chip('Barkskin', { acMin: 16 })] };
   assert.equal(effectiveStatBlock(barked).AC, 16);
 });
+
+test('temporary HP absorb damage before current HP, and a slay takes them', () => {
+  const goblin = { ...createCreature('g', 'Goblin', { maxHP: 7 }), bonusHP: 4 };
+  const scratched = applyDamage(goblin, 3);
+  assert.deepEqual([scratched.bonusHP, scratched.currentHP], [1, 7]);
+  const hurt = applyDamage(goblin, 6);
+  assert.deepEqual([hurt.bonusHP, hurt.currentHP], [0, 5]);
+  assert.equal(slay(goblin).bonusHP, 0);
+  assert.equal('bonusHP' in slay(createCreature('c', 'Cultist', { maxHP: 9 })), false);
+});

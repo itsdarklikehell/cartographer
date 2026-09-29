@@ -175,9 +175,26 @@ export interface SpellBuffEffect {
   rider?: RollRider;
   /** What the chip changes besides a roll, such as AC (Shield, Barkskin). */
   mods?: ChipMods;
+  /** How much more `mods.maxHP` each scaling increment adds (Aid's 5). */
+  modsPerStep?: { maxHP?: number };
+  /** Temporary hit points each target gains at the cast (False Life). */
+  tempHP?: SpellTempHP;
+  /** True when the chip grants the caster's spell modifier as temporary HP
+   * at the start of each of the holder's turns (Heroism). */
+  tempEachTurn?: boolean;
   /** When the chip ends, as a turn boundary (Shield's start of the caster's
    * next turn). Absent means the spell's own duration. */
   until?: ChipUntil;
+}
+
+/** The temporary hit points a buff grants at the cast: `count` dice of
+ * `sides` plus `flat`, with `flatPerStep` more per scaling increment. False
+ * Life is 1d4 + 4, and 5 more per slot level above 1st. */
+export interface SpellTempHP {
+  count: number;
+  sides: number;
+  flat: number;
+  flatPerStep?: number;
 }
 
 /** A spell that puts creatures on the map. The effect names one library

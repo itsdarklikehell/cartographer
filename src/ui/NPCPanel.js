@@ -1,3 +1,4 @@
+import { settleHPBuffs } from '../entities/HPBuffs.js';
 import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
@@ -93,7 +94,7 @@ export function mountNPCPanel(container, callbacks) {
       if (onUpdate) {
         mountConditionsBar(row, {
           getConditions: () => npc.conditions ?? [],
-          onChange: (next) => onUpdate({ ...npc, conditions: next }),
+          onChange: (next) => onUpdate(settleHPBuffs({ ...npc, conditions: next })),
         });
       }
       const onSetExhaustion = callbacks.onSetExhaustion;

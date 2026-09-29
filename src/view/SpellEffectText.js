@@ -69,7 +69,13 @@ export function effectSummary(spell, saveDC) {
   }
   if (effect.kind === 'buff') {
     const chip = buffCondition(spell);
-    const changes = [effect.rider ? riderSummary(effect.rider) : '', modsSummary(effect.mods)]
+    const changes = [
+      effect.rider ? riderSummary(effect.rider) : '',
+      modsSummary(effect.mods),
+      effect.modsPerStep?.maxHP ? `${effect.modsPerStep.maxHP} more max HP per slot level` : '',
+      effect.tempHP ? tempHPText(effect.tempHP) : '',
+      effect.tempEachTurn ? 'spell modifier as temp HP each turn' : '',
+    ]
       .filter(Boolean)
       .join(', ');
     const until = effect.until ? ` until ${UNTIL_LABELS[effect.until]}` : '';
@@ -141,4 +147,17 @@ export function laterTurnLines(spell) {
     lines.push(`On each later turn while the spell lasts, ${cost} ${what}. No slot.`);
   }
   return lines;
+}
+
+/**
+ * How a buff's temporary HP at the cast reads, for example
+ * "1d4 + 4 temp HP (5 more per slot level)".
+ * @param {import('../types/spell.js').SpellTempHP} temp
+ * @returns {string}
+ */
+function tempHPText(temp) {
+  const dice = temp.count > 0 ? `${temp.count}d${temp.sides}` : '';
+  const amount = [dice, temp.flat ? String(temp.flat) : ''].filter(Boolean).join(' + ');
+  const more = temp.flatPerStep ? ` (${temp.flatPerStep} more per slot level)` : '';
+  return `${amount} temp HP${more}`;
 }

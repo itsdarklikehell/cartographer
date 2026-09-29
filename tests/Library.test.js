@@ -1187,3 +1187,25 @@ test('normalizeLibrary keeps a buff chip change and its boundary', () => {
   assert.deepEqual(lib.spells[0].effect, { kind: 'buff', mods: { ac: 5 }, until: 'caster-start' });
   assert.deepEqual(lib.spells[1].effect, { kind: 'buff' });
 });
+
+test('normalizeLibrary keeps a buff HP raise and temporary HP', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Boon',
+        effect: {
+          kind: 'buff',
+          mods: { maxHP: 5 },
+          modsPerStep: { maxHP: 'x' },
+          tempHP: { count: 2, sides: 7, flat: 3 },
+          tempEachTurn: 'yes',
+        },
+      },
+    ],
+  });
+  assert.deepEqual(lib.spells[0].effect, {
+    kind: 'buff',
+    mods: { maxHP: 5 },
+    tempHP: { count: 0, sides: 4, flat: 3 },
+  });
+});

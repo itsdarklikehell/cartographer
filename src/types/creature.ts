@@ -5,6 +5,7 @@ import type {
   EnemyArmor,
   EnemyWeapon,
   EnemyTier,
+  HPBuffFields,
   ResourcePool,
   Spellbook,
   StatModifier,
@@ -56,7 +57,7 @@ export interface DamageDefenses {
  * purpose. The create and edit paths write the level or tier default into
  * the stored value, so no read path derives gear from the level.
  */
-export interface Creature {
+export interface Creature extends HPBuffFields {
   id: string;
   name: string;
   disposition: Disposition;
@@ -64,6 +65,9 @@ export interface Creature {
    * creature rolls no death saves. */
   maxHP: number;
   currentHP: number;
+  /** Temporary hit points, lost before current HP when the creature takes
+   * damage. Absent reads as 0. */
+  bonusHP?: number;
   /** The six ability scores plus AC. AC defaults to 10 plus the DEX
    * modifier. */
   stats: Record<string, number>;

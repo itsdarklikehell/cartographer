@@ -1,3 +1,4 @@
+import { settleHPBuffs } from '../entities/HPBuffs.js';
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Creature.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
@@ -217,7 +218,7 @@ export function mountEncounterPanel(container, callbacks) {
     // or prone, on its row. An edit writes the whole list back through onUpdate.
     mountConditionsBar(row, {
       getConditions: () => encounter.conditions ?? [],
-      onChange: (next) => updateOne(encounter, (e) => ({ ...e, conditions: next })),
+      onChange: (next) => updateOne(encounter, (e) => settleHPBuffs({ ...e, conditions: next })),
     });
 
     // Exhaustion has its own callback rather than going through onUpdate,

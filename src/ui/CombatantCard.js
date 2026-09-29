@@ -192,7 +192,7 @@ function foeMark() {
  * The card's HP line. A viewer who can act for the combatant sees exact
  * numbers over the shared stat-bar track. Every other viewer sees the coarse
  * band used in the rest of the player view.
- * @param {{ current: number, max: number }} hp
+ * @param {{ current: number, max: number, bonus: number }} hp
  * @param {boolean} exact
  */
 function hpLine(hp, exact) {
@@ -203,6 +203,7 @@ function hpLine(hp, exact) {
     label: 'HP',
     critical: true,
     showLabel: false,
+    bonus: hp.bonus,
     className: 'combatant-card__hp',
   }).element;
 }

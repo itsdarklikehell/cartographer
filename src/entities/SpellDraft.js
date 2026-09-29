@@ -53,8 +53,14 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
  *   or a buff's chip
- * @property {{ ac: unknown, acBase: unknown, acMin: unknown }} [mods] what a
- *   buff's chip changes besides a roll
+ * @property {{ ac: unknown, acBase: unknown, acMin: unknown, maxHP?: unknown, immune?: string[] }} [mods]
+ *   what a buff's chip changes besides a roll
+ * @property {{ maxHP: unknown }} [modsPerStep] how much more HP raise a buff
+ *   gives per scaling increment
+ * @property {{ count: unknown, sides: unknown, flat: unknown, flatPerStep: unknown }} [tempHP]
+ *   the temporary HP a buff grants at the cast
+ * @property {boolean} [tempEachTurn] whether a buff's chip grants the spell
+ *   modifier as temporary HP each turn
  * @property {{ damage: DamagePart[], perStep: DamagePart[], until: string } | null} [ongoing]
  *   the damage an attack or a save leaves for later turns, null for none
  * @property {{ condition: string, saveAbility: string, until: string } | null} [onHit]

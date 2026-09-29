@@ -374,4 +374,41 @@ export const LEVEL_1 = [
       'The spell ends if the creature dons armor, which the GM removes by hand.',
     effect: { kind: 'buff', mods: { acBase: 13 } },
   },
+  {
+    id: 'false-life',
+    name: 'False Life',
+    level: 1,
+    school: 'necromancy',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a small amount of alcohol or distilled spirits', consumed: false },
+    duration: { kind: 'hours', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'The caster gains 1d4 + 4 temporary hit points for the duration, and 5 more for each ' +
+      'slot level above 1st.',
+    effect: { kind: 'buff', tempHP: { count: 1, sides: 4, flat: 4, flatPerStep: 5 } },
+  },
+  {
+    id: 'heroism',
+    name: 'Heroism',
+    level: 1,
+    school: 'enchantment',
+    classes: ['bard', 'paladin'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A willing creature is immune to being frightened, and it gains temporary hit points ' +
+      'equal to the spellcasting modifier at the start of each of its turns. It loses the ' +
+      'temporary hit points left from this spell when the spell ends.',
+    effect: { kind: 'buff', mods: { immune: ['Frightened'] }, tempEachTurn: true },
+    scaling: { targetsPerLevel: 1 },
+  },
 ];

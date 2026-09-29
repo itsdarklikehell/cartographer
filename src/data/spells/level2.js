@@ -230,4 +230,23 @@ export const LEVEL_2 = [
       'whatever armor it wears.',
     effect: { kind: 'buff', mods: { acMin: 16 } },
   },
+  {
+    id: 'aid',
+    name: 'Aid',
+    level: 2,
+    school: 'abjuration',
+    classes: ['cleric', 'paladin'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a tiny strip of white cloth', consumed: false },
+    duration: { kind: 'hours', amount: 8 },
+    concentration: false,
+    ritual: false,
+    description:
+      'Up to three creatures each raise their hit point maximum and current hit points by 5 ' +
+      'for the duration, and by 5 more for each slot level above 2nd.',
+    targetCount: 3,
+    effect: { kind: 'buff', mods: { maxHP: 5 }, modsPerStep: { maxHP: 5 } },
+  },
 ];

@@ -61,13 +61,16 @@ test('isDowned is false for a character without an HP pool', () => {
 
 test('hpOf projects each kind', () => {
   const { hero, goblin, sage } = fixtures();
-  assert.deepEqual(hpOf({ kind: 'creature', entity: goblin }), { current: 10, max: 10 });
+  assert.deepEqual(hpOf({ kind: 'creature', entity: goblin }), { current: 10, max: 10, bonus: 0 });
   assert.deepEqual(hpOf({ kind: 'character', entity: damageCharacter(hero, 4) }), {
     current: 8,
     max: 12,
+    bonus: 0,
   });
-  assert.deepEqual(hpOf({ kind: 'creature', entity: sage }), { current: 4, max: 4 });
+  assert.deepEqual(hpOf({ kind: 'creature', entity: sage }), { current: 4, max: 4, bonus: 0 });
   assert.equal(hpOf({ kind: 'character', entity: createCharacter('b', 'B') }), null);
+  const shielded = { ...goblin, bonusHP: 5 };
+  assert.equal(hpOf({ kind: 'creature', entity: shielded })?.bonus, 5);
 });
 
 test('acOf projects each kind', () => {
@@ -125,10 +128,10 @@ test('buildCombatView assembles a row per participant in order', () => {
   const [foe, character, npc] = view.rows;
   assert.equal(foe.side, 'foe');
   assert.equal(foe.name, 'Goblin');
-  assert.deepEqual(foe.hp, { current: 10, max: 10 });
+  assert.deepEqual(foe.hp, { current: 10, max: 10, bonus: 0 });
   assert.equal(character.side, 'party');
   assert.equal(character.initiative, 12);
-  assert.deepEqual(npc.hp, { current: 4, max: 4 }, 'a plain NPC is a commoner');
+  assert.deepEqual(npc.hp, { current: 4, max: 4, bonus: 0 }, 'a plain NPC is a commoner');
   assert.ok(
     view.rows.every((r) => r.mayAct),
     'the GM may act for everyone',

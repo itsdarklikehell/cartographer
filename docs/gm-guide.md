@@ -689,7 +689,7 @@ creature in the current campaign.
 
 ### Add a missing spell
 
-The built-in list has 67 spells. A spell that you write uses the same
+The built-in list has 70 spells. A spell that you write uses the same
 fields as a built-in one, so you do not need to change any code.
 [Curated spells](spells-missing.md) says what the app can and cannot apply
 for you.

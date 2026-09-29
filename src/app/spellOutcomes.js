@@ -14,6 +14,7 @@ import {
 } from './combatants.js';
 import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
+import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -153,6 +154,10 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         'combat',
         `${o.target.name} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,
       );
+      // The chip is written first, so the temporary HP name a chip that is there.
+      if (o.tempHP) {
+        grantTempTo(app, o.target.id, o.tempHP.total, o.condition, { detail: o.tempHP.text });
+      }
     }
     app.toasts.show(`${spell.name} on ${summary}.`);
     return;

@@ -42,7 +42,7 @@ import { attacksAvailable, budgetOf } from './ActionBudget.js';
  *   name: string | null,
  *   side: 'party' | 'foe',
  *   initiative: number,
- *   hp: { current: number, max: number } | null,
+ *   hp: { current: number, max: number, bonus: number } | null,
  *   ac: number | null,
  *   conditions: import('../types/entities.js').Condition[],
  *   defeated: boolean,
@@ -112,18 +112,19 @@ export function conditionsOf(found) {
 }
 
 /**
- * The combatant's HP as a current/max pair. A creature stores the pair. A
- * character reads it off its HP pool, and a character without that pool has
- * no pair to show.
+ * The combatant's HP as a current/max pair, with its temporary HP as
+ * `bonus`. A creature stores the pair. A character reads it off its HP pool,
+ * and a character without that pool has no pair to show.
  * @param {ResolvedCombatant} found
- * @returns {{ current: number, max: number } | null}
+ * @returns {{ current: number, max: number, bonus: number } | null}
  */
 export function hpOf(found) {
+  const bonus = found.entity.bonusHP ?? 0;
   if (found.kind === 'character') {
     const hp = getHP(found.entity);
-    return hp ? { current: hp.current, max: hp.max } : null;
+    return hp ? { current: hp.current, max: hp.max, bonus } : null;
   }
-  return { current: found.entity.currentHP, max: found.entity.maxHP };
+  return { current: found.entity.currentHP, max: found.entity.maxHP, bonus };
 }
 
 /**

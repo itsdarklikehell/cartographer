@@ -1,3 +1,4 @@
+import { settleHPBuffs } from '../entities/HPBuffs.js';
 import { getHP, damageCharacter, spendResource, restoreResource } from '../entities/Character.js';
 import { xpForNextLevel } from '../entities/Experience.js';
 import { armorClass } from '../entities/Armor.js';
@@ -473,7 +474,7 @@ export function mountCharacterSheet(
       onChange: (next) => {
         const held = live();
         const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
-        const withConditions = { ...held, conditions: next };
+        const withConditions = settleHPBuffs({ ...held, conditions: next });
         if (held.concentration && (!kept || !canAct(next))) endConcentration(withConditions);
         else commit(withConditions);
       },

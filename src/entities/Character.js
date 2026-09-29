@@ -99,14 +99,16 @@ export function setMaxHP(character, max) {
 
 /**
  * Set the character's bonus HP: temporary hit points granted by items or
- * boons, tracked on top of the intrinsic HP pool. Never negative. This
- * function is pure.
+ * boons, tracked on top of the intrinsic HP pool. Never negative. A typed
+ * amount belongs to the GM, so it no longer ends with the chip of a spell
+ * that granted the old amount. This function is pure.
  * @param {Character} character
  * @param {number} amount
  * @returns {Character}
  */
 export function setBonusHP(character, amount) {
-  return { ...character, bonusHP: Math.max(0, Math.floor(amount) || 0) };
+  const { bonusHPFrom: _from, ...rest } = character;
+  return { ...rest, bonusHP: Math.max(0, Math.floor(amount) || 0) };
 }
 
 /**

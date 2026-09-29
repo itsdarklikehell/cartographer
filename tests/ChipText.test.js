@@ -171,3 +171,18 @@ test('the effect summary and the chip notes name an AC change', () => {
   const chip = createCondition('Mage Armor', 480, { mods: { acBase: 13 } });
   assert.deepEqual(chipNotes(chip), ['Base AC 13 + DEX without armor']);
 });
+
+test('the detail of an HP buff names its raise and its temporary HP', () => {
+  assert.equal(
+    effectSummary(spellById('aid'), null),
+    'Aid — +5 max HP, 5 more max HP per slot level',
+  );
+  assert.equal(
+    effectSummary(spellById('false-life'), null),
+    'False Life — 1d4 + 4 temp HP (5 more per slot level)',
+  );
+  assert.equal(
+    effectSummary(spellById('heroism'), null),
+    'Heroism — immune to Frightened, spell modifier as temp HP each turn',
+  );
+});

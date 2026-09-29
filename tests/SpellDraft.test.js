@@ -412,3 +412,36 @@ test('a buff keeps what its chip changes and the boundary that ends it', () => {
     { kind: 'buff' },
   );
 });
+
+test('a buff keeps its HP raise, its temporary HP, and its immunity', () => {
+  assert.deepEqual(
+    assembleEffect(
+      effectDraft({
+        kind: 'buff',
+        mods: { ac: '0', acBase: '', acMin: '', maxHP: '5', immune: ['Frightened'] },
+        modsPerStep: { maxHP: '5' },
+        tempHP: { count: '1', sides: '4', flat: '4', flatPerStep: '5' },
+        tempEachTurn: true,
+      }),
+    ),
+    {
+      kind: 'buff',
+      mods: { maxHP: 5, immune: ['Frightened'] },
+      modsPerStep: { maxHP: 5 },
+      tempHP: { count: 1, sides: 4, flat: 4, flatPerStep: 5 },
+      tempEachTurn: true,
+    },
+  );
+  assert.deepEqual(
+    assembleEffect(
+      effectDraft({
+        kind: 'buff',
+        mods: { ac: '', acBase: '', acMin: '', maxHP: '0', immune: [] },
+        modsPerStep: { maxHP: '' },
+        tempHP: { count: '0', sides: '4', flat: '0', flatPerStep: '3' },
+        tempEachTurn: false,
+      }),
+    ),
+    { kind: 'buff' },
+  );
+});

@@ -130,7 +130,8 @@ export function classMaxHP(character) {
  * level-up or a retroactive CON increase grants the points instead of only
  * raising the ceiling. Current HP stays within the range 0 to max. A
  * character already at the derived maximum returns unchanged, with identity
- * preserved.
+ * preserved. The maximum that a chip adds now (Aid's `hpBoost`) stays on top
+ * of the class value, so a level-up during Aid keeps the raise.
  *
  * Three cases opt out. A character with no derivable class HP, because the
  * character is classless or every class is unknown, keeps whatever pool it
@@ -147,8 +148,9 @@ export function classMaxHP(character) {
  */
 export function reconcileMaxHP(character) {
   if (character.hpOverride) return character;
-  const max = classMaxHP(character);
-  if (max === null) return character;
+  const derived = classMaxHP(character);
+  if (derived === null) return character;
+  const max = derived + (character.hpBoost ?? 0);
   const pool = character.resources.find((r) => r.id === HP_RESOURCE_ID);
   if (!pool || pool.max === max) return character;
   return {

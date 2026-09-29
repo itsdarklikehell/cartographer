@@ -1,5 +1,6 @@
 import { rollDamage } from '../dice/DiceRoller.js';
 import { resolveAttack, targetSave } from './CastRolls.js';
+import { buffCondition, buffOutcomes } from './BuffCast.js';
 import { rollHpPool, walkHpPool } from './HpPool.js';
 import { rollsNoSave } from './SpellFields.js';
 import { carriesSpellFocus } from './Equipment.js';
@@ -7,6 +8,8 @@ import { spendResource } from './Character.js';
 import { isRitualOnly, isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 import { clamp } from '../util/num.js';
+
+export { buffCondition };
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellScaling} SpellScaling */
@@ -194,18 +197,6 @@ export function materialCheck(caster, spell) {
       return !!name && (wanted.includes(name) || name.includes(wanted));
     }) ?? null;
   return { required: true, satisfied: item !== null, item, consumes };
-}
-
-/**
- * What a buff spell's chip is called: the name the effect states, or the
- * spell's own name when it states none. The cast and the detail modal both
- * read this, so the chip a GM sees promised is the chip that lands.
- * @param {Spell} spell
- * @returns {string}
- */
-export function buffCondition(spell) {
-  const named = spell.effect.kind === 'buff' ? spell.effect.condition?.trim() : '';
-  return named || spell.name;
 }
 
 /**
@@ -643,16 +634,9 @@ function resolveEffect(spell, ctx) {
     return targets.map((target) => ({ target, healing }));
   }
 
-  // A buff rolls nothing. It names the chip each target takes, what that chip
-  // adds to the target's later rolls, and what it changes besides a roll.
+  // A buff rolls no attack and no save. See `BuffCast.buffOutcomes`.
   if (effect.kind === 'buff') {
-    const condition = buffCondition(spell);
-    return targets.map((target) => ({
-      target,
-      condition,
-      rider: effect.rider ?? null,
-      mods: effect.mods ?? null,
-    }));
+    return buffOutcomes(spell, effect, targets, { steps, spellModifier, rng });
   }
 
   // A summons rolls nothing and names no target. It reports which template to

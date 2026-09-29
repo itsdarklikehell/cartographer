@@ -131,7 +131,8 @@ of a turn rolls the repeated saves of the combatant, such as the save that
 ends Hold Person. It then deals the damage that the chips of the combatant
 leave for later turns, such as the acid of Acid Arrow, and counts the
 boundary for every chip keyed to that turn. The start of a turn counts the
-boundary only.
+boundary, and then a chip with `mods.tempHPEachTurn` (Heroism) grants its
+temporary hit points to the combatant.
 
 `advancePastHeld` runs its work in this order:
 

@@ -798,6 +798,39 @@ The chip leaves with its spell, so the AC goes back without a separate
 undo. A turn boundary on the buff (`until`) ends the chip of Shield at the
 start of the caster's next turn.
 
+### HP chips
+
+A chip can also change hit points. `mods.maxHP` raises the HP maximum and
+current HP of its holder (Aid), and the highest raise wins. The raise goes
+into the stored maximum, the pool max of a character and `maxHP` of a
+creature, so every HP reader works unchanged. `hpBoost` records how much of
+the maximum is the raise. `HPBuffs.settleHPBuffs` compares that record with
+the chips the entity holds and moves the maximum by the difference. Every
+writer that changes a chip list calls it: the chip write in
+`app/combatants.js`, the round tick and the game time in `TimedEffects.js`,
+the turn-boundary sweep, the end of a spell, and the conditions bar of the
+character sheet, the NPC panel, and the encounter panel. A writer that
+skips it leaves the raise in the maximum after the chip is gone.
+`HitDice.reconcileMaxHP` adds `hpBoost` on top of the class maximum, so a
+level-up during Aid keeps the raise.
+
+Temporary hit points are `bonusHP`, on a character and on a creature alike,
+and damage takes them first. `HPBuffs.grantTempHP` keeps the larger of the
+old and the new amount, because temporary hit points never add up. A grant
+from a spell records the chip name in `bonusHPFrom`, and `settleHPBuffs`
+sets `bonusHP` to 0 once that chip is gone. `Character.setBonusHP` clears
+`bonusHPFrom`, so an amount the GM types stays. A buff spell grants them at
+the cast (`tempHP`, False Life) or through `mods.tempHPEachTurn` at the start
+of each turn of the holder (Heroism), which the cast stamps from the spell
+modifier of the caster. `CreatureHit.settleConcentration` counts the damage
+that temporary hit points absorb, and it asks for no save when the HP drop
+comes from an HP chip that ends.
+
+`mods.immune` names the conditions that its holder can't take.
+`combatants.applyConditionToTarget` refuses such a condition and logs the
+chip that blocks it, and a new chip with an immunity ends the chips it
+names.
+
 ### Stealth and Strength
 
 Body armor has two more traits, both optional, and each absent trait means

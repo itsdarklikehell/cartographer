@@ -13,6 +13,8 @@ import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { dropIfHelpless } from '../entities/Concentration.js';
 import { settleConcentration } from '../entities/CreatureHit.js';
+import { settleHPBuffs } from '../entities/HPBuffs.js';
+import { immunityTo } from '../entities/ChipMods.js';
 import { applyDefenses, defensesOf } from '../entities/DamageDefenses.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
@@ -395,6 +397,12 @@ export function logDefeatTransition(app, prev, next) {
  * A chip of the same name from another cast that lasts longer stays in place
  * (see `Conditions.outlasts`). The target is still under the condition, so
  * the function reports that the chip landed.
+ *
+ * A target with a chip that makes it immune to the condition (Heroism's
+ * Frightened) keeps its chips, and the log says why. A new chip that grants
+ * an immunity ends the conditions it names, and a chip that changes HP
+ * settles them (see `HPBuffs.settleHPBuffs`). The function reports true in
+ * both cases, because the log already names the result.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {string} name
@@ -418,13 +426,25 @@ export function applyConditionToTarget(
   const extras = { source, ...(rider ? { rider } : {}), ...more };
   const key = name.trim().toLowerCase();
   const held = found.entity.conditions.find((c) => c.name.toLowerCase() === key);
-  if (outlasts(held, createCondition(name, rounds, extras))) return true;
-  const conditions = addCondition(found.entity.conditions, name, rounds, extras);
-  if (found.kind === 'character') {
-    storeCharacterChips(app, found, { ...found.entity, conditions });
+  const guard = immunityTo(found.entity.conditions, name);
+  if (guard) {
+    app.actions.logEvent('combat', `${found.entity.name} is immune to ${name} (${guard.name}).`);
     return true;
   }
-  storeCreature(app, found.entity, { ...found.entity, conditions }, found.store);
+  if (outlasts(held, createCondition(name, rounds, extras))) return true;
+  const ended = (more.mods?.immune ?? []).flatMap((n) =>
+    found.entity.conditions.filter((c) => c.name.toLowerCase() === n.toLowerCase()),
+  );
+  const kept = found.entity.conditions.filter((c) => !ended.includes(c));
+  const conditions = addCondition(kept, name, rounds, extras);
+  for (const c of ended) {
+    app.actions.logEvent('combat', `${found.entity.name} is no longer ${c.name}.`);
+  }
+  if (found.kind === 'character') {
+    storeCharacterChips(app, found, settleHPBuffs({ ...found.entity, conditions }));
+    return true;
+  }
+  storeCreature(app, found.entity, settleHPBuffs({ ...found.entity, conditions }), found.store);
   app.actions.markDirty();
   return true;
 }
@@ -472,8 +492,8 @@ export function storeCreature(app, prev, next, store) {
  * @param {import('../types/entities.js').Condition[]} conditions
  */
 function storeConditions(found, conditions) {
-  if (found.kind === 'character') found.store({ ...found.entity, conditions });
-  else found.store({ ...found.entity, conditions });
+  if (found.kind === 'character') found.store(settleHPBuffs({ ...found.entity, conditions }));
+  else found.store(settleHPBuffs({ ...found.entity, conditions }));
 }
 
 /**
@@ -497,7 +517,7 @@ export function endSpellEffects(app, casterId, spellId) {
   /** @type {{ name: string, condition: string, repeat: boolean }[]} */
   const freed = [];
   /**
-   * @template {{ name: string, conditions: import('../types/entities.js').Condition[] }} T
+   * @template {Character | Creature} T
    * @param {T} entity
    * @returns {T}
    */
@@ -507,13 +527,14 @@ export function endSpellEffects(app, casterId, spellId) {
     for (const c of removed) {
       freed.push({ name: entity.name, condition: c.name, repeat: !!c.source?.repeat });
     }
-    return { ...entity, conditions };
+    // A chip that raised the HP maximum (Aid) takes the raise with it.
+    return settleHPBuffs({ ...entity, conditions });
   };
   /**
    * swept reassigns a collection only when a chip actually came off it. The
    * roster indexes are keyed on the array's identity. Handing back a fresh
    * array with the same entities throws those caches away for nothing.
-   * @template {{ name: string, conditions: import('../types/entities.js').Condition[] }} T
+   * @template {Character | Creature} T
    * @param {readonly T[]} list
    * @returns {T[] | null}
    */

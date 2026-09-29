@@ -39,7 +39,7 @@ export function settleConcentration(prev, next, opts = {}) {
   /** @type {HitEvent[]} */
   const events = [];
   let creature = next;
-  const damage = prev.currentHP - next.currentHP;
+  const damage = damageTaken(prev, next);
   if (damage > 0) {
     const save = resolveSave(
       creatureSaveBonus(next, CONCENTRATION_ABILITY),
@@ -63,4 +63,18 @@ export function settleConcentration(prev, next, opts = {}) {
   );
   if (!chipped || !canAct(creature.conditions)) return { creature: drop(creature), events, ended };
   return { creature, events, ended: null };
+}
+
+/**
+ * The damage one write dealt, counting what temporary HP absorbed. A write
+ * that ends an HP chip (Aid's raise, or the temporary HP of False Life)
+ * also lowers the HP, but deals no damage, so it asks for no save.
+ * @param {Creature} prev
+ * @param {Creature} next
+ * @returns {number}
+ */
+function damageTaken(prev, next) {
+  if ((prev.hpBoost ?? 0) !== (next.hpBoost ?? 0)) return 0;
+  if (prev.bonusHPFrom && !next.bonusHPFrom) return 0;
+  return prev.currentHP + (prev.bonusHP ?? 0) - next.currentHP - (next.bonusHP ?? 0);
 }

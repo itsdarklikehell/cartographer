@@ -79,3 +79,24 @@ test('removing the Concentrating chip by hand ends the spell', () => {
   const healed = settleConcentration(held, { ...held, notes: 'edited' });
   assert.equal(healed.ended, null, 'an edit that leaves the chip keeps the spell');
 });
+
+test('damage that temporary HP absorb still calls for the save', () => {
+  const held = { ...priest(), bonusHP: 10 };
+  const result = settleConcentration(held, applyDamage(held, 6), { rng: d20(15) });
+  assert.deepEqual(result.events[0], {
+    kind: 'concentration',
+    spellName: 'Hold Person',
+    kept: true,
+    total: 15,
+    dc: 10,
+  });
+});
+
+test('the end of an HP chip lowers HP but calls for no save', () => {
+  const held = { ...priest(), hpBoost: 5, maxHP: 25, currentHP: 25 };
+  const ended = { ...priest(), currentHP: 20 };
+  assert.deepEqual(settleConcentration(held, ended).events, []);
+  const warded = { ...priest(), bonusHP: 7, bonusHPFrom: 'false life' };
+  const lost = { ...priest(), bonusHP: 0 };
+  assert.deepEqual(settleConcentration(warded, lost).events, []);
+});

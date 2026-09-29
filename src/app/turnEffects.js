@@ -2,6 +2,8 @@ import { rollDamage } from '../dice/DiceRoller.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
 import { isDowned } from '../combat/CombatView.js';
+import { settleHPBuffs } from '../entities/HPBuffs.js';
+import { grantTempTo } from './tempHP.js';
 import {
   applyToTarget,
   commitCreatures,
@@ -53,12 +55,18 @@ export function endTurnEffects(app, id, { rng = Math.random } = {}) {
 /**
  * The start of one combatant's turn. Every chip keyed to it counts the
  * boundary, and the ones with none left end, such as a Shield that lasts
- * until the start of the caster's next turn.
+ * until the start of the caster's next turn. Then each chip that grants
+ * temporary HP at the start of the holder's turn (Heroism) grants them.
  * @param {AppContext} app
  * @param {string} id
  */
 export function startTurnEffects(app, id) {
   sweepChips(app, (list) => passBoundary(list, id, 'start'));
+  const found = findCombatant(app, id);
+  for (const chip of found ? found.entity.conditions : []) {
+    const amount = chip.mods?.tempHPEachTurn ?? 0;
+    if (amount > 0) grantTempTo(app, id, amount, chip.name, { quiet: true });
+  }
 }
 
 /**
@@ -109,7 +117,7 @@ function sweepChips(app, rule) {
   /** @type {{ name: string, condition: string }[]} */
   const freed = [];
   /**
-   * @template {{ name: string, conditions: Condition[] }} T
+   * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
    * @param {T[]} list
    * @returns {T[] | null}
    */
@@ -118,7 +126,7 @@ function sweepChips(app, rule) {
       const { conditions, ended } = rule(entity.conditions);
       if (ended.length === 0) return entity;
       for (const c of ended) freed.push({ name: entity.name, condition: c.name });
-      return { ...entity, conditions };
+      return settleHPBuffs({ ...entity, conditions });
     });
     return next.some((entity, i) => entity !== list[i]) ? next : null;
   };

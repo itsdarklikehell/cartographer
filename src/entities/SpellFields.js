@@ -1,6 +1,6 @@
 import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
-import { normalizeChipMods } from './ChipMods.js';
+import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
 
 /**
@@ -184,15 +184,47 @@ export function saveExtras(raw, condition) {
 
 /**
  * The fields a buff effect has beyond its chip name and rider, from a written
- * effect: what the chip changes besides a roll, and the turn boundary that
- * ends it.
+ * effect: what the chip changes besides a roll and how much more of the HP
+ * raise each scaling increment adds, the temporary HP of the cast and of
+ * each turn, and the turn boundary that ends the chip.
  * @param {Record<string, unknown>} raw
  * @returns {Partial<import('../types/spell.js').SpellBuffEffect>}
  */
 export function buffExtras(raw) {
   const mods = normalizeChipMods(raw.mods);
   const until = normalizeUntil(raw.until);
-  return { ...(mods ? { mods } : {}), ...(until ? { until } : {}) };
+  const perStep = /** @type {Record<string, unknown>} */ (raw.modsPerStep ?? {});
+  const raise = clampInt(perStep.maxHP, 0, MAX_HP_BOOST);
+  const tempHP = normalizeTempHP(raw.tempHP);
+  return {
+    ...(mods ? { mods } : {}),
+    ...(raise > 0 ? { modsPerStep: { maxHP: raise } } : {}),
+    ...(tempHP ? { tempHP } : {}),
+    ...(raw.tempEachTurn === true ? { tempEachTurn: true } : {}),
+    ...(until ? { until } : {}),
+  };
+}
+
+/**
+ * A written temporary HP grant, or null when it grants nothing. The dice
+ * need a known die size, and a grant with no dice and no flat amount drops.
+ * @param {unknown} value
+ * @returns {import('../types/spell.js').SpellTempHP | null}
+ */
+export function normalizeTempHP(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const sides = Number(raw.sides);
+  const count = DIE_SIZES.includes(sides) ? clampInt(raw.count, 0, 20) : 0;
+  const flat = clampInt(raw.flat, 0, 100);
+  const flatPerStep = clampInt(raw.flatPerStep, 0, 100);
+  if (count === 0 && flat === 0) return null;
+  return {
+    count,
+    sides: count > 0 ? sides : 4,
+    flat,
+    ...(flatPerStep > 0 ? { flatPerStep } : {}),
+  };
 }
 
 /**

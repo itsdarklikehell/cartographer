@@ -6,12 +6,15 @@
  * condition chip, every creature stat modifier, and every held
  * concentration with a round count loses that many rounds, and each one
  * that reaches zero ends. Without this step, Bless cast between fights still
- * reads 10 rounds after an 8-hour rest. A duration with no round count
+ * reads 10 rounds after an 8-hour rest. A chip that raises the HP maximum
+ * (Aid) or grants temporary HP takes its HP with it when it ends (see
+ * `HPBuffs.settleHPBuffs`). A duration with no round count
  * (open-ended, or measured in days) is left alone. This module is pure.
  */
 
 import { drop, tick } from './Concentration.js';
 import { CONCENTRATING, addCondition } from './Conditions.js';
+import { settleHPBuffs } from './HPBuffs.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -19,9 +22,9 @@ import { CONCENTRATING, addCondition } from './Conditions.js';
 /** @typedef {import('../types/entities.js').ConcentrationState} ConcentrationState */
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 /**
- * A character or a creature: anything with conditions, and optionally timed
- * stat modifiers and a held concentration.
- * @typedef {{ conditions: Condition[], statMods?: StatModifier[], concentration?: ConcentrationState | null }} Timed
+ * A character or a creature: anything with conditions and HP, and optionally
+ * timed stat modifiers and a held concentration.
+ * @typedef {(Character | Creature) & { statMods?: StatModifier[] }} Timed
  */
 
 /** Combat rounds in one hour. */
@@ -57,7 +60,8 @@ function elapseList(list, rounds) {
  */
 export function elapseCharacter(character, rounds) {
   const conditions = elapseList(character.conditions, rounds);
-  const next = conditions === character.conditions ? character : { ...character, conditions };
+  const next =
+    conditions === character.conditions ? character : settleHPBuffs({ ...character, conditions });
   const held = next.concentration;
   if (!held || held.remaining === null) return { character: next, ended: null };
   const remaining = held.remaining - rounds;
@@ -84,7 +88,8 @@ function elapseTimed(entity, rounds) {
   const conditions = elapseList(entity.conditions, rounds);
   const statMods = entity.statMods ? elapseList(entity.statMods, rounds) : undefined;
   if (conditions === entity.conditions && statMods === entity.statMods) return entity;
-  return { ...entity, conditions, ...(statMods ? { statMods } : {}) };
+  const next = { ...entity, conditions, ...(statMods ? { statMods } : {}) };
+  return conditions === entity.conditions ? next : settleHPBuffs(next);
 }
 
 /**
