@@ -300,3 +300,49 @@ test('a summons count of zero reads as one creature', () => {
   );
   assert.equal(effect.count, 1);
 });
+
+test('an attack keeps the later-turn flags and damage the form ticked', () => {
+  const acid = [part(2, 4, 'acid')];
+  const effect = assembleEffect(
+    effectDraft({
+      kind: 'attack',
+      melee: true,
+      halfOnMiss: true,
+      addsModifier: true,
+      ongoing: { damage: acid, perStep: [], until: 'target-end' },
+    }),
+  );
+  assert.deepEqual(effect, {
+    kind: 'attack',
+    damage: fire,
+    melee: true,
+    halfOnMiss: true,
+    addsModifier: true,
+    ongoing: { damage: acid, until: 'target-end' },
+  });
+});
+
+test('a save keeps its turn boundary only with a condition', () => {
+  const withChip = assembleEffect(
+    effectDraft({ kind: 'save', condition: 'Blinded', until: 'caster-start', ongoing: null }),
+  );
+  assert.equal(/** @type {any} */ (withChip).until, 'caster-start');
+  const bare = assembleEffect(effectDraft({ kind: 'save', until: 'caster-start', ongoing: null }));
+  assert.equal(/** @type {any} */ (bare).until, undefined);
+});
+
+test('a repeat and slot levels per step come through the whole form', () => {
+  const spell = assembleSpell(
+    draft({
+      repeat: { cost: '', damage: [] },
+      scaling: { damagePerLevel: fire, targetsPerLevel: 0, levelsPerStep: '2' },
+    }),
+  );
+  assert.deepEqual(spell.repeat, {});
+  assert.deepEqual(spell.scaling, { damagePerLevel: fire, levelsPerStep: 2 });
+  assert.equal(assembleSpell(draft()).repeat, undefined);
+  assert.equal(
+    assembleScaling({ damagePerLevel: fire, targetsPerLevel: 0 })?.levelsPerStep,
+    undefined,
+  );
+});

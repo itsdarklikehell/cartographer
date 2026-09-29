@@ -47,13 +47,16 @@ export const CONDITIONS = [
 ];
 
 /**
- * The optional halves of a chip. `source` names the cast that wrote it.
- * `rider` is what it adds to the holder's later rolls. Each is left off the
- * stored chip entirely when there is none, so a hand-added chip stores no
- * extra key.
+ * The optional parts of a chip. `source` names the cast that wrote it.
+ * `rider` is what it adds to the holder's later rolls. `expires` is the turn
+ * boundary that ends it, and `ongoing` is the damage it deals at the end of
+ * each of the holder's turns. Each is left off the stored chip entirely when
+ * there is none, so a hand-added chip stores no extra key.
  * @typedef {{
  *   source?: import('../types/entities.js').ConditionSource,
  *   rider?: import('../types/entities.js').RollRider,
+ *   expires?: import('../types/entities.js').ChipExpiry,
+ *   ongoing?: import('../types/entities.js').OngoingDamage,
  * }} ConditionExtras
  */
 
@@ -63,8 +66,47 @@ export const CONDITIONS = [
  * @param {ConditionExtras} [extras]
  * @returns {Condition}
  */
-export function createCondition(name, rounds = null, { source, rider } = {}) {
-  return { name, rounds, ...(source ? { source } : {}), ...(rider ? { rider } : {}) };
+export function createCondition(name, rounds = null, { source, rider, expires, ongoing } = {}) {
+  return {
+    name,
+    rounds,
+    ...(source ? { source } : {}),
+    ...(rider ? { rider } : {}),
+    ...(expires ? { expires } : {}),
+    ...(ongoing ? { ongoing } : {}),
+  };
+}
+
+/**
+ * How long a chip has left, in rounds, for comparing two chips. A chip that
+ * ends at a turn boundary counts one round per boundary left. A chip with no
+ * count runs until something removes it, so it outlasts every timed chip.
+ * @param {Condition} condition
+ * @returns {number}
+ */
+export function chipLength(condition) {
+  if (condition.expires) return condition.expires.count;
+  return condition.rounds ?? Infinity;
+}
+
+/**
+ * Whether a chip that one cast wrote keeps its place against a new chip of the
+ * same name from another cast. A creature keeps one chip per name, so a
+ * one-round Blinded from Color Spray would replace the one-minute Blinded of
+ * Blindness/Deafness, and the target would see again after one round. The
+ * longer chip stays instead. A hand-added chip names no cast, so the new chip
+ * always replaces it, and a recast of the same spell by the same caster
+ * always refreshes its own chip.
+ * @param {Condition | undefined} held the chip the creature has now
+ * @param {Condition} incoming the chip a cast wants to write
+ * @returns {boolean}
+ */
+export function outlasts(held, incoming) {
+  const a = held?.source;
+  const b = incoming.source;
+  if (!held || !a || !b) return false;
+  if (a.spellId === b.spellId && a.casterId === b.casterId) return false;
+  return chipLength(held) > chipLength(incoming);
 }
 
 /**

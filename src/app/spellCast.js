@@ -6,6 +6,7 @@ import { spellSaveDC, hasRitualCasting } from '../entities/Classes.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster } from '../entities/Caster.js';
 import { isRitualOnly } from '../entities/SpellView.js';
+import { heldRepeat } from '../entities/SpellRepeat.js';
 import { replaceById } from '../entities/Roster.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
 import { COST_LABELS, canSpend } from '../combat/ActionBudget.js';
@@ -112,6 +113,17 @@ export function castPlan(app, entity, spell, offered) {
   if (!targetFree(spell.effect.kind) && offered.length === 0) {
     return { ok: false, message: 'No target available.' };
   }
+  // A spell the caster still keeps open from an earlier turn repeats for free:
+  // no slot, no component, and no armor check, because the first cast paid
+  // all three. A repeat locked to the creatures it hit offers only those.
+  const hold = spell.repeat ? heldRepeat(entity, spell.id) : null;
+  const locked = hold?.targetIds;
+  const reachable = locked ? offered.filter((t) => locked.includes(t.id)) : offered;
+  if (locked && reachable.length === 0) {
+    return { ok: false, message: `${spell.name} has lost its target.` };
+  }
+  /** @type {import('../types/cast.js').CastFree | null} */
+  const free = hold ? { slotLevel: hold.slotLevel, repeat: true } : null;
   // A summons is only as good as the template it names. The check runs here so
   // a spell whose template was renamed or removed refuses before the dialog
   // opens, which is before a slot is spent.
@@ -135,7 +147,7 @@ export function castPlan(app, entity, spell, offered) {
   // armor carries the penalty flag alongside its bonus and chips.
   const physical = saveAbility === 'STR' || saveAbility === 'DEX';
   const targets = saveAbility
-    ? offered.map((t) => {
+    ? reachable.map((t) => {
         const bonus = targetSaveBonus(app, t.id, saveAbility);
         const conditions = targetConditions(app, t.id);
         const riders = targetFeatRiders(app, t.id);
@@ -151,14 +163,15 @@ export function castPlan(app, entity, spell, offered) {
           ...(penalized ? { armorPenalty: true } : {}),
         };
       })
-    : offered;
+    : reachable;
 
   // A leveled spell casts from a slot at or above its level that still has a
   // charge, leveled or pact. The picker offers each such level. A Wizard's
   // unprepared ritual casts only as a ritual, so it offers no slot, and the
   // ritual box opens ticked.
-  const ritualOnly = isRitualOnly(caster, spell);
-  const slotLevels = spell.level > 0 && !ritualOnly ? castableSlotLevels(caster, spell.level) : [];
+  const ritualOnly = !free && isRitualOnly(caster, spell);
+  const slotLevels =
+    spell.level > 0 && !ritualOnly && !free ? castableSlotLevels(caster, spell.level) : [];
   // A multiclass caster's DC and attack bonus use the class the spell was
   // learned under. Without a recorded source, they fall back to the first
   // caster class.
@@ -171,30 +184,38 @@ export function castPlan(app, entity, spell, offered) {
   // dialog needs checkboxes at all, so an upcast Hold Person can name a
   // second creature. A cast over its cap drops the extra targets, and
   // `castSpell` reports them back.
-  const cap = castCap(spell, startingSlotLevel(spell, slotLevels), caster.level ?? 1);
-  const maxCap = castCap(
+  const cap = castCap(
     spell,
-    slotLevels.length ? Math.max(...slotLevels) : startingSlotLevel(spell, slotLevels),
+    free ? free.slotLevel : startingSlotLevel(spell, slotLevels),
     caster.level ?? 1,
   );
+  const maxCap = free
+    ? cap
+    : castCap(
+        spell,
+        slotLevels.length ? Math.max(...slotLevels) : startingSlotLevel(spell, slotLevels),
+        caster.level ?? 1,
+      );
   // The check reads the real entity, not the caster view, because the
   // caster view has no inventory. A combatant with no inventory is never
   // asked for a component. Only a Character has an inventory. The check's
   // contract is that an entity without one needs nothing, so all three
   // combatant shapes go through the same check.
-  const material = materialCheck(
-    /** @type {{ inventory?: import('../types/entities.js').InventoryItem[] }} */ (
-      /** @type {unknown} */ (entity)
-    ),
-    spell,
-  );
+  const material = free
+    ? { required: false, satisfied: true, item: null, consumes: false }
+    : materialCheck(
+        /** @type {{ inventory?: import('../types/entities.js').InventoryItem[] }} */ (
+          /** @type {unknown} */ (entity)
+        ),
+        spell,
+      );
   // Ritual casting is a class feature. A caster can cast a spell with a
   // ritual as a ritual only as a bard, cleric, druid, or wizard.
-  const ritualOffered = spell.ritual && spell.level > 0 && hasRitualCasting(caster);
+  const ritualOffered = !free && spell.ritual && spell.level > 0 && hasRitualCasting(caster);
   // The 5e armor proficiency rule stops a cast in armor the caster is not
   // trained for. Only a Character wears tracked gear, so a creature never
   // hits this. The dialog offers a GM opt-out beside the component one.
-  const armor = unproficientWear(entity);
+  const armor = free ? [] : unproficientWear(entity);
   // A cast spends part of the caster's turn while a fight runs. The participant
   // holds the budget, so a caster outside the running order, casting from the
   // sheet, spends nothing. An entry with no casting time reads as an action,
@@ -203,7 +224,9 @@ export function castPlan(app, entity, spell, offered) {
   const castingTime = spell.castingTime
     ? parseCastingTime(spell.castingTime)
     : /** @type {import('../types/spell.js').CastingTime} */ ({ kind: 'action' });
-  const cost = castingCost(castingTime);
+  // A repeat costs what the spell says it costs on later turns, which is the
+  // casting time's cost unless the spell names another.
+  const cost = free ? (spell.repeat?.cost ?? castingCost(castingTime)) : castingCost(castingTime);
   // What this cast takes off the turn. There is nothing to take outside a
   // fight, and nothing a turn can pay toward a ten-minute casting time.
   const actionCost = participant ? cost : null;
@@ -215,6 +238,7 @@ export function castPlan(app, entity, spell, offered) {
     material: material.required,
     materialMissing: material.required && !material.satisfied,
     ritual: ritualOffered,
+    free: !!free,
     armor: armor.length > 0,
     actionLabel: !actionBlocked
       ? ''
@@ -241,6 +265,7 @@ export function castPlan(app, entity, spell, offered) {
     actionCost,
     actionBlocked,
     castingTime,
+    free,
     fields,
   };
 }
@@ -269,8 +294,9 @@ async function runCast(app, entity, spell, offered, writeBack, preferredTargetId
     return;
   }
   if (preferredTargetId) prefillTarget(plan.fields, preferredTargetId);
-  const values = await promptModal(`Cast ${spell.name}`, plan.fields, {
-    submitLabel: 'Cast',
+  const verb = plan.free?.repeat ? 'Repeat' : 'Cast';
+  const values = await promptModal(`${verb} ${spell.name}`, plan.fields, {
+    submitLabel: verb,
     wide: true,
     onChange: castChangeHandler(plan),
     // Each opt-out box that the cast would be refused without holds Cast

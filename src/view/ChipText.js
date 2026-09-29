@@ -1,0 +1,54 @@
+import { chipRider, riderSummary } from '../entities/Riders.js';
+import { formatDamage } from '../entities/Equipment.js';
+
+/**
+ * What a condition chip says: the label on the chip itself, and the lines of
+ * its tooltip. The conditions bar, the combatant card, and the active column
+ * of the combat screen all show chips, and they read their text here so the
+ * three never disagree.
+ */
+
+/** @typedef {import('../types/entities.js').Condition} Condition */
+
+/**
+ * The text on a chip: its name, then the rounds it has left. A chip that ends
+ * at a turn boundary says "next turn" instead, because it counts turns and not
+ * rounds.
+ * @param {Condition} condition
+ * @returns {string}
+ */
+export function chipLabel(condition) {
+  if (condition.expires) return `${condition.name} (next turn)`;
+  if (condition.rounds === null || condition.rounds === undefined) return condition.name;
+  return `${condition.name} (${condition.rounds})`;
+}
+
+/**
+ * The tooltip lines of a chip: what it adds to its holder's rolls, the damage
+ * it deals on later turns, and the turn boundary that ends it. A chip with
+ * none of these has no tooltip, and the list comes back empty.
+ * @param {Condition} condition
+ * @param {(id: string) => string | undefined} [nameOf] the name of a
+ *   combatant, for the boundary line. Without it, the line names no one.
+ * @returns {string[]}
+ */
+export function chipNotes(condition, nameOf = () => undefined) {
+  /** @type {string[]} */
+  const lines = [];
+  const rider = chipRider(condition);
+  if (rider) lines.push(riderSummary(rider));
+  const damage = condition.ongoing ? formatDamage(condition.ongoing.damage) : '';
+  if (damage) {
+    lines.push(
+      condition.source?.saveEnds
+        ? `${damage} at the end of each turn, on a failed save`
+        : `${damage} at the end of each turn`,
+    );
+  }
+  const expires = condition.expires;
+  if (expires) {
+    const who = nameOf(expires.who);
+    lines.push(`Ends at the ${expires.at} of ${who ? `${who}'s` : 'a'} turn`);
+  }
+  return lines;
+}

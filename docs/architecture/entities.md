@@ -1431,11 +1431,91 @@ A spell allows the repeated save with `saveEnds` on its save effect.
 drops it otherwise. The spell form offers it as the "Save ends each turn" box,
 which shows once a save names a condition, and `SpellDraft.assembleEffect`
 follows the same rule. Hold Person, Blindness/Deafness, Fear, Hold Monster,
-Power Word Stun, and Sunburst ship with it.
+Phantasmal Killer, Power Word Stun, and Sunburst ship with it.
 
 The repeated save, the condition-effect table, and the rider are the rules
 that read a chip. A spell whose only target ended the effect still leaves the
 caster concentrating, because nothing tracks how many targets a cast has left.
+
+## Effects on later turns
+
+A round tick ends a chip at the top of a round, but several spells end at a
+turn of one combatant. Sunbeam blinds a creature until the start of the
+caster's next turn, and Acid Arrow burns a creature at the end of that
+creature's next turn. The rules live in `entities/TurnEffects.js` and
+`entities/SpellRepeat.js`, and `app/turnEffects.js` runs them at each turn
+boundary (see
+[The turn advance](combat.md#the-turn-advance)).
+
+### Turn-boundary chips
+
+A chip with `expires` ends at a turn boundary of one combatant: `who` names
+it, `at` is `start` or `end`, and `count` is how many such boundaries pass
+first. `TurnEffects.chipTiming` builds the field from the `until` of a
+spell, which is `caster-start`, `caster-end`, or `target-end`. "The end of
+your next turn" skips the end of the turn that is running, so a chip keyed
+to the end of the acting combatant's turn starts at a count of 2.
+
+A chip with `expires` has a null `rounds`. With a count of rounds as well,
+the round tick would end it at the top of the round, before the turn it
+waits for. A chip keyed to a combatant outside the running order, or
+written outside a fight, gets `rounds: 1` and no `expires`, because no turn
+of that combatant will come.
+
+`TurnEffects.passBoundary` counts one boundary, and `dropBoundaryChips`
+removes the chips when the combatant leaves the fight or the fight ends.
+Both return the list that they received when nothing matched. The wiring
+sweep runs on every turn of a fight, and a new object per entity per turn
+misses the pack cache of the save.
+
+A creature keeps one chip per name. `Conditions.outlasts` keeps a longer
+chip from another cast in place, so the one-round Blinded of Sunbeam does
+not replace the one-minute Blinded of Blindness/Deafness.
+
+### Damage on later turns
+
+An attack or a save effect with `ongoing` leaves dice on the target. The
+resolver scales them with the cast (`ongoing.perStep`) and returns them on
+the outcome of each hit or failed save. `app/spellOutcomes.js` writes them
+to a chip as `ongoing.damage`. A save that imposes a condition puts them on
+that chip. Any other cast writes a chip named after the spell, which ends at
+`ongoing.until`, or at the end of the target's next turn by default.
+
+At the end of the holder's turn, `TurnEffects.ongoingChips` names the chips
+that deal their damage. A chip that allows a repeated save is not among
+them. Its damage lands only when the retry fails, so a success ends the
+spell and spares the damage, as Phantasmal Killer does.
+
+Three attack flags help these spells. `halfOnMiss` rolls the damage on a
+miss and deals half, which is the splash of Acid Arrow. `addsModifier` adds
+the spellcasting modifier to each hit, which a critical hit does not
+double. `melee` marks a melee spell attack whose range is not Touch, such
+as Spiritual Weapon, so Prone and an automatic critical hit read it as
+melee. `scaling.levelsPerStep` counts one scaling increment per that many
+slot levels, inside `Casting.scalingSteps`, so the damage, the target cap,
+and the projectile count agree.
+
+### Repeats
+
+A spell with `repeat` can be used again on each later turn while it lasts,
+with no new slot. The first cast gives the caster a chip named after the
+spell, whose source keeps `repeat.slotLevel`. A spell with fixed repeat
+damage, such as Witch Bolt, also records the creatures that it hit in
+`repeat.targetIds`, and it opens the repeat only on a hit
+(`SpellRepeat.opensRepeat`).
+
+`castPlan` in `app/spellCast.js` finds the chip with
+`SpellRepeat.heldRepeat` and builds a free plan: no slot, no component
+check, no armor check, and the cost of `repeat.cost` or of the casting time.
+`castSpell` takes the `free` option and skips the spellbook check and the
+slot. `resolveCast` starts no new concentration for a repeat, because a new
+concentration on the same spell would end the old one and sweep the repeat
+chip with it. For the same reason, the first cast writes the chip after the
+sweep of a displaced spell. A repeat with fixed damage resolves through
+`SpellRepeat.repeatedSpell`, an automatic hit with no scaling.
+
+The chip ticks down with the duration of the spell, and a concentration
+spell loses it with every other chip of the cast.
 
 ## Summoned creatures
 

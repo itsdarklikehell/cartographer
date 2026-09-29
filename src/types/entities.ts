@@ -39,6 +39,38 @@ export interface ConditionSource {
   saveBonus?: number;
   /** True when the target retries the save at the end of each of its turns. */
   saveEnds?: boolean;
+  /** Present on the chip that a caster keeps while it can repeat a spell on
+   * a later turn without a new slot (Spiritual Weapon, Witch Bolt). */
+  repeat?: RepeatHold;
+}
+
+/** What a later repeat of a spell resolves with. `slotLevel` is the level of
+ * the first cast, so a repeat deals the upcast damage again. `targetIds` names
+ * the creatures that a repeat is locked to, for a spell such as Witch Bolt
+ * that stays on the creature it hit. Absent means the caster picks again. */
+export interface RepeatHold {
+  slotLevel: number;
+  targetIds?: string[];
+}
+
+/** A chip that ends at a turn boundary of one combatant, instead of after a
+ * count of rounds. `who` is the id of that combatant, and `at` is the start or
+ * the end of its turn. `count` is how many of those boundaries pass before the
+ * chip ends. It starts at 2 for "the end of your next turn" when the cast
+ * happens on that combatant's own turn, so the end of the current turn does
+ * not count. */
+export interface ChipExpiry {
+  who: string;
+  at: 'start' | 'end';
+  count: number;
+}
+
+/** Damage that a chip deals to its holder at the end of each of the holder's
+ * turns (Acid Arrow). On a chip that allows a repeated save, the damage lands
+ * only when that save fails (Phantasmal Killer). The dice are already scaled
+ * to the slot of the cast. */
+export interface OngoingDamage {
+  damage: DamagePart[];
 }
 
 /** Which rolls a rider touches. `check` has no roller yet, so a check rider
@@ -71,6 +103,11 @@ export interface Condition {
   /** What the condition adds to the holder's later rolls. Absent for a chip
    * that only names a state. */
   rider?: RollRider;
+  /** When a turn boundary ends the chip. A chip with this field has a null
+   * `rounds`, because a round tick would end it at the wrong time. */
+  expires?: ChipExpiry;
+  /** Damage the chip deals at the end of each of the holder's turns. */
+  ongoing?: OngoingDamage;
 }
 
 /** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */

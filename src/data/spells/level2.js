@@ -157,4 +157,59 @@ export const LEVEL_2 = [
     effect: { kind: 'buff', condition: 'Invisible' },
     scaling: { targetsPerLevel: 1 },
   },
+  {
+    id: 'acid-arrow',
+    name: 'Acid Arrow',
+    level: 2,
+    school: 'evocation',
+    classes: ['wizard'],
+    castingTime: { kind: 'action' },
+    range: '90 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: "powdered rhubarb leaf and an adder's stomach", consumed: false },
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'A green arrow makes a ranged spell attack. A hit deals 4d4 acid now and 2d4 acid at ' +
+      "the end of the target's next turn. A miss splashes the target for half the first " +
+      'damage and nothing later.',
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 4, sides: 4, damageType: 'acid' }],
+      halfOnMiss: true,
+      ongoing: {
+        damage: [{ count: 2, sides: 4, damageType: 'acid' }],
+        perStep: [{ count: 1, sides: 4, damageType: 'acid' }],
+      },
+    },
+    // Both the first damage and the later damage gain 1d4 per slot level.
+    scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'acid' }] },
+  },
+  {
+    id: 'spiritual-weapon',
+    name: 'Spiritual Weapon',
+    level: 2,
+    school: 'evocation',
+    classes: ['cleric'],
+    castingTime: { kind: 'bonus' },
+    range: '60 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'A floating spectral weapon makes a melee spell attack for 1d8 force plus the ' +
+      'spellcasting modifier. Each later turn of the minute, a bonus action moves it up to ' +
+      '20 feet and attacks again. The weapon is not a creature, and the GM tracks where it is.',
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 1, sides: 8, damageType: 'force' }],
+      melee: true,
+      addsModifier: true,
+    },
+    // One more 1d8 for every two slot levels above 2nd.
+    scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'force' }], levelsPerStep: 2 },
+    repeat: {},
+  },
 ];

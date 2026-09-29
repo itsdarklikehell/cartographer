@@ -5,6 +5,12 @@ import {
   normalizeTargetCount,
 } from './Casting.js';
 import { normalizeRider } from './Riders.js';
+import {
+  attackExtras,
+  normalizeLevelsPerStep,
+  normalizeRepeat,
+  saveExtras,
+} from './SpellFields.js';
 import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
 
@@ -36,8 +42,13 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [saveEnds] whether the imposed condition ends on a
  *   save at the end of each of the target's turns
  * @property {unknown} [hpLimit] the save kind's HP limit, 0 or blank for none
- * @property {boolean} [addsModifier] whether the heal kind adds the
- *   spellcasting ability modifier
+ * @property {boolean} [addsModifier] whether the heal or the attack kind adds
+ *   the spellcasting ability modifier
+ * @property {boolean} [melee] whether the attack kind is a melee spell attack
+ * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
+ * @property {string} [until] the turn boundary that ends a save's condition
+ * @property {{ damage: DamagePart[], perStep: DamagePart[], until: string } | null} [ongoing]
+ *   the damage an attack or a save leaves for later turns, null for none
  * @property {boolean} [dealsDamage] the save kind's damage gate
  * @property {string} [condition] empty for none
  * @property {boolean} [fires] whether the attack kind fires projectiles
@@ -66,8 +77,10 @@ import { clampInt } from '../util/num.js';
  * @property {string} description
  * @property {unknown} targetCount
  * @property {EffectDraft} effect
- * @property {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown } | null} scaling
+ * @property {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown, levelsPerStep?: unknown } | null} scaling
  *   null when "Scales per level" is unticked
+ * @property {{ cost: string, damage: DamagePart[] } | null} [repeat] how the
+ *   caster repeats the spell on later turns, null when it does not
  */
 
 /**
@@ -90,6 +103,7 @@ export function assembleEffect(draft) {
       kind: 'attack',
       damage: draft.damage,
       ...(projectiles ? { projectiles } : {}),
+      ...attackExtras(draft),
     };
   }
   if (draft.kind === 'save') {
@@ -105,6 +119,7 @@ export function assembleEffect(draft) {
       ...(condition && draft.saveEnds ? { saveEnds: true } : {}),
       ...(hpLimit > 0 ? { hpLimit } : {}),
       ...(rider ? { rider } : {}),
+      ...saveExtras(draft, condition),
     };
   }
   if (draft.kind === 'heal') {
@@ -142,15 +157,17 @@ export function assembleEffect(draft) {
  * The scaling block a submitted form describes, or undefined when it describes
  * none. Ticking "Scales per level" without filling either field is the same as
  * not ticking it, since a block with neither half scales nothing.
- * @param {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown } | null} draft
+ * @param {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown, levelsPerStep?: unknown } | null} draft
  * @returns {Spell['scaling']}
  */
 export function assembleScaling(draft) {
   if (!draft) return undefined;
   const targets = clampInt(draft.targetsPerLevel, 0);
+  const levelsPerStep = normalizeLevelsPerStep(draft.levelsPerStep);
   const scaling = {
     ...(draft.damagePerLevel.length ? { damagePerLevel: draft.damagePerLevel } : {}),
     ...(targets > 0 ? { targetsPerLevel: targets } : {}),
+    ...(levelsPerStep ? { levelsPerStep } : {}),
   };
   return Object.keys(scaling).length ? scaling : undefined;
 }
@@ -168,6 +185,7 @@ export function assembleScaling(draft) {
 export function assembleSpell(draft) {
   const materials = draft.materials ? normalizeMaterials(draft.materials) : null;
   const scaling = assembleScaling(draft.scaling);
+  const repeat = draft.repeat ? normalizeRepeat(draft.repeat) : null;
   return {
     name: draft.name.trim(),
     level: Number(draft.level),
@@ -184,6 +202,7 @@ export function assembleSpell(draft) {
     targetCount: normalizeTargetCount(draft.targetCount),
     effect: assembleEffect(draft.effect),
     ...(scaling ? { scaling } : {}),
+    ...(repeat ? { repeat } : {}),
   };
 }
 

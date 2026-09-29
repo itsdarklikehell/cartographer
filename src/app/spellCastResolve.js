@@ -1,28 +1,18 @@
 import { castSpell } from '../entities/Casting.js';
-import { riderSummary } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellAbilityModifier, spellAttackBonus } from '../entities/Classes.js';
-import { formatModifier } from '../entities/Modifiers.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { durationInRounds, formatCastingTime } from '../entities/SpellTiming.js';
 import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
-import { spawnSummons } from './summons.js';
-import {
-  findCombatant,
-  hpOf,
-  applyToTarget,
-  applyConditionToTarget,
-  defendedDamage,
-  endSpellEffects,
-} from './combatants.js';
-import { targetFree, chosenTargets, targetSummary } from './spellTargets.js';
+import { applyOutcomes } from './spellOutcomes.js';
+import { opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
+import { findCombatant, hpOf, applyConditionToTarget, endSpellEffects } from './combatants.js';
+import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
-import { spendRollRiders } from './riderSpend.js';
-import { defenseNote } from '../entities/DamageDefenses.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -77,12 +67,20 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
   const caster = live === entity ? plan.caster : toCaster(live);
   // An unprepared Wizard ritual has no slot to fall back to, so it casts as
   // a ritual even if the box was unticked.
-  const asRitual = values.ritual === '1' || plan.ritualOnly === true;
-  const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
+  const free = plan.free ?? null;
+  const asRitual = !free && (values.ritual === '1' || plan.ritualOnly === true);
+  const slotLevel = free
+    ? free.slotLevel
+    : spell.level > 0
+      ? effectiveSlot(spell, values.slot, asRitual)
+      : spell.level;
+  // A repeat with fixed damage resolves as its own automatic hit (see
+  // `SpellRepeat.repeatedSpell`). Every other cast resolves the spell itself.
+  const resolved = free?.repeat ? repeatedSpell(spell) : spell;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
   const chosen = chosenTargets(targets, values);
-  if (!targetFree(spell.effect.kind) && chosen.length === 0) {
+  if (!targetFree(resolved.effect.kind) && chosen.length === 0) {
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
   }
@@ -163,10 +161,11 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
         ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
       };
     });
-  } else if (spell.effect.kind === 'attack') {
-    // A touch spell reaches as far as a melee weapon does, which is the split
-    // Prone needs. Every other range is a ranged attack.
-    const melee = /touch/i.test(spell.range ?? '');
+  } else if (resolved.effect.kind === 'attack') {
+    // A melee spell attack says so. Otherwise a touch spell reaches as far as
+    // a melee weapon does, which is the split Prone needs, and every other
+    // range is a ranged attack.
+    const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
     castTargets = chosen.map((t) => ({
       ...t,
       attackMode:
@@ -180,15 +179,16 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
     }));
   }
 
-  const result = castSpell(caster, spell, {
+  const result = castSpell(caster, resolved, {
     slotLevel,
     casterLevel: caster.level ?? 1,
     targets: castTargets,
     spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
     saveDC,
     spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
-    attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
+    attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
+    ...(free ? { free: { slotLevel } } : {}),
     // The caster's feat riders join its chips for the projectile rolls. The
     // mode folds above keep the plain chip lists on both sides, because the
     // condition-effect table matches entries by name, and a feat that shares
@@ -224,7 +224,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
   // Holding the material is not the same as spending it. A costed component
   // must be in hand and stays there.
   const consumed = enforce && material.consumes && material.item ? material.item : null;
-  const holds = spell.concentration;
+  // A repeat keeps the concentration of the first cast. Starting it again would
+  // end the spell that the repeat belongs to.
+  const holds = spell.concentration && !free;
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
   if (result.spent || consumed || holds) {
@@ -263,7 +265,12 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
     : result.slotLevel > 0
       ? ` at level ${result.slotLevel}`
       : '';
-  app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
+  app.actions.logEvent(
+    'combat',
+    free?.repeat
+      ? `${caster.name} repeats ${spell.name}.`
+      : `${caster.name} casts ${spell.name}${at}.`,
+  );
   // A caster holds one spell open at a time, so starting this spell ended
   // the previous effect. The table needs to know this rules consequence.
   // The creatures the displaced spell held go free before this cast's own
@@ -276,215 +283,33 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
     endSpellEffects(app, entity.id, displaced.spellId);
   }
 
-  applyOutcomes(app, spell, result, entity.id, { tracked: holds });
+  applyOutcomes(app, resolved, result, entity.id, { tracked: holds });
+  // The chip for a later repeat lands last. The sweep of a displaced spell
+  // above would take it off again, because it names this spell too.
+  if (!free) openRepeat(app, spell, result, entity.id);
 }
 
 /**
- * The parenthetical a log line carries when the caster's chips changed the
- * roll, or an empty string when they did not. A multi-projectile cast passes
- * one entry per ray, because each ray rolls the riders again, and the rays
- * that rolled nothing drop out.
- * @param {({ note: string } | null | undefined)[]} riders
- * @returns {string}
- */
-function riderNote(riders) {
-  const notes = riders.filter((r) => r?.note).map((r) => /** @type {{ note: string }} */ (r).note);
-  return notes.length > 0 ? ` (${notes.join('; ')})` : '';
-}
-
-/**
- * Apply and log a resolved cast's outcomes: attack hits and misses, save
- * results with full, half, or no damage, and healing. Each target gets its
- * own log line, so a multi-target cast is auditable roll by roll. The toast
- * carries the summary. Damage and healing route to the same HP models the
- * weapon path uses.
+ * Give the caster the chip that lets it repeat a spell on a later turn, when
+ * the spell has a repeat and the first cast opened one. A repeat that stays
+ * on the creatures it hit records their ids and opens only on a hit.
  * @param {AppContext} app
  * @param {Spell} spell
- * @param {{ outcomes: object[], targets: import('../entities/Casting.js').CastTarget[] }} result
- * @param {string} casterId the function stamps this id onto a condition this
- *   cast imposes, so the app can find the effect again when the caster stops
- *   holding the spell
- * @param {{ tracked?: boolean }} [options] `tracked` is true when the caster
- *   took up concentration on this cast. A summons that nothing concentrates on
- *   stays on the map until the GM removes it, and the log says so.
+ * @param {{ slotLevel: number, outcomes: object[], targets: { id?: string }[] }} result
+ * @param {string} casterId
  */
-export function applyOutcomes(app, spell, result, casterId, { tracked = false } = {}) {
-  const kind = spell.effect.kind;
-  const summary = targetSummary(result.targets);
-  if (kind === 'attack') {
-    // A one-roll rider on the caster is used up by the first attack it joins.
-    const spent = /** @type {any[]} */ (result.outcomes).flatMap((o) =>
-      [o.rider, ...(o.shots ?? []).map((/** @type {any} */ s) => s.rider)].flatMap(
-        (r) => r?.spent ?? [],
-      ),
-    );
-    spendRollRiders(app, casterId, { spent });
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
-      // A multi-projectile cast logs the tally, not one line per ray. The
-      // rolls are already aggregated per creature, and the damage carries
-      // every ray's dice.
-      if (o.shots) {
-        const tally = `${o.hits} of ${o.fired} hit ${o.target.name}`;
-        // Each ray rolls the caster's riders again, so the line names every
-        // ray's dice. The tally itself prints no to-hit numbers, and this is
-        // the only place the rays' own rolls are recorded.
-        const rode = riderNote(o.shots.map((/** @type {any} */ s) => s.rider));
-        // Each ray is its own hit, so the defenses apply to each one.
-        const hits = /** @type {any[]} */ (o.shots)
-          .filter((s) => s.damage)
-          .map((s) => ({ crit: s.crit, ...defendedDamage(app, o.target.id, s.damage.byType) }));
-        const defended = defenseNote(
-          hits.flatMap((h) => h.notes),
-          hits.reduce((n, h) => n + h.total, 0),
-        );
-        app.actions.logEvent(
-          'combat',
-          o.hits > 0
-            ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}${defended}.`
-            : `${spell.name}: ${tally}${rode} (AC ${o.ac}).`,
-        );
-        // Each ray that lands is its own hit, so a concentrating target
-        // saves once per ray and a dying one takes a failure per ray.
-        for (const h of hits) applyToTarget(app, o.target.id, h.total, false, { crit: h.crit });
-        continue;
-      }
-      const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
-      // A rider on the caster changed the number, so both outcomes say so.
-      const rode = riderNote([o.rider]);
-      if (!o.hit) {
-        app.actions.logEvent(
-          'combat',
-          `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${o.target.name}.`,
-        );
-        continue;
-      }
-      const taken = defendedDamage(app, o.target.id, o.damage?.byType ?? []);
-      app.actions.logEvent(
-        'combat',
-        `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}` +
-          `${defenseNote(taken.notes, taken.total)}.`,
-      );
-      applyToTarget(app, o.target.id, taken.total, false, { crit: o.crit });
-    }
-    app.toasts.show(`${spell.name} on ${summary}.`);
-    return;
-  }
-  if (kind === 'save') {
-    // A failed save's condition rides for as long as the spell lasts. The
-    // structured duration gives this length in rounds. An open-ended
-    // duration leaves the chip for the GM to clear.
-    const rounds = durationInRounds(spell.duration);
-    const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
-    const ability = effect.saveAbility;
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
-      if (o.unaffectedBy) {
-        app.actions.logEvent('combat', `${o.target.name} is unaffected (${o.unaffectedBy}).`);
-        continue;
-      }
-      const verdict = o.saved ? 'saves' : 'fails';
-      // The log names the bonus alongside the roll, the same way an attack
-      // log names the ability and proficiency behind its number.
-      const bonus = `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`;
-      // The chip records the cast that wrote it. This lets the app end the
-      // effect when the caster stops holding the spell, and lets a repeated
-      // save roll against it. The app uses the bonus stamped here only for a
-      // target whose own save it cannot read. It re-derives a character's
-      // bonus at retry time.
-      const imposed = o.condition
-        ? applyConditionToTarget(
-            app,
-            o.target.id,
-            o.condition,
-            rounds,
-            {
-              spellId: spell.id,
-              spellName: spell.name,
-              casterId,
-              saveAbility: ability,
-              saveDC: o.dc,
-              saveBonus: o.target.saveBonus ?? 0,
-              ...(effect.saveEnds ? { saveEnds: true } : {}),
-            },
-            o.conditionRider,
-          )
-        : false;
-      const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
-      // A rider the target already held changed the roll, so the line states it.
-      const rode = o.rider ? `, ${o.rider.note}` : '';
-      // A chip that fails the save outright threw no die, so the line names
-      // the chip where the roll would have gone.
-      const detail = o.autoFailedBy ? o.autoFailedBy : `${bonus}${rode}: ${o.save.total}`;
-      // A save that negates the damage leaves nothing for the defenses to
-      // change. Otherwise they apply per type, after the halving of a save.
-      const taken =
-        o.taken > 0
-          ? defendedDamage(app, o.target.id, o.damage.byType, { halve: o.saved })
-          : { total: 0, notes: [] };
-      const defended = taken.notes.length > 0 ? ` (${taken.notes.join(', ')})` : '';
-      app.actions.logEvent(
-        'combat',
-        `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${taken.total} damage` +
-          `${defended}${cond}.`,
-      );
-      applyToTarget(app, o.target.id, taken.total, false);
-      spendRollRiders(app, o.target.id, o.rider);
-    }
-    app.toasts.show(`${spell.name} on ${summary}.`);
-    return;
-  }
-  if (kind === 'heal') {
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
-      app.actions.logEvent(
-        'combat',
-        `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
-      );
-      applyToTarget(app, o.target.id, o.healing.total, true);
-    }
-    app.toasts.show(`${spell.name} heals ${summary}.`);
-    return;
-  }
-  if (kind === 'buff') {
-    // A buff rolls nothing, so the whole cast is the chip it leaves. The chip
-    // carries the same source a failed save writes, which is what lets
-    // `endSpellEffects` sweep it when the caster stops concentrating.
-    const rounds = durationInRounds(spell.duration);
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
-      const imposed = applyConditionToTarget(
-        app,
-        o.target.id,
-        o.condition,
-        rounds,
-        { spellId: spell.id, spellName: spell.name, casterId },
-        o.rider,
-      );
-      const adds = o.rider ? `: ${riderSummary(o.rider)}` : '';
-      app.actions.logEvent(
-        'combat',
-        `${o.target.name} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,
-      );
-    }
-    app.toasts.show(`${spell.name} on ${summary}.`);
-    return;
-  }
-  if (kind === 'summons') {
-    // The one outcome names the template and the count. The creatures land on
-    // the tile of the party, which is the only place a cast can reach without
-    // map distance.
-    for (const o of /** @type {any[]} */ (result.outcomes)) {
-      const spawn = spawnSummons(app, spell, casterId, o);
-      if ('error' in spawn) {
-        app.toasts.show(spawn.error, { level: 'error' });
-        return;
-      }
-      // An untracked summon has nothing holding it, so nothing will take it
-      // away again. A spell with no concentration, and a creature caster, both
-      // land here.
-      const held = tracked ? '' : ' (untracked)';
-      const tally = `${spawn.spawned.length} x ${spawn.template}`;
-      app.actions.logEvent('combat', `${spell.name} summons ${tally}${held}.`);
-      app.toasts.show(`${spell.name} summons ${tally}.`);
-    }
-    return;
-  }
-  app.toasts.show(`${spell.name} cast.`);
+function openRepeat(app, spell, result, casterId) {
+  if (!spell.repeat) return;
+  const hits =
+    spell.effect.kind === 'attack'
+      ? /** @type {any[]} */ (result.outcomes).filter((o) => o.hit).map((o) => o.target.id)
+      : result.targets.map((t) => t.id);
+  const hitIds = /** @type {string[]} */ (hits.filter(Boolean));
+  if (!opensRepeat(spell, hitIds)) return;
+  applyConditionToTarget(app, casterId, spell.name, durationInRounds(spell.duration), {
+    spellId: spell.id,
+    spellName: spell.name,
+    casterId,
+    repeat: { slotLevel: result.slotLevel, ...(spell.repeat.damage ? { targetIds: hitIds } : {}) },
+  });
 }

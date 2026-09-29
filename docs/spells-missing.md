@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 54. Each shipped spell has rules that the
+319 spells, and the app ships 59. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -22,12 +22,12 @@ The paladin also has one spell of its own, Destructive Wave.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Mage Armor |
-| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Mage Armor |
+| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear |
-| 4th | Ice Storm, Blight |
+| 4th | Ice Storm, Blight, Phantasmal Killer |
 | 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave |
-| 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Heal |
+| 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |
 | 8th | Power Word Stun, Sunburst |
 | 9th | Meteor Swarm |
@@ -35,7 +35,9 @@ The paladin also has one spell of its own, Destructive Wave.
 The selection prefers spells whose rules the current mechanics resolve in
 full. The resolver applies these rules:
 
-- A d20 spell attack against AC.
+- A d20 spell attack against AC. A melee spell attack gets the melee side
+  of Prone and of an automatic critical hit, and some attacks deal half
+  their damage on a miss.
 - Several projectiles from one cast, each rolled on its own and split
   between the creatures that the caster picks.
 - A save against the spell save DC of the caster, with damage that the save
@@ -51,8 +53,15 @@ full. The resolver applies these rules:
   of each turn of the target.
 - A group of summoned creatures from one library template, which stay while
   the caster keeps concentration.
+- Damage that a hit or a failed save leaves on the target, rolled at the
+  end of each of the target's turns. With a repeated save, the damage lands
+  only when that save fails.
+- A condition chip that ends at a turn boundary: the start or the end of
+  the caster's next turn, or the end of the target's next turn.
+- A spell that the caster uses again on each later turn while it lasts,
+  with no new slot.
 - Damage or effect scaling by spell slot level, and by caster level for
-  cantrips.
+  cantrips. A spell can also scale once per two slot levels.
 
 A *condition chip* is the label on a creature or a character that records a
 condition, such as Blinded or Bless.
@@ -68,6 +77,24 @@ saving throw.
 Bless and Bane have a lasting rider. The chip adds or subtracts 1d4 on each
 attack roll and saving throw until its duration ends or the caster stops
 concentrating.
+
+### Later turns
+
+Acid Arrow and Phantasmal Killer leave a chip on the target. The chip deals
+its damage at the end of the turns of that creature, and it ends at the
+boundary that the spell names. Phantasmal Killer deals its damage only when
+the repeated save fails, and a success ends the spell.
+
+Witch Bolt, Spiritual Weapon, and Sunbeam leave a chip on the caster, named
+after the spell. While the caster has that chip, a cast of the same spell
+is a repeat. The dialog says Repeat, offers no slot, and costs the action or
+bonus action that the spell names. A repeat of Witch Bolt deals 1d12 to the
+creature that the first cast hit, with no roll. To cast the spell again
+from a new slot, remove the chip first.
+
+A chip that ends at a turn boundary shows "next turn" in place of a round
+count. Outside a fight there are no turns, so such a chip lasts one round.
+The end of a fight removes every such chip.
 
 ### Spells described in prose
 
@@ -88,6 +115,12 @@ that it can. The description of each entry states the difference:
 - Flame Strike raises its fire dice at a higher slot. The printed spell
   lets the caster choose the fire dice or the radiant dice.
 - Conjure Animals always summons wolves.
+- Witch Bolt ends when the caster uses its action for something else, or
+  when the target moves out of range. The GM ends it by hand.
+- Spiritual Weapon moves up to 20 feet before each attack. The GM tracks
+  where it is.
+- Sunbeam gives undead and oozes disadvantage on the save. The GM sets the
+  mode in the cast dialog.
 
 ## Spells that need a missing mechanic
 
@@ -123,14 +156,6 @@ Death, and Fire Storm work this way.
 
 A cast resolves once, and the app has no template for map areas. So no
 rule keeps a zone on the map after the cast.
-
-### Damage on later turns
-
-Examples: Acid Arrow, Witch Bolt, Phantasmal Killer, Sunbeam, and
-Spiritual Weapon.
-
-One cast rolls one set of dice. No rule rolls the spell again on the turns
-that follow.
 
 ### Two mechanics in one cast
 
@@ -203,6 +228,5 @@ the SRD. A spell outside them works as a `utility` entry with its rules in
 the description. The GM applies those rules by hand, as at a physical
 table. The [GM guide](gm-guide.md#add-a-missing-spell) gives the steps.
 
-A new mechanic, such as movement, a lasting zone, or an effect that rolls
-again on a later turn, lets the list grow. Add the spells that need the
+A new mechanic, such as movement or a lasting zone, lets the list grow. Add the spells that need the
 mechanic to the level file under `src/data/spells/` in the same change.

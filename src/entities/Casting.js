@@ -66,16 +66,20 @@ export function cantripStep(casterLevel) {
 /**
  * The number of scaling increments a cast applies. For a cantrip, this is the
  * caster's level step shown above. For a leveled spell, this is every slot
- * level above the spell's own level, which is upcasting. This function is
- * exported because the cast dialog needs the same count to work out how
- * many targets to offer before the cast resolves.
+ * level above the spell's own level, which is upcasting. A spell with
+ * `levelsPerStep` counts one increment per that many slot levels, rounded
+ * down, so Spiritual Weapon gains 1d8 at 4th level and not at 3rd. This
+ * function is exported because the cast dialog needs the same count to work
+ * out how many targets to offer before the cast resolves.
  * @param {Spell} spell
  * @param {number} slotLevel
  * @param {number} casterLevel
  * @returns {number}
  */
 export function scalingSteps(spell, slotLevel, casterLevel) {
-  return spell.level === 0 ? cantripStep(casterLevel) : Math.max(0, slotLevel - spell.level);
+  if (spell.level === 0) return cantripStep(casterLevel);
+  const per = Math.max(1, spell.scaling?.levelsPerStep ?? 1);
+  return Math.floor(Math.max(0, slotLevel - spell.level) / per);
 }
 
 /** The most creatures a spell can name as a fixed target count. Past this
@@ -299,6 +303,18 @@ function scaledParts(baseParts, scaling, steps) {
 }
 
 /**
+ * The dice that a spell's later-turn damage rolls, grown by its own per-step
+ * dice, or null when the spell leaves no damage behind.
+ * @param {import('../types/spell.js').SpellOngoing | undefined} ongoing
+ * @param {number} steps
+ * @returns {DamagePart[] | null}
+ */
+function ongoingParts(ongoing, steps) {
+  if (!ongoing || ongoing.damage.length === 0) return null;
+  return scaledParts(ongoing.damage, { damagePerLevel: ongoing.perStep }, steps);
+}
+
+/**
  * Whether a caster's spellbook lets it cast this spell. A cantrip must be in
  * the cantrip list. A leveled spell must be prepared under a prepared-rule
  * class, or known under a known-rule class. `isSpellCastable` holds this
@@ -353,11 +369,14 @@ function slotPoolToSpend(caster, slotLevel) {
  *   or crit, and the damage dealt on a hit (a crit doubles the dice). A
  *   multi-projectile spell instead carries the target's allocated `shots`,
  *   each with its own roll and damage, how many `fired` and `hits` landed,
- *   and their damage merged for the log.
+ *   and their damage merged for the log. A miss of a spell with `halfOnMiss`
+ *   still includes its rolled `damage`, with `halved` set. A hit of a spell
+ *   with `ongoing` includes the scaled `ongoing` dice for the chip it leaves.
  * - `save`: the damage rolled once, plus one entry per target with its save
  *   roll, whether it saved, and the damage it takes (full, half when
  *   `halfOnSave`, or none). Each entry also keeps the rolled `damage`, so a
- *   caller can apply the target's damage defenses per type.
+ *   caller can apply the target's damage defenses per type. A failed save of
+ *   a spell with `ongoing` includes the scaled `ongoing` dice.
  * - `heal`: the healing rolled once, applied identically to each target. A
  *   heal with `addsModifier` adds `spellModifier`, the caster's spellcasting
  *   ability modifier, to the roll.
@@ -366,6 +385,11 @@ function slotPoolToSpend(caster, slotLevel) {
  * - `summons`: no rolls and no targets, and one entry naming the `creature`
  *   template to spawn and how many (`count`).
  * - `utility`: no rolls, and an empty `outcomes`.
+ *
+ * A `free` cast spends no slot and skips the spellbook check, because the
+ * caster already paid for it: a repeat of a spell still open from an earlier
+ * turn, for example. It resolves at `free.slotLevel`, the level the first
+ * cast used.
  *
  * @template {SpellCaster} T
  * @param {T} caster
@@ -380,6 +404,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   attackMode?: RollMode,
  *   ritual?: boolean,
  *   casterConditions?: import('./Riders.js').RiderSource[],
+ *   free?: { slotLevel: number },
  *   rng?: RandomFn,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
@@ -403,33 +428,13 @@ export function castSpell(caster, spell, options = {}) {
     attackMode = 'normal',
     ritual = false,
     casterConditions = [],
+    free = null,
     rng = Math.random,
   } = options;
 
-  // A Wizard's unprepared ritual passes as a ritual cast and nothing else.
-  if (!canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
-    return { ok: false, reason: 'not-known' };
-  }
-
-  // A ritual cast takes the extra ten minutes instead of a slot, so it spends
-  // nothing and always resolves at the spell's own level. There is no slot to
-  // upcast from. A spell with no ritual, and a cantrip, which has no ritual
-  // to trade a slot for, cannot be cast this way.
-  if (ritual && (!spell.ritual || spell.level === 0)) return { ok: false, reason: 'not-ritual' };
-
-  // A cantrip uses no slot. A leveled spell must be cast at or above its own
-  // level and have a slot of that level free.
-  const cantrip = spell.level === 0;
-  const asRitual = ritual && !cantrip;
-  const poolId = cantrip || asRitual ? null : slotPoolToSpend(caster, slotLevel);
-  if (!cantrip && !asRitual) {
-    if (slotLevel < spell.level) return { ok: false, reason: 'bad-slot-level' };
-    if (!poolId) return { ok: false, reason: 'no-slot' };
-  }
-
-  const effectiveSlot = cantrip ? 0 : asRitual ? spell.level : slotLevel;
-  const steps = scalingSteps(spell, effectiveSlot, casterLevel);
-  const nextCaster = poolId ? spendResource(caster, poolId, 1) : caster;
+  const paid = free ? freeCast(caster, free) : payForCast(caster, spell, slotLevel, ritual);
+  if (!paid.ok) return paid;
+  const steps = scalingSteps(spell, paid.slotLevel, casterLevel);
 
   // Over-selecting drops the extra targets instead of failing the cast. The
   // slot is already committed by the time a cap is exceeded, and losing the
@@ -451,15 +456,69 @@ export function castSpell(caster, spell, options = {}) {
 
   return {
     ok: true,
-    caster: nextCaster,
+    caster: paid.caster,
     spell,
-    slotLevel: effectiveSlot,
-    spent: !cantrip && !asRitual,
-    ritual: asRitual,
+    slotLevel: paid.slotLevel,
+    spent: paid.spent,
+    ritual: paid.ritual,
     effect: spell.effect.kind,
     targets: reached,
     truncated: targets.length - reached.length,
     outcomes,
+  };
+}
+
+/**
+ * What a free cast pays: nothing. It resolves at the level it names.
+ * @template {SpellCaster} T
+ * @param {T} caster
+ * @param {{ slotLevel: number }} free
+ * @returns {{ ok: true, caster: T, slotLevel: number, spent: boolean, ritual: boolean }}
+ */
+function freeCast(caster, free) {
+  return { ok: true, caster, slotLevel: free.slotLevel, spent: false, ritual: false };
+}
+
+/**
+ * Check that the caster can cast the spell, and spend what the cast costs: a
+ * slot for a leveled spell, or nothing for a cantrip or a ritual.
+ * @template {SpellCaster} T
+ * @param {T} caster
+ * @param {Spell} spell
+ * @param {number} slotLevel
+ * @param {boolean} ritual
+ * @returns {(
+ *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
+ *   { ok: true, caster: T, slotLevel: number, spent: boolean, ritual: boolean }
+ * )}
+ */
+function payForCast(caster, spell, slotLevel, ritual) {
+  // A Wizard's unprepared ritual passes as a ritual cast and nothing else.
+  if (!canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
+    return { ok: false, reason: 'not-known' };
+  }
+
+  // A ritual cast takes the extra ten minutes instead of a slot, so it spends
+  // nothing and always resolves at the spell's own level. There is no slot to
+  // upcast from. A spell with no ritual, and a cantrip, which has no ritual
+  // to trade a slot for, cannot be cast this way.
+  if (ritual && (!spell.ritual || spell.level === 0)) return { ok: false, reason: 'not-ritual' };
+
+  // A cantrip uses no slot. A leveled spell must be cast at or above its own
+  // level and have a slot of that level free.
+  const cantrip = spell.level === 0;
+  const asRitual = ritual && !cantrip;
+  const poolId = cantrip || asRitual ? null : slotPoolToSpend(caster, slotLevel);
+  if (!cantrip && !asRitual) {
+    if (slotLevel < spell.level) return { ok: false, reason: 'bad-slot-level' };
+    if (!poolId) return { ok: false, reason: 'no-slot' };
+  }
+  return {
+    ok: true,
+    caster: poolId ? spendResource(caster, poolId, 1) : caster,
+    slotLevel: cantrip ? 0 : asRitual ? spell.level : slotLevel,
+    spent: !cantrip && !asRitual,
+    ritual: asRitual,
   };
 }
 
@@ -484,7 +543,8 @@ export function castSpell(caster, spell, options = {}) {
  * this projectile's dice alone, and a natural 1 always misses. `autoCrit`
  * makes any hit a critical one. An `autoHit`
  * projectile skips the d20 entirely and can neither miss nor crit, so no
- * rider applies to it either.
+ * rider applies to it either. `bonus` is a flat amount added to the damage of
+ * a hit, which a critical hit does not double.
  *
  * The riders roll per projectile, because each projectile is its own attack
  * roll and a blessed caster rolls the d4 again for each one.
@@ -495,7 +555,7 @@ export function castSpell(caster, spell, options = {}) {
  *   mode: RollMode,
  *   autoHit: boolean | undefined,
  *   autoCrit?: boolean,
- *   hp?: number,
+ *   bonus?: number,
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
  * }} shot `parts` is what one projectile deals
@@ -508,6 +568,7 @@ function rollProjectile({
   mode,
   autoHit,
   autoCrit = false,
+  bonus = 0,
   casterConditions,
   rng,
 }) {
@@ -517,7 +578,7 @@ function rollProjectile({
       natural: 0,
       crit: false,
       hit: true,
-      damage: rollDamage(parts, 0, rng),
+      damage: rollDamage(parts, bonus, rng),
       rider: null,
     };
   }
@@ -532,7 +593,7 @@ function rollProjectile({
     natural,
     crit,
     hit,
-    damage: hit ? rollDamage(doubled, 0, rng) : null,
+    damage: hit ? rollDamage(doubled, bonus, rng) : null,
     rider: rider.note ? rider : null,
   };
 }
@@ -597,6 +658,10 @@ function resolveEffect(spell, ctx) {
 
   if (effect.kind === 'attack') {
     const baseParts = scaledParts(effect.damage, spell.scaling, steps);
+    const bonus = effect.addsModifier ? spellModifier : 0;
+    // The dice a hit leaves on the target for its later turns, scaled with the
+    // cast. A critical hit doubles only the dice of the hit itself.
+    const ongoing = ongoingParts(effect.ongoing, steps);
     // The target's own chips can slant the roll aimed at it, so the mode is
     // read per target and falls back to the one the whole cast carries.
     const shot = (/** @type {CastTarget} */ target, /** @type {number} */ ac) =>
@@ -607,17 +672,31 @@ function resolveEffect(spell, ctx) {
         mode: target.attackMode ?? attackMode,
         autoHit: effect.projectiles?.autoHit,
         autoCrit: target.autoCrit,
+        bonus,
         casterConditions,
         rng,
       });
 
-    // A single-projectile spell reports its one roll flat. This is what
-    // every attack outcome looked like before projectiles existed.
+    // A single-projectile spell reports its one roll flat. A spell that
+    // splashes on a miss rolls its damage anyway, and `halved` tells the
+    // caller to take half of it.
     if (!effect.projectiles) {
       return targets.map((target) => {
         const ac = target.ac ?? 10;
         const { attack, natural, crit, hit, damage, rider } = shot(target, ac);
-        return { target, attack, natural, crit, hit, ac, damage, rider };
+        const splash = !hit && effect.halfOnMiss ? rollDamage(baseParts, bonus, rng) : null;
+        return {
+          target,
+          attack,
+          natural,
+          crit,
+          hit,
+          ac,
+          damage: damage ?? splash,
+          rider,
+          ...(splash ? { halved: true } : {}),
+          ...(hit && ongoing ? { ongoing } : {}),
+        };
       });
     }
 
@@ -644,6 +723,7 @@ function resolveEffect(spell, ctx) {
                 /** @type {ReturnType<typeof rollDamage>[]} */ (landed.map((s) => s.damage)),
               )
             : null,
+        ...(landed.length > 0 && ongoing ? { ongoing } : {}),
       };
     });
   }
@@ -654,6 +734,7 @@ function resolveEffect(spell, ctx) {
     // or no damage.
     const parts = scaledParts(effect.damage, spell.scaling, steps);
     const damage = rollDamage(parts, 0, rng);
+    const ongoing = ongoingParts(effect.ongoing, steps);
     return targets.map((target) => {
       // The caller already works out the target's bonus. It comes from a
       // party character's own saves, or is hand-entered for a foe.
@@ -693,6 +774,7 @@ function resolveEffect(spell, ctx) {
         condition,
         // The rider rides the chip, so it lands only when the chip does.
         conditionRider: condition ? (effect.rider ?? null) : null,
+        ...(!saved && ongoing ? { ongoing } : {}),
       };
     });
   }

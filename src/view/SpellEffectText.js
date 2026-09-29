@@ -1,0 +1,96 @@
+import { formatDamage } from '../entities/Equipment.js';
+import { buffCondition } from '../entities/Casting.js';
+import { riderSummary } from '../entities/Riders.js';
+import { UNTIL_LABELS } from '../entities/SpellFields.js';
+
+/**
+ * The lines of the spell detail modal that say what a spell does in play: the
+ * roll it makes and what it deals, and what it does on the turns after the
+ * cast. `ui/SpellDetail.js` places them. They live here so a test can read
+ * them without a browser.
+ */
+
+/** @typedef {import('../types/spell.js').Spell} Spell */
+
+/** How each repeat cost reads. @type {Record<string, string>} */
+const COST_TEXT = { action: 'an action', bonus: 'a bonus action', reaction: 'a reaction' };
+
+/**
+ * The one-line effect summary shown under the meta grid: a spell attack and
+ * its damage, a save (ability plus DC) with its damage and the chip it
+ * imposes, healing dice, or the chip a buff hands out. A chip that changes
+ * later rolls states what it adds. A utility spell has no line, because its
+ * rules live in the description.
+ * @param {Spell} spell
+ * @param {number | null} saveDC the caster's save DC, or null when unknown
+ * @returns {string | null}
+ */
+export function effectSummary(spell, saveDC) {
+  const effect = spell.effect;
+  if (effect.kind === 'attack') {
+    const dice = formatDamage(effect.damage) || 'no damage';
+    const damage = effect.addsModifier ? `${dice} + spellcasting modifier` : dice;
+    const kind = effect.melee ? 'Melee spell attack' : 'Spell attack';
+    const miss = effect.halfOnMiss ? ' (half on a miss)' : '';
+    const shots = effect.projectiles;
+    if (!shots) return `${kind} — ${damage}${miss}`;
+    // With projectiles, the dice apply per projectile. The line states the
+    // count before it states what one projectile deals.
+    const growth = shots.perStep ? ` (+${shots.perStep} per level)` : '';
+    const roll = shots.autoHit ? 'hits automatically' : kind.toLowerCase();
+    return `${shots.count} projectile${shots.count === 1 ? '' : 's'}${growth}, ${roll} — ${damage} each`;
+  }
+  if (effect.kind === 'save') {
+    const dc = saveDC !== null ? ` DC ${saveDC}` : '';
+    const dmg = formatDamage(effect.damage);
+    const half = effect.halfOnSave ? ' (half on save)' : '';
+    const rider = effect.rider ? ` (${riderSummary(effect.rider)})` : '';
+    const until = effect.until ? ` until ${UNTIL_LABELS[effect.until]}` : '';
+    const cond = effect.condition ? `, ${effect.condition}${rider}${until}` : '';
+    return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}`;
+  }
+  if (effect.kind === 'heal') {
+    const mod = effect.addsModifier ? ' + spellcasting modifier' : '';
+    return `Healing — ${formatDamage(effect.healing) || 'no dice'}${mod}`;
+  }
+  if (effect.kind === 'buff') {
+    const chip = buffCondition(spell);
+    return effect.rider ? `${chip} — ${riderSummary(effect.rider)}` : chip;
+  }
+  return null;
+}
+
+/**
+ * What a spell does on the turns after the cast, one sentence per effect:
+ * damage it leaves on a target, and a repeat that the caster can use without
+ * a new slot. A spell with neither has no lines.
+ * @param {Spell} spell
+ * @returns {string[]}
+ */
+export function laterTurnLines(spell) {
+  /** @type {string[]} */
+  const lines = [];
+  const effect = spell.effect;
+  const ongoing = effect.kind === 'attack' || effect.kind === 'save' ? effect.ongoing : undefined;
+  if (ongoing) {
+    const dice = formatDamage(ongoing.damage);
+    const growth = ongoing.perStep?.length ? ` (+${formatDamage(ongoing.perStep)} per level)` : '';
+    const trigger = effect.kind === 'attack' ? 'A hit' : 'A failed save';
+    const when =
+      effect.kind === 'save' && effect.condition && effect.saveEnds
+        ? 'at the end of each of its turns while it fails the repeated save'
+        : effect.kind === 'save' && effect.condition
+          ? `at the end of each of its turns while it is ${effect.condition}`
+          : `at ${UNTIL_LABELS[ongoing.until ?? 'target-end']}`;
+    lines.push(`${trigger} also deals ${dice}${growth} ${when}.`);
+  }
+  const repeat = spell.repeat;
+  if (repeat) {
+    const cost = COST_TEXT[repeat.cost ?? spell.castingTime.kind] ?? 'an action';
+    const what = repeat.damage?.length
+      ? `deals ${formatDamage(repeat.damage)} to the creature it hit, with no roll`
+      : 'repeats the effect';
+    lines.push(`On each later turn while the spell lasts, ${cost} ${what}. No slot.`);
+  }
+  return lines;
+}

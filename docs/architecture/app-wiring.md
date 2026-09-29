@@ -576,7 +576,8 @@ the same code. The fight itself renders in combat mode, which
 
 | Module | Owns |
 | --- | --- |
-| `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and rolling the repeated saves of every turn that ends on the way |
+| `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and running the turn boundaries on the way |
+| `turnEffects.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
 | `combatEnd.js` | The confirm before End combat drops a fight that hostile creatures still stand in, and the XP offer after a victory |
 | `summons.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
@@ -599,14 +600,15 @@ dialog is `addFromLibrary` in `creatureForm.js`.
 #### Attacks and casts
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
-bar starts. Casting a spell is the same job, split across four modules:
+bar starts. Casting a spell is the same job, split across five modules:
 
 | Module | Owns |
 | --- | --- |
 | `spellCast.js` | The two entry points (`castSpellAction` in combat, `castSpellOutOfCombat` outside it) and the cast plan |
 | `spellTargets.js` | Which creatures a spell can reach |
 | `spellCastFields.js` | The dialog fields |
-| `spellCastResolve.js` | Rolling the cast and writing the outcome |
+| `spellCastResolve.js` | Rolling the cast, and the chip that lets the caster repeat it on a later turn |
+| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the damage a chip leaves for later turns, summons, and the log lines |
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 
@@ -664,8 +666,11 @@ creatures):
   A failed save against a spell with a `condition` adds that chip to the
   target. The chip has a round counter, read from the spell's duration
   (`SpellTiming.durationInRounds`), and the round tick clears the chip when
-  the spell ends. Both kinds of combatant have condition chips, so the write
-  branches only to use the store of the target's collection.
+  the spell ends. A spell that names a turn boundary writes the chip with
+  `expires` and no round count instead. Both kinds of combatant have
+  condition chips, so the write branches only to use the store of the
+  target's collection. A chip of the same name from another cast that lasts
+  longer stays in place (`Conditions.outlasts`).
 - `endSpellEffects` removes the chips and summons of a spell when the spell
   ends.
 - `commitCreatures(app)` is the refresh that follows a write to

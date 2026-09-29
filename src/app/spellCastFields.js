@@ -113,7 +113,7 @@ function targetsLabel(kind, cap) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, materialMissing?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number }} [opts] `material`: true when the
+ * @param {{ material?: boolean, materialMissing?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number, free?: boolean }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
  *   checkbox for a table that treats components as flavor. `materialMissing`: true when
  *   the caster does not carry the component, which the box label then says. `ritual`: true when this caster can
@@ -123,6 +123,8 @@ function targetsLabel(kind, cap) {
  *   `actionLabel`: the wording of the action-cost opt-out, for a cast the
  *   caster's turn cannot pay for. An empty string leaves the box out.
  *   `maxCap`: the cap at the highest offered slot. It defaults to `cap`.
+ *   `free`: true for a cast that spends no slot, such as a repeat. It has no
+ *   slot picker and no ritual box, and it is never refused for want of a slot.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
@@ -133,11 +135,12 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
     armor = false,
     actionLabel = '',
     maxCap = cap,
+    free = false,
   } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
-  if (spell.level > 0) {
+  if (spell.level > 0 && !free) {
     if (slotLevels.length === 0 && !ritual) return null;
     if (slotLevels.length > 0) {
       fields.push({

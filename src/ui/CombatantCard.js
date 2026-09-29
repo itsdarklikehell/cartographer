@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
 import { bareButton, chip, sectionLabel, textButton } from './buttons.js';
+import { conditionChip } from './ConditionsBar.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { buildStatBar } from './CharacterBars.js';
@@ -126,9 +127,7 @@ export function combatantCard(row, selection = {}) {
       el(
         'div',
         'combatant-card__conditions u-row u-wrap u-g1',
-        ...row.conditions.map((c) =>
-          chip(c.rounds !== null && c.rounds !== undefined ? `${c.name} (${c.rounds})` : c.name),
-        ),
+        ...row.conditions.map((c) => conditionChip(c)),
         status
           ? chip(DEATH_SAVE_CHIPS[status], {
               className: `combatant-card__death-chip combatant-card__death-chip--${status}`,

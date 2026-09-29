@@ -4,7 +4,7 @@ import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/C
 import { armorClass, unproficientWear } from '../entities/Armor.js';
 import { equippedWeapons } from '../entities/Equipment.js';
 import { getHP, getSpellbook } from '../entities/Character.js';
-import { addCondition } from '../entities/Conditions.js';
+import { addCondition, createCondition, outlasts } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
@@ -389,12 +389,19 @@ export function logDefeatTransition(app, prev, next) {
  * cast ends, and lets the target retry the save where the spell allows it. A
  * hand-added chip has no source. `rider` is what the chip adds to the
  * target's later rolls, which the roll sites read back off the chip.
+ * `more` contains the turn boundary that ends the chip and the damage it deals
+ * on later turns.
+ *
+ * A chip of the same name from another cast that lasts longer stays in place
+ * (see `Conditions.outlasts`). The target is still under the condition, so
+ * the function reports that the chip landed.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {string} name
  * @param {number | null} rounds
  * @param {import('../types/entities.js').ConditionSource} [source]
  * @param {import('../types/entities.js').RollRider | null} [rider]
+ * @param {Pick<import('../entities/Conditions.js').ConditionExtras, 'expires' | 'ongoing'>} [more]
  * @returns {boolean}
  */
 export function applyConditionToTarget(
@@ -404,13 +411,15 @@ export function applyConditionToTarget(
   rounds,
   source = undefined,
   rider = null,
+  more = {},
 ) {
   const found = findCombatant(app, targetId);
   if (!found) return false;
-  const conditions = addCondition(found.entity.conditions, name, rounds, {
-    source,
-    ...(rider ? { rider } : {}),
-  });
+  const extras = { source, ...(rider ? { rider } : {}), ...more };
+  const key = name.trim().toLowerCase();
+  const held = found.entity.conditions.find((c) => c.name.toLowerCase() === key);
+  if (outlasts(held, createCondition(name, rounds, extras))) return true;
+  const conditions = addCondition(found.entity.conditions, name, rounds, extras);
   if (found.kind === 'character') {
     storeCharacterChips(app, found, { ...found.entity, conditions });
     return true;
@@ -485,7 +494,7 @@ function storeConditions(found, conditions) {
  */
 export function endSpellEffects(app, casterId, spellId) {
   const { state } = app;
-  /** @type {{ name: string, condition: string }[]} */
+  /** @type {{ name: string, condition: string, repeat: boolean }[]} */
   const freed = [];
   /**
    * @template {{ name: string, conditions: import('../types/entities.js').Condition[] }} T
@@ -495,7 +504,9 @@ export function endSpellEffects(app, casterId, spellId) {
   const sweep = (entity) => {
     const { conditions, removed } = removeImposed(entity.conditions, casterId, spellId);
     if (removed.length === 0) return entity;
-    for (const c of removed) freed.push({ name: entity.name, condition: c.name });
+    for (const c of removed) {
+      freed.push({ name: entity.name, condition: c.name, repeat: !!c.source?.repeat });
+    }
     return { ...entity, conditions };
   };
   /**
@@ -532,8 +543,13 @@ export function endSpellEffects(app, casterId, spellId) {
   if (characters) app.actions.refreshSelectedCharacter();
   if (creatures || despawned.length > 0) commitCreatures(app, { dirty: false });
   app.actions.markDirty();
-  for (const { name, condition } of freed) {
-    app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
+  // The chip a caster keeps for a repeat is not a condition it was under, so
+  // its line names the spell that ends.
+  for (const { name, condition, repeat } of freed) {
+    app.actions.logEvent(
+      'combat',
+      repeat ? `${name}'s ${condition} ends.` : `${name} is no longer ${condition}.`,
+    );
   }
   for (const creature of despawned) {
     app.actions.logEvent('combat', `${creature.name} vanishes as ${spellNameOf(creature)} ends.`);
@@ -558,18 +574,23 @@ function spellNameOf(creature) {
  * raised since the cast counts. The bonus the cast recorded is the fallback for
  * a chip whose source names no ability.
  * Each roll is logged with its DC, so a table can see why an effect held.
+ * The results come back, so the caller can deal the damage that a failed
+ * retry leaves.
  * @param {AppContext} app
  * @param {string} combatantId the participant whose turn just ended
+ * @param {{ rng?: import('../types/dice.js').RandomFn }} [options]
+ * @returns {ReturnType<typeof repeatSaves>['results']}
  */
-export function retryImposedSaves(app, combatantId) {
+export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) {
   const found = findCombatant(app, combatantId);
-  if (!found) return;
+  if (!found) return [];
   const { conditions, results } = repeatSaves(found.entity.conditions, {
+    rng,
     bonusOf: (source) =>
       source.saveAbility ? combatantSaveBonus(found, source.saveAbility) : (source.saveBonus ?? 0),
     riders: featRiders(/** @type {import('../types/entities.js').Character} */ (found.entity)),
   });
-  if (results.length === 0) return;
+  if (results.length === 0) return results;
   if (conditions !== found.entity.conditions) {
     storeConditions(found, conditions);
     app.actions.markDirty();
@@ -587,6 +608,7 @@ export function retryImposedSaves(app, combatantId) {
         : `${found.entity.name} is still ${condition.name} (${roll}).`,
     );
   }
+  return results;
 }
 
 /**

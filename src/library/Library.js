@@ -14,6 +14,12 @@ import {
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import { normalizeRider } from '../entities/Riders.js';
 import {
+  attackExtras,
+  normalizeLevelsPerStep,
+  normalizeRepeat,
+  saveExtras,
+} from '../entities/SpellFields.js';
+import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
   SPELL_ABILITIES,
@@ -266,6 +272,7 @@ function normalizeSpell(raw, id) {
       kind: 'attack',
       damage: normalizeDamageParts(raw.effect.damage),
       ...(projectiles ? { projectiles } : {}),
+      ...attackExtras(raw.effect),
     };
   } else if (kind === 'save') {
     const condition =
@@ -288,6 +295,7 @@ function normalizeSpell(raw, id) {
       ...(raw.effect.saveEnds && condition ? { saveEnds: true } : {}),
       ...(hpLimit > 0 ? { hpLimit } : {}),
       ...(rider ? { rider } : {}),
+      ...saveExtras(raw.effect, condition),
     };
   } else if (kind === 'heal') {
     effect = {
@@ -329,13 +337,16 @@ function normalizeSpell(raw, id) {
     kind === 'heal' ? HEALING_TYPES : undefined,
   );
   const scalingTargets = clampInt(raw.scaling?.targetsPerLevel, 0);
+  const levelsPerStep = normalizeLevelsPerStep(raw.scaling?.levelsPerStep);
   const scaling =
     scalingDamage.length > 0 || scalingTargets > 0
       ? {
           ...(scalingDamage.length > 0 ? { damagePerLevel: scalingDamage } : {}),
           ...(scalingTargets > 0 ? { targetsPerLevel: scalingTargets } : {}),
+          ...(levelsPerStep ? { levelsPerStep } : {}),
         }
       : undefined;
+  const repeat = normalizeRepeat(raw.repeat);
 
   // An absent target count stays absent. The resolver reads this as one
   // creature, so no entry written before this field existed becomes an area
@@ -376,6 +387,7 @@ function normalizeSpell(raw, id) {
     ...(targetCount === undefined ? {} : { targetCount }),
     effect,
     ...(scaling ? { scaling } : {}),
+    ...(repeat ? { repeat } : {}),
   };
 }
 

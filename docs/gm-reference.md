@@ -1309,6 +1309,12 @@ effects at the table.
 Timed conditions count down at the start of each round and end on their
 own.
 
+Some spell chips end at a turn boundary instead of a round count, such as
+the Blinded of Sunbeam, which ends at the start of the caster's next turn.
+Such a chip shows "next turn". Some chips deal damage at the end of each
+turn of their holder, such as the chip of Acid Arrow. Point at a chip to
+read what it does and when it ends.
+
 A combatant that loses its turn keeps its place in the initiative order.
 **Next turn** steps past it without a message. A save that fails at once
 never reaches the dice, and the log names the chip that failed it.
@@ -1417,6 +1423,12 @@ but no actions.
 
 The spell attack bonus is the proficiency bonus plus the spell ability
 modifier, minus any exhaustion penalty.
+
+A spell that the caster still keeps open from an earlier turn, such as Spiritual
+Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot
+picker and no ritual box. A repeat spends no slot and skips the component
+and armor checks, because the first cast passed them. It still costs the
+action or bonus action that the spell names.
 
 The app refuses a cast for these reasons, in this order, and spends nothing
 on a refusal:
@@ -1895,7 +1907,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 54 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 59 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

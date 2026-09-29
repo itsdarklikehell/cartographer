@@ -30,43 +30,99 @@ function fight(saveDC) {
   const hero = withHP(createCharacter('hero', 'Hero'), 10);
   const ogre = { ...createCreature('ogre', 'Ogre', { maxHP: 30 }), conditions: held(saveDC) };
   const app = stubApp({ state: { characters: [mage, hero], creatures: [ogre] } });
-  const combat = startCombat(
+  app.state.combat = startCombat(
     [createParticipant('mage', 20), createParticipant('ogre', 15), createParticipant('hero', 10)],
     (id) => id,
   );
-  return { app, combat };
+  return { app };
+}
+
+/** The hooks the encounter wiring passes: store the order, and count wraps. */
+function advance(/** @type {any} */ app) {
+  return advancePastHeld(app, {
+    setCombat: (next) => {
+      app.state.combat = next;
+    },
+    tickRound: () => app.calls.push('tickRound'),
+  });
 }
 
 test('a held combatant the pointer steps past rolls its repeated save', () => {
-  const { app, combat } = fight(1);
-  const result = advancePastHeld(app, combat);
-  assert.equal(result.state.order[result.state.index].id, 'hero', 'the held turn is still lost');
+  const { app } = fight(1);
+  const result = advance(app);
+  assert.equal(result?.state.order[result.state.index].id, 'hero', 'the held turn is still lost');
   assert.deepEqual(app.state.creatures[0].conditions, [], 'the save ends the chip');
   assert.match(app.log.join('\n'), /Ogre shakes off Paralyzed/);
 });
 
 test('a held combatant that fails the save stays held', () => {
-  const { app, combat } = fight(99);
-  advancePastHeld(app, combat);
+  const { app } = fight(99);
+  advance(app);
   assert.equal(app.state.creatures[0].conditions.length, 1);
   assert.match(app.log.join('\n'), /Ogre is still Paralyzed/);
 });
 
 test('a downed combatant rolls no repeated save as the pointer passes it', () => {
-  const { app, combat } = fight(1);
+  const { app } = fight(1);
   app.state.creatures = [{ ...app.state.creatures[0], currentHP: 0 }];
-  advancePastHeld(app, combat);
+  advance(app);
   assert.equal(app.state.creatures[0].conditions.length, 1);
   assert.equal(app.log.length, 0);
 });
 
 test('the turn now ending rolls its repeated save first', () => {
-  const { app, combat } = fight(99);
+  const { app } = fight(99);
   app.state.characters = [
     { ...app.state.characters[0], conditions: held(1) },
     app.state.characters[1],
   ];
-  advancePastHeld(app, combat);
+  advance(app);
   assert.deepEqual(app.state.characters[0].conditions, []);
   assert.match(app.log[0], /^Mage shakes off Paralyzed/);
+});
+
+test('a skipped turn and the landing turn both start, so their boundary chips end', () => {
+  const { app } = fight(99);
+  const until = (/** @type {string} */ who) =>
+    addCondition([], 'Shield', null, { expires: { who, at: 'start', count: 1 } });
+  app.state.characters = [
+    { ...app.state.characters[0], conditions: until('ogre') },
+    { ...app.state.characters[1], conditions: until('hero') },
+  ];
+  advance(app);
+  assert.deepEqual(app.state.characters[0].conditions, [], "the ogre's skipped turn started");
+  assert.deepEqual(app.state.characters[1].conditions, [], "the hero's turn started");
+});
+
+test('the pointer moves from the order as the end-of-turn work leaves it', () => {
+  const { app } = fight(99);
+  // A chip on the mage whose end-of-turn damage stands in for any work that
+  // rewrites the order. Here the work drops the hero from the fight.
+  app.actions.logEvent = () => {
+    const combat = app.state.combat;
+    if (combat && combat.order.some((p) => p.id === 'hero')) {
+      app.state.combat = { ...combat, order: combat.order.filter((p) => p.id !== 'hero') };
+    }
+  };
+  app.state.characters = [
+    {
+      ...app.state.characters[0],
+      conditions: addCondition([], 'Burning', null, {
+        ongoing: { damage: [{ count: 1, sides: 4, damageType: 'fire' }] },
+      }),
+    },
+    app.state.characters[1],
+  ];
+  advance(app);
+  assert.deepEqual(
+    app.state.combat.order.map((p) => p.id),
+    ['mage', 'ogre'],
+    'the stored order keeps the removal',
+  );
+});
+
+test('with no fight running, nothing advances', () => {
+  const { app } = fight(99);
+  app.state.combat = null;
+  assert.equal(advance(app), null);
 });

@@ -217,6 +217,30 @@ export const LEVEL_1 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 10, damageType: 'fire' }] },
   },
   {
+    id: 'witch-bolt',
+    name: 'Witch Bolt',
+    level: 1,
+    school: 'evocation',
+    classes: ['sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a twig from a tree that has been struck by lightning', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A beam of crackling energy makes a ranged spell attack for 1d12 lightning. On a hit, ' +
+      'each later turn the caster can use its action to deal 1d12 lightning to that target ' +
+      'with no roll. The GM ends the spell if the caster uses its action for anything else ' +
+      'or the target moves out of range.',
+    effect: { kind: 'attack', damage: [{ count: 1, sides: 12, damageType: 'lightning' }] },
+    // Only the first hit grows with the slot. The damage of each later turn
+    // stays 1d12.
+    scaling: { damagePerLevel: [{ count: 1, sides: 12, damageType: 'lightning' }] },
+    repeat: { damage: [{ count: 1, sides: 12, damageType: 'lightning' }] },
+  },
+  {
     id: 'mage-armor',
     name: 'Mage Armor',
     level: 1,

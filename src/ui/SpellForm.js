@@ -4,6 +4,7 @@ import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spel
 import { classNames, el } from './dom.js';
 import { HEALING_TYPE } from '../entities/Equipment.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
+import { buildLaterTurnControls } from './SpellFormLater.js';
 import {
   labeled,
   fieldRow,
@@ -224,10 +225,13 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     spell?.effect.kind === 'attack' || (saveEffect?.damage.length ?? 0) > 0,
   );
   const heals = spell?.effect.kind === 'heal';
+  // A heal adds the modifier to its healing, and an attack to each hit.
   const addsModifier = checkbox(
     'Add spellcasting modifier',
-    spell?.effect.kind === 'heal' && spell.effect.addsModifier === true,
+    (spell?.effect.kind === 'heal' || spell?.effect.kind === 'attack') &&
+      spell.effect.addsModifier === true,
   );
+  const later = buildLaterTurnControls(spell);
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
@@ -327,6 +331,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     className: 'form__number',
   });
   const targetsField = labeled('Extra targets / level', targetsInput);
+  const levelsPerStepInput = numberField(spell?.scaling?.levelsPerStep ?? 1, {
+    min: 1,
+    max: 9,
+    className: 'form__number',
+  });
+  setTip(
+    levelsPerStepInput,
+    'Slot levels per step of scaling. 2 for a spell that grows every two levels',
+  );
+  const levelsPerStepField = labeled('Levels per step', levelsPerStepInput);
 
   const castingRow = fieldRow(
     labeled('Casting time', timeKindSelect),
@@ -361,7 +375,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // rows. A shared flex row leaves the small number field floating beside the
   // taller editor.
   const scalingDamageRow = fieldRow(scalingDamageField);
-  const scalingTargetsRow = fieldRow(targetsField);
+  const scalingTargetsRow = fieldRow(targetsField, levelsPerStepField);
 
   function syncEffectFields() {
     const kind = kindSelect.value;
@@ -395,7 +409,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     setCaption(damageField, firesShots ? 'Damage / projectile' : 'Damage');
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
-    healTogglesRow.hidden = kind !== 'heal';
+    healTogglesRow.hidden = kind !== 'heal' && kind !== 'attack';
+    later.sync(kind, conditionSelect.value !== '');
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
@@ -442,6 +457,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   dealsDamage.input.addEventListener('change', syncEffectFields);
   fires.input.addEventListener('change', syncEffectFields);
   conditionSelect.addEventListener('change', syncEffectFields);
+  later.listen(syncEffectFields);
 
   function syncScaling() {
     const hide = !scales.input.checked;
@@ -479,6 +495,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // hands over in one piece.
   /** @returns {Omit<Spell, 'id'>} */
   function assemble() {
+    const extra = later.read();
     return assembleSpell({
       name: nameInput.value,
       level: levelSelect.value,
@@ -529,10 +546,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
           count: summonCountInput.value,
           countPerStep: summonPerStepInput.value,
         },
+        ...extra.effect,
       },
       scaling: scales.input.checked
-        ? { damagePerLevel: scalingDamage.get(), targetsPerLevel: targetsInput.value }
+        ? {
+            damagePerLevel: scalingDamage.get(),
+            targetsPerLevel: targetsInput.value,
+            levelsPerStep: levelsPerStepInput.value,
+          }
         : null,
+      repeat: extra.repeat,
     });
   }
 
@@ -552,20 +575,29 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       effectRow,
       projectilesRow,
       projectileFieldsRow,
+      later.rows.attack,
       summonsRow,
       saveTogglesRow,
       conditionRow,
       saveEndsRow,
       hpLimitRow,
+      later.rows.until,
       riderRow,
       riderRollsRow,
       riderOnceRow,
       damageField,
       healField,
       healTogglesRow,
+      later.rows.lingers,
+      later.rows.ongoing,
+      later.rows.ongoingMore,
+      later.rows.ongoingUntil,
       scalingRow,
       scalingDamageRow,
       scalingTargetsRow,
+      later.rows.repeats,
+      later.rows.repeat,
+      later.rows.repeatDamage,
     ],
     assemble,
     submitLabel,

@@ -83,8 +83,11 @@ src/app/combatWiring.js ...... mounts the screen, keeps its transient UI
                                state, and sends everything else to actions
 src/app/encounterWiring.js ... the only writer of state.combat, with the turn
                                flow as registered actions
-src/app/turnAdvance.js ....... the turn advance, with the repeated saves of
-                               each turn that ends on the way
+src/app/turnAdvance.js ....... the turn advance, with the turn boundaries
+                               that it passes on the way
+src/app/turnEffects.js ....... what the start and the end of one turn do:
+                               repeated saves, later-turn damage, and
+                               chips that end at a boundary
 src/app/combatEnd.js ......... the End combat confirmation and the XP award
 styles/combat.css ............ the mode's layout and the screen's styles
 ```
@@ -122,13 +125,32 @@ gone. If the predicate rejects every participant, the pointer walks one full
 cycle and stops where it started. The round counter and the timed effects
 then keep moving until the GM closes the fight.
 
-`app/turnAdvance.js` wraps the advance in `advancePastHeld`. A spell such as
-Hold Person lets its target repeat the save at the end of each of its turns,
-and `retryImposedSaves` rolls that save. The combatant whose turn ends rolls
-first. A combatant that the pointer steps past because a hold effect stops
-it also rolls, because its turn still ends. Without that roll, a paralyzed target
-never ends a turn and stays held for the whole duration. A downed or missing
-combatant has no turn, so it rolls nothing.
+`app/turnAdvance.js` wraps the advance in `advancePastHeld`, which runs the
+turn boundaries that the advance passes (see `app/turnEffects.js`). The end
+of a turn rolls the repeated saves of the combatant, such as the save that
+ends Hold Person. It then deals the damage that the chips of the combatant
+leave for later turns, such as the acid of Acid Arrow, and counts the
+boundary for every chip keyed to that turn. The start of a turn counts the
+boundary only.
+
+`advancePastHeld` runs its work in this order:
+
+1. The turn that ends runs its end-of-turn work.
+2. The pointer moves from `state.combat` as that work left it. Damage can
+   end a spell whose summons then leave the order, and a pointer moved from
+   a copy taken earlier would write those summons back.
+3. The new order is stored, and a wrapped round ticks.
+4. Each combatant that the pointer stepped past starts and ends its turn.
+   A paralyzed target still has a turn that ends, so its retry rolls there.
+   Without that roll, it stays held for the whole duration.
+5. The combatant that the pointer lands on starts its turn.
+
+A downed or missing combatant rolls no save and takes no damage, but the
+chips keyed to its turns still count the boundary. The start of a fight
+starts the first turn. A removal from the fight ends the chips keyed to the
+removed combatant, and it starts the turn of the next combatant when the
+removed one held the turn. The end of a fight ends every chip that waits on
+a turn boundary, because no turn comes again.
 
 ### The round wrap
 

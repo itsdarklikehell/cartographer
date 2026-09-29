@@ -55,7 +55,7 @@ and then read [Architecture](architecture.md).
 | [Combat](architecture/combat.md) | The fight screen, the one module that writes the fight, and the view derived from it |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, and undo history |
 | [Testing strategy](testing-strategy.md) | Why the coverage total is low, and what the suite cannot reach |
-| [Curated spells](spells-missing.md) | Why the app ships 54 spells and not the full SRD |
+| [Curated spells](spells-missing.md) | Why the app ships 59 spells and not the full SRD |
 
 ## Browser pages
 

@@ -41,6 +41,7 @@ import {
   storeCreature,
 } from './combatants.js';
 import { advancePastHeld } from './turnAdvance.js';
+import { dropTurnChips, startTurnEffects } from './turnEffects.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { focusMapCanvas } from './combatWiring.js';
 import { confirmFightEnd, offerFightXP } from './combatEnd.js';
@@ -65,10 +66,15 @@ export function wireEncounters(app) {
   // follower tab shows and opens an ended fight from its old sidebar card.
   const current = () => state.combat;
 
+  // The end of a fight also ends every chip that waits on a turn boundary,
+  // because no turn comes again. Left in place, a Shield cast on the last turn
+  // of a fight keeps its +5 AC for good.
   /** @param {import('../types/combat.js').CombatState | null} next */
   function setCombat(next) {
+    const ended = next === null && state.combat !== null;
     state.combat = next;
     app.actions.markDirty();
+    if (ended) dropTurnChips(app);
   }
 
   /**
@@ -84,8 +90,15 @@ export function wireEncounters(app) {
     if (!combat) return;
     const next = dropParticipant(combat, id);
     if (next === combat) return;
+    const heldTurn = combat.order[combat.index]?.id === id;
     setCombat(next);
     if (next.round !== combat.round) tickRound();
+    // The removed combatant has no more turns, so the chips keyed to them end
+    // now. When it held the turn, the combatant the pointer lands on starts
+    // its turn.
+    dropTurnChips(app, id);
+    const holder = state.combat?.order[state.combat.index];
+    if (heldTurn && holder) startTurnEffects(app, holder.id);
     app.views.initiativePanel.update();
   };
 
@@ -415,7 +428,10 @@ export function wireEncounters(app) {
         ),
     });
     if (!participants) return;
-    setCombat(startCombat(participants, (p) => describe(p)?.name ?? '', startedAt));
+    const started = startCombat(participants, (p) => describe(p)?.name ?? '', startedAt);
+    setCombat(started);
+    const first = started.order[started.index];
+    if (first) startTurnEffects(app, first.id);
     app.views.initiativePanel.update(); // shows the panel again
     app.views.encounterPanel.update(); // hides the Start combat button
     app.actions.setMode('combat'); // the fight runs on the full-width screen
@@ -479,10 +495,9 @@ export function wireEncounters(app) {
     // participant that resolves to nothing, because it was deleted
     // mid-fight, also has no turn to take. A chip such as Stunned takes the
     // turn the same way, without taking the combatant out of the fight.
-    // Every turn that ends on the way rolls its repeated saves.
-    const result = advancePastHeld(app, combat);
-    setCombat(result.state);
-    if (result.wrapped) tickRound();
+    // Every turn boundary on the way runs its effects, such as a repeated
+    // save or the damage a chip deals.
+    advancePastHeld(app, { setCombat, tickRound });
     // The sidebar panel redraws itself after its own button. The combat
     // screen must be told that the turn moved, in either case.
     app.views.combatScreen.update();

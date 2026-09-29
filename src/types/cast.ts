@@ -39,5 +39,16 @@ export interface CastPlan {
   actionCost?: ActionCost | null;
   actionBlocked?: boolean;
   castingTime?: CastingTime;
+  /** Present for a cast that spends no slot because an earlier turn paid for
+   * it: a repeat of a spell the caster still keeps open. */
+  free?: CastFree | null;
   fields: ModalField[];
+}
+
+/** A cast that costs no slot. It resolves at `slotLevel`, the level the first
+ * cast used. `repeat` marks a repeat of a spell still open from an earlier
+ * turn, which needs no concentration of its own. */
+export interface CastFree {
+  slotLevel: number;
+  repeat?: boolean;
 }

@@ -36,6 +36,47 @@ export interface SpellAttackEffect {
   kind: 'attack';
   damage: DamagePart[];
   projectiles?: SpellProjectiles;
+  /** True for a melee spell attack. Prone and an automatic critical hit read
+   * this. Absent means the range decides: Touch is melee, and every other
+   * range is ranged. */
+  melee?: boolean;
+  /** True when a miss still deals half the damage (Acid Arrow). */
+  halfOnMiss?: boolean;
+  /** True when the caster adds its spellcasting ability modifier to the
+   * damage of each hit (Spiritual Weapon). A critical hit does not double it. */
+  addsModifier?: boolean;
+  /** Damage that a hit leaves on the target for later turns. */
+  ongoing?: SpellOngoing;
+}
+
+/** When a chip that a spell writes ends, as a turn boundary. `caster-start`
+ * is the start of the caster's next turn, `caster-end` the end of the
+ * caster's next turn, and `target-end` the end of the target's next turn.
+ * Outside a fight there are no turns, so such a chip lasts one round. */
+export type ChipUntil = 'caster-start' | 'caster-end' | 'target-end';
+
+/** Damage a spell deals again on the turns after the cast. It rides a chip on
+ * the target and rolls at the end of each of the target's turns. With a save
+ * that allows a repeated save, it rolls only when that save fails. */
+export interface SpellOngoing {
+  damage: DamagePart[];
+  /** Extra dice for each scaling increment of the cast. */
+  perStep?: DamagePart[];
+  /** When the chip ends, for a chip that the ongoing damage writes itself.
+   * Absent means the end of the target's next turn. A save's condition chip
+   * that has the damage keeps its own duration. */
+  until?: ChipUntil;
+}
+
+/** A spell that the caster can use again on later turns without a new slot,
+ * while the spell lasts (Spiritual Weapon, Witch Bolt, Sunbeam). */
+export interface SpellRepeat {
+  /** What each repeat costs. Absent means the casting time's cost. */
+  cost?: 'action' | 'bonus';
+  /** Fixed damage that each repeat deals to the creatures the first cast
+   * hit, with no roll (Witch Bolt). Absent means each repeat resolves the
+   * spell's own effect again against new targets. */
+  damage?: DamagePart[];
 }
 
 /** A saving throw that the target rolls against the caster's spell save DC.
@@ -60,6 +101,13 @@ export interface SpellSaveEffect {
    * current HP is at or under it fails that save with no roll. A target
    * above it is unaffected. Absent means every target rolls. */
   hpLimit?: number;
+  /** When the imposed condition ends, as a turn boundary (Sunbeam's
+   * blindness until the caster's next turn). Absent means the spell's own
+   * duration. */
+  until?: ChipUntil;
+  /** Damage that a failed save leaves on the target for later turns. With a
+   * condition, the damage rides that chip. */
+  ongoing?: SpellOngoing;
 }
 
 /** Restorative magic: healing dice applied to the target. */
@@ -126,6 +174,10 @@ export interface SpellScaling {
   damagePerLevel?: DamagePart[];
   /** Extra targets gained per slot level above base, for example Magic Missile. */
   targetsPerLevel?: number;
+  /** How many slot levels above the base make one scaling increment, for a
+   * spell that grows every two slot levels (Spiritual Weapon). Absent means
+   * one. Cantrips ignore it. */
+  levelsPerStep?: number;
 }
 
 /** How long a cast takes. `action`, `bonus`, and `reaction` are the three
@@ -197,4 +249,7 @@ export interface Spell {
   /** How the spell scales with slot level or caster level. Absent means no
    * scaling. */
   scaling?: SpellScaling;
+  /** How the caster uses the spell again on later turns without a new slot.
+   * Absent means each use is a new cast. */
+  repeat?: SpellRepeat;
 }

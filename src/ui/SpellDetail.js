@@ -1,6 +1,4 @@
-import { formatDamage } from '../entities/Equipment.js';
-import { buffCondition } from '../entities/Casting.js';
-import { riderSummary } from '../entities/Riders.js';
+import { effectSummary, laterTurnLines } from '../view/SpellEffectText.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
 import { badge, textButton } from './buttons.js';
@@ -14,47 +12,6 @@ import { openDialog } from './Modal.js';
  * clicked; `variant` picks the button style.
  * @typedef {{ id: string, label: string, variant?: 'primary' | 'danger' }} SpellAction
  */
-
-/**
- * The one-line effect summary shown under the meta grid: a spell attack and
- * its damage, a save (ability plus DC) with its damage and the chip it
- * imposes, healing dice, or the chip a buff hands out. A chip that changes
- * later rolls states what it adds. A utility spell has no line, because its
- * rules live in the description.
- * @param {Spell} spell
- * @param {number | null} saveDC the caster's save DC, or null when unknown
- * @returns {string | null}
- */
-function effectSummary(spell, saveDC) {
-  const effect = spell.effect;
-  if (effect.kind === 'attack') {
-    const damage = formatDamage(effect.damage) || 'no damage';
-    const shots = effect.projectiles;
-    if (!shots) return `Spell attack — ${damage}`;
-    // With projectiles, the dice apply per projectile. The line states the
-    // count before it states what one projectile deals.
-    const growth = shots.perStep ? ` (+${shots.perStep} per level)` : '';
-    const roll = shots.autoHit ? 'hits automatically' : 'spell attack';
-    return `${shots.count} projectile${shots.count === 1 ? '' : 's'}${growth}, ${roll} — ${damage} each`;
-  }
-  if (effect.kind === 'save') {
-    const dc = saveDC !== null ? ` DC ${saveDC}` : '';
-    const dmg = formatDamage(effect.damage);
-    const half = effect.halfOnSave ? ' (half on save)' : '';
-    const rider = effect.rider ? ` (${riderSummary(effect.rider)})` : '';
-    const cond = effect.condition ? `, ${effect.condition}${rider}` : '';
-    return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}`;
-  }
-  if (effect.kind === 'heal') {
-    const mod = effect.addsModifier ? ' + spellcasting modifier' : '';
-    return `Healing — ${formatDamage(effect.healing) || 'no dice'}${mod}`;
-  }
-  if (effect.kind === 'buff') {
-    const chip = buffCondition(spell);
-    return effect.rider ? `${chip} — ${riderSummary(effect.rider)}` : chip;
-  }
-  return null;
-}
 
 /**
  * The components line: the letters, then what the M component is when the
@@ -113,6 +70,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
             ),
           ),
           summary && el('p', 'spell-detail__effect', summary),
+          ...laterTurnLines(spell).map((line) => el('p', 'spell-detail__effect', line)),
           spell.description && el('p', 'spell-detail__description', spell.description),
         ].filter(Boolean)
       );

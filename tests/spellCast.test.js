@@ -8,7 +8,8 @@ import {
   targetSummary,
 } from '../src/app/spellTargets.js';
 import { castChangeHandler } from '../src/app/spellCastFields.js';
-import { applyOutcomes, resolveCast } from '../src/app/spellCastResolve.js';
+import { resolveCast } from '../src/app/spellCastResolve.js';
+import { applyOutcomes } from '../src/app/spellOutcomes.js';
 import { createResource } from '../src/entities/Resource.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { damageCharacter, getHP, withHP } from '../src/entities/Character.js';

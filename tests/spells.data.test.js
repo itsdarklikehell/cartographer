@@ -4,7 +4,7 @@ import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { DEFAULT_CREATURES } from '../src/data/creatures.js';
 import { maxTargets } from '../src/entities/Casting.js';
 import { CLASS_LIST } from '../src/entities/Classes.js';
-import { activeCreatureByName } from '../src/library/Library.js';
+import { activeCreatureByName, normalizeLibrary } from '../src/library/Library.js';
 
 const SCHOOLS = new Set([
   'abjuration',
@@ -78,4 +78,13 @@ test('the Cult Initiate carries the SRD Cultist HP and AC at CR 1/8', () => {
   assert.equal(cultist.cr, 0.125);
   assert.equal(cultist.maxHP, 9);
   assert.equal(cultist.stats.AC, 12);
+});
+
+test('every built-in spell comes back unchanged through the library normalizer', () => {
+  // A GM override of a built-in spell passes through the normalizer on the
+  // next load. A field it drops would vanish from the override.
+  for (const spell of DEFAULT_SPELLS) {
+    const [out] = normalizeLibrary({ spells: [structuredClone(spell)] }).spells;
+    assert.deepEqual(out, spell, spell.id);
+  }
 });

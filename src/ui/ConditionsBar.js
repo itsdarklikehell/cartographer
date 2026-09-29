@@ -1,12 +1,25 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
 import { setTip } from './Tooltip.js';
-import { chipRider, riderSummary } from '../entities/Riders.js';
+import { chipLabel, chipNotes } from '../view/ChipText.js';
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
 import { clampInt } from '../util/num.js';
 import { el } from './dom.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
+
+/**
+ * One chip with no remove button, for a card that only shows conditions. Its
+ * tooltip states what the chip does, the same as the conditions bar.
+ * @param {Condition} condition
+ * @returns {HTMLElement}
+ */
+export function conditionChip(condition) {
+  const element = chip(chipLabel(condition));
+  const notes = chipNotes(condition);
+  if (notes.length > 0) setTip(element, notes.join('; '));
+  return element;
+}
 
 /**
  * A row of status-condition chips with an add control, shared by the
@@ -27,12 +40,10 @@ export function mountConditionsBar(container, callbacks) {
 
   /** @param {Condition} condition */
   function buildChip(condition) {
-    const label =
-      condition.rounds === null ? condition.name : `${condition.name} (${condition.rounds})`;
-    // A rider goes in the tooltip, not the label. Chips already carry a round
-    // counter and sit in a narrow row.
-    const rider = chipRider(condition);
-    const title = rider ? riderSummary(rider) : '';
+    const label = chipLabel(condition);
+    // A rider, later-turn damage, and a turn boundary go in the tooltip, not
+    // the label. Chips already carry a round counter and sit in a narrow row.
+    const title = chipNotes(condition).join('; ');
     const element = !canEdit()
       ? chip(label)
       : removableChip(

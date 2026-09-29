@@ -110,6 +110,35 @@ export const LEVEL_6_TO_9 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'cold' }] },
   },
   {
+    id: 'sunbeam',
+    name: 'Sunbeam',
+    level: 6,
+    school: 'evocation',
+    classes: ['druid', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self (60-foot line)',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a magnifying glass', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    targetCount: 0,
+    description:
+      'A beam of light fills a line. Each creature in it makes a CON save: 6d8 radiant and ' +
+      "blinded until the caster's next turn on a failure, half and not blinded on a " +
+      'success. Each later turn, an action makes a new line. Undead and oozes save at ' +
+      'disadvantage, which the GM sets in the cast dialog.',
+    effect: {
+      kind: 'save',
+      saveAbility: 'CON',
+      damage: [{ count: 6, sides: 8, damageType: 'radiant' }],
+      halfOnSave: true,
+      condition: 'Blinded',
+      until: 'caster-start',
+    },
+    repeat: {},
+  },
+  {
     id: 'heal',
     name: 'Heal',
     level: 6,

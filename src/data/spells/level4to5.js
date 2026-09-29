@@ -52,6 +52,35 @@ export const LEVEL_4_TO_5 = [
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
   },
+  {
+    id: 'phantasmal-killer',
+    name: 'Phantasmal Killer',
+    level: 4,
+    school: 'illusion',
+    classes: ['wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A creature must succeed on a WIS save or be frightened. At the end of each of its ' +
+      'turns it repeats the save: a failure deals 4d10 psychic, and a success ends the spell.',
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Frightened',
+      saveEnds: true,
+      // Only the damage of the later turns grows with the slot.
+      ongoing: {
+        damage: [{ count: 4, sides: 10, damageType: 'psychic' }],
+        perStep: [{ count: 1, sides: 10, damageType: 'psychic' }],
+      },
+    },
+  },
   // 5th level
   {
     id: 'cone-of-cold',

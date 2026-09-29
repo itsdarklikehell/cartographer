@@ -1,5 +1,6 @@
 import { el } from './dom.js';
-import { chip, sectionLabel, textButton } from './buttons.js';
+import { sectionLabel, textButton } from './buttons.js';
+import { conditionChip } from './ConditionsBar.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatActionBar } from './CombatActionBar.js';
 import { deathSaveBlock } from './DeathSaveBlock.js';
@@ -78,9 +79,7 @@ export function mountActiveColumn(callbacks, loadoutOf) {
         el(
           'div',
           'combat-screen__active-conditions u-row u-wrap u-g1',
-          ...row.conditions.map((c) =>
-            chip(c.rounds !== null && c.rounds !== undefined ? `${c.name} (${c.rounds})` : c.name),
-          ),
+          ...row.conditions.map((c) => conditionChip(c)),
         ),
       );
     }
