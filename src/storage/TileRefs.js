@@ -1,4 +1,10 @@
-import { buildBuiltins, variantCount, variantFamilyOf, variantIdAt } from '../map/TileCatalog.js';
+import {
+  buildBuiltins,
+  variantCount,
+  variantFamilyOf,
+  variantIdAt,
+  variantIndexAt,
+} from '../map/TileCatalog.js';
 
 /**
  * The short form of a tile art ref inside an encoded node. The tile codec
@@ -127,4 +133,73 @@ export function fullRef(ref, x, y) {
 export function mapOverlay(overlay, map) {
   if (typeof overlay === 'string') return map(overlay);
   return Array.isArray(overlay) ? overlay.map(map) : overlay;
+}
+
+/** @typedef {{ imageRef: string, overlay: unknown }} LiveArt */
+
+/**
+ * A palette entry of an encoded node, prepared for reading at many cells.
+ * Every reader has the same fields, so the decode loop sees one hidden class
+ * and makes no closure call per cell.
+ *   - `fixed`     the live art, when the entry reads the same at every cell.
+ *   - `count`     the variant count of a family base under a fixed overlay.
+ *                 `byVariant` keeps one live object per variant, because a
+ *                 large map has tens of thousands of such cells.
+ *   - `perCell`   true when the overlay itself has a family. The reader then
+ *                 resolves every ref at each cell. No generator paints this.
+ *   - `overlay`   the overlay in its live form, or in its stored form when
+ *                 `perCell` is true.
+ * @typedef {{ fixed: LiveArt | null, base: string, count: number, overlay: unknown, byVariant: LiveArt[], perCell: boolean }} ArtReader
+ */
+
+/**
+ * The live form of a stored ref that reads the same at every cell.
+ * @param {string} ref
+ * @returns {string}
+ */
+function liveRef(ref) {
+  return /** @type {string} */ (fullRef(ref, 0, 0));
+}
+
+/**
+ * The reader of one stored palette entry, or null when its base ref is not
+ * a string. The decoder skips a cell whose reader is null.
+ * @param {unknown} entry a bare ref, or the pair `[imageRef, overlay]`
+ * @returns {ArtReader | null}
+ */
+export function artReader(entry) {
+  const pair = Array.isArray(entry);
+  const base = pair ? entry[0] : entry;
+  if (typeof base !== 'string') return null;
+  const overlay = pair ? entry[1] : null;
+  const perCell = Array.isArray(overlay) ? overlay.some(variesByCell) : variesByCell(overlay);
+  const liveOverlay = perCell ? overlay : mapOverlay(overlay, liveRef);
+  const count = perCell ? 0 : variantCount(base);
+  /** @type {ArtReader} */
+  const reader = { fixed: null, base, count, overlay: liveOverlay, byVariant: [], perCell };
+  if (!perCell && count === 0) reader.fixed = { imageRef: liveRef(base), overlay: liveOverlay };
+  return reader;
+}
+
+/**
+ * The live art of a reader at the cell (x, y). A fixed or per-variant read
+ * returns a shared object, which the decoder only reads.
+ * @param {ArtReader} reader
+ * @param {number} x
+ * @param {number} y
+ * @returns {LiveArt}
+ */
+export function readArt(reader, x, y) {
+  if (reader.fixed !== null) return reader.fixed;
+  if (reader.perCell) {
+    return {
+      imageRef: /** @type {string} */ (fullRef(reader.base, x, y)),
+      overlay: mapOverlay(reader.overlay, (ref) => fullRef(ref, x, y)),
+    };
+  }
+  const n = variantIndexAt(reader.count, x, y);
+  return (reader.byVariant[n] ??= {
+    imageRef: liveRef(`${reader.base}-${n + 1}`),
+    overlay: reader.overlay,
+  });
 }

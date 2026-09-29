@@ -518,3 +518,31 @@ test('a field of one fixed variant and a field of picks both store as one run', 
   assert.deepEqual(picked.refs, ['grass']);
   assert.deepEqual(picked.cells, [[0, 32]]);
 });
+
+test('an escaped bare overlay reads back as written under any base', () => {
+  const path = (/** @type {string} */ id) => `assets/tiles/grass/${id}.svg`;
+  const node = makeNode({
+    width: 4,
+    height: 2,
+    tiles: gridTiles(4, 2, (id) => {
+      const [x, y] = id.split(',').map(Number);
+      const base =
+        x < 2 ? path(/** @type {string} */ (variantIdAt('grass', x, y))) : path('grass-2');
+      return tile(id, base, { overlayRef: y === 0 ? 'grass-1' : ['grass-1', 'lava'] });
+    }),
+  });
+  const encoded = roundTrip(node);
+  assert.ok(
+    encoded.refs.some(
+      (/** @type {unknown} */ entry) => Array.isArray(entry) && entry[0] === 'grass',
+    ),
+    'the left half stores its family',
+  );
+  for (const decoded of decodeNodeTiles(encoded).tiles) {
+    assert.equal(
+      [decoded.overlayRef].flat()[0],
+      'grass-1',
+      'the bare overlay is not read as an id',
+    );
+  }
+});

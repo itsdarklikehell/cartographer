@@ -450,6 +450,13 @@ palette id when the cell before it stored that id, so a field of one fixed
 variant also stays one run. Adding a variant to a family changes the pick, so the
 stored cells of that family read back with new art.
 
+The decoder turns each palette entry into a reader (`artReader` in
+`TileRefs.js`) before it walks the cells. A reader of a fixed entry keeps
+one live art object, and a reader of a family keeps one per variant, so a
+48x48 grass field allocates a few art objects, not 2,304. Every reader has
+the same fields, so the cell loop branches on them and makes no function
+call through a closure per cell.
+
 On the example campaign, the encoded node list is 130,825 characters, where
 the same nodes in the per-cell form cost 1,506,124.
 

@@ -1,7 +1,6 @@
 import { tileIdAt } from '../map/MapGeometry.js';
-import { variantCount, variantIndexAt } from '../map/TileCatalog.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
-import { fullRef, mapOverlay, shortRef, variesByCell } from './TileRefs.js';
+import { artReader, mapOverlay, readArt, shortRef } from './TileRefs.js';
 import { EMPTY, expandFog, expandIndexRuns, fogRuns, indexRuns } from './RunLength.js';
 
 /**
@@ -119,49 +118,6 @@ function artEntry(tile, x, y, usePick) {
   return overlay == null
     ? base
     : [base, mapOverlay(overlay, (/** @type {string} */ ref) => shortRef(ref, x, y, usePick))];
-}
-
-/** @typedef {{ imageRef: string, overlay: unknown }} LiveArt */
-
-/**
- * A palette entry read back into live refs for a cell, or null when its
- * base ref is not a string. The decoder skips a cell whose entry is null.
- * An entry with no ref that varies by cell reads the same everywhere, so
- * the function reads it once and returns that object for every cell.
- * @param {unknown} entry
- * @returns {((x: number, y: number) => LiveArt) | null}
- */
-function liveEntry(entry) {
-  const pair = Array.isArray(entry);
-  const base = pair ? entry[0] : entry;
-  if (typeof base !== 'string') return null;
-  const overlay = pair ? entry[1] : null;
-  /** @type {(x: number, y: number) => LiveArt} */
-  const read = (x, y) => ({
-    imageRef: /** @type {string} */ (fullRef(base, x, y)),
-    overlay: mapOverlay(overlay, (ref) => fullRef(ref, x, y)),
-  });
-  const overlayVaries = Array.isArray(overlay) ? overlay.some(variesByCell) : variesByCell(overlay);
-  if (overlayVaries) return read;
-  if (!variesByCell(base)) {
-    const fixed = read(0, 0);
-    return () => fixed;
-  }
-  // The common case: a family base under a fixed overlay. The decoder reads
-  // one object per variant, not one per cell, because a large map has tens
-  // of thousands of such cells.
-  const liveOverlay = mapOverlay(overlay, (ref) => fullRef(ref, 0, 0));
-  const count = variantCount(base);
-  /** @type {LiveArt[]} */
-  const byVariant = [];
-  return (x, y) => {
-    const n = variantIndexAt(count, x, y);
-    byVariant[n] ??= {
-      imageRef: /** @type {string} */ (fullRef(`${base}-${n + 1}`, 0, 0)),
-      overlay: liveOverlay,
-    };
-    return byVariant[n];
-  };
 }
 
 /**
@@ -398,35 +354,35 @@ export function decodeNodeTiles(node) {
     return decoded;
   }
   const width = node.width;
-  const refs = Array.isArray(node.refs) ? node.refs.map(liveEntry) : [];
+  const readers = Array.isArray(node.refs) ? node.refs.map(artReader) : [];
   const art = expandIndexRuns(node.cells, size);
   const revealed = expandFog(node.fog, size);
   const links = linkStream(node, size);
   /** @type {Record<string, any>[]} */
   const tiles = [];
   for (let pos = 0; pos < size; pos += 1) {
-    const readArt = refs[art[pos]];
-    if (!readArt) continue;
+    const reader = readers[art[pos]];
+    if (!reader) continue;
     const x = pos % width;
     const y = (pos - x) / width;
-    const entry = readArt(x, y);
+    const entry = readArt(reader, x, y);
     const id = tileIdAt(x, y);
-    const extra = leftovers.get(id);
+    const extra = leftovers.size ? leftovers.get(id) : undefined;
+    // The codec's own fields come after the leftovers so they win. A
+    // hand-edited save cannot make a leftover record contradict the
+    // palettes or the fog stream.
     /** @type {Record<string, any>} */
-    const tile = extra ? { ...extra } : {};
-    // Assign these fields after the leftovers so the codec's own fields
-    // win. A hand-edited save cannot make a leftover record contradict
-    // the palettes or the fog stream.
-    tile.id = id;
-    tile.imageRef = entry.imageRef;
-    if (entry.overlay == null) delete tile.overlayRef;
-    else tile.overlayRef = entry.overlay;
+    const tile = extra
+      ? { ...extra, id, imageRef: entry.imageRef }
+      : { id, imageRef: entry.imageRef };
+    if (entry.overlay != null) tile.overlayRef = entry.overlay;
+    else if (extra) delete tile.overlayRef;
     if (revealed[pos]) tile.revealed = true;
-    else delete tile.revealed;
+    else if (extra) delete tile.revealed;
     if (links) {
       const link = links.links[links.at[pos]];
       if (typeof link === 'string') tile.childNodeId = link;
-      else delete tile.childNodeId;
+      else if (extra) delete tile.childNodeId;
     }
     tiles.push(tile);
   }
