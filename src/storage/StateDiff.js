@@ -13,9 +13,9 @@
  * text. A textual diff over JSON is larger, cannot survive a key-order
  * change, and must understand the on-disk packing, especially the tile
  * codec, whose `cells` and `fog` streams a diff must
- * never see. The cost of running on parsed state is that a payload rides
- * inline in an op: an op that inserts a handout carries its whole `data:`
- * URL, while one that renames the same handout carries nothing.
+ * never see. On parsed state, an op that inserts a handout would keep its
+ * whole `data:` URL, so the undo log diffs the `HistoryCodec.historyForm`
+ * of each state instead, where every payload is an `asset:` key.
  */
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */

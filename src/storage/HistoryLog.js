@@ -63,7 +63,8 @@
  */
 
 import { applyOps, diffState, invertOps } from './StateDiff.js';
-import { compactOps, expandOps } from './HistoryCodec.js';
+import { compactOps, expandOps, historyForm, opsNameAssets } from './HistoryCodec.js';
+import { ASSET_PREFIX, restoreAssets } from './Assets.js';
 import { CURRENT_VERSION } from './Migrations.js';
 import {
   STORAGE_KEY,
@@ -360,15 +361,21 @@ function trimToCap(deltas, snapshots) {
  * the old world holds one. A small edit to a large campaign keeps its
  * delta. The size check stops at the length of the save, so a replacing
  * step never builds the string of its ops.
+ *
+ * The diff runs over the `historyForm` of both states, so an op that adds
+ * or removes an image names its `asset:` key and not its payload, and the
+ * payload stays only in the image table.
  * @param {CampaignState} before
  * @param {string} beforeRaw the stored string that `before` was parsed from
  * @param {CampaignState} after
  * @returns {string | null}
  */
 function stepRecord(before, beforeRaw, after) {
-  const ops = diffState(before, after);
+  const from = historyForm(before);
+  const to = historyForm(after);
+  const ops = diffState(from, to);
   if (!ops.length) return null;
-  const compact = compactOps(ops, before, after, beforeRaw.length - DELTA_PREFIX.length);
+  const compact = compactOps(ops, from, to, beforeRaw.length - DELTA_PREFIX.length);
   if (!compact) return SNAPSHOT_PREFIX + beforeRaw;
   return DELTA_PREFIX + JSON.stringify(compact.ops);
 }
@@ -406,14 +413,20 @@ export function replaceIsUndoable(next) {
 /**
  * A state with a recorded delta applied: the ops of `planAdoption`, or of
  * a stored record inverted with `invertOps`. The compact node ops become
- * plain ops first. The function is pure, like `applyOps`.
+ * plain ops first. An op that names an `asset:` key leaves that key in the
+ * state, so the state then goes through `restoreAssets` with the stored
+ * image table, the same step a load runs. The table is read only for such
+ * an op. `restoreAssets` returns every node and handout that it does not
+ * change as the same object.
  * @template {object} T
  * @param {T} state
  * @param {DiffOp[]} ops
  * @returns {T}
  */
 export function applyHistoryOps(state, ops) {
-  return applyOps(state, expandOps(ops));
+  const next = applyOps(state, expandOps(ops));
+  if (!opsNameAssets(ops)) return next;
+  return /** @type {T} */ (restoreAssets({ ...next, assets: loadAssetTable() }));
 }
 
 /**
@@ -501,7 +514,8 @@ function dropForSave() {
  * Persist a campaign and record the step that produced it. This is the only
  * save path. This module writes the record after the campaign, so a failed
  * campaign write leaves the log describing exactly what is stored. A
- * snapshot record references the images of the replaced save, so the save
+ * snapshot record references the images of the replaced save, and a delta
+ * record can name an image that the new save no longer has, so the save
  * keeps those images in the payload table.
  *
  * A campaign write that fails on a full origin removes history and tries
@@ -520,7 +534,11 @@ export function saveCampaign(state) {
   const before = lastPersisted();
   // `lastPersisted` leaves the cache on the string it parsed.
   const record = before && cached ? stepRecord(before, cached.raw, state) : null;
-  const keepPrevious = record !== null && record.startsWith(SNAPSHOT_PREFIX);
+  // A record that names an image keeps it in the table. The retention scan
+  // of this save runs before the record is written, so it waits for the next
+  // save, which finds the record.
+  const keepPrevious =
+    record !== null && (record.startsWith(SNAPSHOT_PREFIX) || record.includes(ASSET_PREFIX));
   let dropped = false;
   const makeRoom = () => {
     const freed = dropForSave();

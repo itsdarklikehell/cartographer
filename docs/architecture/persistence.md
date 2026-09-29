@@ -337,10 +337,12 @@ The table follows these rules:
   that the renderer already draws for a ref that will not load.
 - Like a packed tile, the table exists only on disk. `deserialize` builds its
   return value field by field, so live state never contains one.
-- The deduplication works within one save, and this is all it needs to do,
-  because history is a log of deltas over parsed state, so a step that
-  inserts a handout includes its payload inline once and a step that only
-  retitles one includes no image at all.
+- The undo log names images by the same keys. `HistoryCodec.historyForm`
+  hoists both states of a step before the diff, so a step that attaches a
+  245,000-character photo records an 86-character delta, and a step that
+  deletes the handout records 527 characters. Undo, redo, and a follower
+  tab apply such a step through `HistoryLog.applyHistoryOps`, which resolves
+  the keys with `restoreAssets` and the stored table, the step a load runs.
 
 ### The localStorage split
 
@@ -377,6 +379,13 @@ deleted exactly when the last state that references it becomes unreachable.
 These references are collected by matching `asset:` keys against the raw
 text (`referencedAssetKeys`, in `Assets.js`, beside the key alphabet it
 matches), instead of by walking parsed state.
+
+A delta record that names a key lands after the scan of its own save, so
+`saveCampaign` passes `keepPrevious` for it, the same as for a snapshot
+record, and that save skips the scan. The next save scans and finds the
+record. A payload whose last record drops out of the log stays in the table
+until a later scan runs, which happens once the references of a save
+change or a key that the last scan saw is gone.
 
 The scan reads raw text because of the tile codec, described below. After
 encoding, a tile's reference lives inside an encoded node's palette, where a

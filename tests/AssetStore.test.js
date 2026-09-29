@@ -120,13 +120,12 @@ test("a save's own table wins over the sidecar", () => {
   assert.notEqual(loaded.handouts[0].image, other);
 });
 
-test('an undone image travels in the history step, not the payload table', () => {
+test('an undone image stays in the payload table, and the history step names its key', () => {
   saveCampaign(stateWithHandoutImage());
   saveCampaign(stateWithHandoutImage(null));
-  // A delta is computed over parsed state, where the payload is still inline, so
-  // the step that removed the image carries it as its own before-value. Nothing
-  // stored references the table key any more, so it is correctly dropped.
-  assert.equal(localStorage.getItem(ASSETS_KEY), null);
+  // The undo log diffs the hoisted form, so the step that removed the image
+  // names its key, and the table keeps the payload for it.
+  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
   const undone = /** @type {any} */ (undoCampaign());
   assert.equal(undone.state.handouts[0].image, PAYLOAD, 'the undone state has its image back');
   assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD], 're-hoisted by the write');

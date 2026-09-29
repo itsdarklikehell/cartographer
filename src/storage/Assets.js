@@ -7,8 +7,8 @@
  * A tile's art ref is either a short built-in path or a full `data:` URL.
  * `MapRenderer.imageSrcForRef` tells the two apart. A handout's image is
  * always a `data:` URL. If the payload stays inline, one imported tile drawn
- * across a region stores its full base64 payload once per cell, and the undo
- * ring repeats that cost. Hoisting the payloads into one table keyed by
+ * across a region stores its full base64 payload once per cell, and each undo
+ * snapshot repeats that cost. Hoisting the payloads into one table keyed by
  * content stores each distinct image once per save.
  *
  * The module rebuilds the table from the refs present at each serialize. A
@@ -25,13 +25,13 @@ import { safeImageRef } from './ImageRefs.js';
  * only when the table holds the key. A built-in ref can look similar (it
  * lives under `assets/tiles/...`, one character away) and must stay unchanged.
  */
-const ASSET_PREFIX = 'asset:';
+export const ASSET_PREFIX = 'asset:';
 
 /**
  * Every asset reference in a serialized save, matched against the raw text
  * and not by walking parsed state. A tile's ref lives inside an encoded
  * node's `refs` palette (`TileCodec.js`). A state walk cannot see it without
- * decoding first, and the undo ring holds strings anyway. The pattern must
+ * decoding first, and the undo log keeps strings anyway. The pattern must
  * match `assetKey`'s base36 output and `createHoister`'s `~n` collision
  * suffix, both defined directly above this function.
  *

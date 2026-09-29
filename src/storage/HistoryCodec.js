@@ -23,7 +23,13 @@
  *
  * `invertOps` swaps `f` and `t` of either kind like any other op, and
  * `expandOps` turns both kinds back into plain ops for `applyOps`. The
- * module is pure.
+ * module is pure, apart from the cache of `historyForm`.
+ *
+ * `historyForm` hoists every image payload of a state to its `asset:` key
+ * (`Assets.js`), and the log diffs that form. An op that adds or removes an
+ * image then names the key, and the payload stays in the image table.
+ * `opsNameAssets` tells `HistoryLog.applyHistoryOps` when an applied step
+ * needs its keys resolved again.
  *
  * The encoded node values follow `TileCodec.js` through its public
  * functions only, so a change to the codec changes these records too. A
@@ -33,6 +39,7 @@
 
 import { decodeHistoryNode, encodeHistoryNode } from './SaveManager.js';
 import { jsonLengthWithin } from './StateDiff.js';
+import { ASSET_PREFIX, hoistAssets } from './Assets.js';
 
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 
@@ -239,4 +246,58 @@ export function expandOps(ops) {
  */
 function listOf(value) {
   return Array.isArray(value) ? value.filter((id) => typeof id === 'string') : [];
+}
+
+/**
+ * The form of each state that `historyForm` built, by state identity. A
+ * save diffs the stored state against the new one, and the new one is the
+ * stored state of the next save, so each form is built once.
+ * @type {WeakMap<object, any>}
+ */
+const forms = new WeakMap();
+
+/**
+ * A state as the undo log diffs it: every inline image payload replaced by
+ * its `asset:` key, the same key the save stores, and no `assets` table. An
+ * op then names an image by its key, and the payload lives only in the image
+ * table. A state with no payload comes back as itself. The function is
+ * pure, apart from its cache.
+ * @template {object} T
+ * @param {T} state
+ * @returns {T}
+ */
+export function historyForm(state) {
+  const known = forms.get(state);
+  if (known) return known;
+  const hoisted = /** @type {Record<string, unknown>} */ (hoistAssets(/** @type {any} */ (state)));
+  /** @type {any} */
+  let form = state;
+  if (hoisted !== /** @type {unknown} */ (state)) {
+    form = { ...hoisted };
+    delete form.assets;
+  }
+  forms.set(state, form);
+  return form;
+}
+
+/**
+ * True when an op writes a value that names the image table, so a state
+ * with the ops applied needs its `asset:` keys resolved. Only `t` counts,
+ * because `applyOps` writes `t` and reads only whether `f` exists.
+ * @param {DiffOp[]} ops
+ * @returns {boolean}
+ */
+export function opsNameAssets(ops) {
+  return ops.some((op) => namesAsset(op.t));
+}
+
+/**
+ * @param {unknown} value
+ * @returns {boolean}
+ */
+function namesAsset(value) {
+  if (typeof value === 'string') return value.startsWith(ASSET_PREFIX);
+  if (Array.isArray(value)) return value.some(namesAsset);
+  if (value && typeof value === 'object') return Object.values(value).some(namesAsset);
+  return false;
 }

@@ -4,8 +4,8 @@
  *
  * `Assets.js` hoists every inline `data:` URL into one content-keyed
  * `assets` table, so a save holds each distinct image once. This is not
- * enough on its own. The table travels inside the save string, the undo
- * ring stores one whole save string per step, and a full origin makes the
+ * enough on its own. The table travels inside the save string, an undo
+ * snapshot stores one whole save string, and a full origin makes the
  * *campaign* write fail. One handout photo can then cost the GM their map.
  * Splitting the table out of the stored string makes structure and blobs
  * fail independently, and keeps a history snapshot from carrying a picture
@@ -96,8 +96,8 @@ export function loadAssetTable(key = ASSETS_KEY) {
 /**
  * Every stored string that can reference a payload: all of localStorage,
  * except the table itself and whatever the save being written replaces.
- * The function does not read only the campaign and history keys. The ring
- * stores one key per snapshot, and this module does not need to know that
+ * The function does not read only the campaign and history keys. The undo
+ * log stores one key per record, and this module does not need to know that
  * naming. Reading extra strings only keeps a payload longer than needed.
  * @param {Set<string>} skip keys whose stored value does not count
  * @returns {string[]}
