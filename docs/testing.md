@@ -202,3 +202,21 @@ and `readStateFromFile` in `storage/SaveManager.js`. These have no unit
 test at all, so check them in a real browser instead. A Chromium instance
 has working `localStorage`, so a save-then-load click sequence is an
 end-to-end check and not only a visual one.
+
+`storage/IndexedDbAssets.js` is such a wrapper too. The unit tests of
+`AssetMirror.js` run over the memory store in `storage/AssetBackend.js`, so
+check the IndexedDB path in the browser:
+
+1. Attach an image to a handout, reveal it, and click Save. The Application
+   panel of the developer tools lists the payload under IndexedDB, in the
+   `campaign-builder` database, and no `campaign-builder:assets` key is in
+   localStorage.
+2. Reload, and check that the image shows.
+3. Open a second tab, attach another image in the first tab, and save. The
+   second tab shows the new image without a reload.
+4. Copy the payloads into a `campaign-builder:assets` key in localStorage,
+   delete the database, and reload. The images show, the database contains the
+   payloads again, and the key is gone.
+5. Add an init script that makes `IDBFactory.prototype.open` throw, and
+   attach an image. The payload is stored under `campaign-builder:assets`
+   in localStorage, and it shows after a reload.

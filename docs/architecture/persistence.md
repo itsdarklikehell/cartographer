@@ -375,10 +375,17 @@ over one object store. The unit tests use the `Map` store of
 #### The in-memory copy
 
 `AssetMirror.js` keeps a copy of every payload that the backend has
-committed. `openAssetMirror` fills it with one `getAll()`, and after that
-every reader stays synchronous: `deserialize`, the undo log, and the
-retention scan read `storedAssetTable()`. A key enters the copy only after
-its put commits.
+committed. `main.js` fills it with one `getAll()` (`openAssetMirror`)
+before the campaign loads, and after that every reader stays synchronous:
+`deserialize`, the undo log, and the retention scan read
+`storedAssetTable()`. A key enters the copy only after its put commits.
+With 20 handout images the boot waits about 4 ms for the copy in Chromium.
+
+A tab that adopts another tab's save can find a key that its copy lacks,
+because the other tab committed the payload after this tab read IndexedDB.
+`missingAssetKeys` names such keys from the save string, and `fetchAssets`
+reads them into the copy. The [wiring guide](app-wiring.md) describes how
+the tab then shows the images.
 
 #### Write order
 
@@ -392,7 +399,10 @@ picture.
 
 A put that fails makes the next save write the campaign without the
 payload, with `assetsOk` false, and the save after that tries the put
-again.
+again. An unload cannot wait for a promise, so a page that closes while a
+put is pending keeps its previous save. The campaign stays dirty in that
+time, and the leave-page guard asks the GM first. A put of one 59,000
+character payload commits in about 0.5 ms in Chromium.
 
 The first stored image also asks the browser to keep the origin's storage
 under disk pressure (`navigator.storage.persist()`). Firefox shows a

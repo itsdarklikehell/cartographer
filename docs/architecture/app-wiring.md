@@ -6,6 +6,13 @@
 then calls a series of `wireX(app)` functions, one per feature area, each in
 its own file under `src/app/`.
 
+Before any module mounts, `openAssetMirror` opens the IndexedDB image store and reads every image payload into memory (see "The image
+store" in [Persistence](persistence.md)), and only then does `start` load
+the campaign and mount the modules. Every later read of an image is
+synchronous. With 20 handout images, the wait is about 4 ms in Chromium,
+and about 2 ms with none. The production bundle is an IIFE, which has no
+top-level await, so the boot runs in `start` after the promise.
+
 ## The AppContext
 
 `main.js` constructs one **AppContext** (declared in `src/types/app.ts`) and
@@ -95,6 +102,15 @@ fails sets `waitForMutation`, so autosave skips its polls until the next
 lands. The same failed write otherwise packs, diffs, and stringifies the
 whole campaign every five seconds and shows a new error each time.
 
+A save that adds an image writes nothing until the IndexedDB put commits,
+and `saveCampaign` returns its promise as `pending`. `app/assetWait.js`
+runs the same action again when the promise settles: the Save button saves
+again and shows its toast, New, Load example, and Import store and reload,
+and an automatic write flushes the latest state. While a put is pending,
+`writeOut` skips the autosave and the flush, and the campaign stays dirty,
+so the leave-page guard still asks. A page that closes in that time keeps
+its previous save.
+
 `shortenedLoadPrompts.js` holds the prompts for a campaign that loaded
 shortened because it passes the decode limits (see "Shortened loads" in
 [Persistence](persistence.md)). This module calls two of them: the import
@@ -130,6 +146,17 @@ objects it holds. After a full load, the history cache otherwise keeps the
 freshly parsed objects, which share nothing with the reconciled live state.
 Over the example campaign plus 200 generated regions, that next save takes
 151 ms with the parsed cache and 3.6 ms with the live one.
+
+An adopted save can name an image that this tab's copy of the image store
+lacks, because the other tab committed it after this tab read IndexedDB.
+`showLateImages` reads those keys (`AssetMirror.fetchAssets`) and, when the
+tab still has nothing unsaved, is in Play or combat mode, and has seen no
+newer save, resolves them in the live state with
+`AssetMirror.withStoredAssets` and re-hydrates. Until then the image draws
+as a placeholder, and the live state keeps its `asset:` key, so a save from
+this tab still names the stored image. The same check runs once at boot,
+because another tab can write a save between this tab's IndexedDB read and
+its read of the save.
 
 A player tab does not write the save while a GM tab is open. If both tabs
 write the whole campaign and both change it within the same few seconds,

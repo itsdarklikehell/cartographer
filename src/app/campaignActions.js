@@ -55,6 +55,8 @@ import { isGM } from '../view/ViewRole.js';
 import { wirePlayerPatches } from './playerPatches.js';
 import { savesHeld } from '../storage/ShortenedLoad.js';
 import { confirmSaveWhileHeld, confirmShortenedImport } from './shortenedLoadPrompts.js';
+import { fetchAssets, missingAssetKeys, withStoredAssets } from '../storage/AssetMirror.js';
+import { createAssetWait } from './assetWait.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -122,6 +124,13 @@ export function wireCampaignActions(app) {
   let waitForMutation = false;
   /** True once an automatic write reported a failure. A later automatic failure stays quiet until a write lands. */
   let failureShown = false;
+  /**
+   * The saves that wait on an image put (`app/assetWait.js`). The campaign
+   * stays dirty while one waits, so the leave-page guard still asks. A page
+   * that closes then keeps its previous save, because an unload cannot wait
+   * for the put.
+   */
+  const assetWait = createAssetWait();
 
   /**
    * Starts polling the autosave policy. The dirty flag controls this instead
@@ -220,18 +229,26 @@ export function wireCampaignActions(app) {
     }, FLUSH_DELAY_MS);
   }
 
+  /** Flushes the campaign when it has changes left to write. */
+  function flushIfDirty() {
+    if (dirty) flushSoon();
+  }
+
   /**
    * The write that autosave and the flush share. A player tab sends only its
    * own edit while a GM tab is open, and the GM tab merges and saves it. A
    * whole-campaign write from each tab loses one tab's change whenever both
    * change the campaign in the same window. Every other tab writes the
    * campaign, after the check against another tab's save. Nothing is written
-   * while a shortened load keeps saves on hold (`storage/ShortenedLoad.js`).
+   * while a shortened load keeps saves on hold (`storage/ShortenedLoad.js`),
+   * or while a save waits on an image put and writes the latest state once
+   * the put settles.
    * @returns {boolean} whether the write landed
    */
   function writeOut() {
     if (patches.active()) return patches.send();
     if (savesHeld()) return false;
+    if (assetWait.waiting()) return false;
     if (externalWriteBlocks()) return false;
     return persistState(buildCurrentState(), true);
   }
@@ -294,12 +311,17 @@ export function wireCampaignActions(app) {
    * reports both outcomes. The step is recorded after the campaign write. A
    * failed write then leaves the history describing exactly what is stored.
    * A failed write also makes autosave wait for the next mutation.
+   *
+   * A save that adds an image writes nothing until the put commits, and
+   * then `again` runs. By default that is a flush of the latest state.
    * @param {import('../types/storage.js').CampaignState} state
    * @param {boolean} [automatic] whether autosave or the combat flush asked for the write
+   * @param {() => void} [again] the action to run once a pending image put settles
    * @returns {boolean} whether the write landed
    */
-  function persistState(state, automatic = false) {
+  function persistState(state, automatic = false, again = flushIfDirty) {
     const result = saveCampaign(state);
+    if (assetWait.after(result.pending, again)) return false;
     if (!reportSave(result, automatic)) {
       waitForMutation = true;
       reportHistory(result.history);
@@ -379,6 +401,7 @@ export function wireCampaignActions(app) {
    */
   function persistAndReload(state, toastMessage) {
     const result = saveCampaign(state);
+    if (assetWait.after(result.pending, () => persistAndReload(state, toastMessage))) return;
     const { landed, message } = saveOutcome(result);
     if (!landed) {
       // Reloading here would read the stale save that is still stored.
@@ -456,11 +479,15 @@ export function wireCampaignActions(app) {
   });
 
   mustGetElement('save-btn').addEventListener('click', async () => {
-    if (!(await confirmSaveWhileHeld())) return;
-    if (!persistState(buildCurrentState())) return;
+    if (await confirmSaveWhileHeld()) saveNow();
+  });
+
+  /** The Save button's write, run again by itself when it waits on an image put. */
+  function saveNow() {
+    if (!persistState(buildCurrentState(), false, saveNow)) return;
     setDirty(false);
     app.toasts.show('Campaign saved.');
-  });
+  }
 
   // Autosave polls the pure policy and writes through the same snapshot-then-
   // save path as the Save button. It fires once the GM pauses editing, or
@@ -493,7 +520,10 @@ export function wireCampaignActions(app) {
   // presses Undo to take back an unsaved paint stroke otherwise loses that
   // stroke and everything else since the last save, and the tab leaves Build.
   /**
-   * @param {() => { save: Parameters<typeof reportSave>[0] } | null} apply
+   * @typedef {() => { save: import('../storage/SaveManager.js').SaveResult } | null} HistoryStep
+   */
+  /**
+   * @param {HistoryStep} apply
    * @param {string} nothingToDo
    * @param {string} restored
    * @param {string} verb the confirm label, "Undo" or "Redo"
@@ -508,6 +538,18 @@ export function wireCampaignActions(app) {
     ) {
       return;
     }
+    runHistoryStep(apply, nothingToDo, restored);
+  }
+
+  /**
+   * Takes one step and reloads onto it. A restored state takes its images
+   * from the committed copy, so a step does not wait on a put. A step that
+   * does wait writes nothing, and it runs again once the put settles.
+   * @param {HistoryStep} apply
+   * @param {string} nothingToDo
+   * @param {string} restored
+   */
+  function runHistoryStep(apply, nothingToDo, restored) {
     const step = apply();
     if (!step) {
       // Nothing exists in that direction, or the log was unreadable and got
@@ -516,6 +558,8 @@ export function wireCampaignActions(app) {
       app.toasts.show(nothingToDo);
       return;
     }
+    const again = () => runHistoryStep(apply, nothingToDo, restored);
+    if (assetWait.after(step.save.pending, again)) return;
     if (!reportSave(step.save)) return;
     queueToastAfterReload(restored);
     setDirty(false);
@@ -611,8 +655,40 @@ export function wireCampaignActions(app) {
     const next = followerMode(app.state.mode, { hadFight, hasFight: app.state.combat !== null });
     if (next) app.actions.setMode(next);
     refreshHistoryButtons();
+    showLateImages();
     return true;
   }
+
+  /**
+   * Reads the images that the stored save names and this tab's copy lacks,
+   * then shows them. Another tab commits an image before it writes the save
+   * that names it, so such a key was committed after this tab read IndexedDB
+   * (`storage/AssetMirror.js`). Until the read finishes, the image draws as
+   * a placeholder. The live state keeps the `asset:` key, so a later save
+   * still names the stored image. The tab takes the images only when it
+   * could still adopt a save: it has no unsaved change, it is in Play or
+   * combat mode, and no newer save has arrived.
+   */
+  function showLateImages() {
+    const raw = heldSave;
+    const missing = missingAssetKeys(raw);
+    if (!missing.length) return;
+    void fetchAssets(missing).then((added) => {
+      if (!added || dirty || heldSave !== raw) return;
+      if (app.state.mode !== 'play' && app.state.mode !== 'combat') return;
+      try {
+        rehydrateCampaign(app, campaignFromLiveState(withStoredAssets(buildCurrentState())));
+        ({ raw: heldSave, mark: heldMark } = adoptPersisted(buildCurrentState()));
+        patches.rebase();
+      } catch (error) {
+        console.warn('Could not show the images another tab stored.', error);
+      }
+    });
+  }
+
+  // The boot reads IndexedDB before the stored save, so a save that another
+  // tab wrote in between can name an image this tab has not read.
+  showLateImages();
 
   let syncPromptOpen = false;
 
