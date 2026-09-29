@@ -176,11 +176,11 @@ tile. It omits each field that equals its default value: `overlayRef: null`,
 `revealed: false`, `childNodeId: null`, `span: 1`, any default `metadata`
 member, and the empty `metadata` object itself.
 
-Default tile fields make up 62% of the example campaign's characters in the
+Default tile fields make up 63% of the example campaign's node data in the
 per-cell form, because almost every tile of a painted map is plain unrevealed
-terrain with no point of interest, and a day of undo history multiplies
-whatever a save costs by ten. This layer alone takes the example campaign
-from 358,413 to 134,907 characters.
+terrain with no point of interest. Written per cell, the 20,065 tiles of the
+example take 4,092,064 characters with every field and 1,506,124 characters
+with the default fields omitted.
 
 The inverse function is `withTileDefaults` (`map/TileGrid.js`). It fills
 exactly those fields from absence, and every load already runs it, so no code
