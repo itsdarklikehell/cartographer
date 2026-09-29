@@ -1116,13 +1116,21 @@ border crossing also uses. A painted block can have any outline, so the
 point then moves to the nearest cell of the block. When the party stands on
 the parent map itself, its own cell is the answer.
 
-The widget draws each parent tile's base image and overlays at a few pixels
-per tile, with fog for an unrevealed tile outside Build mode. That pass
-costs about one `drawImage` per tile, so the widget keeps it in an
-offscreen canvas keyed on the parent node object, the fog rule, and the tile
-size. Node objects never change in place, so a new parent object is the
-only way the terrain can change. A party step inside the child then copies
-the cached pixels and draws only the block outline and the party dot.
+`paintTerrain` in `src/map/MiniMap.js` draws each parent tile's base image
+and overlays at a few pixels per tile, with fog for an unrevealed tile
+outside Build mode. It draws from the widget's own `TileRaster`, so each ref
+rasterizes once per tile size. The example world has 2,602 images across
+2,304 tiles but only 62 distinct refs. Drawn from the SVG itself, the pass
+costs about 100 ms, because every draw runs the vector rasterizer again.
+Drawn from the rasters, it costs about 4 ms, and the rasters themselves
+cost about 7 ms once per session.
+
+The widget keeps the pass in an offscreen canvas keyed on the parent node
+object and the tile size. It keeps one such canvas for Build mode and one
+for Play, so a mode switch back to either mode draws nothing new. Node
+objects never change in place, so a new parent object is the only way the
+terrain can change. A party step inside the child then copies the cached
+pixels and draws only the block outline and the party dot.
 
 `syncExits` in `mapWiring.js` calls the widget's `update`, because every
 path that moves the party, changes the node in view, repaints the parent,

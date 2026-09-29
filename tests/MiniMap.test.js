@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { approximateCell, compassArea, miniMapTileSize, miniMapView } from '../src/map/MiniMap.js';
+import { INK } from '../src/map/CanvasInk.js';
+import {
+  approximateCell,
+  compassArea,
+  miniMapTileSize,
+  miniMapView,
+  paintTerrain,
+} from '../src/map/MiniMap.js';
 import { findRegionGroups } from '../src/map/RegionGroups.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
@@ -93,4 +100,70 @@ test('compassArea names the third of the map a cell is in', () => {
   assert.equal(compassArea({ x: 4, y: 4 }, 9, 9), 'center');
   assert.equal(compassArea({ x: 8, y: 8 }, 9, 9), 'south-east');
   assert.equal(compassArea({ x: 0, y: 8 }, 0, 0), 'south-west');
+});
+
+/** A 2d context that records fills, as [style, x, y, w, h], and draws, as [source, x, y]. */
+function recordingContext() {
+  const fills = [];
+  const draws = [];
+  return {
+    fills,
+    draws,
+    fillStyle: '',
+    /** @param {number} x @param {number} y @param {number} w @param {number} h */
+    fillRect(x, y, w, h) {
+      fills.push([this.fillStyle, x, y, w, h]);
+    },
+    /** @param {any} source @param {number} x @param {number} y */
+    drawImage(source, x, y) {
+      draws.push([source, x, y]);
+    },
+  };
+}
+
+/** A 2x2 parent: a revealed tile with an overlay, a fogged tile, an unloaded base, and no base. */
+function terrainParent() {
+  const node = createMapNode('p', 'P', null, 2, 2);
+  return {
+    ...node,
+    tiles: [
+      createTile('0,0', 'grass', { revealed: true, overlayRef: 'road' }),
+      createTile('1,0', 'grass'),
+      createTile('0,1', 'slow', { revealed: true, overlayRef: 'slow-road' }),
+      createTile('1,1', '', { revealed: true }),
+      createTile('entrance', 'grass', { revealed: true }),
+    ],
+  };
+}
+
+/** @param {string} ref @param {number} size */
+const loaded = (ref, size) =>
+  ref.startsWith('slow') ? null : /** @type {any} */ (`${ref}@${size}`);
+
+test('paintTerrain draws each tile from the source at the tile size, with fog outside Build mode', () => {
+  const ctx = recordingContext();
+  paintTerrain(/** @type {any} */ (ctx), terrainParent(), 3, false, loaded);
+  assert.deepEqual(ctx.draws, [
+    ['grass@3', 0, 0],
+    ['road@3', 0, 0],
+  ]);
+  assert.deepEqual(ctx.fills, [
+    [INK.mapBackdrop, 0, 0, 6, 6],
+    [INK.fog, 3, 0, 3, 3],
+    [INK.missingArt, 0, 3, 3, 3],
+    [INK.missingArt, 3, 3, 3, 3],
+  ]);
+});
+
+test('paintTerrain draws a fogged tile in Build mode, and a missing overlay leaves no placeholder', () => {
+  const ctx = recordingContext();
+  paintTerrain(/** @type {any} */ (ctx), terrainParent(), 3, true, loaded);
+  assert.deepEqual(
+    ctx.draws.map((d) => d[0]),
+    ['grass@3', 'road@3', 'grass@3'],
+  );
+  assert.deepEqual(
+    ctx.fills.map((f) => f[0]),
+    [INK.mapBackdrop, INK.missingArt, INK.missingArt],
+  );
 });

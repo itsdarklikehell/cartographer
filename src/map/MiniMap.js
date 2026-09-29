@@ -1,6 +1,8 @@
+import { INK } from './CanvasInk.js';
 import { parseCoords } from './MapGeometry.js';
 import { blockFor } from './MapExits.js';
 import { projectBack } from './RegionCrossing.js';
+import { overlayList } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -95,4 +97,44 @@ export function compassArea(cell, width, height) {
   const ew = ['west', '', 'east'][third(cell.x, width)];
   if (ns && ew) return `${ns}-${ew}`;
   return ns || ew || 'center';
+}
+
+/**
+ * Paint every tile of `parent` into `ctx` at `size` pixels per tile. An
+ * unrevealed tile paints as fog unless `revealAll` is set, so the mini-map
+ * shows a player nothing the party has not seen. A base image that has not
+ * loaded paints a flat placeholder, and a missing overlay paints nothing.
+ *
+ * `source` returns what to draw a ref with at `size` pixels, or null while
+ * it loads. A caller passes a raster cache here. A world uses a few dozen
+ * refs across thousands of tiles, and drawing each tile from the SVG itself
+ * rasterizes the vector art again on every draw.
+ * @param {Pick<CanvasRenderingContext2D, 'fillStyle' | 'fillRect' | 'drawImage'>} ctx
+ * @param {MapNode} parent
+ * @param {number} size
+ * @param {boolean} revealAll
+ * @param {(ref: string, size: number) => CanvasImageSource | null} source
+ */
+export function paintTerrain(ctx, parent, size, revealAll, source) {
+  ctx.fillStyle = INK.mapBackdrop;
+  ctx.fillRect(0, 0, parent.width * size, parent.height * size);
+  for (const tile of parent.tiles) {
+    const at = parseCoords(tile.id);
+    if (!at) continue;
+    const x = at.x * size;
+    const y = at.y * size;
+    if (!revealAll && !tile.revealed) {
+      ctx.fillStyle = INK.fog;
+      ctx.fillRect(x, y, size, size);
+      continue;
+    }
+    for (const ref of [tile.imageRef, ...overlayList(tile)]) {
+      const img = ref ? source(ref, size) : null;
+      if (img) ctx.drawImage(img, x, y, size, size);
+      else if (ref === tile.imageRef) {
+        ctx.fillStyle = INK.missingArt;
+        ctx.fillRect(x, y, size, size);
+      }
+    }
+  }
 }

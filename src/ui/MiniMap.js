@@ -1,10 +1,8 @@
 import { el } from './dom.js';
 import { INK } from '../map/CanvasInk.js';
-import { parseCoords } from '../map/MapGeometry.js';
-import { compassArea, miniMapTileSize } from '../map/MiniMap.js';
+import { compassArea, miniMapTileSize, paintTerrain } from '../map/MiniMap.js';
 import { groupOutline } from '../map/RegionOutline.js';
-import { overlayList } from '../map/TileGrid.js';
-import { imageSrcForRef } from '../map/TileRaster.js';
+import { TileRaster } from '../map/TileRaster.js';
 import { removeStored, writeStored } from '../storage/Footprint.js';
 
 /** @typedef {import('../map/MiniMap.js').MiniMapView} MiniMapView */
@@ -21,8 +19,8 @@ const HIDDEN_KEY = 'campaign-builder:minimap-hidden';
  * pinned to the top-left corner of the map. It outlines the block of parent
  * cells that leads into the node and puts a dot where the party is. The
  * parent draws one small image per tile, so the picture costs one draw pass
- * per parent node object. A party step inside the node redraws only the
- * outline and the dot over a cached copy of that pass.
+ * per parent node object and fog rule. A party step inside the node redraws
+ * only the outline and the dot over a cached copy of that pass.
  *
  * The caller decides what to show through `getView` and `revealAll`, and
  * calls `update` after anything that can change either one. `toggle` shows
@@ -45,11 +43,20 @@ export function mountMiniMap(container, options) {
   container.appendChild(root);
   const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
 
-  /** @type {Map<string, HTMLImageElement>} */
-  const images = new Map();
-  /** The terrain pass, reused while the parent object and the fog rule stay the same. */
-  /** @type {{ parent: MapNode, revealAll: boolean, size: number, pixels: HTMLCanvasElement } | null} */
-  let base = null;
+  /**
+   * Each ref rasterizes once per tile size, so a pass over thousands of
+   * tiles copies pixels instead of running the SVG rasterizer per tile. A
+   * load that finishes drops the cached passes, so the next frame draws the
+   * real art.
+   */
+  const raster = new TileRaster({ onLoad: scheduleRedraw });
+  /**
+   * The terrain passes, one for Build mode and one for Play, so a mode
+   * switch reuses the pass of the mode it returns to. Each is reused while
+   * the parent object and the tile size stay the same.
+   * @type {Map<boolean, { parent: MapNode, size: number, pixels: HTMLCanvasElement }>}
+   */
+  const bases = new Map();
   let loadPending = false;
   let open = localStorage.getItem(HIDDEN_KEY) !== '1';
 
@@ -60,37 +67,20 @@ export function mountMiniMap(container, options) {
     update();
   }
 
-  /**
-   * The decoded image for a ref, or null while it loads. A load that
-   * finishes drops the cached pass, so the next frame draws the real art.
-   * @param {string} ref
-   */
-  function image(ref) {
-    let img = images.get(ref);
-    if (!img) {
-      img = new Image();
-      img.src = imageSrcForRef(ref);
-      images.set(ref, img);
-      img.addEventListener('load', scheduleRedraw, { once: true });
-    }
-    return img.complete && img.naturalWidth > 0 ? img : null;
-  }
-
   // Many tiles finish loading in the same frame. One redraw covers them all.
   function scheduleRedraw() {
     if (loadPending) return;
     loadPending = true;
     requestAnimationFrame(() => {
       loadPending = false;
-      base = null;
+      bases.clear();
       update();
     });
   }
 
   /**
-   * Draw every tile of the parent at `size` device pixels. An unrevealed
-   * tile draws as fog, the same as on the main map, so the mini-map shows a
-   * player nothing the party has not seen.
+   * The terrain pass of `parent` at `size` device pixels per tile, in an
+   * offscreen canvas.
    * @param {MapNode} parent
    * @param {number} size
    * @param {boolean} revealAll
@@ -100,27 +90,7 @@ export function mountMiniMap(container, options) {
     pixels.width = parent.width * size;
     pixels.height = parent.height * size;
     const pctx = /** @type {CanvasRenderingContext2D} */ (pixels.getContext('2d'));
-    pctx.fillStyle = INK.mapBackdrop;
-    pctx.fillRect(0, 0, pixels.width, pixels.height);
-    for (const tile of parent.tiles) {
-      const at = parseCoords(tile.id);
-      if (!at) continue;
-      const x = at.x * size;
-      const y = at.y * size;
-      if (!revealAll && !tile.revealed) {
-        pctx.fillStyle = INK.fog;
-        pctx.fillRect(x, y, size, size);
-        continue;
-      }
-      for (const ref of [tile.imageRef, ...overlayList(tile)]) {
-        const img = ref ? image(ref) : null;
-        if (img) pctx.drawImage(img, x, y, size, size);
-        else if (ref === tile.imageRef) {
-          pctx.fillStyle = INK.missingArt;
-          pctx.fillRect(x, y, size, size);
-        }
-      }
-    }
+    paintTerrain(pctx, parent, size, revealAll, (ref) => raster.source(ref, size, size));
     return pixels;
   }
 
@@ -181,8 +151,10 @@ export function mountMiniMap(container, options) {
     const scale = window.devicePixelRatio || 1;
     const size = miniMapTileSize(parent.width, parent.height, MAX_SIDE * scale);
     const revealAll = options.revealAll();
-    if (!base || base.parent !== parent || base.revealAll !== revealAll || base.size !== size) {
-      base = { parent, revealAll, size, pixels: drawBase(parent, size, revealAll) };
+    let base = bases.get(revealAll);
+    if (!base || base.parent !== parent || base.size !== size) {
+      base = { parent, size, pixels: drawBase(parent, size, revealAll) };
+      bases.set(revealAll, base);
     }
     const { pixels } = base;
     if (canvas.width !== pixels.width || canvas.height !== pixels.height) {
