@@ -22,11 +22,21 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * code writes to it after the entry is cached. This lets a node share the base
  * maps with its ancestors without a later append on one branch becoming
  * visible on the other branch.
+ *
+ * `links` and `art` are stamps: empty objects that stand for one state of
+ * some tile fields. Two nodes share a stamp only when every position holds
+ * the same tile id and the same values of those fields. `links` covers
+ * `childNodeId`, and `art` covers `imageRef` and `metadata.poiType`. A cache
+ * of a value derived from those fields keys on the stamp instead of the node.
+ * A fog reveal or a paint stroke then keeps the region caches, because it
+ * makes a new node but keeps the `links` stamp.
  * @typedef {Object} TileLayout
  * @property {Map<string, number>} posById
  * @property {Int32Array | null} cellPos
  * @property {Map<string, number> | null} addedById
  * @property {Map<number, number> | null} addedCells
+ * @property {object} links
+ * @property {object} art
  */
 
 /**
@@ -81,7 +91,37 @@ function build(node) {
       cellPos[coords.y * node.width + coords.x] = i;
     }
   });
-  return { posById, cellPos, addedById: null, addedCells: null };
+  return { posById, cellPos, addedById: null, addedCells: null, links: {}, art: {} };
+}
+
+/**
+ * The layout for a node made by replacing some tiles of `node`, or null when
+ * a replacement changes a tile id, so that the new node builds its own. The
+ * positions stay the same, so the result shares the maps of `entry`. A stamp
+ * stays when no replaced tile changes a field it covers, and is new
+ * otherwise. The result is `entry` itself when both stamps stay.
+ * @param {TileLayout} entry
+ * @param {MapNode} node the node before the replacement
+ * @param {Iterable<[number, Tile]>} changes
+ * @returns {TileLayout | null}
+ */
+function forward(entry, node, changes) {
+  let sameLinks = true;
+  let sameArt = true;
+  for (const [pos, tile] of changes) {
+    const old = node.tiles[pos];
+    if (old.id !== tile.id) return null;
+    if (old.childNodeId !== tile.childNodeId) sameLinks = false;
+    if (old.imageRef !== tile.imageRef || old.metadata.poiType !== tile.metadata.poiType) {
+      sameArt = false;
+    }
+  }
+  if (sameLinks && sameArt) return entry;
+  return {
+    ...entry,
+    links: sameLinks ? entry.links : {},
+    art: sameArt ? entry.art : {},
+  };
 }
 
 /**
@@ -96,6 +136,28 @@ function layout(node) {
     cache.set(node, entry);
   }
   return entry;
+}
+
+/**
+ * The stamp of a node's tile ids and `childNodeId` values. The region group
+ * cache keys on it, so a node that differs from another only in fog or art
+ * finds the groups of the other.
+ * @param {MapNode} node
+ * @returns {object}
+ */
+export function linkStamp(node) {
+  return layout(node).links;
+}
+
+/**
+ * The stamp of a node's tile ids, `imageRef` values, and point of interest
+ * types. The group image chunk cache keys on it, so a fog reveal keeps the
+ * chunks.
+ * @param {MapNode} node
+ * @returns {object}
+ */
+export function artStamp(node) {
+  return layout(node).art;
 }
 
 /**
@@ -178,7 +240,7 @@ export function withNodeTiles(node, tiles) {
 
 /**
  * A new node with the tile at one array position replaced. Nothing moves, so
- * the new node shares the previous node's layout without change.
+ * the new node shares the previous node's maps (see `forward`).
  * @param {MapNode} node
  * @param {number} pos
  * @param {Tile} tile
@@ -189,13 +251,14 @@ export function withTileReplaced(node, pos, tile) {
   tiles[pos] = freezeTile(tile);
   const next = { ...node, tiles };
   const entry = cache.get(node);
-  if (entry) cache.set(next, entry);
+  const carried = entry && forward(entry, node, [[pos, tile]]);
+  if (carried) cache.set(next, carried);
   return next;
 }
 
 /**
  * A new node with several tiles replaced at once, keyed by array position. A
- * fog reveal produces this shape: one party step flips a disc of cells.
+ * fog reveal produces this pattern: one party step flips a disc of cells.
  * @param {MapNode} node
  * @param {Map<number, Tile>} changes
  * @returns {MapNode}
@@ -205,7 +268,8 @@ export function withTilesReplaced(node, changes) {
   for (const [pos, tile] of changes) tiles[pos] = freezeTile(tile);
   const next = { ...node, tiles };
   const entry = cache.get(node);
-  if (entry) cache.set(next, entry);
+  const carried = entry && forward(entry, node, changes);
+  if (carried) cache.set(next, carried);
   return next;
 }
 
@@ -214,7 +278,9 @@ export function withTilesReplaced(node, changes) {
  * records the appended id in this node's own override maps. Once the
  * overrides grow past about the square root of the tile count, the code
  * leaves the new node uncached. The next lookup then rebuilds a flat layout
- * instead of paying a growing copy cost for each appended tile.
+ * instead of paying a growing copy cost for each appended tile. The `links`
+ * stamp stays when the new tile links to no child, because a tile with no
+ * link joins no region group. The `art` stamp is always new.
  * @param {MapNode} node
  * @param {Tile} tile
  * @returns {MapNode}
@@ -236,6 +302,13 @@ export function withTileAppended(node, tile) {
       addedCells.set(coords.y * next.width + coords.x, pos);
     }
   }
-  cache.set(next, { posById: entry.posById, cellPos: entry.cellPos, addedById, addedCells });
+  cache.set(next, {
+    posById: entry.posById,
+    cellPos: entry.cellPos,
+    addedById,
+    addedCells,
+    links: tile.childNodeId ? {} : entry.links,
+    art: {},
+  });
   return next;
 }

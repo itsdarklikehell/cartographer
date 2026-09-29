@@ -311,10 +311,12 @@ export class MapCanvas {
    * remove a region-linked tile, and this variant leaves that tile visually
    * stale until the full refreshNode runs.
    *
-   * Keeping the previous node's group objects also keeps the group image
-   * chunks cached across the frames within one cell. The chunks are
-   * memoized per group against the tile list they were built from. So this
-   * swap costs a rebuild only when the tile list actually carries changed tiles.
+   * A fog or terrain stroke keeps the tile links, so `findRegionGroups`
+   * returns these same groups for the new node anyway. A region paint
+   * stroke changes the links on every cell, and there the kept groups save
+   * one flood fill per cell. The group image chunks and the region color
+   * slots key on the group objects, so they stay cached across the frames
+   * within one cell.
    * @param {MapNode} node
    */
   refreshNodeTiles(node) {

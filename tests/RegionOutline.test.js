@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 import { findRegionGroups } from '../src/map/RegionGroups.js';
 import { groupOutline, regionSlots } from '../src/map/RegionOutline.js';
+import { revealAround } from '../src/map/FogOfWar.js';
 
 /**
  * A node painted from rows of letters: each letter links its cell to the
@@ -46,7 +47,7 @@ test('groupOutline is cached on the group', () => {
 });
 
 test('regionSlots gives regions that touch different slots', () => {
-  const slots = regionSlots(painted(['AB', 'CD']));
+  const slots = regionSlots(findRegionGroups(painted(['AB', 'CD'])));
   assert.notEqual(slots.get('A'), slots.get('B'));
   assert.notEqual(slots.get('A'), slots.get('C'));
   assert.notEqual(slots.get('B'), slots.get('D'));
@@ -56,7 +57,7 @@ test('regionSlots gives regions that touch different slots', () => {
 });
 
 test('regionSlots gives every block of one child the same slot', () => {
-  const slots = regionSlots(painted(['A.A', 'BBB']));
+  const slots = regionSlots(findRegionGroups(painted(['A.A', 'BBB'])));
   assert.equal(slots.size, 2);
   assert.notEqual(slots.get('A'), slots.get('B'));
 });
@@ -64,7 +65,9 @@ test('regionSlots gives every block of one child the same slot', () => {
 test('regionSlots colors a wheel of regions with few slots', () => {
   // The middle region touches five regions around it, which all touch their
   // neighbors in a ring.
-  const slots = regionSlots(painted(['.BBC.', 'FFMCC', 'FMMMD', 'EEMDD', '.EED.']));
+  const slots = regionSlots(
+    findRegionGroups(painted(['.BBC.', 'FFMCC', 'FMMMD', 'EEMDD', '.EED.'])),
+  );
   for (const [a, b] of [
     ['M', 'B'],
     ['M', 'C'],
@@ -82,8 +85,20 @@ test('regionSlots colors a wheel of regions with few slots', () => {
   assert.ok(Math.max(...slots.values()) < 6);
 });
 
-test('regionSlots is the same for the same layout, and memoized on the node', () => {
-  const node = painted(['AB']);
-  assert.equal(regionSlots(node), regionSlots(node));
-  assert.deepEqual([...regionSlots(painted(['AB']))], [...regionSlots(node)]);
+test('regionSlots is the same for the same layout, and memoized on the groups', () => {
+  const groups = findRegionGroups(painted(['AB']));
+  assert.equal(regionSlots(groups), regionSlots(groups));
+  assert.deepEqual([...regionSlots(findRegionGroups(painted(['AB'])))], [...regionSlots(groups)]);
+});
+
+test('a fog reveal keeps the region slots and outlines of the node', () => {
+  const node = painted(['AB', 'CD']);
+  const groups = findRegionGroups(node);
+  const slots = regionSlots(groups);
+  const outline = groupOutline(groups[0]);
+  const revealed = revealAround(node, '0,0', 3);
+  assert.notEqual(revealed, node);
+  assert.equal(findRegionGroups(revealed), groups);
+  assert.equal(regionSlots(findRegionGroups(revealed)), slots);
+  assert.equal(groupOutline(findRegionGroups(revealed)[0]), outline);
 });

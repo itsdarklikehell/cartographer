@@ -1,8 +1,6 @@
 import { NEIGHBORS4, tileIdAt } from './MapGeometry.js';
-import { findRegionGroups } from './RegionGroups.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
-/** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
@@ -20,7 +18,8 @@ const outlineCache = new WeakMap();
  * outline, and its bounding box covers cells of other regions, so the map
  * draws these edges and not the box. A hole in the group gets its own ring of
  * edges. The result is cached on the group object, which `findRegionGroups`
- * keeps for as long as its node lives. Treat it as read only.
+ * keeps for as long as the tile links of its node stay the same. Treat it as
+ * read only.
  * @param {RegionGroup} group
  * @returns {OutlineEdge[]}
  */
@@ -57,12 +56,12 @@ export function groupOutline(group) {
  * lowest slot that its neighbors do not have. A map in which each region is
  * one block always has a region with five or fewer neighbors, so this order
  * needs at most six slots. Ties go to the lower id, so one layout always gets
- * the same colors. The result is memoized on the node.
- * @param {MapNode} node
+ * the same colors. The result is memoized on the groups array that
+ * `findRegionGroups` returns, which a fog reveal or a paint stroke keeps.
+ * @param {RegionGroup[]} groups
  * @returns {Map<string, number>}
  */
-export const regionSlots = memoizeByIdentity((/** @type {MapNode} */ node) => {
-  const groups = findRegionGroups(node);
+export const regionSlots = memoizeByIdentity((/** @type {RegionGroup[]} */ groups) => {
   /** @type {Map<string, string>} */
   const owner = new Map();
   for (const group of groups) {

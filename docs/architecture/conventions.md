@@ -88,23 +88,28 @@ not. `setTileFreezing` overrides this detection.
 
 ### WeakMap caches per node
 
-The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
-region groups (`RegionGroups.findRegionGroups`), and group image chunks
-(`groupImageChunks`) all follow the TileIndex pattern. Each is a pure function
-of an immutable node, and each caches its result under the node object as the
-key. This pattern covers anything a hot path recomputes that the code can
-derive from a node alone. The returned arrays and sets are shared, so treat
-them as read-only.
+The revealed-id set (`MapRenderer.js`) and span blocks
+(`TilePaint.spanBlocks`) follow the TileIndex pattern. Each is a pure
+function of an immutable node, and each caches its result under the node
+object as the key. This pattern covers anything a hot path recomputes that
+the code can derive from a node alone. The returned arrays and sets are
+shared, so treat them as read-only.
 
-Chunks are the one entry with a narrower key than the node. Their key is the
-group object, which the group cache keeps stable for each node and stamps
-with `node.tiles`, because a chunk's contents depend only on the group's
-geometry and on its member tiles' art. Keying chunks on the node instead
-would break reuse across a stroke, because a stroke replaces the node for
-each cell while the canvas's groups stay memoized against the pre-stroke
-node. Key a derived value on what it reads, and when part of that is a node
-field, stamp the field onto the key instead of nesting the key inside the
-node.
+The region caches use narrower keys than the node, because a fog reveal or a
+paint cell makes a new node while the fields they read stay the same. The
+TileIndex layout keeps two stamps, which are empty objects that stand for
+one state of some tile fields. `linkStamp(node)` covers the tile ids and
+their `childNodeId` values, and `artStamp(node)` covers the tile ids, their
+`imageRef` values, and their point of interest types. The replace helpers
+pass a stamp to the new node when no replaced tile changes a field it
+covers. Region groups (`findRegionGroups`) cache on the link stamp. The
+group outline (`groupOutline`), the color slots (`regionSlots`, keyed on the
+groups array), and the image chunks (`groupImageChunks`) cache on the group
+objects, and the chunks also record the art stamp. A party step then
+rebuilds none of these caches. On a 200x200 node with 100 regions, a
+rebuild of all of them costs about 40 ms. Key a derived value on what it reads, and when
+part of that is a node field, stamp the field onto the key instead of
+nesting the key inside the node.
 
 The tile pass itself iterates only the visible cell range, because it inverts
 the view transform once and then looks up cells by coordinate, which keeps

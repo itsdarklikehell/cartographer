@@ -1,6 +1,6 @@
 import { NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { getTile } from './TileGrid.js';
-import { memoizeByIdentity } from '../util/memoize.js';
+import { artStamp, linkStamp } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -17,18 +17,36 @@ import { memoizeByIdentity } from '../util/memoize.js';
  */
 
 /**
+ * The groups of each `TileIndex.linkStamp`. The groups read only the tile ids
+ * and their `childNodeId` values, and the stamp stands for exactly those. A
+ * fog reveal or a paint stroke makes a new node with the same stamp, so the
+ * new node finds the groups of the old one. `groupOutline`, `regionSlots`,
+ * and `groupImageChunks` key on the group objects, so they keep their cached
+ * values too.
+ * @type {WeakMap<object, RegionGroup[]>}
+ */
+const groupCache = new WeakMap();
+
+/**
  * Group a node's tiles into contiguous, 4-neighbor blocks that share the same
  * non-null childNodeId. A player can then enter a region from any tile in a
  * multi-tile block instead of from one single point. Tiles with no
  * childNodeId, or with ids that do not parse as "x,y" grid coordinates, are
- * ignored. This function is memoized on the node object, which every tile
- * mutation replaces under the TileIndex contract, so group objects stay
- * stable per node. The chunk cache below relies on that stability and keys
- * on the group objects directly. Treat the returned array as read only.
+ * ignored. The result is cached on the node's `linkStamp`, so two nodes with
+ * the same links get the same group objects. Treat the returned array as
+ * read only.
  * @param {MapNode} node
  * @returns {RegionGroup[]}
  */
-export const findRegionGroups = memoizeByIdentity(computeRegionGroups);
+export function findRegionGroups(node) {
+  const stamp = linkStamp(node);
+  let groups = groupCache.get(stamp);
+  if (!groups) {
+    groups = computeRegionGroups(node);
+    groupCache.set(stamp, groups);
+  }
+  return groups;
+}
 
 /**
  * @param {MapNode} node
@@ -163,34 +181,20 @@ export function groupImageRef(node, group) {
  */
 
 /**
- * Cached chunks per group, stamped with the tile list they were computed
- * from. The renderer partitions every group every frame, so this cache must
- * hit on a repeat frame. The stamp is exactly the dependency set: a chunk's
- * contents are its group's geometry plus its member tiles' art, and nothing
- * else, not the node's name, extent, or identity.
- *
- * Keying on the node object instead was imprecise in both directions. It
- * discarded chunks that a node swap had not invalidated, because a paint,
- * erase, or fog drag replaces the node once per cell while leaving its
- * groups memoized against the pre-stroke node. The (node, group) pair then
- * did not repeat once a stroke had started, not even for the groups the
- * stroke never came near. It also held a nested WeakMap per node, leaving
- * one dead outer entry per node object a stroke created. `tiles` is the
- * honest stamp: a tile mutation always replaces that array, under the
- * TileIndex contract enforced by TileFreeze, and nothing else does. There
- * is one entry per group, so a long stroke accumulates nothing, and a group
- * is reachable only through its own node's group cache, so the two die together.
- *
- * This change bought precision, not speed, and the numbers below record
- * that so nobody mistakes it for a speedup. The recompute costs about
- * 0.025 ms per painted cell on a twelve-group 40x40 node, and it never ran
- * once per frame, because the canvas's node object changes only when a
- * cell is painted, so frames between two cell crossings hit the old key
- * too. A member-identity revalidation, meant to hold chunks across
- * an unrelated cell's paint, was measured and dropped: a filled rectangle's
- * member count equals the sum of its chunks' tiles, so revalidating costs
- * the same tile lookups the rebuild does.
- * @type {WeakMap<RegionGroup, { tiles: Tile[], chunks: GroupImageChunk[] }>}
+ * Cached chunks per group, stamped with what they were computed from. The
+ * renderer partitions every group every frame, so this cache has to hit on a
+ * repeat frame. A chunk reads its group's geometry and the art of its member
+ * tiles (`imageRef` and the point of interest type), and nothing else. The
+ * group object is the key, and `TileIndex.artStamp` stands for the art. A fog
+ * reveal keeps the art stamp, so a party step keeps every chunk. A paint
+ * stroke makes a new art stamp for each cell, so the chunks rebuild on the
+ * next frame, at about 0.025 ms per painted cell on a twelve-group 40x40
+ * node. The tile list is a second stamp. It matches when a caller copies the
+ * node object without a tile change, because the copy gets a new layout and
+ * so a new art stamp. There is one entry per group, so a long stroke
+ * accumulates nothing. A group is reachable only through the group cache, so
+ * the entry is freed with the group.
+ * @type {WeakMap<RegionGroup, { art: object, tiles: Tile[], chunks: GroupImageChunk[] }>}
  */
 const chunkCache = new WeakMap();
 
@@ -204,17 +208,18 @@ const chunkCache = new WeakMap();
  * tiles outside the group, so it keeps per-tile drawing. A group with no
  * point-of-interest marker returns none either. Such a group is a painted
  * territory, not a landmark, and a painted field of grass drawn as a few
- * stretched tiles loses its variants. This is memoized
- * per group against the node's tile list. Treat the result as read only.
+ * stretched tiles loses its variants. This is memoized per group against the
+ * node's art (see `chunkCache`). Treat the result as read only.
  * @param {MapNode} node
  * @param {RegionGroup} group
  * @returns {GroupImageChunk[]}
  */
 export function groupImageChunks(node, group) {
+  const art = artStamp(node);
   const cached = chunkCache.get(group);
-  if (cached && cached.tiles === node.tiles) return cached.chunks;
+  if (cached && (cached.art === art || cached.tiles === node.tiles)) return cached.chunks;
   const chunks = computeChunks(node, group);
-  chunkCache.set(group, { tiles: node.tiles, chunks });
+  chunkCache.set(group, { art, tiles: node.tiles, chunks });
   return chunks;
 }
 

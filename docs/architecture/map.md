@@ -104,7 +104,12 @@ through `maxY` describe the group's bounding box.
 
 Multi-tile regions need no schema change, because multiple tiles have the
 same `childNodeId` value and the model derives the grouping from that.
-`MapCanvas` recomputes the groups every time a node loads.
+`MapCanvas` asks for the groups every time a node loads. The result is
+cached on the node's link stamp (`TileIndex.linkStamp`), which changes only
+when a tile id or a `childNodeId` changes. A fog reveal or a terrain stroke
+makes a new node with the same stamp, so the new node gets the same group
+objects, and the outline, color slot, and image chunk caches that key on
+those objects stay warm.
 `src/map/RegionOverlay.js` then draws each group as a tint over its own
 cells, a border along its outline, and the name of the region through a
 `getNodeName` callback. A painted region can have any outline, and its

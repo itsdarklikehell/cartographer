@@ -31,7 +31,10 @@ const REGION_LABEL_PX = 12;
 export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeName) {
   if (!view.node || view.regionGroups.length === 0) return;
   const size = tileSize * view.scale;
-  const slots = regionSlots(view.node);
+  // The view's groups, not the groups of view.node. During a stroke the
+  // canvas keeps the groups from before the stroke, and a region paint
+  // stroke gives view.node new links on every cell.
+  const slots = regionSlots(view.regionGroups);
   const rect = newBlockRect();
   const px = view.pixelRatio ?? 1;
   for (const group of view.regionGroups) {
