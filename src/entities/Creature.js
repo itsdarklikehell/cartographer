@@ -247,10 +247,12 @@ export function addStatModifier(creature, stat, delta, rounds) {
 /**
  * Advance one combat round: decrement every stat modifier's counter and
  * drop any that reach zero. This is the stat-block twin of tickConditions.
+ * An empty list comes back as the same array.
  * @param {StatModifier[]} mods
  * @returns {StatModifier[]}
  */
 export function tickStatModifiers(mods) {
+  if (mods.length === 0) return mods;
   return mods.map((m) => ({ ...m, rounds: m.rounds - 1 })).filter((m) => m.rounds > 0);
 }
 

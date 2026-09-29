@@ -190,6 +190,7 @@ test('stat modifiers stack per stat and tick down one round at a time', () => {
   assert.equal(effectiveStatBlock(afterOne).STR, 18, 'the one-round modifier drops first');
   const afterTwo = { ...afterOne, statMods: tickStatModifiers(afterOne.statMods) };
   assert.equal(effectiveStatBlock(afterTwo).STR, 16);
+  assert.equal(tickStatModifiers(afterTwo.statMods), afterTwo.statMods);
 });
 
 test('addStatModifier ignores a zero delta and a zero duration', () => {

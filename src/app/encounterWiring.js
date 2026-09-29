@@ -5,12 +5,7 @@ import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import {
-  effectiveStatBlock,
-  isDefeated,
-  tickStatModifiers,
-  toTemplate,
-} from '../entities/Creature.js';
+import { effectiveStatBlock, isDefeated, toTemplate } from '../entities/Creature.js';
 import {
   creaturesAt,
   creaturesNear,
@@ -32,8 +27,7 @@ import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { arrivalAlert } from '../combat/Arrival.js';
-import { tickConditions } from '../entities/Conditions.js';
-import { tick as tickConcentration } from '../entities/Concentration.js';
+import { passRound } from '../entities/TimedEffects.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { creatureForm, deleteCreature, addFromLibrary } from './creatureForm.js';
@@ -435,39 +429,33 @@ export function wireEncounters(app) {
   // A new round elapsed. Tick down every combatant's timed conditions, the
   // enemies' timed stat modifiers, and every concentration duration.
   // A turn advance past the bottom of the order and the removal of the last
-  // combatant on its own turn both start a round.
+  // combatant on its own turn both start a round. Every creature ticks, so a
+  // bystander's timed stat modifier counts down too. An entity with nothing
+  // timed keeps its identity, and so does a collection with no change.
   function tickRound() {
     /** @type {{ casterId: string, spellId: string }[]} */
     const expired = [];
-    // Concentration ticks after the conditions, because it rewrites its own
-    // chip's counter from the duration it owns.
     /**
      * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
-     * @param {T} entity with its conditions already ticked
-     * @returns {T}
+     * @param {T[]} list
+     * @returns {T[]}
      */
-    const tickHeld = (entity) => {
-      const ticked = tickConcentration(entity);
-      const held = entity.concentration;
-      if (ticked.expired && held) {
-        app.actions.logEvent('combat', `${entity.name}'s concentration on ${held.spellName} ends.`);
-        expired.push({ casterId: entity.id, spellId: held.spellId });
-      }
-      return ticked.character;
+    const tickAll = (list) => {
+      const next = list.map((entity) => {
+        const { entity: ticked, ended } = passRound(entity);
+        if (ended) {
+          app.actions.logEvent(
+            'combat',
+            `${entity.name}'s concentration on ${ended.spellName} ends.`,
+          );
+          expired.push({ casterId: entity.id, spellId: ended.spellId });
+        }
+        return ticked;
+      });
+      return next.some((entity, i) => entity !== list[i]) ? next : list;
     };
-    state.characters = state.characters.map((c) =>
-      tickHeld({ ...c, conditions: tickConditions(c.conditions) }),
-    );
-    // Every creature ticks the same way, so a bystander's timed stat
-    // modifier counts down too. A creature that carries no statMods field
-    // does not gain an empty one here.
-    state.creatures = state.creatures.map((c) =>
-      tickHeld({
-        ...c,
-        conditions: tickConditions(c.conditions),
-        ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
-      }),
-    );
+    state.characters = tickAll(state.characters);
+    state.creatures = tickAll(state.creatures);
     app.actions.refreshSelectedCharacter();
     app.views.encounterPanel.update();
     app.views.npcPanel.update();

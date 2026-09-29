@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ROUNDS_PER_WATCH, elapseCharacter, elapseCreature } from '../src/entities/TimedEffects.js';
+import {
+  ROUNDS_PER_WATCH,
+  elapseCharacter,
+  elapseCreature,
+  passRound,
+} from '../src/entities/TimedEffects.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature, addStatModifier } from '../src/entities/Creature.js';
 import { begin } from '../src/entities/Concentration.js';
@@ -65,6 +70,31 @@ test('a creature loses its timed chips and stat modifiers', () => {
     next.conditions.map((c) => c.name),
     ['Prone'],
   );
+});
+
+test('one round keeps the identity of an entity with nothing timed', () => {
+  const ogre = { ...createCreature('o', 'Ogre'), conditions: [createCondition('Prone')] };
+  assert.deepEqual(passRound(ogre), { entity: ogre, ended: null });
+  const plain = createCharacter('p', 'Plain');
+  assert.equal(passRound(plain).entity, plain);
+  const empty = { ...ogre, statMods: [] };
+  assert.equal(passRound(empty).entity, empty);
+});
+
+test('one round ticks chips, stat modifiers, and concentration', () => {
+  let ogre = addStatModifier(createCreature('o', 'Ogre'), 'AC', 2, 1);
+  ogre = { ...ogre, conditions: [createCondition('Held', 2)] };
+  const next = passRound(ogre).entity;
+  assert.deepEqual(next.statMods, []);
+  assert.deepEqual(next.conditions, [createCondition('Held', 1)]);
+  const cleric = begin(createCharacter('c1', 'Cleric'), bless, 1).character;
+  const once = passRound(cleric);
+  assert.equal(once.ended, null);
+  assert.equal(once.entity.concentration?.remaining, 9);
+  const last = { ...cleric, concentration: { ...cleric.concentration, remaining: 1 } };
+  const done = passRound(/** @type {any} */ (last));
+  assert.equal(done.ended?.spellId, 'bless');
+  assert.equal(done.entity.concentration, null);
 });
 
 test('watchesBetween counts across days and never goes negative', () => {

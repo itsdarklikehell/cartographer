@@ -1095,9 +1095,9 @@ field set to null or absent.
 
 The `Concentrating` chip beside the state is a display element only. `begin`
 writes it, `drop` removes it, and `tick` rewrites its counter from
-`remaining` rather than decrementing it. This lets the round wrap run the
-shared `tickConditions` over the same list first: whatever that function did
-to the chip, the number the GM reads afterward is the state's own.
+`remaining` rather than decrementing it. The round wrap calls
+`TimedEffects.passRound`, which ticks the chips of the list first and then
+calls `tick`, so the number the GM reads afterward is the state's own.
 `Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
 modules agree on the spelling.
 

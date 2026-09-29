@@ -44,7 +44,7 @@ test('tickConditions decrements timed conditions and drops the expired', () => {
 
 test('tickConditions leaves indefinite conditions untouched', () => {
   const list = [createCondition('Charmed', null)];
-  assert.deepEqual(tickConditions(list), list);
+  assert.equal(tickConditions(list), list, 'a list with nothing timed keeps its identity');
 });
 
 test('a chip stores only the halves it was given', () => {

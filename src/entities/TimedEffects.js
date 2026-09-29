@@ -10,12 +10,19 @@
  * (open-ended, or measured in days) is left alone. This module is pure.
  */
 
-import { drop } from './Concentration.js';
+import { drop, tick } from './Concentration.js';
 import { CONCENTRATING, addCondition } from './Conditions.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/entities.js').Condition} Condition */
+/** @typedef {import('../types/entities.js').ConcentrationState} ConcentrationState */
+/** @typedef {import('../types/entities.js').StatModifier} StatModifier */
+/**
+ * A character or a creature: anything with conditions, and optionally timed
+ * stat modifiers and a held concentration.
+ * @typedef {{ conditions: Condition[], statMods?: StatModifier[], concentration?: ConcentrationState | null }} Timed
+ */
 
 /** Combat rounds in one hour. */
 export const ROUNDS_PER_HOUR = 600;
@@ -66,6 +73,21 @@ export function elapseCharacter(character, rounds) {
 }
 
 /**
+ * The entity with `rounds` taken off its timed conditions and its timed stat
+ * modifiers. The same object comes back when neither list changes.
+ * @template {Timed} T
+ * @param {T} entity
+ * @param {number} rounds
+ * @returns {T}
+ */
+function elapseTimed(entity, rounds) {
+  const conditions = elapseList(entity.conditions, rounds);
+  const statMods = entity.statMods ? elapseList(entity.statMods, rounds) : undefined;
+  if (conditions === entity.conditions && statMods === entity.statMods) return entity;
+  return { ...entity, conditions, ...(statMods ? { statMods } : {}) };
+}
+
+/**
  * A creature after `rounds` of game time: its conditions and its timed stat
  * modifiers lose the rounds. A creature with nothing timed comes back as the
  * same object.
@@ -74,8 +96,23 @@ export function elapseCharacter(character, rounds) {
  * @returns {Creature}
  */
 export function elapseCreature(creature, rounds) {
-  const conditions = elapseList(creature.conditions, rounds);
-  const statMods = creature.statMods ? elapseList(creature.statMods, rounds) : undefined;
-  if (conditions === creature.conditions && statMods === creature.statMods) return creature;
-  return { ...creature, conditions, ...(statMods ? { statMods } : {}) };
+  return elapseTimed(creature, rounds);
+}
+
+/**
+ * A character or a creature after one combat round. Its timed conditions
+ * and stat modifiers lose a round first. Then its held concentration loses
+ * one through `Concentration.tick`, which rewrites the Concentrating chip
+ * from the duration it keeps. `ended` names the concentration that ran out.
+ *
+ * An entity with nothing timed comes back as the same object. A new object
+ * for every entity on every round misses the per-entity pack cache of the
+ * save, so a round tick with 1,200 creatures repacks all of them.
+ * @template {Timed} T
+ * @param {T} entity
+ * @returns {{ entity: T, ended: ConcentrationState | null }}
+ */
+export function passRound(entity) {
+  const { character, expired } = tick(elapseTimed(entity, 1));
+  return { entity: character, ended: expired ? (entity.concentration ?? null) : null };
 }

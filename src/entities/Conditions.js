@@ -99,11 +99,13 @@ export function removeCondition(list, name) {
 
 /**
  * Advance one round. Decrement every timed condition's counter and drop any
- * that reach zero. Indefinite conditions (rounds === null) stay untouched.
+ * that reach zero. Indefinite conditions (rounds === null) stay untouched,
+ * and a list with no timed condition comes back as the same array.
  * @param {Condition[]} list
  * @returns {Condition[]}
  */
 export function tickConditions(list) {
+  if (!list.some((c) => c.rounds !== null)) return list;
   return list
     .map((c) => (c.rounds === null ? c : { ...c, rounds: c.rounds - 1 }))
     .filter((c) => c.rounds === null || c.rounds > 0);
