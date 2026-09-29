@@ -470,3 +470,60 @@ function writeOrder(container, segment, pattern, op) {
 export function opsByteSize(ops) {
   return JSON.stringify(ops).length * 2;
 }
+
+/** Thrown inside `jsonLengthWithin` to stop the walk once it passes the limit. */
+const OVER = Symbol('over');
+
+/**
+ * The length of `JSON.stringify(value)`, or `Infinity` as soon as it is
+ * known to pass `limit`. The walk stops at that point, so a caller that
+ * only needs to know whether a value fits never builds the string. An op
+ * list that replaces a whole world of 300 nodes stringifies to about 21
+ * million characters, where a walk that stops at the size of the save
+ * reads a small part of it. The function is pure. It covers the values a
+ * campaign state holds: records, arrays, strings, finite numbers,
+ * booleans, and null.
+ * @param {unknown} value
+ * @param {number} limit
+ * @returns {number}
+ */
+export function jsonLengthWithin(value, limit) {
+  let total = 0;
+  /** @param {number} n */
+  const add = (n) => {
+    total += n;
+    if (total > limit) throw OVER;
+  };
+  /** @param {unknown} item @param {boolean} inArray */
+  const walk = (item, inArray) => {
+    if (item === undefined || typeof item === 'function' || typeof item === 'symbol') {
+      if (inArray) add(4);
+      return;
+    }
+    if (item === null) add(4);
+    else if (typeof item === 'string') add(JSON.stringify(item).length);
+    else if (typeof item === 'number') add(Number.isFinite(item) ? String(item).length : 4);
+    else if (typeof item === 'boolean') add(item ? 4 : 5);
+    else if (Array.isArray(item)) {
+      add(item.length ? item.length + 1 : 2);
+      for (const element of item) walk(element, true);
+    } else {
+      const record = /** @type {Record<string, unknown>} */ (item);
+      const keys = definedKeys(record).filter(
+        (key) => typeof record[key] !== 'function' && typeof record[key] !== 'symbol',
+      );
+      add(keys.length ? keys.length + 1 : 2);
+      for (const key of keys) {
+        add(JSON.stringify(key).length + 1);
+        walk(record[key], false);
+      }
+    }
+  };
+  try {
+    walk(value, false);
+  } catch (error) {
+    if (error === OVER) return Infinity;
+    throw error;
+  }
+  return total;
+}

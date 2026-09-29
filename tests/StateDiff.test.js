@@ -7,6 +7,7 @@ import {
   diffState,
   equalValues,
   invertOps,
+  jsonLengthWithin,
   opsByteSize,
 } from '../src/storage/StateDiff.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
@@ -419,6 +420,56 @@ test('a state key that names an Object.prototype member is a leaf, not a keyed c
   // A write addressed inside the array treats it as positional and is ignored.
   const inside = { p: ['constructor', 'a', 'id'], f: 'a', t: 'z' };
   assert.deepEqual(applyOps(after, [inside]), after);
+});
+
+test('jsonLengthWithin measures what JSON.stringify writes', () => {
+  const values = [
+    null,
+    true,
+    false,
+    0,
+    -0,
+    -12.5,
+    1e21,
+    Infinity,
+    NaN,
+    '',
+    'plain',
+    'quote " and \\ and \n and \u0001',
+    [],
+    [1, 'two', null, [3]],
+    [undefined, () => 1, Symbol('s')],
+    {},
+    { a: 1, 'b"c': [true, { d: null }], skip: undefined, fn: () => 1, sym: Symbol('s') },
+    exampleState(),
+  ];
+  values.forEach((value, i) => {
+    assert.equal(jsonLengthWithin(value, 1e9), JSON.stringify(value).length, `value ${i}`);
+  });
+  assert.equal(jsonLengthWithin(undefined, 10), 0, 'a bare undefined writes nothing');
+});
+
+test('jsonLengthWithin stops reading once the value passes the limit', () => {
+  let reads = 0;
+  const list = Array.from({ length: 1000 }, () => ({
+    get name() {
+      reads += 1;
+      return 'x'.repeat(20);
+    },
+  }));
+  assert.equal(jsonLengthWithin(list, 100), Infinity);
+  assert.ok(reads < 10, `read ${reads} elements`);
+  assert.equal(jsonLengthWithin([1, 2], 5), 5, 'a value exactly at the limit fits');
+  assert.equal(jsonLengthWithin([1, 2], 4), Infinity);
+});
+
+test('jsonLengthWithin lets an error that is not its own through', () => {
+  const broken = {
+    get field() {
+      throw new Error('broken getter');
+    },
+  };
+  assert.throws(() => jsonLengthWithin(broken, 100), /broken getter/);
 });
 
 test('a combat action names one participant of the order, not the whole order', () => {

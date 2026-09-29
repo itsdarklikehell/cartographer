@@ -69,7 +69,7 @@
  * the index still names the previous step.
  */
 
-import { applyOps, diffState, invertOps } from './StateDiff.js';
+import { applyOps, diffState, invertOps, jsonLengthWithin } from './StateDiff.js';
 import { CURRENT_VERSION } from './Migrations.js';
 import { STORAGE_KEY, deserialize, trySaveToLocalStorage, writeSaveMark } from './SaveManager.js';
 import { loadAssetTable } from './AssetStore.js';
@@ -315,7 +315,9 @@ function trimToCap(deltas) {
  * snapshot is the smaller of the two. A replacing step (New, Load example,
  * Import) diffs to ops that hold both whole worlds, unpacked, and the
  * packed save string of the old world is several times smaller. A small
- * edit to a large campaign keeps its delta.
+ * edit to a large campaign keeps its delta. The size check stops at the
+ * length of the save (`jsonLengthWithin`), so a replacing step never builds
+ * the string of its ops.
  * @param {CampaignState} before
  * @param {string} beforeRaw the stored string that `before` was parsed from
  * @param {CampaignState} after
@@ -324,8 +326,10 @@ function trimToCap(deltas) {
 function stepRecord(before, beforeRaw, after) {
   const ops = diffState(before, after);
   if (!ops.length) return null;
-  const json = JSON.stringify(ops);
-  return json.length > beforeRaw.length ? SNAPSHOT_PREFIX + beforeRaw : json;
+  if (jsonLengthWithin(ops, beforeRaw.length) > beforeRaw.length) {
+    return SNAPSHOT_PREFIX + beforeRaw;
+  }
+  return JSON.stringify(ops);
 }
 
 /**
