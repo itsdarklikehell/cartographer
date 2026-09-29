@@ -92,26 +92,26 @@ not. `setTileFreezing` overrides this detection.
 
 ### WeakMap caches per node
 
-Span blocks (`TilePaint.spanBlocks`) follow the TileIndex pattern. The
-function is pure over an immutable node and caches its result under the
-node object as the key. This pattern covers anything a hot path recomputes
-that the code can derive from a node alone. The returned arrays and sets
-are shared, so treat them as read-only.
+A value that a hot path recomputes and that the code can derive from a node
+alone follows the TileIndex pattern. The function is pure over an immutable
+node and caches its result in a WeakMap, so an entry never goes stale. The
+returned arrays and sets are shared, so treat them as read-only.
 
-The region caches and the revealed-id set use narrower keys than the node,
-because a fog reveal or a paint cell makes a new node while the fields they
-read stay the same. The TileIndex layout keeps three stamps, which are
-empty objects that stand for one state of some tile fields. `linkStamp`
-covers the tile ids and their `childNodeId` values, `artStamp` covers the
-ids, their `imageRef` values, and their point of interest types, and
-`fogStamp` covers the ids and their `revealed` flags. The replace helpers
-pass a stamp to the new node when no replaced tile changes a field it
-covers. Region groups (`findRegionGroups`) cache on the link stamp, and the
-revealed-id set (`MapRenderer.js`) caches on the fog stamp. The group
-outline (`groupOutline`), the color slots (`regionSlots`, keyed on the
-groups array), and the image chunks (`groupImageChunks`) cache on the group
-objects, and the chunks also record the art stamp. A party step then
-rebuilds none of the region caches. Key a derived value on what it reads,
+The region caches, the span blocks, and the revealed-id set use narrower
+keys than the node, because a fog reveal or a paint cell makes a new node
+while the fields they read stay the same. The TileIndex layout keeps three
+stamps, which are empty objects that stand for one state of some tile
+fields. `linkStamp` covers the tile ids and their `childNodeId` values,
+`artStamp` covers the ids, their `imageRef` and `span` values, and their
+point of interest types, and `fogStamp` covers the ids and their `revealed`
+flags. The replace helpers pass a stamp to the new node when no replaced
+tile changes a field it covers. Region groups (`findRegionGroups`) cache on
+the link stamp, span blocks (`TilePaint.spanBlocks`) cache on the art
+stamp, and the revealed-id set (`MapRenderer.js`) caches on the fog stamp.
+The group outline (`groupOutline`), the color slots (`regionSlots`, keyed
+on the groups array), and the image chunks (`groupImageChunks`) cache on the
+group objects, and the chunks also record the art stamp. A party step then
+rebuilds none of these caches. Key a derived value on what it reads,
 and when part of that is a node field, stamp the field onto the key instead
 of nesting the key inside the node.
 

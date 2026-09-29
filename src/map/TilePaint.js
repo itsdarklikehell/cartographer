@@ -1,9 +1,8 @@
 import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
-import { withNodeTiles } from './TileIndex.js';
+import { artStamp, withNodeTiles } from './TileIndex.js';
 import { isBlocked, tileKind } from './TileKinds.js';
-import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -125,24 +124,40 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
 }
 
 /**
- * A scaled-art block. It holds the anchor tile plus the inclusive rect that
- * its image stretches across.
- * @typedef {{ tile: import('../types/map.js').Tile, minX: number, minY: number, maxX: number, maxY: number, tileIds: string[] }} SpanBlock
+ * A scaled-art block. It keeps the anchor tile's image plus the
+ * inclusive rect that the image stretches across.
+ * @typedef {{ imageRef: string, minX: number, minY: number, maxX: number, maxY: number, tileIds: string[] }} SpanBlock
  */
+
+/**
+ * The span blocks of each `TileIndex.artStamp`. The stamp stands for the
+ * tile ids, `imageRef` values, and `span` values at each position, which are
+ * all that a block reads. A fog reveal or a notes edit keeps the stamp, so a
+ * party step finds the blocks of the node before it.
+ * @type {WeakMap<object, SpanBlock[]>}
+ */
+const spanCache = new WeakMap();
 
 /**
  * Every scaled-art block on a node. Each tile with span greater than 1 yields
  * its anchor plus the rect, clamped to the grid, that its image covers. The
  * result also lists the covered tile ids, and the renderer uses these ids to
  * skip the base images of those cells. This is pure geometry: covered cells
- * need not hold tiles. The function is memoized on the node object, which
- * every tile mutation replaces (the TileIndex contract). The renderer calls
- * this function every frame. Without the cache, a pan re-scans and
- * regex-parses every tile each frame. Treat the returned array as read-only.
+ * need not hold tiles. The renderer calls this function every frame, and a
+ * rebuild scans and regex-parses every tile, so the result is cached on the
+ * art stamp. Treat the returned array as read-only.
  * @param {MapNode} node
  * @returns {SpanBlock[]}
  */
-export const spanBlocks = memoizeByIdentity(computeSpanBlocks);
+export function spanBlocks(node) {
+  const stamp = artStamp(node);
+  let blocks = spanCache.get(stamp);
+  if (!blocks) {
+    blocks = computeSpanBlocks(node);
+    spanCache.set(stamp, blocks);
+  }
+  return blocks;
+}
 
 /**
  * @param {MapNode} node
@@ -162,7 +177,7 @@ function computeSpanBlocks(node) {
     for (let y = coords.y; y <= maxY; y++) {
       for (let x = coords.x; x <= maxX; x++) tileIds.push(tileIdAt(x, y));
     }
-    blocks.push({ tile, minX: coords.x, minY: coords.y, maxX, maxY, tileIds });
+    blocks.push({ imageRef: tile.imageRef, minX: coords.x, minY: coords.y, maxX, maxY, tileIds });
   }
   return blocks;
 }

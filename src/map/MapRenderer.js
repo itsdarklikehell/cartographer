@@ -283,12 +283,12 @@ export class MapRenderer {
       // An imageless span block covers nothing. Its cells have no scaled
       // art drawn beneath them, so telling the tile pass to skip their base
       // images leaves them blank.
-      if (!block.tile.imageRef) continue;
+      if (!block.imageRef) continue;
       // A fully-fogged block draws nothing. See _revealedIds.
       if (!anyRevealed(block.tileIds, revealedIds)) continue;
       for (const id of block.tileIds) cover.add(id);
       blockRect(rect, block, view, size);
-      if (rect.visible) this._drawBlockImage(rect, block.tile.imageRef, frame);
+      if (rect.visible) this._drawBlockImage(rect, block.imageRef, frame);
     }
   }
 

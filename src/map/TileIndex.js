@@ -33,11 +33,10 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  * `links`, `art`, and `fog` are stamps: empty objects that stand for one
  * state of some tile fields. Two nodes share a stamp only when every position
  * holds the same tile id and the same values of those fields. `links` covers
- * `childNodeId`, `art` covers `imageRef` and `metadata.poiType`, and `fog`
- * covers `revealed`. A cache
- * of a value derived from those fields keys on the stamp instead of the node.
- * A fog reveal or a paint stroke then keeps the region caches, because it
- * makes a new node but keeps the `links` stamp.
+ * `childNodeId`, `art` covers `imageRef`, `span`, and `metadata.poiType`, and
+ * `fog` covers `revealed`. A cache of a value derived from those fields keys
+ * on the stamp instead of the node. A fog reveal or a paint stroke then keeps
+ * the region caches, because it makes a new node but keeps the `links` stamp.
  * @typedef {Object} TileLayout
  * @property {Map<string, number>} posById
  * @property {Int32Array | null} cellPos
@@ -138,7 +137,11 @@ function forward(entry, node, changes) {
     const old = node.tiles[pos];
     if (old.id !== tile.id) return null;
     if (old.childNodeId !== tile.childNodeId) sameLinks = false;
-    if (old.imageRef !== tile.imageRef || old.metadata.poiType !== tile.metadata.poiType) {
+    if (
+      old.imageRef !== tile.imageRef ||
+      old.span !== tile.span ||
+      old.metadata.poiType !== tile.metadata.poiType
+    ) {
       sameArt = false;
     }
     if (old.revealed !== tile.revealed) sameFog = false;
@@ -178,9 +181,9 @@ export function linkStamp(node) {
 }
 
 /**
- * The stamp of a node's tile ids, `imageRef` values, and point of interest
- * types. The group image chunk cache keys on it, so a fog reveal keeps the
- * chunks.
+ * The stamp of a node's tile ids, `imageRef` and `span` values, and point of
+ * interest types. The group image chunks and the span blocks key on it, so a
+ * fog reveal keeps them.
  * @param {MapNode} node
  * @returns {object}
  */

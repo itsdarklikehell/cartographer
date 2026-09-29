@@ -11,6 +11,7 @@ import {
   spanBlocks,
 } from '../src/map/TilePaint.js';
 import { createMapNode, createTile, setTile, getTile } from '../src/map/TileGrid.js';
+import { setTileRevealed } from '../src/map/FogOfWar.js';
 import { gridTiles } from './helpers/grid.js';
 
 function node2x2() {
@@ -453,13 +454,18 @@ test('spanBlocks lists each scaled tile with its clamped rect and covered ids', 
   assert.ok(blocks[0].tileIds.includes('2,2'));
 });
 
-test('spanBlocks is memoized per node', () => {
+test('spanBlocks is cached on the art stamp', () => {
   let node = createMapNode('n', 'N', null, 5, 5);
   node = paintTile(node, '0,0', 'academy.svg', false, 2);
   const blocks = spanBlocks(node);
   assert.equal(spanBlocks(node), blocks, 'same node yields the cached block array');
+  const revealed = setTileRevealed(node, '0,0', true);
+  assert.equal(spanBlocks(revealed), blocks, 'a fog change keeps the blocks');
+  assert.equal(blocks[0].imageRef, 'academy.svg');
   const repainted = paintTile(node, '3,3', 'keep.svg', false, 2);
-  assert.notEqual(spanBlocks(repainted), blocks, 'a mutated (replaced) node recomputes');
+  assert.notEqual(spanBlocks(repainted), blocks, 'new art recomputes');
+  const shrunk = paintTile(node, '0,0', 'academy.svg', false, 3);
+  assert.equal(spanBlocks(shrunk)[0].maxX, 2, 'a new span with the same image recomputes');
 });
 
 test('paintRegion leaves a site entrance as it is', () => {

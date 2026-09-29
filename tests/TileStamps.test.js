@@ -100,3 +100,11 @@ test('the fog stamp changes with a revealed flag and nothing else', () => {
   const shown = createTile('4,4', 'g.png', { revealed: true });
   assert.notEqual(fogStamp(withTileAppended(whole, shown)), fog);
 });
+
+test('a new span with the same image makes a new art stamp', () => {
+  const node = nodeWith('0,0');
+  const before = stamps(node);
+  const after = stamps(withTileReplaced(node, 0, { ...node.tiles[0], span: 2 }));
+  assert.equal(after.links, before.links);
+  assert.notEqual(after.art, before.art);
+});
