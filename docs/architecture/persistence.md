@@ -521,7 +521,9 @@ The codec also follows these rules:
 The codec is the one place where the reader branches on whether a field is
 present instead of filling one from absence, so the app reads both forms
 indefinitely. `StateDiff` works on parsed state, and it never
-sees `cells` or `fog`.
+sees `cells` or `fog`. The undo log stores whole nodes in the encoded form
+(see Undo and redo), through `encodeNodeTiles` and `decodeNodeTiles` only,
+so the codec stays node-local.
 
 ### The string table
 
@@ -630,6 +632,38 @@ string in a new record at the same position, so redo swaps the two back.
 The save that records a snapshot passes `keepPrevious` to
 `trySaveToLocalStorage`, so the image table keeps every picture of the
 replaced campaign until the snapshot record references it.
+
+`diffState` works on parsed state, so an inserted node arrives as every
+tile with every default filled in, and a regenerated node arrives as one op
+per changed tile field. `HistoryCodec.compactOps` rewrites the ops of each
+node into the smallest of three forms. The first is the plain ops. The
+second is one `node` op whose `f` and `t` are whole nodes in the save's own
+form (`SaveManager.encodeHistoryNode`: packed tiles, then the tile codec),
+which an inserted or removed node always takes. The third is one `fog` op,
+used when every op of the node flips a tile's `revealed` flag, whose `t`
+lists the tile ids the step reveals and whose `f` lists the ids it hides.
+`invertOps` swaps both kinds like any other op, and `expandOps` turns them
+back into plain ops before `applyOps` runs. Measured on the example
+campaign:
+
+| Step | Plain ops | Compact record |
+| --- | --- | --- |
+| Add a generated 48x48 region | 97,098 | 10,182 |
+| Regenerate that region | 83,782 | 20,700 |
+| Ten party moves on it | 4,209 | 495 |
+
+A delta record is stored as `delta:` followed by the JSON op list. An app
+version without the compact ops reads that prefix as an unreadable record
+and takes its full load path. Read as a plain list, a `node` op would
+insert an encoded node into its live state, and its next save would write
+that node with most of its tiles gone. A bare JSON list still reads as
+plain ops.
+
+`applyOps` copies each container on an op's path once per call, keeps an
+id-to-position map for each keyed list, and drops the removals from a list
+in one pass at the end of the removal phase. The plain ops of a
+regenerated node (about 2,700, of which 1,820 remove a tile) apply in 1.1
+ms, and in 6.5 ms with a copy of the node list and tile list per op.
 
 A record larger than the byte cap stays as the only step, because
 `trimToCap` always keeps the newest record, and the older steps drop.

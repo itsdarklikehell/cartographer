@@ -69,7 +69,8 @@
  * the index still names the previous step.
  */
 
-import { applyOps, diffState, invertOps, jsonLengthWithin } from './StateDiff.js';
+import { applyOps, diffState, invertOps } from './StateDiff.js';
+import { compactOps, expandOps } from './HistoryCodec.js';
 import { CURRENT_VERSION } from './Migrations.js';
 import { STORAGE_KEY, deserialize, trySaveToLocalStorage, writeSaveMark } from './SaveManager.js';
 import { loadAssetTable } from './AssetStore.js';
@@ -84,10 +85,20 @@ import { removeStored, storedLength, writeStored } from './Footprint.js';
 
 /**
  * The prefix of a snapshot record. The rest of the record is a stored save
- * string. A delta record is a JSON array, so it starts with `[` and never
- * with this prefix.
+ * string.
  */
 const SNAPSHOT_PREFIX = 'snapshot:';
+
+/**
+ * The prefix of a delta record. The rest of the record is a JSON list of
+ * ops, which can hold the compact node ops of `HistoryCodec.js`. A tab that
+ * still runs an app version without those ops reads a record with this
+ * prefix as unreadable and takes its full load path. Read as a plain list,
+ * a `node` op inserts an encoded node into the live state, and that tab's
+ * next save writes the node with most of its tiles gone. A record that is
+ * a bare JSON list holds plain ops only, and it still applies.
+ */
+const DELTA_PREFIX = 'delta:';
 
 /** The localStorage key that holds the history index. */
 export const HISTORY_KEY = 'campaign-builder:history';
@@ -221,8 +232,9 @@ function readRecord(seq) {
   const raw = localStorage.getItem(deltaKey(seq));
   if (!raw) return null;
   if (raw.startsWith(SNAPSHOT_PREFIX)) return { snapshot: raw.slice(SNAPSHOT_PREFIX.length) };
+  const text = raw.startsWith(DELTA_PREFIX) ? raw.slice(DELTA_PREFIX.length) : raw;
   try {
-    const parsed = JSON.parse(raw);
+    const parsed = JSON.parse(text);
     return Array.isArray(parsed) ? { ops: parsed } : null;
   } catch {
     return null;
@@ -311,13 +323,13 @@ function trimToCap(deltas) {
  * The record for the step from `before` to `after`, or null when the step
  * changes nothing. Saving an unchanged campaign again is not a history step.
  *
- * The record is the delta, or a snapshot of the replaced save when the
+ * The record is the delta, with each node's ops in their smallest form
+ * (`HistoryCodec.compactOps`), or a snapshot of the replaced save when the
  * snapshot is the smaller of the two. A replacing step (New, Load example,
- * Import) diffs to ops that hold both whole worlds, unpacked, and the
- * packed save string of the old world is several times smaller. A small
- * edit to a large campaign keeps its delta. The size check stops at the
- * length of the save (`jsonLengthWithin`), so a replacing step never builds
- * the string of its ops.
+ * Import) diffs to ops that hold both whole worlds, and the save string of
+ * the old world holds one. A small edit to a large campaign keeps its
+ * delta. The size check stops at the length of the save, so a replacing
+ * step never builds the string of its ops.
  * @param {CampaignState} before
  * @param {string} beforeRaw the stored string that `before` was parsed from
  * @param {CampaignState} after
@@ -326,10 +338,22 @@ function trimToCap(deltas) {
 function stepRecord(before, beforeRaw, after) {
   const ops = diffState(before, after);
   if (!ops.length) return null;
-  if (jsonLengthWithin(ops, beforeRaw.length) > beforeRaw.length) {
-    return SNAPSHOT_PREFIX + beforeRaw;
-  }
-  return JSON.stringify(ops);
+  const compact = compactOps(ops, before, after, beforeRaw.length - DELTA_PREFIX.length);
+  if (!compact) return SNAPSHOT_PREFIX + beforeRaw;
+  return DELTA_PREFIX + JSON.stringify(compact.ops);
+}
+
+/**
+ * A state with a recorded delta applied: the ops of `planAdoption`, or of
+ * a stored record inverted with `invertOps`. The compact node ops become
+ * plain ops first. The function is pure, like `applyOps`.
+ * @template {object} T
+ * @param {T} state
+ * @param {DiffOp[]} ops
+ * @returns {T}
+ */
+export function applyHistoryOps(state, ops) {
+  return applyOps(state, expandOps(ops));
 }
 
 /**
@@ -483,7 +507,7 @@ function applyDelta(index, direction, ops) {
   /** @type {CampaignState} */
   let restored;
   try {
-    restored = applyOps(current, direction < 0 ? invertOps(ops) : ops);
+    restored = applyHistoryOps(current, direction < 0 ? invertOps(ops) : ops);
   } catch {
     clearHistoryLog();
     return null;

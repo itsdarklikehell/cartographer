@@ -34,9 +34,13 @@ export interface DiffOp {
   i?: number;
   /**
    * `'order'` marks a permutation of an id-keyed collection, where `f` and
-   * `t` are the whole id sequences. Absent on every value op.
+   * `t` are the whole id sequences. Absent on every value op. The undo log
+   * also stores two compact kinds for one node (`HistoryCodec.js`): `'node'`,
+   * whose `f` and `t` are whole nodes in the save's encoded form, and
+   * `'fog'`, whose `t` lists the tile ids the step reveals and `f` the ids
+   * it hides. `applyOps` never sees either kind.
    */
-  k?: 'order';
+  k?: 'order' | 'node' | 'fog';
 }
 
 export interface CampaignState {

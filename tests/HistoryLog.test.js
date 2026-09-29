@@ -523,6 +523,19 @@ test('a save, an undo, and a redo each end on a new save mark', () => {
   assert.equal(marks.size, 4, 'every mark differs from the one before it');
 });
 
+test('a delta record starts with its prefix, and a bare list record still applies', () => {
+  const store = installLocalStorage();
+  saveCampaign(state([quest('q1', 'One')]));
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  const [key] = [...store.keys()].filter((k) => k.startsWith(`${HISTORY_KEY}:d`));
+  const record = /** @type {string} */ (store.get(key));
+  assert.ok(record.startsWith('delta:['), record);
+  // A record from an app version that wrote plain ops only.
+  store.set(key, record.slice('delta:'.length));
+  undoCampaign();
+  assert.deepEqual(persistedTitles(), ['One']);
+});
+
 test('a step with nothing to undo writes no mark', () => {
   saveCampaign(state());
   const keys = recordWrites();

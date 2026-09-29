@@ -38,8 +38,8 @@ import {
   historyDepth,
   historyPosition,
   planAdoption,
+  applyHistoryOps,
 } from '../storage/HistoryLog.js';
-import { applyOps } from '../storage/StateDiff.js';
 import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
 import { isGM } from '../view/ViewRole.js';
@@ -530,7 +530,7 @@ export function wireCampaignActions(app) {
   /**
    * Adopt an external save by applying its recorded delta to the live state
    * instead of re-reading the whole save. Every save writes its exact edit
-   * as a delta beside the campaign, and `applyOps` copies only along the
+   * as a delta beside the campaign, and `applyHistoryOps` copies only along the
    * op paths, so every node and entity the edit did not touch keeps its
    * identity by construction. The map caches stay warm, and the reconcile
    * inside `rehydrateCampaign` returns each untouched object at the first
@@ -544,7 +544,7 @@ export function wireCampaignActions(app) {
     if (plan.kind === 'current') return true;
     if (plan.kind !== 'delta') return false;
     try {
-      const next = applyOps(buildCurrentState(), plan.ops);
+      const next = applyHistoryOps(buildCurrentState(), plan.ops);
       rehydrateCampaign(app, campaignFromLiveState(next));
       return true;
     } catch (error) {

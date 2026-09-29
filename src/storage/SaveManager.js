@@ -12,7 +12,7 @@ import { createEntityPacker } from './EntityPack.js';
 import { restoreGear, tabulateGear } from './GearTable.js';
 import { restoreStrings, tabulateStrings } from './StringTable.js';
 import { noteTruncation } from './ShortenedLoad.js';
-import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
+import { encodeNodeTiles, decodeNodeList, decodeNodeTiles } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
@@ -209,6 +209,30 @@ const packNodeTiles = memoizeByIdentity((node) => ({
  * @type {(node: Record<string, any>) => Record<string, any>}
  */
 const encodePackedNode = memoizeByIdentity(encodeNodeTiles);
+
+/**
+ * One node in the form a save stores it: tiles packed, then encoded by
+ * `TileCodec.js`. The undo log stores a whole node in this form, and both
+ * caches above apply, so a node that a save already packed costs two
+ * lookups. The node's image refs stay as they are, so a node that still
+ * contains an inline payload keeps it.
+ * @param {Record<string, any>} node a node whose `tiles` is an array
+ * @returns {Record<string, any>}
+ */
+export function encodeHistoryNode(node) {
+  return encodePackedNode(packNodeTiles(node));
+}
+
+/**
+ * The inverse of `encodeHistoryNode`: the tiles decoded, then every tile and
+ * node default filled in, the same two steps `deserialize` runs on each
+ * node. The function is pure.
+ * @param {Record<string, any>} node
+ * @returns {Record<string, any>}
+ */
+export function decodeHistoryNode(node) {
+  return withNodeDefaults(/** @type {any} */ (decodeNodeTiles(node)));
+}
 
 /**
  * The campaign in its on-disk form: the state, with every node's tiles

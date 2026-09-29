@@ -37,7 +37,7 @@ function world(nodeId, titles, image = null) {
     ),
   });
   const handouts = titles.map((title, i) => ({
-    id: `h${i}`,
+    id: `${nodeId}-h${i}`,
     title,
     body: 'text '.repeat(40),
     image: i === 0 ? image : null,
@@ -85,7 +85,7 @@ test('a replacing save records the old save string as a snapshot', () => {
 test('a small edit keeps a delta record', () => {
   saveCampaign(world('old', ['A', 'B', 'C']));
   saveCampaign(world('old', ['A', 'B', 'D']));
-  assert.equal(recordAt(0).startsWith('['), true);
+  assert.equal(recordAt(0).startsWith('delta:['), true);
 });
 
 test('undo and redo swap a snapshot with the current save', () => {
