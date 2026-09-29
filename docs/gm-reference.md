@@ -1416,8 +1416,8 @@ but no actions.
 | Projectile allocation | A spell with several projectiles | How many projectiles go to each target. The total follows the slot level |
 | Attack roll | An attack spell | Normal, Advantage, or Disadvantage |
 | Save DC on a hit | An attack spell whose hit brings a save, such as Ray of Sickness | The DC of that save. Starts at the spell save DC of the caster |
-| Save DC | A save spell | Starts at 8 plus the proficiency bonus plus the spell ability modifier |
-| Save roll | A save spell | Normal, Advantage, or Disadvantage |
+| Save DC | A save spell that rolls a save. Sleep, Color Spray, and Power Word Kill roll none | Starts at 8 plus the proficiency bonus plus the spell ability modifier |
+| Save roll | A save spell that rolls a save | Normal, Advantage, or Disadvantage |
 | Ignore components | A spell with a material component | Casts without a check of the inventory. The label adds "(not carried)" when the character lacks the component |
 | Ignore armor | A caster in untrained armor | Casts anyway |
 | Ignore action cost | A turn that already spent the cost | Casts anyway |
@@ -1429,6 +1429,12 @@ A hit of Ray of Sickness also rolls the CON save of the target. The target
 list shows that save bonus beside the AC. A hit of Vampiric Touch gives the
 caster hit points equal to half the damage the target took, after its
 resistances, and the log records the amount.
+
+Sleep and Color Spray roll a pool of hit points in place of a save, and
+Power Word Kill compares the current HP of the target with its limit of
+100. The dialog lists the targets by name only, because none of them rolls
+a save. The app reads the HP of each target when you click Cast, not when
+the dialog opens. See [Hit-point rules](spells-missing.md#hit-point-rules).
 
 A spell that the caster still keeps open from an earlier turn, such as Spiritual
 Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot
@@ -1913,7 +1919,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 61 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 64 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

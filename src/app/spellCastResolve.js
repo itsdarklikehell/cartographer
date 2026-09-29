@@ -142,7 +142,6 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
   // brings rolls with only the target's own slant.
   const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
   if (saveAbility) {
-    const hpLimited = spell.effect.kind === 'save' && spell.effect.hpLimit !== undefined;
     castTargets = chosen.map((t) => {
       // A target's untrained armor slants its STR or DEX save. The slant
       // folds in with the target's chips, so an advantage chip cancels it.
@@ -151,17 +150,28 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
         saveAbility,
         t.armorPenalty ? ['disadvantage'] : [],
       );
-      // A spell with an HP limit reads the target's HP as it is now.
-      const found = hpLimited ? findCombatant(app, t.id) : null;
-      const hp = found ? hpOf(found.kind, found.entity) : null;
       return {
         ...t,
-        ...(hp ? { hp: hp.current } : {}),
         // Every live target carries a derived bonus. A target the roster lost
         // while the dialog sat open carries none and saves on the flat die.
         saveBonus: t.saveBonus ?? 0,
         saveMode: combineModes([saveMode, outcome.mode]) ?? 'normal',
         ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
+      };
+    });
+  }
+  // A spell with an HP limit or an HP pool reads each target's HP as it is
+  // now. A pool also passes over a target by its chips (an Unconscious one),
+  // so it reads those as they are now too.
+  const effect = resolved.effect;
+  if (effect.kind === 'save' && (effect.hpLimit !== undefined || effect.hpPool)) {
+    castTargets = castTargets.map((t) => {
+      const found = findCombatant(app, t.id);
+      const hp = found ? hpOf(found.kind, found.entity) : null;
+      return {
+        ...t,
+        ...(hp ? { hp: hp.current } : {}),
+        ...(found && effect.hpPool ? { conditions: found.entity.conditions } : {}),
       };
     });
   }

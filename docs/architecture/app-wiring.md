@@ -482,6 +482,7 @@ The helper modules below contain the rest of the character flows:
 | `checkRolls.js` | Saving throws and ability checks rolled from the sheet |
 | `deathSaves.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
 | `exhaustion.js` | The exhaustion write for a character or a creature, including the death at level 6 |
+| `slay.js` | The kill of a character or a creature with no damage roll, for Power Word Kill |
 | `passTime.js` | Spending game time on every timed effect, for the Time panel's Advance button and both rests |
 
 `checkRolls.js` and `deathSaves.js` take the bonus from the pure rules in
@@ -608,7 +609,7 @@ bar starts. Casting a spell is the same job, split across five modules:
 | `spellTargets.js` | Which creatures a spell can reach |
 | `spellCastFields.js` | The dialog fields |
 | `spellCastResolve.js` | Rolling the cast, and the chip that lets the caster repeat it on a later turn |
-| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the chip or save that a hit brings, the hit points that a draining hit gives back, the damage a chip leaves for later turns, summons, and the log lines |
+| `spellOutcomes.js` | Writing the outcome: hit points, condition chips, the chip or save that a hit brings, the pool roll and the kill of a spell that reads HP, the hit points that a draining hit gives back, the damage a chip leaves for later turns, summons, and the log lines |
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 

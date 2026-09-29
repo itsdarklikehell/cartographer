@@ -39,6 +39,8 @@ export interface ConditionSource {
   saveBonus?: number;
   /** True when the target retries the save at the end of each of its turns. */
   saveEnds?: boolean;
+  /** True when damage to the holder ends the chip (Sleep). */
+  endsOnDamage?: boolean;
   /** Present on the chip that a caster keeps while it can repeat a spell on
    * a later turn without a new slot (Spiritual Weapon, Witch Bolt). */
   repeat?: RepeatHold;

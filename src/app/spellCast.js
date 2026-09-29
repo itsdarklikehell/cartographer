@@ -8,6 +8,7 @@ import { toCaster } from '../entities/Caster.js';
 import { isRitualOnly } from '../entities/SpellView.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
 import { replaceById } from '../entities/Roster.js';
+import { rollsNoSave } from '../entities/SpellFields.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
 import { COST_LABELS, canSpend } from '../combat/ActionBudget.js';
 import { activeCreatureByName } from '../library/Library.js';
@@ -143,9 +144,13 @@ export function castPlan(app, entity, spell, offered) {
   // that lands on a target while the dialog sits open misses this cast. The
   // GM opens and submits a cast in one motion, and re-reading the roster
   // under an open dialog would let the numbers on screen go stale instead.
+  // A spell that reads HP in place of a save (Sleep, Power Word Kill) rolls
+  // none, so its targets need no bonus.
   const saveAbility =
     spell.effect.kind === 'save'
-      ? spell.effect.saveAbility
+      ? rollsNoSave(spell.effect)
+        ? null
+        : spell.effect.saveAbility
       : spell.effect.kind === 'attack'
         ? (spell.effect.onHit?.saveAbility ?? null)
         : null;

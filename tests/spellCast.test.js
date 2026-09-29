@@ -2128,5 +2128,6 @@ test('a save spell with an HP limit logs a target above it as unaffected', () =>
   assert.equal(plan.ok, true);
   resolveCast(app, plan, submit({ targets: 'giant,goblin' }), { writeBack: () => {} });
   assert.ok(app.log.includes('Giant is unaffected (over 150 HP).'));
-  assert.ok(app.log.some((line) => /^Goblin fails DC \d+ \(150 HP or fewer\)/.test(line)));
+  // With no repeated save, the limit is the whole rule, so no save rolls.
+  assert.ok(app.log.includes('Goblin is affected (150 HP or fewer), Stunned.'));
 });

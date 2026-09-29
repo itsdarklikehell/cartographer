@@ -1,5 +1,7 @@
 import { rollDamage } from '../dice/DiceRoller.js';
 import { resolveAttack, targetSave } from './CastRolls.js';
+import { rollHpPool, walkHpPool } from './HpPool.js';
+import { rollsNoSave } from './SpellFields.js';
 import { carriesSpellFocus } from './Equipment.js';
 import { spendResource } from './Character.js';
 import { isRitualOnly, isSpellCastable } from './SpellView.js';
@@ -30,7 +32,8 @@ import { clamp } from '../util/num.js';
  * which is what being unable to move does to a Strength or Dexterity save.
  * `autoCrit` turns any hit on this target into a critical hit, which is what
  * a Paralyzed or Unconscious target takes from a melee spell attack. `hp` is
- * the target's current HP, which only a spell with an HP limit reads.
+ * the target's current HP, which only a spell with an HP limit or an HP pool
+ * reads.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -573,10 +576,21 @@ function resolveEffect(spell, ctx) {
     // Save spells roll their damage once. Each target then takes full
     // damage, half damage rounded down when the spell halves on a success,
     // or no damage.
+    // An HP pool picks the targets the spell reaches before anything else
+    // rolls. The targets it reaches roll no save, and the rest are left alone.
+    const pool = effect.hpPool ? rollHpPool(effect.hpPool, steps, rng) : null;
     const parts = scaledParts(effect.damage, spell.scaling, steps);
     const damage = rollDamage(parts, 0, rng);
     const ongoing = ongoingParts(effect.ongoing, steps);
-    return targets.map((target) => {
+    const noRoll = rollsNoSave(effect);
+    const walk = pool
+      ? walkHpPool(targets, pool.total, effect.condition)
+      : targets.map((target) => ({ target, affected: true, reason: '' }));
+    return walk.map(({ target, affected, reason }) => {
+      const extra = { ...(noRoll ? { noRoll: true } : {}), ...(pool ? { pool } : {}) };
+      if (!affected) {
+        return { target, unaffectedBy: reason, saved: true, taken: 0, condition: null, ...extra };
+      }
       // The caller already works out the target's bonus. It comes from a
       // party character's own saves, or is hand-entered for a foe.
       // The target's own chips ride its save, so a bane'd foe rolls at -1d4
@@ -589,10 +603,19 @@ function resolveEffect(spell, ctx) {
       // apply the effect.
       const limit = effect.hpLimit;
       if (limit !== undefined && target.hp !== undefined && target.hp > limit) {
-        return { target, unaffectedBy: `over ${limit} HP`, saved: true, taken: 0, condition: null };
+        return {
+          target,
+          unaffectedBy: `over ${limit} HP`,
+          saved: true,
+          taken: 0,
+          condition: null,
+          ...extra,
+        };
       }
       const limitFails = limit === undefined ? null : `${limit} HP or fewer`;
-      const autoFailedBy = target.autoFailSave ?? limitFails;
+      // A spell that rolls no save names the HP rule that reached the target,
+      // in place of any chip that would have failed the save.
+      const autoFailedBy = noRoll ? reason || limitFails : (target.autoFailSave ?? limitFails);
       const { roll: save, success: saved, rider } = targetSave(target, saveDC, autoFailedBy, rng);
       const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
       const condition = !saved ? (effect.condition ?? null) : null;
@@ -609,6 +632,7 @@ function resolveEffect(spell, ctx) {
         // The rider rides the chip, so it lands only when the chip does.
         conditionRider: condition ? (effect.rider ?? null) : null,
         ...(!saved && ongoing ? { ongoing } : {}),
+        ...extra,
       };
     });
   }

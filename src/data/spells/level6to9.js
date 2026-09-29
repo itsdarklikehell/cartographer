@@ -223,6 +223,30 @@ export const LEVEL_6_TO_9 = [
     },
   },
   {
+    id: 'power-word-kill',
+    name: 'Power Word Kill',
+    level: 9,
+    school: 'enchantment',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'A creature with 100 hit points or fewer dies instantly. A creature with more is not ' +
+      'affected.',
+    effect: {
+      kind: 'save',
+      saveAbility: 'CON',
+      damage: [],
+      halfOnSave: false,
+      hpLimit: 100,
+      kills: true,
+    },
+  },
+  {
     id: 'sunburst',
     name: 'Sunburst',
     level: 8,

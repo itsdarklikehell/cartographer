@@ -409,3 +409,19 @@ test('addXP reads the level from the SRD table and stops at MAX_LEVEL', () => {
   assert.equal(negative.level, 2, 'a negative award takes no level away');
   assert.equal(negative.xp, 300, 'the total stops at the start of the current level');
 });
+
+test('damageCharacter ends a chip that damage ends, even when bonus HP takes the hit', () => {
+  const sleep = { spellId: 'sleep', spellName: 'Sleep', casterId: 'm', endsOnDamage: true };
+  const hero = {
+    ...setBonusHP(withHP(createCharacter('c1', 'Hero'), 20), 5),
+    conditions: [createCondition('Unconscious', 10, { source: sleep })],
+  };
+  const hit = damageCharacter(hero, 2);
+  assert.deepEqual(hit.conditions, []);
+  assert.equal(getHP(hit)?.current, 20);
+  assert.equal(damageCharacter(hero, 0).conditions, hero.conditions);
+  const plain = withHP(createCharacter('c2', 'Plain'), 10);
+  assert.equal(damageCharacter(plain, 3).conditions, plain.conditions);
+  const bare = /** @type {any} */ ({ ...plain, conditions: undefined });
+  assert.equal(getHP(damageCharacter(bare, 3))?.current, 7);
+});

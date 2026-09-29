@@ -16,7 +16,9 @@ import {
   isDefeated,
   toTemplate,
   fromTemplate,
+  slay,
 } from '../src/entities/Creature.js';
+import { createCondition } from '../src/entities/Conditions.js';
 import { slotLevelOf } from '../src/entities/SpellSlots.js';
 
 /** The normalized stat block createCreature stamps from partial input. */
@@ -516,4 +518,24 @@ test('defaultEnemyGear picks the loadout by tier and level band and returns copi
   const a = defaultEnemyGear(1, 'mob');
   const b = defaultEnemyGear(1, 'mob');
   assert.notEqual(a.weapon, b.weapon, 'every call hands out a fresh copy');
+});
+
+test('damage ends a chip that damage ends, and a slay drops a creature to 0 HP', () => {
+  const sleep = { spellId: 'sleep', spellName: 'Sleep', casterId: 'm', endsOnDamage: true };
+  const asleep = {
+    ...createCreature('g', 'Goblin', { maxHP: 7 }),
+    conditions: [createCondition('Unconscious', 10, { source: sleep }), createCondition('Prone')],
+  };
+  assert.deepEqual(
+    applyDamage(asleep, 1).conditions.map((c) => c.name),
+    ['Prone'],
+  );
+  assert.equal(applyDamage(asleep, 0).conditions, asleep.conditions);
+  const plain = createCreature('k', 'Kobold', { maxHP: 5 });
+  assert.equal(applyDamage(plain, 2).conditions, plain.conditions);
+  const bare = /** @type {any} */ ({ ...plain, conditions: undefined });
+  assert.equal(applyDamage(bare, 2).currentHP, 3);
+  const dead = slay(asleep);
+  assert.equal(dead.currentHP, 0);
+  assert.equal(dead.conditions, asleep.conditions);
 });

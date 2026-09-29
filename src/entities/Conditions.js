@@ -140,6 +140,19 @@ export function removeCondition(list, name) {
 }
 
 /**
+ * Take off the chips that damage ends, such as the Unconscious of Sleep. The
+ * damage write paths of both kinds of combatant call this, so a hit from any
+ * source wakes the holder. A list with no such chip comes back as the same
+ * array.
+ * @param {Condition[]} list
+ * @returns {Condition[]}
+ */
+export function endOnDamage(list) {
+  const kept = list.filter((c) => !c.source?.endsOnDamage);
+  return kept.length === list.length ? list : kept;
+}
+
+/**
  * Advance one round. Decrement every timed condition's counter and drop any
  * that reach zero. Indefinite conditions (rounds === null) stay untouched,
  * and a list with no timed condition comes back as the same array.

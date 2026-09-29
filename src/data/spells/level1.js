@@ -264,6 +264,63 @@ export const LEVEL_1 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'poison' }] },
   },
   {
+    id: 'sleep',
+    name: 'Sleep',
+    level: 1,
+    school: 'enchantment',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '90 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a pinch of fine sand, rose petals, or a cricket', consumed: false },
+    duration: { kind: 'minutes', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'Roll 5d8 for the hit points of creatures the spell affects, in order of current HP, ' +
+      'lowest first. Each creature whose HP fits in what is left falls unconscious until the ' +
+      'spell ends, it takes damage, or someone uses an action to wake it. Undead and ' +
+      'creatures immune to being charmed are not affected.',
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Unconscious',
+      hpPool: { count: 5, sides: 8, perStep: 2 },
+      endsOnDamage: true,
+    },
+  },
+  {
+    id: 'color-spray',
+    name: 'Color Spray',
+    level: 1,
+    school: 'illusion',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self (15-foot cone)',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a pinch of powder or sand colored red, yellow, and blue', consumed: false },
+    duration: { kind: 'rounds', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'Roll 6d10 for the hit points of creatures the spell affects, in order of current HP, ' +
+      'lowest first. Each creature whose HP fits in what is left is blinded until the end of ' +
+      "the caster's next turn.",
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'CON',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Blinded',
+      hpPool: { count: 6, sides: 10, perStep: 2 },
+      until: 'caster-end',
+    },
+  },
+  {
     id: 'mage-armor',
     name: 'Mage Armor',
     level: 1,

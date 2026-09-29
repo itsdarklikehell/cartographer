@@ -13,6 +13,7 @@ import {
 } from './combatants.js';
 import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
+import { slayCombatant } from './slay.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -334,7 +335,17 @@ function applySave(app, spell, result, casterId) {
   const rounds = durationInRounds(spell.duration);
   const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
   const ability = effect.saveAbility;
-  for (const o of /** @type {any[]} */ (result.outcomes)) {
+  const outcomes = /** @type {any[]} */ (result.outcomes);
+  // An HP pool is one roll for the whole cast, so the log states it once,
+  // ahead of the targets it reached.
+  const pool = outcomes[0]?.pool;
+  if (pool) {
+    app.actions.logEvent(
+      'combat',
+      `${spell.name} rolls a pool of ${pool.total} HP (${pool.dice}: ${pool.rolls.join(', ')}).`,
+    );
+  }
+  for (const o of outcomes) {
     if (o.unaffectedBy) {
       app.actions.logEvent('combat', `${o.target.name} is unaffected (${o.unaffectedBy}).`);
       continue;
@@ -363,6 +374,7 @@ function applySave(app, spell, result, casterId) {
             saveDC: o.dc,
             saveBonus: o.target.saveBonus ?? 0,
             ...(effect.saveEnds ? { saveEnds: true } : {}),
+            ...(effect.endsOnDamage ? { endsOnDamage: true } : {}),
           },
           o.conditionRider,
           {
@@ -384,12 +396,17 @@ function applySave(app, spell, result, casterId) {
         ? defendedDamage(app, o.target.id, o.damage.byType, { halve: o.saved })
         : { total: 0, notes: [] };
     const defended = taken.notes.length > 0 ? ` (${taken.notes.join(', ')})` : '';
+    // A spell that rolls no save states the HP rule that reached the target
+    // instead of a verdict, and names damage only when it deals some.
+    const takes = `takes ${taken.total} damage${defended}`;
     app.actions.logEvent(
       'combat',
-      `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${taken.total} damage` +
-        `${defended}${cond}.`,
+      o.noRoll
+        ? `${o.target.name} is affected (${o.autoFailedBy})${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
+        : `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — ${takes}${cond}.`,
     );
     applyToTarget(app, o.target.id, taken.total, false);
+    if (effect.kills && !o.saved) slayCombatant(app, o.target.id);
     spendRollRiders(app, o.target.id, o.rider);
     // Later-turn damage with no condition to ride gets a chip of its own.
     if (o.ongoing && !o.condition) {

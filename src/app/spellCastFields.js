@@ -1,5 +1,6 @@
 import { maxTargets, scalingSteps } from '../entities/Casting.js';
 import { helps, targetFree, targetLabel } from './spellTargets.js';
+import { rollsNoSave } from '../entities/SpellFields.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/cast.js').CastPlan} CastPlan */
@@ -212,7 +213,9 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       fields.push({ name: 'dc', label: 'Save DC on a hit', type: 'number', value: saveDC, min: 1 });
     }
   }
-  if (kind === 'save') {
+  // A spell that reads HP in place of a save rolls no die for the DC or the
+  // mode to change.
+  if (kind === 'save' && !rollsNoSave(spell.effect)) {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
     fields.push({
       name: 'mode',

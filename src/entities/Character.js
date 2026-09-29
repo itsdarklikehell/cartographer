@@ -7,6 +7,7 @@ import {
 } from './Resource.js';
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { updateById } from './Roster.js';
+import { endOnDamage } from './Conditions.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { isHitDicePool, restoreHitDice } from './HitDice.js';
 import { derive } from './Progression.js';
@@ -126,15 +127,19 @@ export function setBaseAC(character, value) {
  * Apply damage. Bonus HP absorbs it first (temporary points are lost before
  * real ones), and only the remainder drains the HP pool. Healing is separate
  * (restoreResource) and never refills bonus HP. Bonus HP is granted, not
- * healed.
+ * healed. Any damage, even damage that bonus HP absorbs, ends a chip that
+ * damage ends (Sleep).
  * @param {Character} character
  * @param {number} amount
  * @returns {Character}
  */
 export function damageCharacter(character, amount) {
-  const bonus = character.bonusHP ?? 0;
+  const conditions =
+    amount > 0 && character.conditions ? endOnDamage(character.conditions) : character.conditions;
+  const woken = conditions === character.conditions ? character : { ...character, conditions };
+  const bonus = woken.bonusHP ?? 0;
   const absorbed = Math.min(bonus, amount);
-  const next = absorbed > 0 ? { ...character, bonusHP: bonus - absorbed } : character;
+  const next = absorbed > 0 ? { ...woken, bonusHP: bonus - absorbed } : woken;
   const remainder = amount - absorbed;
   return remainder > 0 ? spendResource(next, HP_RESOURCE_ID, remainder) : next;
 }

@@ -375,3 +375,21 @@ test('an attack draft keeps the on-hit save and the drain the form names', () =>
   );
   assert.equal('onHit' in save || 'drain' in save, false, 'only an attack keeps them');
 });
+
+test('a save keeps its HP pool, its kill, and an end on damage that a condition backs', () => {
+  const effect = assembleEffect(
+    effectDraft({
+      kind: 'save',
+      condition: 'Unconscious',
+      hpPool: { count: '5', sides: '8', perStep: '2' },
+      kills: true,
+      endsOnDamage: true,
+    }),
+  );
+  assert.deepEqual(effect.hpPool, { count: 5, sides: 8, perStep: 2 });
+  assert.equal(effect.kills, true);
+  assert.equal(effect.endsOnDamage, true);
+  const bare = assembleEffect(effectDraft({ kind: 'save', hpPool: null, endsOnDamage: true }));
+  assert.equal('hpPool' in bare, false);
+  assert.equal('endsOnDamage' in bare, false);
+});

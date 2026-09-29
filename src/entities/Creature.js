@@ -3,6 +3,7 @@ import { normalizeStatBlock } from './Modifiers.js';
 import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './Character.js';
+import { endOnDamage } from './Conditions.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
 import { castsAs, casterDefFor } from './ClassCasting.js';
 import { isCasterPool } from './SpellSlots.js';
@@ -434,13 +435,27 @@ export function fromTemplate(template, id, location = null) {
 }
 
 /**
- * Apply damage, clamped so currentHP never drops below 0.
+ * Apply damage, clamped so currentHP never drops below 0. Any damage ends a
+ * chip that damage ends (Sleep).
  * @param {Creature} creature
  * @param {number} amount
  * @returns {Creature}
  */
 export function applyDamage(creature, amount) {
-  return { ...creature, currentHP: Math.max(0, creature.currentHP - amount) };
+  const conditions =
+    amount > 0 && creature.conditions ? endOnDamage(creature.conditions) : creature.conditions;
+  return { ...creature, conditions, currentHP: Math.max(0, creature.currentHP - amount) };
+}
+
+/**
+ * Kill a creature outright, with no damage behind it (Power Word Kill). A
+ * creature leaves a fight only at 0 HP, so this sets it there. It ends no
+ * chip, because no damage lands.
+ * @param {Creature} creature
+ * @returns {Creature}
+ */
+export function slay(creature) {
+  return { ...creature, currentHP: 0 };
 }
 
 /**

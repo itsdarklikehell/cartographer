@@ -6,6 +6,7 @@ import { HEALING_TYPE } from '../entities/Equipment.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import { buildLaterTurnControls } from './SpellFormLater.js';
 import { buildOnHitControls } from './SpellFormOnHit.js';
+import { buildHPControls } from './SpellFormHP.js';
 import {
   labeled,
   fieldRow,
@@ -197,14 +198,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // A held target repeats the save at the end of each of its turns and
   // ends the condition on a success (Hold Person).
   const saveEnds = checkbox('Save ends each turn', saveEffect?.saveEnds ?? false);
-  // Power Word Stun skips the first save for a target at or under its HP
-  // limit and leaves one above it alone. 0 means every target rolls.
-  const hpLimitInput = numberField(saveEffect?.hpLimit ?? 0, { min: 0, className: 'form__number' });
-  setTip(
-    hpLimitInput,
-    'A target at or under this HP fails the first save. One above it is unaffected. 0 for none',
-  );
-  const hpLimitField = labeled('HP limit', hpLimitInput);
   // The condition the chip is called, picked from the same list the
   // conditions bar offers, so the name always matches a real chip. An
   // imported spell that names something else keeps that name as its own
@@ -234,6 +227,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
   const later = buildLaterTurnControls(spell);
   const onHit = buildOnHitControls(spell);
+  const hp = buildHPControls(spell);
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
@@ -367,7 +361,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
   const saveEndsRow = fieldRow(saveEnds.label);
-  const hpLimitRow = fieldRow(hpLimitField);
   const healTogglesRow = fieldRow(addsModifier.label);
   const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
   const riderRollsRow = fieldRow(riderRollsField);
@@ -383,7 +376,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     const kind = kindSelect.value;
     abilityField.hidden = kind !== 'save';
     saveTogglesRow.hidden = kind !== 'save';
-    hpLimitRow.hidden = kind !== 'save';
     // Both kinds that put a chip on a creature pick its name. A buff needs no
     // name (the chip falls back to the spell's own), so its picker offers the
     // same None entry.
@@ -414,6 +406,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     healTogglesRow.hidden = kind !== 'heal' && kind !== 'attack';
     later.sync(kind, conditionSelect.value !== '');
     onHit.sync(kind);
+    hp.sync(kind, conditionSelect.value !== '');
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
@@ -462,6 +455,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   conditionSelect.addEventListener('change', syncEffectFields);
   later.listen(syncEffectFields);
   onHit.listen(syncEffectFields);
+  hp.listen(syncEffectFields);
 
   function syncScaling() {
     const hide = !scales.input.checked;
@@ -528,7 +522,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         saveAbility: abilitySelect.value,
         halfOnSave: halfOnSave.input.checked,
         saveEnds: saveEnds.input.checked,
-        hpLimit: hpLimitInput.value,
         addsModifier: addsModifier.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
@@ -552,6 +545,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         },
         ...extra.effect,
         ...onHit.read(),
+        ...hp.read(),
       },
       scaling: scales.input.checked
         ? {
@@ -589,7 +583,11 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       saveTogglesRow,
       conditionRow,
       saveEndsRow,
-      hpLimitRow,
+      hp.rows.limit,
+      hp.rows.kills,
+      hp.rows.pools,
+      hp.rows.pool,
+      hp.rows.endsOnDamage,
       later.rows.until,
       riderRow,
       riderRollsRow,

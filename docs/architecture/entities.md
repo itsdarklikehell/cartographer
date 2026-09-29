@@ -1540,6 +1540,37 @@ damage that the hits deal. `spellOutcomes.js` sums the damage after the
 defenses of each target, including a splash on a miss, and heals the caster
 once after the last target. Vampiric Touch uses this.
 
+## Hit-point rules
+
+A save effect can read the current HP of each target in place of a save
+roll. `hpLimit` fails the first save with no roll for a target at or under
+the limit, and leaves a target above it unaffected. `hpPool` rolls a pool
+of dice once per cast. `entities/HpPool.js` sorts the targets by current HP
+and walks them, and each target whose HP fits in what the pool has left
+takes the effect and spends its HP. `SpellFields.rollsNoSave` is true for a
+pool, and for a limit with no repeated save. For such a spell `castPlan`
+reads no save bonus, and the dialog shows no DC field. Power Word Stun keeps
+its DC, because its target retries the save on later turns.
+
+`spellCastResolve.js` reads the HP of each target from the roster when the
+GM submits the cast. A pool also reads the chips there, because it passes
+over an Unconscious target and a target that already has the condition.
+A target with no HP to read (a character with no HP pool, or a creature
+that left the roster) takes the effect and spends nothing, so the GM can
+still apply the spell.
+
+`kills` makes a failed save fatal. `app/slay.js` kills a creature by
+setting its HP to 0 (`Creature.slay`), and a character through
+`DeathSaves.killOutright`, which leaves its HP alone. The character store
+then drops the spell it concentrated on. Power Word Kill uses a limit and
+`kills`.
+
+`endsOnDamage` stamps `source.endsOnDamage` on the chip. The two damage
+writes, `Character.damageCharacter` and `Creature.applyDamage`, take such a
+chip off on any damage above 0, and `combatants.applyToTarget` logs it.
+Sleep uses a pool and `endsOnDamage`, and Color Spray uses a pool and a
+turn boundary.
+
 ## Summoned creatures
 
 A spell can put new creatures on the map. Its `summons` effect names one

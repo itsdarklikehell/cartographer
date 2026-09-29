@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated part of the
 System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 61. Each shipped spell has rules that the
+319 spells, and the app ships 64. Each shipped spell has rules that the
 spell resolver applies in full, or a description that names the clause
 that the resolver leaves to the GM.
 
@@ -22,7 +22,7 @@ The paladin also has one spell of its own, Destructive Wave.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Mage Armor |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Mage Armor |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch |
 | 4th | Ice Storm, Blight, Phantasmal Killer |
@@ -30,7 +30,7 @@ The paladin also has one spell of its own, Destructive Wave.
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |
 | 8th | Power Word Stun, Sunburst |
-| 9th | Meteor Swarm |
+| 9th | Meteor Swarm, Power Word Kill |
 
 The selection prefers spells whose rules the current mechanics resolve in
 full. The resolver applies these rules:
@@ -45,6 +45,9 @@ full. The resolver applies these rules:
   between the creatures that the caster picks.
 - A save against the spell save DC of the caster, with damage that the save
   halves or negates.
+- A rule that reads the current hit points of the target in place of a
+  save. An HP pool reaches the creatures with the lowest HP first, and an
+  HP limit fails the save with no roll. A failed save can kill outright.
 - Dice of healing, or a flat amount of healing.
 - A condition chip that adds a die or a flat amount to the later attack
   rolls, saving throws, or ability checks of the target.
@@ -63,6 +66,7 @@ full. The resolver applies these rules:
   the caster's next turn, or the end of the target's next turn.
 - A spell that the caster uses again on each later turn while it lasts,
   with no new slot.
+- A condition chip that ends when its holder takes damage.
 - Damage or effect scaling by spell slot level, and by caster level for
   cantrips. A spell can also scale once per two slot levels.
 
@@ -111,6 +115,27 @@ damage that its hit deals. The app counts the damage after the resistances
 of the target, so a hit on a creature that resists necrotic damage gives
 back less. Vampiric Touch also repeats on each later turn, as Spiritual
 Weapon does.
+
+### Hit-point rules
+
+Sleep and Color Spray roll a pool of hit points and roll no save. The app
+sorts the chosen targets by current HP, lowest first. Each target whose HP
+fits in what the pool has left takes the condition, and its HP comes out of
+the pool. The pool passes over a target at 0 HP, an Unconscious target, and
+a target that already has the condition of the spell. The log states the
+pool roll, and for each target the HP that was left when the pool reached
+it.
+
+Sleep ends on a creature when that creature takes damage, including damage
+that its temporary hit points absorb. The printed spell does not affect
+undead or creatures immune to being charmed. The app does not know which
+creatures those are, so the GM leaves them out of the targets. A creature
+that an ally shakes awake loses its chip when the GM removes it.
+
+Power Word Kill reads the current HP of the target. A target with 100 HP
+or fewer dies with no roll, and one with more is unaffected. A creature
+dies at 0 HP. A character dies through the death-save tracker, the same way
+as a death from exhaustion, and keeps the HP that the GM tracks.
 
 ### Spells described in prose
 
@@ -172,13 +197,6 @@ Death, and Fire Storm work this way.
 
 A cast resolves once, and the app has no template for map areas. So no
 rule keeps a zone on the map after the cast.
-
-### Hit-point thresholds
-
-Examples: Sleep, Color Spray, and Power Word Kill.
-
-No effect kind compares the hit points of a target against a threshold, so
-the cast cannot decide which creatures the spell affects.
 
 ### Buffs outside d20 rolls
 

@@ -122,6 +122,17 @@ export interface SpellSaveEffect {
    * current HP is at or under it fails that save with no roll. A target
    * above it is unaffected. Absent means every target rolls. */
   hpLimit?: number;
+  /** A pool of hit points that the cast rolls instead of a save (Sleep's
+   * 5d8). The targets take the effect in order of current HP, lowest first,
+   * while their HP fits in what the pool has left. Each one affected takes
+   * its HP out of the pool. With a pool, no target rolls a save. */
+  hpPool?: SpellHpPool;
+  /** True when a failed save kills the target outright (Power Word Kill,
+   * whose HP limit fails the save with no roll). */
+  kills?: boolean;
+  /** True when the imposed condition ends as soon as its holder takes
+   * damage (Sleep). Only meaningful alongside a condition. */
+  endsOnDamage?: boolean;
   /** When the imposed condition ends, as a turn boundary (Sunbeam's
    * blindness until the caster's next turn). Absent means the spell's own
    * duration. */
@@ -129,6 +140,14 @@ export interface SpellSaveEffect {
   /** Damage that a failed save leaves on the target for later turns. With a
    * condition, the damage rides that chip. */
   ongoing?: SpellOngoing;
+}
+
+/** The dice of an HP pool, and how many more dice each scaling increment
+ * adds (Sleep's +2d8 per slot level). */
+export interface SpellHpPool {
+  count: number;
+  sides: number;
+  perStep?: number;
 }
 
 /** Restorative magic: healing dice applied to the target. */

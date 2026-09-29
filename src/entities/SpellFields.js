@@ -1,4 +1,4 @@
-import { normalizeDamagePart } from './Equipment.js';
+import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { clampInt } from '../util/num.js';
 
@@ -6,12 +6,13 @@ import { clampInt } from '../util/num.js';
  * Normalizers for the spell fields beyond a single roll: damage that stays on
  * a target, the turn boundary that ends a chip, a spell that the caster uses
  * again without a new slot, and what a hit does besides its damage (a save or
- * a chip on the target, and hit points back to the caster). The authoring form
- * (through `SpellDraft.js`) and the library import (through `Library.js`)
- * share these functions, so a typed spell and an imported one never disagree
- * about what a value means. Each one returns null, or an empty object, for a
- * value that says nothing usable, and the caller then leaves the field off
- * the spell. Every function here is pure.
+ * a chip on the target, and hit points back to the caster), and the HP rules
+ * of a save (a pool rolled in place of the save, a kill, and a chip that
+ * damage ends). The authoring form (through `SpellDraft.js`) and the library
+ * import (through `Library.js`) share these functions, so a typed spell and
+ * an imported one never disagree about what a value means. Each one returns
+ * null, or an empty object, for a value that says nothing usable, and the
+ * caller then leaves the field off the spell. Every function here is pure.
  */
 
 /** @typedef {import('../types/spell.js').ChipUntil} ChipUntil */
@@ -19,6 +20,7 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/spell.js').SpellRepeat} SpellRepeat */
 /** @typedef {import('../types/spell.js').SpellOnHit} SpellOnHit */
 /** @typedef {import('../types/spell.js').SpellDrain} SpellDrain */
+/** @typedef {import('../types/spell.js').SpellHpPool} SpellHpPool */
 /** @typedef {import('../types/spell.js').Ability} Ability */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
@@ -142,8 +144,25 @@ export function attackExtras(raw) {
 }
 
 /**
- * The later-turn fields a save effect has, from a written effect. A
- * boundary means something only for a chip, so it needs a condition.
+ * A written HP pool, or null when it rolls no dice. The die has to be one of
+ * the sizes the dice editor offers.
+ * @param {unknown} value
+ * @returns {SpellHpPool | null}
+ */
+export function normalizeHpPool(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const count = clampInt(raw.count, 0, 40);
+  const sides = Number(raw.sides);
+  if (count === 0 || !DIE_SIZES.includes(sides)) return null;
+  const perStep = clampInt(raw.perStep, 0, 40);
+  return { count, sides, ...(perStep > 0 ? { perStep } : {}) };
+}
+
+/**
+ * The later-turn and HP fields a save effect has, from a written effect. A
+ * boundary, and an end on damage, mean something only for a chip, so both
+ * need a condition.
  * @param {Record<string, unknown>} raw
  * @param {string} condition the condition the save imposes, or empty
  * @returns {Partial<import('../types/spell.js').SpellSaveEffect>}
@@ -151,7 +170,26 @@ export function attackExtras(raw) {
 export function saveExtras(raw, condition) {
   const until = condition ? normalizeUntil(raw.until) : null;
   const ongoing = normalizeOngoing(raw.ongoing);
-  return { ...(until ? { until } : {}), ...(ongoing ? { ongoing } : {}) };
+  const hpPool = normalizeHpPool(raw.hpPool);
+  return {
+    ...(until ? { until } : {}),
+    ...(ongoing ? { ongoing } : {}),
+    ...(hpPool ? { hpPool } : {}),
+    ...(raw.kills === true ? { kills: true } : {}),
+    ...(condition && raw.endsOnDamage === true ? { endsOnDamage: true } : {}),
+  };
+}
+
+/**
+ * Whether a save spell resolves with no save die at all. An HP pool never
+ * rolls one. An HP limit fails the first save outright, so only a spell whose
+ * target retries the save later (Power Word Stun) needs a DC.
+ * @param {import('../types/spell.js').SpellEffect} effect
+ * @returns {boolean}
+ */
+export function rollsNoSave(effect) {
+  if (effect.kind !== 'save') return false;
+  return !!effect.hpPool || (effect.hpLimit !== undefined && !effect.saveEnds);
 }
 
 /**

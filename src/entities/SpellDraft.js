@@ -42,6 +42,10 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [saveEnds] whether the imposed condition ends on a
  *   save at the end of each of the target's turns
  * @property {unknown} [hpLimit] the save kind's HP limit, 0 or blank for none
+ * @property {{ count: unknown, sides: unknown, perStep: unknown } | null} [hpPool]
+ *   the HP pool the save kind rolls in place of a save, null for none
+ * @property {boolean} [kills] whether a failed save of the save kind kills
+ * @property {boolean} [endsOnDamage] whether damage ends the save's condition
  * @property {boolean} [addsModifier] whether the heal or the attack kind adds
  *   the spellcasting ability modifier
  * @property {boolean} [melee] whether the attack kind is a melee spell attack

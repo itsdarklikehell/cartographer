@@ -1,7 +1,7 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
-import { UNTIL_LABELS } from '../entities/SpellFields.js';
+import { UNTIL_LABELS, rollsNoSave } from '../entities/SpellFields.js';
 
 /**
  * The lines of the spell detail modal that say what a spell does in play: the
@@ -17,10 +17,10 @@ const COST_TEXT = { action: 'an action', bonus: 'a bonus action', reaction: 'a r
 
 /**
  * The one-line effect summary shown under the meta grid: a spell attack and
- * its damage, a save (ability plus DC) with its damage and the chip it
- * imposes, healing dice, or the chip a buff hands out. A chip that changes
- * later rolls states what it adds. A utility spell has no line, because its
- * rules live in the description.
+ * its damage, a save (ability plus DC) or the HP rule that takes its place,
+ * with its damage and the chip it imposes, healing dice, or the chip a buff
+ * hands out. A chip that changes later rolls states what it adds. A utility
+ * spell has no line, because its rules live in the description.
  * @param {Spell} spell
  * @param {number | null} saveDC the caster's save DC, or null when unknown
  * @returns {string | null}
@@ -46,8 +46,20 @@ export function effectSummary(spell, saveDC) {
     const half = effect.halfOnSave ? ' (half on save)' : '';
     const rider = effect.rider ? ` (${riderSummary(effect.rider)})` : '';
     const until = effect.until ? ` until ${UNTIL_LABELS[effect.until]}` : '';
-    const cond = effect.condition ? `, ${effect.condition}${rider}${until}` : '';
-    return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}`;
+    const wakes = effect.endsOnDamage ? ' (ends on damage)' : '';
+    const cond = effect.condition ? `, ${effect.condition}${rider}${until}${wakes}` : '';
+    const kills = effect.kills ? ', killed outright' : '';
+    // A spell that reads HP in place of a save names that rule where the
+    // save would go.
+    if (rollsNoSave(effect)) {
+      const pool = effect.hpPool;
+      const growth = pool?.perStep ? ` (+${pool.perStep}d${pool.sides} per level)` : '';
+      const reach = pool
+        ? `${pool.count}d${pool.sides} HP pool${growth}, lowest HP first`
+        : `${effect.hpLimit} HP or fewer`;
+      return `${reach} — ${dmg || 'no damage'}${cond}${kills}`;
+    }
+    return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}${kills}`;
   }
   if (effect.kind === 'heal') {
     const mod = effect.addsModifier ? ' + spellcasting modifier' : '';

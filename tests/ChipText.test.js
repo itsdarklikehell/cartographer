@@ -127,3 +127,27 @@ test('the detail states what a hit does besides its damage', () => {
   assert.deepEqual(hitLines(spellById('fireball'), 14), []);
   assert.deepEqual(hitLines(spellById('magic-missile'), 14), []);
 });
+
+test('a spell that reads HP names its rule in place of the save', () => {
+  assert.equal(
+    effectSummary(spellById('sleep'), 14),
+    '5d8 HP pool (+2d8 per level), lowest HP first — no damage, Unconscious (ends on damage)',
+  );
+  assert.equal(
+    effectSummary(spellById('color-spray'), null),
+    "6d10 HP pool (+2d10 per level), lowest HP first — no damage, Blinded until the end of the caster's next turn",
+  );
+  assert.equal(
+    effectSummary(spellById('power-word-kill'), 17),
+    '100 HP or fewer — no damage, killed outright',
+  );
+  const pool = {
+    ...spellById('sleep'),
+    effect: { ...spellById('sleep').effect, hpPool: { count: 1, sides: 4 } },
+  };
+  assert.match(/** @type {string} */ (effectSummary(pool, null)), /^1d4 HP pool, lowest/);
+  assert.equal(
+    effectSummary(spellById('power-word-stun'), 17),
+    'CON save DC 17 — no damage, Stunned',
+  );
+});

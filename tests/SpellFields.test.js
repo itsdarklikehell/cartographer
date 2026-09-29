@@ -2,12 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   attackExtras,
+  normalizeHpPool,
   normalizeLevelsPerStep,
   normalizeOnHit,
   normalizeOngoing,
   normalizeParts,
   normalizeRepeat,
   normalizeUntil,
+  rollsNoSave,
   saveExtras,
 } from '../src/entities/SpellFields.js';
 import { heldRepeat, opensRepeat, repeatedSpell } from '../src/entities/SpellRepeat.js';
@@ -129,4 +131,35 @@ test('an attack keeps an on-hit block and a drain only when each says something'
     drain: 'half',
   });
   assert.deepEqual(attackExtras({ drain: 'full' }), { drain: 'full' });
+});
+
+test('an HP pool needs dice of a size the editor offers, and keeps a growth above 0', () => {
+  assert.equal(normalizeHpPool(null), null);
+  assert.equal(normalizeHpPool('5d8'), null);
+  assert.equal(normalizeHpPool({ count: 0, sides: 8 }), null);
+  assert.equal(normalizeHpPool({ count: 5, sides: 7 }), null);
+  assert.deepEqual(normalizeHpPool({ count: '5', sides: '8', perStep: '2' }), {
+    count: 5,
+    sides: 8,
+    perStep: 2,
+  });
+  assert.deepEqual(normalizeHpPool({ count: 99, sides: 10, perStep: 0 }), { count: 40, sides: 10 });
+});
+
+test('a save keeps a pool and a kill, and an end on damage only with a condition', () => {
+  const pool = { count: 5, sides: 8 };
+  assert.deepEqual(saveExtras({ hpPool: pool, kills: true, endsOnDamage: true }, 'Unconscious'), {
+    hpPool: pool,
+    kills: true,
+    endsOnDamage: true,
+  });
+  assert.deepEqual(saveExtras({ kills: 'yes', endsOnDamage: true }, ''), {});
+});
+
+test('a save rolls no die with a pool, or with a limit and no repeated save', () => {
+  assert.equal(rollsNoSave(spellById('sleep').effect), true);
+  assert.equal(rollsNoSave(spellById('power-word-kill').effect), true);
+  assert.equal(rollsNoSave(spellById('power-word-stun').effect), false);
+  assert.equal(rollsNoSave(spellById('hold-person').effect), false);
+  assert.equal(rollsNoSave(spellById('magic-missile').effect), false);
 });

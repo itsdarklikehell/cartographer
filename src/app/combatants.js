@@ -639,6 +639,17 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (amount <= 0) return;
   const found = findCombatant(app, targetId);
   if (!found) return;
+  // The damage write of each kind takes off a chip that damage ends (Sleep).
+  // The log names the chip here, ahead of the lines the hit writes.
+  if (!isHeal) {
+    for (const c of found.entity.conditions) {
+      if (!c.source?.endsOnDamage) continue;
+      app.actions.logEvent(
+        'combat',
+        `${found.entity.name} is no longer ${c.name} (${c.source.spellName}).`,
+      );
+    }
+  }
   /** @param {Character | Creature} next */
   const logManual = (next) => {
     if (!opts.manual) return;

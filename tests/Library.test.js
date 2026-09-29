@@ -1151,3 +1151,25 @@ test('the feat registry merges customs and memoizes until the library changes', 
     setActiveLibrary(emptyLibrary());
   }
 });
+
+test('normalizeLibrary keeps the HP pool, the kill, and the end on damage of a save spell', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Doze',
+        effect: {
+          kind: 'save',
+          saveAbility: 'WIS',
+          condition: 'Unconscious',
+          hpPool: { count: 3, sides: 6 },
+          endsOnDamage: true,
+          kills: true,
+        },
+      },
+    ],
+  });
+  const effect = /** @type {any} */ (lib.spells[0].effect);
+  assert.deepEqual(effect.hpPool, { count: 3, sides: 6 });
+  assert.equal(effect.endsOnDamage, true);
+  assert.equal(effect.kills, true);
+});
