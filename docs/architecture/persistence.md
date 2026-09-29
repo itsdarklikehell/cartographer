@@ -401,17 +401,26 @@ Authoring adds tiles, and fog reveals only increase and are never reclaimed.
 ```
 
 The encoder lists each distinct piece of art once. It then describes the map
-as runs of "the next N cells use art number K". A painted field of 200 grass
-tiles becomes one palette entry and one run, instead of 200 repeated strings.
+as runs of "the next N cells use art number K". A 40x40 field painted with
+one grass variant becomes one palette entry and one run, 129 characters in
+place of 93,601 in the per-cell form.
 
 `fog` is separate because `revealed` is the one field that play changes. A
-reveal is a disc, and run-lengths compress a disc almost perfectly.
+reveal is a disc, and run-lengths compress a disc almost perfectly. Exploring
+that whole field costs 15 more characters in the encoded form, where the
+per-cell form adds 25,600.
 
-Measured on the example campaign, the save went from 129,111 characters to
-34,963, and the node list went from 115,430 to 21,282. A dense 40x40 region
-went from 93,880 to 3,621. Exploring that region fully costs 15 more
-characters in this form. The per-cell form adds 25,600 characters for the
-same exploration.
+The palette writes each ref in a short form (`storage/TileRefs.js`). Each
+built-in palette id equals the base name of its file, so the palette stores
+`snow-3` for `assets/tiles/snow/snow-3.svg`, and the decoder reads the id
+back through the built-in catalog. A ref with a `/` or a `:` is never a
+palette id, so an `asset:` key, a `data:` payload, and a path outside the
+catalog pass through both ways, and so does every path in a save that
+stores full paths. A bare live ref that reads as a palette id gets a `=`
+prefix, so a hand-edited ref `grass-1` does not come back as a path.
+
+On the example campaign, the encoded node list is 227,327 characters, where
+the same nodes in the per-cell form cost 1,506,124.
 
 The codec never loses data, because it refuses any node that it cannot
 represent and writes whatever it does not represent out of line:

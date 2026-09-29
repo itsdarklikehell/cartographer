@@ -393,3 +393,18 @@ test('decodeNodeList passes per-tile nodes through and drops nodes past MAX_NODE
   assert.equal(list[0], plain);
   assert.equal(list[1], null);
 });
+
+test('built-in art stores as palette ids, and a stored path still reads', () => {
+  const grass = 'assets/tiles/grass/grass-1.svg';
+  const road = 'assets/tiles/road/road-h.svg';
+  const node = makeNode({
+    width: 2,
+    height: 1,
+    tiles: [tile('0,0', grass), tile('1,0', grass, { overlayRef: [road, 'asset:k1'] })],
+  });
+  const encoded = roundTrip(node);
+  assert.deepEqual(encoded.refs, ['grass-1', ['grass-1', ['road-h', 'asset:k1']]]);
+  // A save that stores the full path decodes to the same tiles.
+  const stored = decodeNodeTiles({ ...encoded, refs: [grass, [grass, [road, 'asset:k1']]] });
+  assert.deepEqual(stored.tiles, decodeNodeTiles(encoded).tiles);
+});

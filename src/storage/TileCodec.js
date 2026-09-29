@@ -1,5 +1,6 @@
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
+import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
 
 /**
  * Positional encoding for the tiles of a node. This is the on-disk form. It
@@ -22,7 +23,8 @@ import { MAX_GRID_CELLS } from '../map/TileIndex.js';
  *   - `refs`   the distinct art entries, stated one time. An entry is a bare
  *              `imageRef` string, or the pair `[imageRef, overlayRef]` when
  *              the tile has an overlay. An overlay is a ref or a stack in
- *              draw order.
+ *              draw order. Every ref is in its short form, so built-in art
+ *              is a palette id such as `grass-1` (see `TileRefs.js`).
  *   - `cells`  row-major run-length indices into `refs`. A bare number is one
  *              cell. `[index, count]` is a run. `-1` means no tile at that
  *              position. This lets the codec encode a sparse but gridded
@@ -107,13 +109,28 @@ function positionOf(id, width, height) {
  * A tile's art as one palette entry: the bare `imageRef` when the tile has no
  * overlay, or the pair otherwise. The codec keeps both fields together
  * instead of using two palettes and two index streams, because a tile
- * carries both fields, and splitting them costs more than it saves.
+ * has both fields, and splitting them costs more than it saves. Each ref is
+ * in its short form (`TileRefs.js`).
  * @param {Record<string, any>} tile
- * @returns {string | [string, string | string[]]}
+ * @returns {string | [string, unknown]}
  */
 function artEntry(tile) {
   const overlay = tile.overlayRef;
-  return overlay == null ? tile.imageRef : [tile.imageRef, overlay];
+  const base = shortRef(tile.imageRef);
+  return overlay == null ? base : [base, mapOverlay(overlay, shortRef)];
+}
+
+/**
+ * A palette entry read back into live refs, or null when its base ref is not
+ * a string. The decoder skips a cell whose entry is null.
+ * @param {unknown} entry
+ * @returns {{ imageRef: string, overlay: unknown } | null}
+ */
+function liveEntry(entry) {
+  const pair = Array.isArray(entry);
+  const imageRef = fullRef(pair ? entry[0] : entry);
+  if (typeof imageRef !== 'string') return null;
+  return { imageRef, overlay: pair ? mapOverlay(entry[1], fullRef) : null };
 }
 
 /**
@@ -148,10 +165,10 @@ function layOut(node, width, height) {
  * stream indexes. The codec drops a trailing run of empty cells instead of
  * writing it. This run is most of the stream for a sparse interior.
  * @param {(Record<string, any> | null)[]} slots
- * @returns {{ refs: (string | [string, string | string[]])[], cells: (number | [number, number])[] }}
+ * @returns {{ refs: (string | [string, unknown])[], cells: (number | [number, number])[] }}
  */
 function encodeCells(slots) {
-  /** @type {(string | [string, string | string[]])[]} */
+  /** @type {(string | [string, unknown])[]} */
   const refs = [];
   // Two lookups, one per entry form. A bare entry is keyed by its own
   // `imageRef` string, so the common case builds no key at all. A pair is
@@ -387,7 +404,7 @@ export function decodeNodeTiles(node) {
     decoded.tiles = [...leftovers.values()];
     return decoded;
   }
-  const refs = Array.isArray(node.refs) ? node.refs : [];
+  const refs = Array.isArray(node.refs) ? node.refs.map(liveEntry) : [];
   const revealed = decodeFog(node.fog, size);
   /** @type {Record<string, any>[]} */
   const tiles = [];
@@ -397,9 +414,7 @@ export function decodeNodeTiles(node) {
     if (!run) break;
     for (let n = 0; n < run.count && pos < size; n += 1, pos += 1) {
       const entry = refs[run.index];
-      const pair = Array.isArray(entry);
-      const imageRef = pair ? entry[0] : entry;
-      if (typeof imageRef !== 'string') continue;
+      if (!entry) continue;
       const x = pos % width;
       const id = tileIdAt(x, (pos - x) / width);
       const extra = leftovers.get(id);
@@ -409,10 +424,9 @@ export function decodeNodeTiles(node) {
       // win. A hand-edited save cannot make a leftover record contradict
       // the palette or the fog stream.
       tile.id = id;
-      tile.imageRef = imageRef;
-      const overlay = pair ? entry[1] : null;
-      if (overlay == null) delete tile.overlayRef;
-      else tile.overlayRef = overlay;
+      tile.imageRef = entry.imageRef;
+      if (entry.overlay == null) delete tile.overlayRef;
+      else tile.overlayRef = entry.overlay;
       if (revealed[pos]) tile.revealed = true;
       else delete tile.revealed;
       tiles.push(tile);
