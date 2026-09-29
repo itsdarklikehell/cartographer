@@ -481,9 +481,16 @@ export function localStorageFootprint() {
  * Without it, the payload table drops the images of the replaced save
  * before the snapshot key exists to reference them, and an undo restores a
  * campaign with missing pictures.
+ *
+ * `makeRoom` runs when the campaign write fails. It removes data that the
+ * caller can spare and returns true when it removed something. The write
+ * then runs again with the same string, so a retry does not pack the
+ * campaign again. `HistoryLog.saveCampaign` passes a function that drops
+ * undo steps, because a campaign that exists only in memory is a worse
+ * loss than undo depth.
  * @param {CampaignState} state
  * @param {string} [key]
- * @param {{ keepPrevious?: boolean }} [options]
+ * @param {{ keepPrevious?: boolean, makeRoom?: () => boolean }} [options]
  * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number, json: string }}
  */
 export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options = {}) {
@@ -491,17 +498,25 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options 
   const json = JSON.stringify(detached);
   const bytes = saveByteSize(json);
   let assetsOk = storeAssets(assets);
-  try {
-    writeStored(key, json);
-  } catch {
-    return {
-      ok: false,
-      assetsOk,
-      nearQuota: true,
-      bytes,
-      footprint: localStorageFootprint(),
-      json,
-    };
+  for (;;) {
+    try {
+      writeStored(key, json);
+      break;
+    } catch {
+      if (!options.makeRoom?.()) {
+        return {
+          ok: false,
+          assetsOk,
+          nearQuota: true,
+          bytes,
+          footprint: localStorageFootprint(),
+          json,
+        };
+      }
+      // The images failed on the same full origin. The freed space goes
+      // to them first, for the order that the comment above gives.
+      if (!assetsOk) assetsOk = storeAssets(assets);
+    }
   }
   // The replaced save is gone from `key` now. When the caller still needs
   // its images, the scan waits for the next save, which finds the snapshot

@@ -148,6 +148,7 @@ function isRecord(value) {
  * ring's `<key>:<seq>` snapshots. The upgrade path deletes these snapshots
  * instead of converting them, because a whole-campaign snapshot is not a
  * delta and cannot become one.
+ * @returns {boolean} whether any key was removed
  */
 export function clearHistoryLog() {
   /** @type {string[]} */
@@ -157,6 +158,7 @@ export function clearHistoryLog() {
     if (key === HISTORY_KEY || key?.startsWith(`${HISTORY_KEY}:`)) doomed.push(key);
   }
   for (const key of doomed) removeStored(key);
+  return doomed.length > 0;
 }
 
 /**
@@ -371,11 +373,43 @@ function recordStep(record) {
 }
 
 /**
+ * Remove history to make room for a campaign write that failed on a full
+ * origin. Each call removes the next piece and returns true, or returns
+ * false when no history is left. The redo tail goes first, because the save
+ * that needs the room drops it anyway. Then the oldest step goes, one per
+ * call, and last any history key that the index does not name.
+ *
+ * The index is written before the records are removed, so it never names a
+ * key that is gone. An index write that fails clears the whole log.
+ * @returns {boolean}
+ */
+function dropForSave() {
+  const index = readIndex();
+  const tail = index.deltas.slice(index.cursor);
+  const doomed = tail.length ? tail : index.deltas.slice(0, 1);
+  if (!doomed.length) return clearHistoryLog();
+  const deltas = index.deltas.filter((seq) => !doomed.includes(seq));
+  const cursor = tail.length ? index.cursor : index.cursor - 1;
+  if (!deltas.length || !writeIndex({ ...index, deltas, cursor })) {
+    clearHistoryLog();
+    return true;
+  }
+  for (const seq of doomed) removeStored(deltaKey(seq));
+  return true;
+}
+
+/**
  * Persist a campaign and record the step that produced it. This is the only
  * save path. This module writes the record after the campaign, so a failed
  * campaign write leaves the log describing exactly what is stored. A
  * snapshot record references the images of the replaced save, so the save
  * keeps those images in the payload table.
+ *
+ * A campaign write that fails on a full origin removes history and tries
+ * again (`dropForSave`), and `history.evictedAll` reports the lost depth.
+ * The record of this step stays valid, because it describes the stored
+ * save, and no removed step does. When the write fails with no history
+ * left, `history.ok` is false.
  *
  * Nothing is recorded when nothing readable is stored to diff against: a
  * first save, or a stored save that this app cannot read. Either way, the
@@ -388,12 +422,18 @@ export function saveCampaign(state) {
   // `lastPersisted` leaves the cache on the string it parsed.
   const record = before && cached ? stepRecord(before, cached.raw, state) : null;
   const keepPrevious = record !== null && record.startsWith(SNAPSHOT_PREFIX);
-  const save = trySaveToLocalStorage(state, STORAGE_KEY, { keepPrevious });
-  if (!save.ok) return { ...save, history: { ok: true, evictedAll: false } };
+  let dropped = false;
+  const makeRoom = () => {
+    const freed = dropForSave();
+    dropped ||= freed;
+    return freed;
+  };
+  const save = trySaveToLocalStorage(state, STORAGE_KEY, { keepPrevious, makeRoom });
+  if (!save.ok) return { ...save, history: { ok: !dropped, evictedAll: dropped } };
   cached = { raw: save.json, state };
   const history = record ? recordStep(record) : { ok: true, evictedAll: false };
   writeSaveMark();
-  return { ...save, history };
+  return { ...save, history: dropped ? { ...history, evictedAll: true } : history };
 }
 
 /** @typedef {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState }} StepResult */

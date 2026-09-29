@@ -29,6 +29,30 @@ export function installLocalStorage() {
 }
 
 /**
+ * Install an in-memory `localStorage` that throws a `QuotaExceededError`
+ * when a write would push the origin past `quota` characters, keys
+ * included. A write that fails leaves the stored value as it was, as a
+ * browser does.
+ * @param {number} quota
+ * @returns {Map<string, string>}
+ */
+export function installQuotaStorage(quota) {
+  const store = installLocalStorage();
+  const used = () => [...store].reduce((sum, [k, v]) => sum + k.length + v.length, 0);
+  localStorage.setItem = (k, v) => {
+    const value = String(v);
+    const old = store.has(k) ? k.length + /** @type {string} */ (store.get(k)).length : 0;
+    if (used() - old + k.length + value.length > quota) {
+      const error = new Error('The quota has been exceeded.');
+      error.name = 'QuotaExceededError';
+      throw error;
+    }
+    store.set(k, value);
+  };
+  return store;
+}
+
+/**
  * Install enough of `window` for a module to register listeners, and hand back
  * a way to fire one. Handlers are held per event name, so delivering a
  * `storage` event looks the way another tab's write does.

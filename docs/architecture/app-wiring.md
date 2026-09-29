@@ -89,7 +89,11 @@ origin would repeat the same warning on every write without a rule for when
 to stay quiet. `saveOutcome` turns a write result into a message and a landed
 flag, `historyLoss` and `historyLossMessage` announce a shortened or cleared
 undo history once rather than on every write, and `footprintWarning` waits
-for the footprint to grow by ten percent before it warns again.
+for the footprint to grow by ten percent before it warns again. A write that
+fails sets `waitForMutation`, so autosave skips its polls until the next
+`markDirty`, and an automatic write shows the failure once until a write
+lands. The same failed write otherwise packs, diffs, and stringifies the
+whole campaign every five seconds and shows a new error each time.
 
 `shortenedLoadPrompts.js` holds the prompts for a campaign that loaded
 shortened because it passes the decode limits (see "Shortened loads" in

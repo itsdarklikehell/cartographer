@@ -117,6 +117,11 @@ you pause editing. The Save button reads "Save •" while changes are
 unsaved. The undo history covers many steps, but not an unlimited number. A
 save from a stepped-back position discards what was left to redo.
 
+When browser storage is full, a save drops the oldest undo steps to make
+room for the campaign, and a notice says so. When the save fails even with
+no undo steps left, an error notice appears once, and autosave does not try
+again until you make another change.
+
 Everything lives in the local storage of one browser, under one origin.
 There is no server and no account.
 

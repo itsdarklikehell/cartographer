@@ -679,7 +679,15 @@ The log's own rules keep it from corrupting the campaign that it describes:
    retries, then drops the whole log if that also fails, and reports
    `{ ok, evictedAll }` either way. The report keeps undo from becoming
    single-step without notice. Reaching the ordinary byte cap is normal
-   operation and reports no loss.
+   operation and reports no loss. The campaign write gets the same
+   treatment: when it fails, `saveCampaign` passes `makeRoom` to
+   `trySaveToLocalStorage`, which calls `dropForSave` and writes again.
+   `dropForSave` removes the redo tail first, because the save drops it
+   anyway, then the oldest step, one per call, and last any history key the
+   index does not name. A campaign write therefore fails only when no
+   history is left to remove. After a write that still fails, autosave in
+   `app/campaignActions.js` waits for the next mutation instead of retrying
+   on every poll, and it shows the error once until a write lands.
 
 A diff needs the previous state as a *value*, not a string. `HistoryLog`
 caches this value, stamped with the raw string it was parsed from, so the steady state

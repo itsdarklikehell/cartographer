@@ -97,6 +97,15 @@ export function wireCampaignActions(app) {
   let heldSave = localStorage.getItem(STORAGE_KEY);
   /** True once this tab reported that autosave is paused. This stops the toast from repeating on every poll. */
   let pausedNoticeShown = false;
+  /**
+   * True after a write failed on a full origin, until the next mutation.
+   * Autosave does not retry in that time. The same write fails again, and
+   * each attempt packs, diffs, and stringifies the whole campaign every five
+   * seconds.
+   */
+  let waitForMutation = false;
+  /** True once an automatic write reported a failure. A later automatic failure stays quiet until a write lands. */
+  let failureShown = false;
 
   /**
    * Starts polling the autosave policy. The dirty flag controls this instead
@@ -154,6 +163,7 @@ export function wireCampaignActions(app) {
    */
   function markDirty() {
     lastMutationAt = Date.now();
+    waitForMutation = false;
     if (!dirty) setDirty(true);
     // The mutation that ends a fight leaves no fight behind to test for, but a
     // follower needs it most: a tab left on the combat screen has nothing to
@@ -207,7 +217,7 @@ export function wireCampaignActions(app) {
     if (patches.active()) return patches.send();
     if (savesHeld()) return false;
     if (externalWriteBlocks()) return false;
-    return persistState(buildCurrentState());
+    return persistState(buildCurrentState(), true);
   }
 
   // Warn before the tab closes or reloads with unsaved changes. Intentional
@@ -245,12 +255,19 @@ export function wireCampaignActions(app) {
    * because it is one: the map, the party, and every entity are stored. The
    * GM must know the pictures are not stored, or a later load looks like
    * corruption.
+   *
+   * An automatic write (autosave or the combat flush) reports a failure once.
+   * The next automatic failures stay quiet until a write lands, because a
+   * fight flushes after every action and each flush fails the same way.
    * @param {{ ok: boolean, assetsOk: boolean, footprint: number }} result
+   * @param {boolean} [automatic]
    * @returns {boolean} whether the write landed
    */
-  function reportSave(result) {
+  function reportSave(result, automatic = false) {
     const { landed, message } = saveOutcome(result);
-    if (message) app.toasts.show(message, { level: landed ? 'status' : 'error' });
+    const quiet = !landed && automatic && failureShown;
+    if (message && !quiet) app.toasts.show(message, { level: landed ? 'status' : 'error' });
+    failureShown = !landed && (automatic || failureShown);
     if (!landed) return false;
     reportFootprint(result.footprint);
     return true;
@@ -260,12 +277,18 @@ export function wireCampaignActions(app) {
    * Persists a campaign and records the history step that produced it, and
    * reports both outcomes. The step is recorded after the campaign write. A
    * failed write then leaves the history describing exactly what is stored.
+   * A failed write also makes autosave wait for the next mutation.
    * @param {import('../types/storage.js').CampaignState} state
+   * @param {boolean} [automatic] whether autosave or the combat flush asked for the write
    * @returns {boolean} whether the write landed
    */
-  function persistState(state) {
+  function persistState(state, automatic = false) {
     const result = saveCampaign(state);
-    if (!reportSave(result)) return false;
+    if (!reportSave(result, automatic)) {
+      waitForMutation = true;
+      reportHistory(result.history);
+      return false;
+    }
     heldSave = result.json;
     heldPosition = historyPosition();
     patches.rebase();
@@ -424,9 +447,11 @@ export function wireCampaignActions(app) {
   // save path as the Save button. It fires once the GM pauses editing, or
   // once changes sit unsaved past the hard cap. It fires only while the
   // campaign is dirty, so an idle table does not rewrite the save, and
-  // follower tabs see nothing.
+  // follower tabs see nothing. After a failed write it waits for the next
+  // mutation instead of retrying the same write on every poll.
   function autosaveTick() {
     const now = Date.now();
+    if (waitForMutation) return;
     if (!shouldAutosave({ dirty, now, lastMutationAt, dirtySince })) return;
     // Skip autosave under an open dialog. The GM is mid-edit, and a modal's
     // pending form values are not yet in the state.
