@@ -162,6 +162,14 @@ exactly those fields from absence, and every load already runs it, so no code
 states a default twice. `deserialize` runs `withNodeDefaults` itself on load,
 instead of leaving the unpack to `toTileGrid`.
 
+`withTileDefaults` builds each tile with its fields in the order of
+`createTile`, then any field it does not know, then `span`. A decoded record
+lists its fields in whatever order the file gives, and V8 gives each order
+its own hidden class. The example campaign loads with 11 tile hidden classes
+when the order follows the record, and a scan over those tiles takes about
+three times as long as a scan over tiles of one order. With the fixed order,
+loaded tiles have the same 2 hidden classes as tiles built in memory.
+
 Packing drops no field that the packer does not know about, and a packed
 tile never reaches live state:
 

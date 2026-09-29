@@ -94,6 +94,33 @@ test('withNodeDefaults survives a node whose tiles are missing or malformed', ()
   });
 });
 
+test('withNodeDefaults lists tile fields in one order, whatever the record order', () => {
+  const node = withNodeDefaults(
+    /** @type {any} */ ({
+      id: 'n',
+      width: 3,
+      height: 1,
+      tiles: [
+        { revealed: true, imageRef: 'a.svg', id: '0,0' },
+        { span: 2, note: 'x', metadata: { notes: 'hi' }, id: '1,0', imageRef: 'b.svg' },
+        JSON.parse('{"id":"2,0","imageRef":"c.svg","__proto__":{"polluted":true}}'),
+      ],
+    }),
+  );
+  const [plain, extra, proto] = node.tiles;
+  const order = ['id', 'imageRef', 'overlayRef', 'metadata', 'revealed', 'childNodeId'];
+  assert.deepEqual(Object.keys(plain), order, 'the createTile order');
+  assert.deepEqual(
+    Object.keys(extra),
+    [...order, 'note', 'span'],
+    'an unknown field follows the known ones, and span comes last',
+  );
+  assert.equal(extra.note, 'x');
+  assert.equal(Object.getPrototypeOf(proto), Object.prototype, 'a __proto__ key sets nothing');
+  assert.equal(/** @type {any} */ (proto).polluted, undefined);
+  assert.ok(Object.hasOwn(proto, '__proto__'), 'the __proto__ key stays a plain field');
+});
+
 test('setTile adds a new tile and replaces an existing one by id', () => {
   let node = createMapNode('n1', 'World', null, 2, 2);
   node = setTile(node, createTile('t1', 'grass.png'));

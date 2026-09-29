@@ -98,28 +98,73 @@ function overlayRefOf(value) {
  * This is also the unpack half of the save's tile packing. `SaveManager`'s
  * `packTile` omits exactly the fields defaulted here, so the two functions
  * are inverses without either one restating the other's idea of a default.
+ *
+ * The result always lists its fields in the order of `createTile`, then any
+ * field this function does not know, then `span`. A loaded record can list
+ * its fields in any order, and V8 gives each order its own hidden class. A
+ * scan over tiles of several hidden classes runs about three times as slow as a
+ * scan over tiles of one, and every render and fog pass is such a scan.
  * @param {Tile} tile
  * @returns {Tile}
  */
 export function withTileDefaults(tile) {
-  const { span, ...rest } = /** @type {Record<string, any>} */ (tile);
-  const raw = rest.metadata;
+  const source = /** @type {Record<string, any>} */ (tile);
+  const raw = source.metadata;
   const metadata = raw !== null && typeof raw === 'object' ? raw : {};
+  const span = source.span;
   const cells = typeof span === 'number' && Number.isFinite(span) ? Math.floor(span) : 0;
-  return /** @type {Tile} */ ({
-    ...rest,
-    imageRef: typeof tile.imageRef === 'string' ? tile.imageRef : '',
-    overlayRef: overlayRefOf(tile.overlayRef),
-    revealed: tile.revealed === true,
-    childNodeId: typeof tile.childNodeId === 'string' ? tile.childNodeId : null,
-    ...(cells > 1 ? { span: cells } : {}),
+  /** @type {Record<string, any>} */
+  let next = {
+    id: source.id,
+    imageRef: typeof source.imageRef === 'string' ? source.imageRef : '',
+    overlayRef: overlayRefOf(source.overlayRef),
     metadata: {
       poiType: typeof metadata.poiType === 'string' ? metadata.poiType : null,
       discoverable: metadata.discoverable === true,
       discovered: metadata.discovered === true,
       notes: typeof metadata.notes === 'string' ? metadata.notes : '',
     },
-  });
+    revealed: source.revealed === true,
+    childNodeId: typeof source.childNodeId === 'string' ? source.childNodeId : null,
+  };
+  if (hasUnknownField(source)) next = { ...next, ...unknownFields(source) };
+  if (cells > 1) next.span = cells;
+  return /** @type {Tile} */ (next);
+}
+
+/** The fields of a tile that `withTileDefaults` states itself. */
+const TILE_FIELDS = new Set([
+  'id',
+  'imageRef',
+  'overlayRef',
+  'metadata',
+  'revealed',
+  'childNodeId',
+  'span',
+]);
+
+/**
+ * Whether a tile record has a field outside `TILE_FIELDS`. Almost no tile
+ * does, so this check lets the common case skip the copy below.
+ * @param {Record<string, any>} tile
+ * @returns {boolean}
+ */
+function hasUnknownField(tile) {
+  for (const key in tile) if (!TILE_FIELDS.has(key)) return true;
+  return false;
+}
+
+/**
+ * The fields of a tile record outside `TILE_FIELDS`, in their own order. The
+ * copy uses object spread, so a key such as `__proto__` from a parsed file
+ * stays a plain field and never sets the prototype of the result.
+ * @param {Record<string, any>} tile
+ * @returns {Record<string, any>}
+ */
+function unknownFields(tile) {
+  const rest = { ...tile };
+  for (const key of TILE_FIELDS) delete rest[key];
+  return rest;
 }
 
 /**
