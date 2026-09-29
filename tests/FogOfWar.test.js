@@ -80,6 +80,15 @@ test('discoveredNodes keeps nodes with at least one revealed tile', () => {
   );
 });
 
+test('discoveredNodes sees a reveal on a node it answered for before', () => {
+  const fogged = { ...grid5x5(), id: 'a' };
+  const party = { nodeId: 'world', tileId: '0,0' };
+  assert.deepEqual(discoveredNodes([fogged], party), []);
+  const visited = revealAround(fogged, '2,2', 1);
+  assert.deepEqual(discoveredNodes([visited], party), [visited]);
+  assert.deepEqual(discoveredNodes([fogged], party), []);
+});
+
 test('discoveredNodes always includes the node the party stands in, even with no revealed tiles', () => {
   const emptyWorld = createMapNode('world', 'World', null, 8, 6);
   const result = discoveredNodes([emptyWorld], { nodeId: 'world', tileId: '0,0' });

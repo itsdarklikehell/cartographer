@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { memoizeByIdentity } from '../src/util/memoize.js';
+import { memoizeByIdentity, memoizeByIdentity2 } from '../src/util/memoize.js';
 
 test('memoizeByIdentity computes once per argument object', () => {
   let calls = 0;
@@ -52,4 +52,23 @@ test('memoizeByIdentity caches a falsy result', () => {
   zero(key);
   zero(key);
   assert.equal(calls, 1);
+});
+
+test('memoizeByIdentity2 computes once per pair of argument objects', () => {
+  let calls = 0;
+  const sum = memoizeByIdentity2(
+    (/** @type {{ n: number }} */ a, /** @type {{ n: number }} */ b) => {
+      calls += 1;
+      return a.n + b.n;
+    },
+  );
+  const a = { n: 1 };
+  const b = { n: 2 };
+  const c = { n: 2 };
+  assert.equal(sum(a, b), 3);
+  assert.equal(sum(a, b), 3);
+  assert.equal(calls, 1, 'the same pair is computed once');
+  assert.equal(sum(a, c), 3);
+  assert.equal(sum(b, a), 3);
+  assert.equal(calls, 3, 'a new object in either place is its own entry');
 });

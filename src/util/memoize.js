@@ -24,3 +24,32 @@ export function memoizeByIdentity(compute) {
     return entry.value;
   };
 }
+
+/**
+ * Memoize a two-argument pure function on the identity of both arguments.
+ * The cache is a WeakMap of WeakMaps, keyed first by `a` and then by `b`, so
+ * an entry disappears with either object. The same rule applies as for
+ * `memoizeByIdentity`: neither argument is ever mutated in place.
+ * @template {object} A
+ * @template {object} B
+ * @template R
+ * @param {(a: A, b: B) => R} compute
+ * @returns {(a: A, b: B) => R}
+ */
+export function memoizeByIdentity2(compute) {
+  /** @type {WeakMap<A, WeakMap<B, { value: R }>>} */
+  const cache = new WeakMap();
+  return (a, b) => {
+    let inner = cache.get(a);
+    if (!inner) {
+      inner = new WeakMap();
+      cache.set(a, inner);
+    }
+    let entry = inner.get(b);
+    if (!entry) {
+      entry = { value: compute(a, b) };
+      inner.set(b, entry);
+    }
+    return entry.value;
+  };
+}

@@ -347,6 +347,15 @@ test('a parent linking a child both ways is read as the descent', () => {
   assert.equal(stairwayTo(levelBelow('door-h'), 'child'), null);
 });
 
+test('the first descent in tile order is the stairway when a parent has two', () => {
+  const twice = levelAbove();
+  twice.tiles = [
+    ...twice.tiles,
+    createTile('second', `${INTERIOR}-stairs-down.svg`, { childNodeId: 'child' }),
+  ];
+  assert.equal(stairwayTo(twice, 'child')?.tile.id, '2,2');
+});
+
 test('a staircase inside a structure entered from outside is not a way out', () => {
   // A keep's own stairs go to a floor the map does not model, so they lead
   // nowhere the party can be put; the parent links here through a plain tile.
