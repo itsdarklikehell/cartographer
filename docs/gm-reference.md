@@ -128,8 +128,19 @@ fills up. When browser storage has no room for the copy, the confirm says that
 Undo may not be able to restore the current campaign. Export the campaign
 first to keep a copy.
 
-Everything lives in the local storage of one browser, under one origin.
-There is no server and no account.
+Everything lives in the storage of one browser, under one origin. There is
+no server and no account. The campaign and the undo history share the
+local storage limit of about 5 MB, and the tooltip of the Save button shows
+how much of it they use. Handout pictures and custom tile images are stored
+apart, in the browser's IndexedDB, which gets a share of the disk, so they
+do not count toward that limit. The first stored image can make the browser
+ask whether the site may keep its data. The answer changes nothing in the
+app. When a browser cannot open IndexedDB, as in some private windows, the
+images go into local storage and count toward the limit.
+
+When the browser does not store an image, the save still stores the map and
+everything else, and a notice says that the pictures were not stored. The
+next save tries the image again.
 
 ### Campaign size limits
 

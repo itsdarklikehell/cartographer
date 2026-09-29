@@ -27,6 +27,22 @@ test('a save that stored the campaign but not the images still counts as landed'
   assert.match(String(outcome.message), /handout pictures were not stored/);
 });
 
+test('with the images in IndexedDB, no notice tells the GM to trim images', () => {
+  const failed = String(saveOutcome({ ok: false, assetsOk: true }, true).message);
+  assert.match(failed, /Save failed/);
+  assert.doesNotMatch(failed, /images/);
+  assert.match(
+    String(saveOutcome({ ok: true, assetsOk: false }, true).message),
+    /browser did not store the images/,
+  );
+  assert.equal(
+    footprintTooltip(2.5 * 1024 * 1024, true),
+    'Browser storage: 2.5 MB of about 5 MB used, not counting images',
+  );
+  const warning = footprintWarning(3.5 * 1024 * 1024, 0, true);
+  assert.match(String(warning.message), /Export a backup\.$/);
+});
+
 test('a failed save reports failure so a reload flow can abort', () => {
   const outcome = saveOutcome({ ok: false, assetsOk: false });
   assert.equal(outcome.landed, false);

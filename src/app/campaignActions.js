@@ -55,7 +55,12 @@ import { isGM } from '../view/ViewRole.js';
 import { wirePlayerPatches } from './playerPatches.js';
 import { savesHeld } from '../storage/ShortenedLoad.js';
 import { confirmSaveWhileHeld, confirmShortenedImport } from './shortenedLoadPrompts.js';
-import { fetchAssets, missingAssetKeys, withStoredAssets } from '../storage/AssetMirror.js';
+import {
+  fetchAssets,
+  mirrorActive,
+  missingAssetKeys,
+  withStoredAssets,
+} from '../storage/AssetMirror.js';
 import { createAssetWait } from './assetWait.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -297,7 +302,7 @@ export function wireCampaignActions(app) {
    * @returns {boolean} whether the write landed
    */
   function reportSave(result, automatic = false) {
-    const { landed, message } = saveOutcome(result);
+    const { landed, message } = saveOutcome(result, mirrorActive());
     const quiet = !landed && automatic && failureShown;
     if (message && !quiet) app.toasts.show(message, { level: landed ? 'status' : 'error' });
     failureShown = !landed && (automatic || failureShown);
@@ -361,8 +366,8 @@ export function wireCampaignActions(app) {
    */
   function reportFootprint(footprint) {
     const saveBtn = document.getElementById('save-btn');
-    if (saveBtn) setTip(saveBtn, footprintTooltip(footprint));
-    const warning = footprintWarning(footprint, warnedFootprint);
+    if (saveBtn) setTip(saveBtn, footprintTooltip(footprint, mirrorActive()));
+    const warning = footprintWarning(footprint, warnedFootprint, mirrorActive());
     warnedFootprint = warning.warnedAt;
     if (warning.message) app.toasts.show(warning.message);
   }
@@ -402,7 +407,7 @@ export function wireCampaignActions(app) {
   function persistAndReload(state, toastMessage) {
     const result = saveCampaign(state);
     if (assetWait.after(result.pending, () => persistAndReload(state, toastMessage))) return;
-    const { landed, message } = saveOutcome(result);
+    const { landed, message } = saveOutcome(result, mirrorActive());
     if (!landed) {
       // Reloading here would read the stale save that is still stored.
       if (message) app.toasts.show(message, { level: 'error' });

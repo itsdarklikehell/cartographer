@@ -25,22 +25,31 @@ export const RENOTIFY_GROWTH = 1.1;
  * but not its images is still a save, because the map, the party, and every
  * entity are stored. The function still reports this case, because silence
  * makes the next load look like data corruption.
+ *
+ * `imagesApart` is true when IndexedDB keeps the images
+ * (`AssetMirror.mirrorActive`). The localStorage quota then contains no
+ * image, and advice to remove images frees nothing there. An image write
+ * to IndexedDB can also fail for a reason other than a full disk, so that
+ * notice does not claim one.
  * @param {{ ok: boolean, assetsOk: boolean }} result
+ * @param {boolean} [imagesApart]
  * @returns {{ landed: boolean, message: string | null }}
  */
-export function saveOutcome({ ok, assetsOk }) {
+export function saveOutcome({ ok, assetsOk }, imagesApart = false) {
   if (!ok) {
     return {
       landed: false,
-      message:
-        'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',
+      message: imagesApart
+        ? 'Save failed: browser storage is full. Export the campaign to keep a copy of it.'
+        : 'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',
     };
   }
   if (!assetsOk) {
     return {
       landed: true,
-      message:
-        'Saved, but browser storage is too full for the images: handout pictures were not stored.',
+      message: imagesApart
+        ? 'Saved, but the browser did not store the images: handout pictures and custom tiles were not stored.'
+        : 'Saved, but browser storage is too full for the images: handout pictures were not stored.',
     };
   }
   return { landed: true, message: null };
@@ -76,12 +85,15 @@ export function historyLossMessage(loss, reported) {
 /**
  * The Save button's tooltip. It shows how much of the origin's quota the
  * campaign uses. The tooltip shows at all times, so the number is visible
- * before it becomes a problem.
+ * before it becomes a problem. With `imagesApart`, the images are not in
+ * this number, and the tooltip says so.
  * @param {number} footprint bytes
+ * @param {boolean} [imagesApart]
  * @returns {string}
  */
-export function footprintTooltip(footprint) {
-  return `Browser storage: ${megabytes(footprint)} MB of about 5 MB used`;
+export function footprintTooltip(footprint, imagesApart = false) {
+  const used = `Browser storage: ${megabytes(footprint)} MB of about 5 MB used`;
+  return imagesApart ? `${used}, not counting images` : used;
 }
 
 /**
@@ -89,16 +101,20 @@ export function footprintTooltip(footprint) {
  * last warning. Under the threshold, the remembered footprint resets to 0,
  * so a drop below the threshold followed by a rise above it triggers the
  * warning again. Over the threshold, the warning waits for real growth in
- * the footprint instead of repeating on every autosave.
+ * the footprint instead of repeating on every autosave. With `imagesApart`,
+ * the warning does not tell the GM to trim images, because they are not in
+ * the footprint.
  * @param {number} footprint bytes
  * @param {number} warnedAt the footprint of the last warning, 0 for none
+ * @param {boolean} [imagesApart]
  * @returns {{ message: string | null, warnedAt: number }}
  */
-export function footprintWarning(footprint, warnedAt) {
+export function footprintWarning(footprint, warnedAt, imagesApart = false) {
   if (!isNearQuota(footprint)) return { message: null, warnedAt: 0 };
   if (footprint < warnedAt * RENOTIFY_GROWTH) return { message: null, warnedAt };
+  const advice = imagesApart ? 'Export a backup.' : 'Export a backup and trim large images.';
   return {
-    message: `Warning: browser storage is at ${megabytes(footprint)} MB of its ~5 MB limit. Export a backup and trim large images.`,
+    message: `Warning: browser storage is at ${megabytes(footprint)} MB of its ~5 MB limit. ${advice}`,
     warnedAt: footprint,
   };
 }

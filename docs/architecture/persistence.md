@@ -421,6 +421,12 @@ fails on a full origin and `makeRoom` frees space, a failed payload write
 runs again first, so the freed space goes to the images. The unit tests
 that install no backend run this path.
 
+The storage notices in `SaveNotices.js` follow the path in use. With
+IndexedDB, the localStorage footprint contains no image, so the Save tooltip
+says "not counting images", and neither the near-quota warning nor the
+failed-save notice tells the GM to remove images. On the fallback path both
+still do, because removing an image there frees localStorage space.
+
 #### Moving the localStorage table
 
 The first boot with IndexedDB moves the table under `campaign-builder:assets`
