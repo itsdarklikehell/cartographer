@@ -19,11 +19,35 @@ import { SAVE_KEY } from './seed.js';
 const MODE_BUTTON = '#mode-switch-container button';
 const CONFIRM_BUTTON = 'dialog button, .modal button';
 
-/** Wait for the app to finish its first mount. */
+/**
+ * Wait for the app to finish its first mount. The boot waits for IndexedDB
+ * before `start` runs, and `index.html` already contains the map canvas and
+ * the party card, so the wait is for the toast stack, which `start` mounts.
+ */
 async function waitForApp(page) {
-  await page.waitFor("document.querySelector('#map-canvas')");
+  await page.waitFor("document.querySelector('.toast-stack')");
   await page.waitFor("document.querySelector('#party-container .card__title')");
 }
+
+/**
+ * Page code that sends one synthesized cross-tab save: the storage event for
+ * the campaign key, then the one for the save mark, in the order that
+ * another tab writes them. The follower adopts on the mark event.
+ * `key`, `value`, and `oldValue` name page variables that hold the campaign
+ * key and the new and the previous save strings.
+ */
+const DISPATCH_SAVE = `
+  {
+    const mark = 'bench:' + performance.now();
+    localStorage.setItem(key, value);
+    localStorage.setItem('campaign-builder:save-mark', mark);
+    window.dispatchEvent(new StorageEvent('storage', {
+      key, oldValue, newValue: value, storageArea: localStorage,
+    }));
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'campaign-builder:save-mark', oldValue: null, newValue: mark, storageArea: localStorage,
+    }));
+  }`;
 
 /** Switch the app mode through the header switch. */
 async function setMode(page, label) {
@@ -176,17 +200,22 @@ export const SCENARIOS = [
       // instead of adopting it, so the scenario saves first. An earlier
       // authoring scenario in the same run is what leaves it dirty.
       await page.clickSelector('#save-btn');
+      // Each round stores a save string that differs from the one before,
+      // so the tab cannot answer from its cache of the last save. A trailing
+      // space changes the string and not the campaign. The undo log is
+      // cleared first, so every round takes the full re-read: a save whose
+      // history does not chain from the tab's position.
       const ok = await page.eval(`
         const key = 'campaign-builder:save';
-        const value = localStorage.getItem(key);
-        if (value === null) return false;
+        const saved = localStorage.getItem(key);
+        if (saved === null) return false;
+        for (const name of Object.keys(localStorage)) {
+          if (name.startsWith('campaign-builder:history')) localStorage.removeItem(name);
+        }
         for (let i = 0; i < ${rounds}; i++) {
-          window.dispatchEvent(new StorageEvent('storage', {
-            key,
-            oldValue: null,
-            newValue: value,
-            storageArea: localStorage,
-          }));
+          const oldValue = localStorage.getItem(key);
+          const value = i % 2 ? saved : saved + ' ';
+          ${DISPATCH_SAVE}
           await new Promise((r) => setTimeout(r, 5));
         }
         return true;
@@ -256,6 +285,12 @@ export const SCENARIOS = [
         const key = 'campaign-builder:save';
         const value = localStorage.getItem(key);
         if (value === null) return { skipped: 'no save in localStorage' };
+        // With the undo log in place, a tab whose position matches the log
+        // head adopts nothing. Clearing the log makes every round re-read
+        // the save, as in the rehydrate scenario.
+        for (const name of Object.keys(localStorage)) {
+          if (name.startsWith('campaign-builder:history')) localStorage.removeItem(name);
+        }
         const label = (el) =>
           el ? (el.getAttribute('aria-label') ?? el.textContent.trim()) : null;
         // Every candidate here is a row control of a panel that the list
@@ -275,10 +310,11 @@ export const SCENARIOS = [
           }
         }
         const before = label(target);
+        const saved = value;
         for (let i = 0; i < 10; i++) {
-          window.dispatchEvent(new StorageEvent('storage', {
-            key, oldValue: null, newValue: value, storageArea: localStorage,
-          }));
+          const oldValue = localStorage.getItem(key);
+          const value = i % 2 ? saved : saved + ' ';
+          ${DISPATCH_SAVE}
           await new Promise((r) => setTimeout(r, 20));
         }
         // The rebuilt control is a different element with the same

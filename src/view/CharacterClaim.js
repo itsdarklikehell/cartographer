@@ -112,18 +112,6 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     ),
   );
 
-  // The GM is the one who sets a player tab up, so the hint shows in the GM
-  // view, where the picker itself is hidden. The roster rows below it link
-  // the player tabs. The hint says what a player tab is, because nothing
-  // else in the app does.
-  container.appendChild(
-    el(
-      'p',
-      'party-binding-hint u-muted',
-      'A player tab is a display setting over the same browser data, not a lock.',
-    ),
-  );
-
   picker.addEventListener('change', () => {
     const took = setBinding(picker.value === '' ? null : picker.value);
     if (took) bind(took);

@@ -20,10 +20,10 @@
  * only a server that it started itself.
  */
 
-import { spawn } from 'node:child_process';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
-import { launchChrome, sleep } from './cdp.js';
+import { createServer } from 'node:http';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { extname, join, normalize } from 'node:path';
+import { launchChrome } from './cdp.js';
 import { Page } from './page.js';
 import { SCENARIOS } from './scenarios.js';
 import { summarize, TRACKED_METRICS } from './report.js';
@@ -46,22 +46,49 @@ async function portOpen(port) {
   }
 }
 
+/** Content types for the files that the app loads. */
+const CONTENT_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.webp': 'image/webp',
+  '.woff2': 'font/woff2',
+};
+
 /**
- * Serve the repository root. The dev server here is `python3 -m http.server`,
- * the same one the visual checks use.
+ * Serve the repository root with a static file server in this process.
+ * The app loads about 340 modules at once on boot. `python3 -m http.server`
+ * listens with a backlog of 5 and resets connections under that load, and
+ * one reset module fetch leaves the page without an app. Node listens with
+ * a backlog of 511.
  */
 async function ensureServer(port) {
   if (await portOpen(port)) return { stop: () => {}, reused: true };
-  const child = spawn('python3', ['-m', 'http.server', String(port)], {
-    cwd: ROOT,
-    stdio: 'ignore',
+  const server = createServer(async (request, response) => {
+    const path = decodeURIComponent(new URL(request.url ?? '/', 'http://x').pathname);
+    const file = normalize(join(ROOT, path === '/' ? 'index.html' : path));
+    if (!file.startsWith(ROOT)) {
+      response.writeHead(403).end();
+      return;
+    }
+    try {
+      const body = await readFile(file);
+      response.writeHead(200, {
+        'Content-Type': CONTENT_TYPES[extname(file)] ?? 'application/octet-stream',
+        'Cache-Control': 'no-store',
+      });
+      response.end(request.method === 'HEAD' ? undefined : body);
+    } catch {
+      response.writeHead(404).end();
+    }
   });
-  for (let i = 0; i < 50; i++) {
-    if (await portOpen(port)) return { stop: () => child.kill(), reused: false };
-    await sleep(100);
-  }
-  child.kill();
-  throw new Error(`no server on port ${port}`);
+  await new Promise((resolve) => {
+    server.listen(port, '127.0.0.1', resolve);
+  });
+  return { stop: () => server.close(), reused: false };
 }
 
 /**
@@ -215,7 +242,10 @@ function selectScenarios(wanted) {
   if (!wanted) return SCENARIOS;
   const loadAt = SCENARIOS.findIndex((s) => s.name === 'load-example');
   const dependent = SCENARIOS.some((s, i) => i > loadAt && wanted.has(s.name));
-  const names = dependent ? new Set([...wanted, 'load-example']) : wanted;
+  const names = dependent ? new Set([...wanted, 'load-example']) : new Set(wanted);
+  // `boot` is the scenario that navigates to the app. Without it, every
+  // other scenario drives a blank tab.
+  names.add('boot');
   return SCENARIOS.filter((s) => names.has(s.name));
 }
 

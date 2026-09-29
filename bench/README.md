@@ -9,7 +9,7 @@ of the app.
 - `pnpm bench:pure` times the pure modules in Node, with no browser. Generation,
   serialization, fog reveal, and the world tree run here.
 - `pnpm bench:scale` times the whole-state paths as the world grows, from the
-  example campaign up to two hundred extra generated regions. Its table shows
+  example campaign up to four hundred extra generated regions. Its table shows
   which paths grow with the world and where each one crosses the 50 ms line
   that a GM feels as a stall. Run it before and after a change to the save,
   diff, or reconcile paths.
@@ -33,8 +33,10 @@ pnpm bench -- --port=8934           a dev server that is already running
 pnpm bench -- --budget=120000       a longer per-scenario cap
 ```
 
-The harness serves the repository with `python3 -m http.server` when the port is
-closed, and it stops only a server that it started. Chrome runs with a
+The harness serves the repository with a small Node static server when the
+port is closed, and it stops only a server that it started. The app fetches
+about 340 modules at once on boot, and `python3 -m http.server` resets some of
+those connections, which leaves the page with no app. Chrome runs with a
 throwaway profile, so your own browser stays closed and every run starts with an
 empty localStorage.
 
@@ -101,14 +103,15 @@ in `withTilesReplaced`.
 | `zoom-pan` | Twenty wheel-zoom steps at the canvas center |
 | `play-pan` | One right-drag pan across the fog-revealed map in Play mode |
 | `panel-tabs` | Thirty sidebar tab switches |
-| `rehydrate` | Fifty cross-tab save adoptions |
+| `rehydrate` | Fifty cross-tab save adoptions, each a full re-read of the save |
 | `combat-turns` | Start a fight, advance twenty turns, end it |
 
 Order matters. `load-example` reloads onto the example campaign, and the
 scenarios after it read that campaign. When `--only` names one of those
 scenarios without `load-example`, the runner adds `load-example` in front
 and says so. Without it, the selected scenarios would drive an empty campaign
-and report nothing. Every scenario drives the UI the way a
+and report nothing. The runner always adds `boot`, because `boot` is the
+scenario that opens the app. Every scenario drives the UI the way a
 GM does, through a click, a drag, a wheel gesture, or a `storage` event. None of
 them reach into app state, so the numbers cover the same code a real action
 runs.

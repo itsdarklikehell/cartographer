@@ -10,6 +10,11 @@
  * Fog reveal, one party step on the world node (see `party-step.js`), and the
  * world tree run too, as the control group that should stay flat.
  *
+ * The `B/tile` column is the heap that a loaded campaign keeps after its
+ * first save, divided by its tile count: the live tiles plus every cache
+ * that the load and the save fill. It needs `--expose-gc`, which the
+ * `pnpm bench:scale` script passes, and reads `-` without it.
+ *
  * Usage:
  *   pnpm bench:scale
  *   node --cpu-prof --cpu-prof-dir=bench/results bench/scale-bench.js
@@ -93,7 +98,31 @@ const steps = [
   { label: '+50 nodes, 300 creatures', nodes: 50, creatures: 300 },
   { label: '+100 nodes, 600 creatures', nodes: 100, creatures: 600 },
   { label: '+200 nodes, 1200 creatures', nodes: 200, creatures: 1200 },
+  { label: '+400 nodes, 2400 creatures', nodes: 400, creatures: 2400 },
 ];
+
+/**
+ * The heap that a campaign loaded from `json` keeps after its first save,
+ * per tile, or null when the script runs without `--expose-gc`. The load
+ * and the save run the same steps as a page load followed by an autosave,
+ * so every cache that those steps fill counts.
+ * @param {string} json
+ * @param {import('../src/types/storage.js').CampaignState} state
+ * @returns {number | null}
+ */
+function heapPerTile(json, state) {
+  const gc = /** @type {(() => void) | undefined} */ (globalThis.gc);
+  if (!gc) return null;
+  gc();
+  const before = process.memoryUsage().heapUsed;
+  const nodes = [...toTileGrid(deserialize(json)).nodes.values()];
+  serialize({ ...state, nodes });
+  gc();
+  const kept = process.memoryUsage().heapUsed - before;
+  const tiles = nodes.reduce((sum, node) => sum + node.tiles.length, 0);
+  // Read the nodes after the second gc, so they are live when it runs.
+  return nodes.length ? kept / tiles : null;
+}
 
 const header =
   'world'.padEnd(28) +
@@ -106,7 +135,8 @@ const header =
   'diffC ms'.padStart(10) +
   'fog ms'.padStart(8) +
   'step ms'.padStart(9) +
-  'tree ms'.padStart(9);
+  'tree ms'.padStart(9) +
+  'B/tile'.padStart(8);
 process.stdout.write(`${header}\n`);
 
 for (const step of steps) {
@@ -143,6 +173,7 @@ for (const step of steps) {
     fog: medianMs(() => revealAround(worldNode, '16,16', 3), 50),
     step: medianMs(() => walkParty(worldNode, path), 9) / path.length,
     tree: medianMs(() => buildWorldTree(liveNodes), 50),
+    heap: heapPerTile(json, state),
   };
 
   const bytes = saveByteSize(json);
@@ -157,7 +188,8 @@ for (const step of steps) {
     row.diffCold.toFixed(1).padStart(10) +
     row.fog.toFixed(2).padStart(8) +
     row.step.toFixed(2).padStart(9) +
-    row.tree.toFixed(2).padStart(9);
+    row.tree.toFixed(2).padStart(9) +
+    (row.heap === null ? '-' : row.heap.toFixed(0)).padStart(8);
   process.stdout.write(`${cells}\n`);
   if (isNearQuota(bytes)) {
     process.stdout.write('  ^ past QUOTA_WARN_BYTES: the app shows the quota warning here\n');
