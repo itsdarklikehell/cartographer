@@ -1,6 +1,7 @@
 import { emptyState, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { labeled, select, setOptions, textareaField } from './formFields.js';
+import { describeTile } from '../map/TileCoords.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -135,7 +136,7 @@ export function mountTileInspector(container, opts) {
       root.appendChild(empty);
       return;
     }
-    coordLabel.textContent = `Tile ${tile.id}`;
+    coordLabel.textContent = capitalize(describeTile(tile.id));
     typeSelect.value = tile.metadata.poiType ?? '';
     discInput.checked = tile.metadata.discoverable;
     notesInput.value = tile.metadata.notes;

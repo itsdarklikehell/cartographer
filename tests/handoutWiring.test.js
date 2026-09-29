@@ -29,7 +29,11 @@ test('a new handout starts on the whole node where the party stands', () => {
   assert.deepEqual(parsePlace(where.value), { nodeId: 'world', tileId: null });
   assert.deepEqual(
     where.options.map((/** @type {any} */ o) => o.label),
-    ['Everywhere (campaign-wide)', 'Anywhere in World', "Tile 1,1 of World (the party's tile)"],
+    [
+      'Everywhere (campaign-wide)',
+      'Anywhere in World',
+      "Column 2, row 2 of World (the party's tile)",
+    ],
   );
   const audience = field(fields, 'audience');
   assert.equal(audience.value, '');

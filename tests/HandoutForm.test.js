@@ -42,8 +42,8 @@ test('placeOptions labels each place, marks the party tile, and drops repeats', 
     [
       'Everywhere (campaign-wide)',
       'Anywhere in The World',
-      "Tile 2,3 of The World (the party's tile)",
-      'Tile 0,0 of Cave',
+      "Column 3, row 4 of The World (the party's tile)",
+      'Column 1, row 1 of Cave',
     ],
   );
   assert.deepEqual(parsePlace(options[3].value), { nodeId: 'cave', tileId: '0,0' });
@@ -64,6 +64,6 @@ test('describeHandout names the tile and the audience for the GM', () => {
   });
   assert.equal(
     describeHandout(both, names),
-    'Shows on tile 4,1. Only for Aria, a removed character',
+    'Shows at column 5, row 2. Only for Aria, a removed character',
   );
 });

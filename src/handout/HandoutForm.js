@@ -5,6 +5,8 @@
  */
 
 import { cleanAudience } from './Handouts.js';
+import { describeTile } from '../map/TileCoords.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/handout.js').Handout} Handout */
 /** @typedef {import('../types/modal.js').FieldOption} FieldOption */
@@ -62,9 +64,9 @@ export function placeOptions(places, nodeName, party) {
     let label = 'Everywhere (campaign-wide)';
     if (place.nodeId !== null && place.tileId === null) {
       label = `Anywhere in ${nodeName(place.nodeId)}`;
-    } else if (place.nodeId !== null) {
+    } else if (place.nodeId !== null && place.tileId !== null) {
       const here = place.nodeId === party.nodeId && place.tileId === party.tileId;
-      label = `Tile ${place.tileId} of ${nodeName(place.nodeId)}${here ? " (the party's tile)" : ''}`;
+      label = `${capitalize(describeTile(place.tileId))} of ${nodeName(place.nodeId)}${here ? " (the party's tile)" : ''}`;
     }
     options.set(value, label);
   }
@@ -90,7 +92,7 @@ export function parseAudience(value) {
  */
 export function describeHandout(handout, characterName) {
   const parts = [];
-  if (handout.tileId !== null) parts.push(`Shows on tile ${handout.tileId}`);
+  if (handout.tileId !== null) parts.push(`Shows at ${describeTile(handout.tileId)}`);
   if (handout.audience !== null) {
     const names = handout.audience.map((id) => characterName(id) ?? 'a removed character');
     parts.push(`Only for ${names.join(', ')}`);
