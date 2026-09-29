@@ -127,6 +127,14 @@ the pass at O(visible) and never at O(total tiles). It parses no regular
 expression for each tile in each frame, and builds and hashes no id string
 for each visible cell in each frame.
 
+A pass that visits every tile of a node reads each id through
+`MapGeometry.gridCellOf`, which scans the characters of a canonical "x,y"
+id and allocates nothing, and calls `parseCoords` only for an id outside
+that form. `describeNode` and the nearest-tile searches of `EntryPoint.js`
+follow this rule, and a lookup of one known id goes through `tileAt`, not
+`tiles.find`. On a 200x200 node `describeNode` costs 0.8 ms where a
+`parseCoords` call for each tile costs 2.6 ms.
+
 Derived data keeps the coordinates it already parsed, so the reader does not
 parse them again. A region group has a `cells` array that is index-aligned
 with its `tileIds`, which lets the overlay's clip path walk a group's

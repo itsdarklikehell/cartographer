@@ -86,6 +86,22 @@ test('resolveEntryTile snaps a void or wall preferred tile to the nearest walkab
   assert.equal(resolveEntryTile(node, '5,5'), '2,1');
 });
 
+test('resolveEntryTile measures odd grid ids and passes over loose ones', () => {
+  const floor = 'assets/tiles/interior/interior-floor-1.svg';
+  const node = {
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: 'interior',
+    environ: null,
+    tiles: [createTile('loose', floor), createTile('5,5', floor), createTile('01,1', floor)],
+  };
+  // "01,1" reads as (1, 1), the nearest to the void cell 0,0.
+  assert.equal(resolveEntryTile(node, '0,0'), '01,1');
+});
+
 test('resolveEntryTile returns the preferred id for an empty node', () => {
   const node = {
     id: 'n',

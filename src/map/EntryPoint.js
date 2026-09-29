@@ -1,4 +1,5 @@
-import { parseCoords, tileIdAt } from './MapGeometry.js';
+import { gridCellOf, parseCoords, tileIdAt } from './MapGeometry.js';
+import { tileAt } from './TileIndex.js';
 import { blockFor, nearestSide, opensOutward, sideAxis, stairwayTo } from './MapExits.js';
 import { isBlocked, tileKind } from './TileKinds.js';
 import { clamp } from '../util/num.js';
@@ -68,7 +69,7 @@ export function computeEntryTile(width, height, block, party) {
  * @returns {string} tile id to land the party on
  */
 export function resolveEntryTile(node, preferredId) {
-  const preferred = node.tiles.find((t) => t.id === preferredId);
+  const preferred = tileAt(node, preferredId);
   if (preferred && !isBlocked(preferred)) return preferredId;
   const candidates = node.tiles.filter((t) => !isBlocked(t));
   const pool = candidates.length ? candidates : node.tiles;
@@ -78,9 +79,8 @@ export function resolveEntryTile(node, preferredId) {
   let best = pool[0];
   let bestScore = Infinity;
   for (const tile of pool) {
-    const coords = parseCoords(tile.id);
-    if (!coords) continue;
-    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
+    const d = distanceSq(node, tile.id, target);
+    if (d < 0) continue;
     // A door wins at equal distance because it is the intended way in.
     const score = d - (tileKind(tile) === 'door' ? 0.5 : 0);
     if (score < bestScore) {
@@ -176,8 +176,7 @@ export function nearestOutwardDoor(node, nearId) {
   let bestScore = Infinity;
   for (const tile of node.tiles) {
     if (tile.childNodeId || tileKind(tile) !== 'door' || !opensOutward(node, tile)) continue;
-    const coords = /** @type {Coords} */ (parseCoords(tile.id));
-    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
+    const d = distanceSq(node, tile.id, target);
     if (d < bestScore) {
       best = tile.id;
       bestScore = d;
@@ -257,10 +256,28 @@ export function computeParentReturnTile(parent, child, exit, position, throughTi
  * @returns {string}
  */
 function blockAnchor(parent, group) {
-  const marked = group.tileIds.find(
-    (id) => parent.tiles.find((t) => t.id === id)?.metadata.poiType,
-  );
+  const marked = group.tileIds.find((id) => tileAt(parent, id)?.metadata.poiType);
   return marked ?? group.tileIds[0];
+}
+
+/**
+ * The squared grid distance from a tile id to a cell, or -1 when the id is
+ * not a grid coordinate. A canonical id inside the node reads through
+ * gridCellOf, which allocates nothing. Only an odd id pays for parseCoords.
+ * The nearest-tile searches below call this once for each tile of a node.
+ * @param {import('../types/map.js').MapNode} node
+ * @param {string} id
+ * @param {Coords} target
+ * @returns {number}
+ */
+function distanceSq(node, id, target) {
+  const cell = gridCellOf(id, node.width, node.height);
+  if (cell >= 0) {
+    const x = cell % node.width;
+    return (x - target.x) ** 2 + ((cell - x) / node.width - target.y) ** 2;
+  }
+  const coords = parseCoords(id);
+  return coords ? (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2 : -1;
 }
 
 /**
@@ -277,20 +294,20 @@ function blockAnchor(parent, group) {
  * @returns {string}
  */
 export function resolveReturnTile(parent, preferredId, excludeChildNodeId) {
-  const usable = parent.tiles.filter(
-    (t) => t.imageRef && !isBlocked(t) && t.childNodeId !== excludeChildNodeId,
-  );
+  /** @param {import('../types/map.js').Tile} t */
+  const isUsable = (t) => !!t.imageRef && !isBlocked(t) && t.childNodeId !== excludeChildNodeId;
+  const usable = parent.tiles.filter(isUsable);
   const pool = usable.length ? usable : parent.tiles.filter((t) => t.imageRef);
   if (!pool.length) return preferredId;
-  if (pool.some((t) => t.id === preferredId)) return preferredId;
+  const preferred = tileAt(parent, preferredId);
+  if (preferred && (usable.length ? isUsable(preferred) : preferred.imageRef)) return preferredId;
   const target = parseCoords(preferredId);
   if (!target) return pool[0].id;
   let best = pool[0];
   let bestScore = Infinity;
   for (const tile of pool) {
-    const coords = parseCoords(tile.id);
-    if (!coords) continue;
-    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
+    const d = distanceSq(parent, tile.id, target);
+    if (d < 0) continue;
     if (d < bestScore) {
       best = tile;
       bestScore = d;

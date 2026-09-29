@@ -23,6 +23,15 @@ test('describeNode reports name, size, and explored count in Play mode', () => {
   assert.match(text, /2 of 12 tiles explored\./); // two revealed tiles (0,0 and 2,1)
 });
 
+test('describeNode counts and places a tile with an odd grid id, and skips a loose one', () => {
+  let n = createMapNode('world', 'World', null, 4, 3);
+  n = setTile(n, createTile('01,2', 'well.svg', { metadata: { poiType: 'landmark' } }));
+  n = setTile(n, createTile('loose', 'grass.svg'));
+  const { status, points } = describeNode(n, null, { revealAll: true });
+  assert.match(status, /1 of 12 tiles placed\./);
+  assert.deepEqual(points, ['Landmark at column 2, row 3']);
+});
+
 test('describeNode names the kind and environment when set', () => {
   const n = { ...node(), kind: /** @type {const} */ ('interior'), environ: 'temple' };
   assert.match(describeNode(n, null).status, /World, an interior \(temple\), 4 by 3 tiles\./);
