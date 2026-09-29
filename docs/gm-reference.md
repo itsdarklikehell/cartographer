@@ -1068,7 +1068,7 @@ unequips it.
 | NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
 | Quests | Active and completed quests, with an eye toggle. The chevron shows the notes, the objectives, and the links to places and creatures. The Player view lists only revealed quests, with the objectives that are not GM only, and without the notes or the links |
 | Handouts | Read-aloud text or lore attached to the campaign, a node, or one tile of a node, with an optional image, an eye toggle, and an optional list of the characters who see it |
-| Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
+| Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first. It keeps the newest 200 entries, and during a fight it also keeps every line of that fight, up to 1,000 entries in all |
 
 The GM sees every handout of the node where the party stands. A line under
 a row names the tile of the handout and the characters who see it. A player

@@ -1,7 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
-import { appendEntry, createEntry } from '../log/Travelogue.js';
+import { appendEntry, createEntry, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import {
   creaturesAt,
@@ -49,9 +49,13 @@ export function wireStory(app) {
    */
   app.actions.logEvent = (kind, message) => {
     const now = Date.now();
+    // The running fight's own lines stay past the usual cap, because the
+    // combat log column lists the fight from its start.
     state.travelog = appendEntry(
       state.travelog,
       createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now),
+      TRAVELOG_LIMIT,
+      state.combat?.startedAt ?? null,
     );
     app.views.travelogPanel.update();
     // The combat screen's log column shows the same entries. Without this

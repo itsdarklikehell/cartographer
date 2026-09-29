@@ -13,6 +13,14 @@
 export const TRAVELOG_LIMIT = 200;
 
 /**
+ * The most entries a travelogue keeps while a fight runs. The entries of the
+ * running fight stay past `TRAVELOG_LIMIT`, so the combat log column can
+ * show the fight from its first initiative roll. This cap bounds a fight
+ * that the GM never ends.
+ */
+export const TRAVELOG_FIGHT_LIMIT = 1000;
+
+/**
  * @param {string} id
  * @param {LogEntryKind} kind
  * @param {string} message
@@ -27,14 +35,28 @@ export function createEntry(id, kind, message, at) {
  * Append an entry, and return a new list. Entries are stored oldest first.
  * Once the list exceeds `limit`, the function trims the oldest entries, so
  * the list never grows without bound.
+ *
+ * `keepSince` is the `startedAt` of a running fight. The trim then removes
+ * only entries older than it, so a long fight does not push its own first
+ * lines out of the combat log column. The list can grow past `limit` while
+ * the fight runs, up to `TRAVELOG_FIGHT_LIMIT`, and the first append after
+ * the fight ends trims it back.
  * @param {LogEntry[]} log
  * @param {LogEntry} entry
  * @param {number} [limit]
+ * @param {number | null} [keepSince]
  * @returns {LogEntry[]}
  */
-export function appendEntry(log, entry, limit = TRAVELOG_LIMIT) {
+export function appendEntry(log, entry, limit = TRAVELOG_LIMIT, keepSince = null) {
   const next = [...log, entry];
-  return next.length > limit ? next.slice(next.length - limit) : next;
+  if (next.length <= limit) return next;
+  let cut = next.length - limit;
+  if (keepSince !== null) {
+    const found = next.findIndex((e) => e.at >= keepSince);
+    const fightStart = found === -1 ? next.length : found;
+    cut = Math.max(Math.min(cut, fightStart), next.length - TRAVELOG_FIGHT_LIMIT);
+  }
+  return next.slice(cut);
 }
 
 /**

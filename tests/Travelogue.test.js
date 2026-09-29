@@ -6,6 +6,7 @@ import {
   entriesAfter,
   isoTimestamp,
   TRAVELOG_LIMIT,
+  TRAVELOG_FIGHT_LIMIT,
 } from '../src/log/Travelogue.js';
 
 test('createEntry builds an entry with the given fields', () => {
@@ -85,4 +86,38 @@ test('isoTimestamp formats a real date and gives null for one it cannot read', (
   assert.equal(isoTimestamp(0), '1970-01-01T00:00:00.000Z');
   assert.equal(isoTimestamp(Number.NaN), null);
   assert.equal(isoTimestamp(8.64e15 + 1), null, 'past the largest date a Date can hold');
+});
+
+test('a running fight keeps its own entries past the limit', () => {
+  /** @type {import('../src/types/log.js').LogEntry[]} */
+  let log = [];
+  const add = (i, keepSince) => {
+    log = appendEntry(log, createEntry(`e${i}`, 'combat', `m${i}`, i), 3, keepSince);
+  };
+  for (let i = 0; i < 3; i++) add(i, null);
+  // The fight starts at time 2, so e2 onward belongs to it.
+  for (let i = 3; i < 6; i++) add(i, 2);
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['e2', 'e3', 'e4', 'e5'],
+    'only the entries older than the fight are trimmed',
+  );
+  add(6, null);
+  assert.equal(log.length, 3, 'the first append after the fight trims back to the limit');
+  add(7, 99);
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['e5', 'e6', 'e7'],
+    'a fight start later than every entry still trims to the limit',
+  );
+});
+
+test('a fight that never ends stops growing at the fight limit', () => {
+  /** @type {import('../src/types/log.js').LogEntry[]} */
+  let log = [];
+  for (let i = 0; i < TRAVELOG_FIGHT_LIMIT + 5; i++) {
+    log = appendEntry(log, createEntry(`e${i}`, 'combat', `m${i}`, i), TRAVELOG_LIMIT, 0);
+  }
+  assert.equal(log.length, TRAVELOG_FIGHT_LIMIT);
+  assert.equal(log[0].id, 'e5');
 });

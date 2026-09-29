@@ -390,6 +390,13 @@ keeps the column from replaying every battle that the campaign ever logged.
 It shares `TravelogPanel.js`'s row builder, so an entry reads the same in
 both lists. The "Initiative rolled" line lands inside this bound, because the
 app takes the stamp when the setup dialog opens, not when Start is pressed.
+The travelogue keeps its newest 200 entries (`TRAVELOG_LIMIT`), and a fight
+of five rounds with ten combatants can log more than that. `logEvent` passes
+the running fight's `startedAt` to `appendEntry`, which then trims only the
+entries older than the fight. The list can grow past 200 while the fight
+runs, up to `TRAVELOG_FIGHT_LIMIT` (1,000), and the first line logged after
+the fight ends trims it back to 200. The column itself keeps as many rows as
+that larger cap.
 Under the log sits the dice tray. The app has one tray, and the screen
 borrows the whole `#dice-tray-container` card by `appendChild` while the mode
 is active, then returns it below the map on exit. Moving the element keeps

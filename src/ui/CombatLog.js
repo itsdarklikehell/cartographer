@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 import { entryItem } from './TravelogPanel.js';
-import { entriesAfter, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { entriesAfter, TRAVELOG_FIGHT_LIMIT } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 
@@ -46,7 +46,7 @@ export function mountCombatLog() {
     // The list is newest first. Prepending in oldest-to-newest order leaves
     // the newest row on top.
     for (const entry of fresh ?? entries) list.prepend(entryItem(entry));
-    while (list.children.length > TRAVELOG_LIMIT) list.lastElementChild?.remove();
+    while (list.children.length > TRAVELOG_FIGHT_LIMIT) list.lastElementChild?.remove();
     const hasRows = list.children.length > 0;
     empty.hidden = hasRows;
     list.hidden = !hasRows;
