@@ -1,14 +1,12 @@
 /**
  * This file reads a GM-picked image into a bounded `data:` URL.
  *
- * A picked file goes straight into the campaign save, and the save is
- * copied whole into every undo-history slot. An uncapped pick is more
- * than merely large. One 2 MB photo becomes roughly 2.7 MB of base64 in
- * the save, and ten times that across the ring. This puts the origin
- * past its localStorage quota and makes the whole campaign, map
- * structure included, unsaveable. To prevent this, a pick is decoded,
- * downscaled, and re-encoded under a character ceiling before anything
- * stores it.
+ * A picked image becomes part of the campaign. The save keeps it in the
+ * asset store (IndexedDB, or localStorage when IndexedDB does not open),
+ * a copy stays in memory, and an exported campaign file includes it. One
+ * 2 MB photo is about 2.7 MB of base64, and the localStorage fallback has
+ * about 5 MB for the whole origin. So a pick is decoded, downscaled, and
+ * re-encoded under a character ceiling before anything stores it.
  *
  * The dimension and attempt arithmetic is pure and has unit tests. The
  * decode and re-encode steps need `createImageBitmap`, `Image`, and a
@@ -31,8 +29,9 @@ export const MAX_SOURCE_BYTES = 12_000_000;
 export const MAX_EDGE = 1280;
 
 /**
- * The ceiling on the stored `data:` URL's length. localStorage charges
- * two bytes per character, so this is about half a megabyte of quota per image.
+ * The ceiling on the stored `data:` URL's length. In the localStorage
+ * fallback, each character costs two bytes, so one image uses about half a
+ * megabyte of quota.
  */
 export const MAX_ENCODED_CHARS = 250_000;
 

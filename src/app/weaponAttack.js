@@ -560,8 +560,9 @@ export async function weaponAttack(
         full: true,
       },
       // The mode sits with the defender, not behind the advanced disclosure.
-      // Advantage is the most common call a GM makes at the table, and it used
-      // to mean leaving the dialog to flip the dice tray's toggle.
+      // Advantage is the most common call a GM makes at the table, so the GM
+      // sets it here and does not leave the dialog to use the dice tray's
+      // toggle.
       {
         name: 'mode',
         label: 'Roll',

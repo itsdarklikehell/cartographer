@@ -56,7 +56,7 @@ export function maybeShowOnboarding(app) {
     app.actions.setMode('build');
     mustGetElement('generate-btn').click();
   });
-  option('Load the example campaign', 'See a small filled-in world first.', () =>
+  option('Load the example campaign', 'See a filled-in world first.', () =>
     mustGetElement('example-btn').click(),
   );
 

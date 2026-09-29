@@ -1,7 +1,6 @@
-// ESLint flat config for a zero-dependency ES-module browser app. There is no
-// package.json; the linter runs on demand via
-//   pnpm --package=eslint dlx eslint .
-// so this file avoids importing any config packages. `no-undef` stays off
+// ESLint flat config for an ES-module browser app with no runtime
+// dependencies. `pnpm run lint` runs the eslint version that the lockfile
+// pins. The app lists no config packages, so this file imports none. `no-undef` stays off
 // because `tsc --noEmit` (checkJs + strict) already resolves identifiers with
 // full DOM lib knowledge; ESLint here covers the style/logic rules tsc does not.
 export default [

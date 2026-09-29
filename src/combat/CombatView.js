@@ -1,9 +1,9 @@
 /**
  * Pure derivations over a running combat: which side a combatant fights on,
  * whether it is out of the fight, and the full per-participant view a combat
- * surface draws from. The UI layers used to derive these values separately
- * (the initiative panel one way, the target assembly another). This module
- * states each rule once. It resolves nothing itself. The caller injects
+ * surface draws from. The initiative panel and the target assembly both read
+ * these values from here, so each rule has one definition. The module
+ * resolves nothing itself. The caller injects
  * `resolve`, which maps a participant id to the entity holding it, because
  * only the wiring layer can see every collection an id can live in.
  */

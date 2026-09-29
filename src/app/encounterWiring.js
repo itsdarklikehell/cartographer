@@ -59,11 +59,10 @@ import { confirmFightEnd, offerFightXP } from './combatEnd.js';
 export function wireEncounters(app) {
   const { state } = app;
 
-  // The running fight lives only in `state.combat`. This module once kept a
-  // mirrored copy. That copy went stale when another tab adopted its save,
-  // because the re-hydrate writes `state.combat` directly. A follower tab
-  // then still shows and opens an ended fight from its old sidebar card.
-  // Reading state on every access has no cost and cannot go stale.
+  // The running fight lives only in `state.combat`, and this module keeps
+  // no copy of it. When another tab's save is adopted, the re-hydrate writes
+  // `state.combat` directly. A module-level copy then stays behind, and a
+  // follower tab shows and opens an ended fight from its old sidebar card.
   const current = () => state.combat;
 
   /** @param {import('../types/combat.js').CombatState | null} next */

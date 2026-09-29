@@ -166,7 +166,7 @@ export interface AppActions {
   // campaignActions: merge the player tab edits that arrived while the GM
   // tab was in Build or Library mode.
   mergeQueuedPatches(): void;
-  // main.js: load a selection, and an optional target number, into the dice
+  // diceWiring: load a selection, and an optional target number, into the dice
   // tray and roll it there. Weapon attacks route through this function, so
   // the roll shows where every other roll happens.
   rollDice(selection: DiceSelection, target?: number | null): { result: DiceResult; text: string };

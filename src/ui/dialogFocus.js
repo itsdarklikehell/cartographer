@@ -18,8 +18,9 @@ export function dialogPartId(part) {
 }
 
 /**
- * The element that takes focus after a dialog closes. The opener comes
- * first, then the caller's fallback, then the page's main landmark. A
+ * The element that takes focus after a dialog closes. `openDialog` passes
+ * the caller's `returnFocus` first, then the opener, then the page's main
+ * landmark. A
  * candidate is skipped when it is missing or no longer in the document: a
  * dialog often removes or rebuilds the control that opened it, and focusing
  * a detached element silently drops focus onto `<body>`. When every
