@@ -413,10 +413,20 @@ export const MAX_NODES = 10_000;
  * `dropped` counts the nodes past `MAX_NODES`, and `emptied` counts the
  * nodes that load with no tiles because of the cell limit. The load path
  * reports both, because the next save stores the shortened map.
+ *
+ * `reuse` names a live node that an encoded record encodes unchanged, and
+ * the list then keeps that node in place of a decode. The node counts
+ * against the cell limit like a decode, so a list loads the same nodes
+ * either way. `onDecode` sees each record that decodes in full, beside its
+ * decoded node.
  * @param {unknown[]} list
+ * @param {{
+ *   reuse?: (record: Record<string, any>) => Record<string, any> | undefined,
+ *   onDecode?: (decoded: Record<string, any>, record: Record<string, any>) => void,
+ * }} [options]
  * @returns {{ nodes: unknown[], dropped: number, emptied: number }}
  */
-export function decodeNodeList(list) {
+export function decodeNodeList(list, { reuse, onDecode } = {}) {
   let left = MAX_TOTAL_CELLS;
   let emptied = 0;
   const nodes = list.slice(0, MAX_NODES).map((node) => {
@@ -428,7 +438,11 @@ export function decodeNodeList(list) {
       return decodeNodeTiles({ ...record, cells: [], tiles: [] });
     }
     left -= size;
-    return decodeNodeTiles(record);
+    const live = reuse?.(record);
+    if (live) return live;
+    const decoded = decodeNodeTiles(record);
+    onDecode?.(decoded, record);
+    return decoded;
   });
   return { nodes, dropped: list.length - nodes.length, emptied };
 }

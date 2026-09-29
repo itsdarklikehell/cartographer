@@ -352,7 +352,9 @@ export function loadPersistedCampaign() {
     cached.mark = mark;
     return cached.state;
   }
-  const state = deserialize(raw, storedAssetTable());
+  // The cached state is the one this tab holds, so every stored node that
+  // encodes unchanged comes back as the node the tab already has.
+  const state = deserialize(raw, storedAssetTable(), cached?.state.nodes);
   cached = { raw, state, mark };
   return state;
 }

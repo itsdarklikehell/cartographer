@@ -11,7 +11,9 @@ of the app.
 - `pnpm bench:scale` times the whole-state paths as the world grows, from the
   example campaign up to four hundred extra generated regions. Its table shows
   which paths grow with the world and where each one crosses the 50 ms line
-  that a GM feels as a stall. Run it before and after a change to the save,
+  that a GM feels as a stall. Its `adopt` column times the full read that a
+  follower tab takes, with the live nodes passed to `deserialize`, against a
+  save with one changed node. Run it before and after a change to the save,
   diff, or reconcile paths.
 - `pnpm bench:step` times one Play-mode party step on square nodes from 48 to
   400 cells on a side. Its table shows whether a step grows with the node.
@@ -73,6 +75,13 @@ the tile count (`heap.js`). The reading covers the live tiles and every cache
 that a load and a save fill, and it sits near 150 bytes. A cache that keeps
 one record per tile for the whole session puts it over its budget of 220 bytes:
 a cache of packed tiles in V8's dictionary mode reads about 690.
+
+The `adopt` row times the full read that a follower tab takes when the log
+cannot carry it: `deserialize` of a save with one changed node, given the
+live nodes, then `reconcile`. Each unchanged node matches its cached
+encoded form and keeps the live object, so the row reads about 5 ms. A read
+that decodes every node reads about 35 ms, the same as the `reconcile` row,
+and is over its budget of 12 ms.
 
 The `partyStep` row and the `step ms` column of the scale table time one
 Play-mode party step on the example world node, averaged over a walk along

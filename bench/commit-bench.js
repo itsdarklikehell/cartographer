@@ -97,6 +97,12 @@ const after = {
   nodes: state.nodes.map((n) => (n.id === 'world' ? encodeNodeTiles(revealed) : n)),
 };
 const coldBefore = JSON.parse(JSON.stringify(state));
+// A follower's full read of the save after that reveal, with the live nodes:
+// every other node matches its cached encoded form and keeps its object.
+const revealedJson = serialize({
+  ...state,
+  nodes: state.nodes.map((n) => (n.id === 'world' ? revealed : n)),
+});
 const path = partyPath(worldNode);
 // The same walk on a 200x200 node. A step that scans every tile costs about
 // 0.9 ms here, where the example world node is too small to show it.
@@ -110,6 +116,13 @@ const measured = {
   toTileGrid: medianMs(() => toTileGrid(deserialize(json)), 3),
   reconcile: medianMs(
     () => reconcile(liveNodes, [...toTileGrid(deserialize(json)).nodes.values()]),
+    3,
+  ),
+  adopt: medianMs(
+    () =>
+      reconcile(liveNodes, [
+        ...toTileGrid(deserialize(revealedJson, undefined, liveNodes)).nodes.values(),
+      ]),
     3,
   ),
   diffWarm: medianMs(() => diffState(state, after), 3),

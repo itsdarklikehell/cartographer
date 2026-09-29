@@ -6,6 +6,7 @@
     "deserialize": 25,
     "toTileGrid": 40,
     "reconcile": 80,
+    "adopt": 12,
     "diffWarm": 5,
     "diffCold": 120,
     "fogReveal": 5,

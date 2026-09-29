@@ -295,17 +295,26 @@ export function hoistAssets(state, hash) {
  * `ImageRefs.js`. A ref that is not an inline image, an `asset:` key, or a
  * relative path on this origin is blanked here, before anything can hand it to an
  * image element. A save with no table still takes this walk.
+ *
+ * `untouched` skips the nodes it already contains, and the walk adds each
+ * node that it leaves unchanged, so a caller can tell which decoded nodes
+ * came through with every ref as stored.
  * @param {RawSave} state
+ * @param {WeakSet<object>} [untouched]
  * @returns {RawSave}
  */
-export function restoreAssets(state) {
+export function restoreAssets(state, untouched) {
   const raw = state.assets;
   const table = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
-  const mapped = mapStateRefs(state, (ref) => {
-    if (!table || !ref.startsWith(ASSET_PREFIX)) return safeImageRef(ref);
-    const payload = table[ref.slice(ASSET_PREFIX.length)];
-    return safeImageRef(typeof payload === 'string' ? payload : ref);
-  });
+  const mapped = mapStateRefs(
+    state,
+    (ref) => {
+      if (!table || !ref.startsWith(ASSET_PREFIX)) return safeImageRef(ref);
+      const payload = table[ref.slice(ASSET_PREFIX.length)];
+      return safeImageRef(typeof payload === 'string' ? payload : ref);
+    },
+    untouched,
+  );
   if (!('assets' in mapped)) return mapped;
   const next = { ...mapped };
   delete next.assets;

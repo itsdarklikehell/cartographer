@@ -297,12 +297,18 @@ export function withoutDeadLinks(node, exists) {
 
 /**
  * Clear the dead tile links of a loaded node list (see `withoutDeadLinks`).
+ * `linksOf` can name every `childNodeId` of a node without a walk of its
+ * tiles, and a node whose named links all resolve then stays as it is.
  * @param {MapNode[]} nodes
+ * @param {(node: MapNode) => readonly string[] | undefined} [linksOf]
  * @returns {MapNode[]}
  */
-export function withRepairedLinks(nodes) {
+export function withRepairedLinks(nodes, linksOf) {
   const ids = new Set(nodes.map((n) => n.id));
-  return nodes.map((node) => withoutDeadLinks(node, (id) => ids.has(id)));
+  const exists = (/** @type {string} */ id) => ids.has(id);
+  return nodes.map((node) =>
+    linksOf?.(node)?.every(exists) ? node : withoutDeadLinks(node, exists),
+  );
 }
 
 /**

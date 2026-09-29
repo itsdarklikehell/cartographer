@@ -7,6 +7,9 @@
  * adds generated 22x22 nodes (the "large" generator size) and placed
  * creatures to the example campaign, then times the whole-state paths: the
  * autosave unit, the load path, the cross-tab reconcile, and the undo diff.
+ * The `recon` column reconciles a fresh read against the live nodes, and
+ * the `adopt` column reads a save with one changed node against them, which
+ * reuses every node that encodes unchanged.
  * Fog reveal, one party step on the world node (see `party-step.js`), and the
  * world tree run too, as the control group that should stay flat.
  *
@@ -108,6 +111,7 @@ const header =
   'deser ms'.padStart(10) +
   'grid ms'.padStart(9) +
   'recon ms'.padStart(10) +
+  'adopt ms'.padStart(10) +
   'diffW ms'.padStart(10) +
   'diffC ms'.padStart(10) +
   'fog ms'.padStart(8) +
@@ -135,6 +139,13 @@ for (const step of steps) {
     nodes: state.nodes.map((n) => (n.id === 'world' ? encodeNodeTiles(revealed) : n)),
   };
   const coldBefore = JSON.parse(JSON.stringify(state));
+  // The adoption reads the save after that reveal against the live nodes,
+  // the way a follower tab takes the full path: every other node matches
+  // its cached encoded form and keeps the live object.
+  const revealedJson = serialize({
+    ...state,
+    nodes: state.nodes.map((n) => (n.id === 'world' ? revealed : n)),
+  });
   const path = partyPath(worldNode);
 
   const row = {
@@ -143,6 +154,13 @@ for (const step of steps) {
     grid: medianMs(() => toTileGrid(deserialize(json)), 5),
     recon: medianMs(
       () => reconcile(liveNodes, [...toTileGrid(deserialize(json)).nodes.values()]),
+      5,
+    ),
+    adopt: medianMs(
+      () =>
+        reconcile(liveNodes, [
+          ...toTileGrid(deserialize(revealedJson, undefined, liveNodes)).nodes.values(),
+        ]),
       5,
     ),
     diffWarm: medianMs(() => diffState(state, after), 7),
@@ -161,6 +179,7 @@ for (const step of steps) {
     row.deser.toFixed(1).padStart(10) +
     row.grid.toFixed(1).padStart(9) +
     row.recon.toFixed(1).padStart(10) +
+    row.adopt.toFixed(1).padStart(10) +
     row.diffWarm.toFixed(1).padStart(10) +
     row.diffCold.toFixed(1).padStart(10) +
     row.fog.toFixed(2).padStart(8) +

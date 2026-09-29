@@ -616,14 +616,28 @@ The codec also follows these rules:
   entry skips its cell, and an unreadable run ends the stream. Import
   persists what it reads before it reloads, so an error thrown here produces
   a save that cannot start.
-- **The cache.** `packState` caches the encoded form of each payload-free
-  node on the live node, in a `WeakMap`, so a node that no edit touched
-  costs one lookup per save. The cache keeps only the encoded node, a few
-  hundred bytes. The packed tiles between the live node and its encoded form
-  are garbage once the encode returns. A cache that kept them would keep one
-  packed record per tile for the whole session, about 44 MB at 400 extra
-  regions. `warmPackSteps` fills this cache in idle time after a load, and
-  `encodeHistoryNode` reads it.
+- **The cache.** `EncodedNodes.js` caches the encoded form of each
+  payload-free node on the live node, in a `WeakMap`, so a node that no
+  edit touched costs one lookup per save. The cache keeps only the encoded
+  node, a few hundred bytes. The packed tiles between the live node and its
+  encoded form are garbage once the encode returns. A cache that kept them
+  would keep one packed record per tile for the whole session, about 44 MB
+  at 400 extra regions. `packState` fills the cache, `encodeHistoryNode`
+  reads it, and `deserialize` fills it too: each decoded node keeps the
+  record it was decoded from, when that record names no image payload and
+  no `asset:` key and the asset walk left its refs unchanged. The first save
+  after a load then writes those records with no pack and no encode.
+- **Node reuse.** `deserialize` takes the node list of a state the tab
+  already holds. A stored record that equals the cached form of the live
+  node with the same id comes back as that live node, with no decode, no
+  asset walk, and no defaults pass. The record names every `childNodeId` of
+  the node in its link palette, so the dead-link repair checks that palette
+  instead of the tiles. `HistoryLog.loadPersistedCampaign` passes the nodes
+  of its cached state, which is the live state after `adoptPersisted`, so a
+  follower's full read decodes only the nodes that changed. At 400 extra
+  regions, the full read and reconcile of a save with one changed node cost
+  about 14 ms with the live nodes and 146 ms without them. The entity lists
+  still decode in full, about 5 ms of that read.
 - **Ordering.** For a node with an inline payload, the codec runs after the
   asset hoist in `packState`, and before the asset restore in `deserialize`.
   A payload-free node skips the hoist. The hoist's

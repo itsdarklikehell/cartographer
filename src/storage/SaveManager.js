@@ -14,6 +14,7 @@ import { restoreGear, tabulateGear } from './GearTable.js';
 import { restoreStrings, tabulateStrings } from './StringTable.js';
 import { noteTruncation } from './ShortenedLoad.js';
 import { encodeNodeTiles, decodeNodeList, decodeNodeTiles } from './TileCodec.js';
+import { encodedOf, namesImageData, nodeReuser, rememberEncoded } from './EncodedNodes.js';
 import { recordExternalWrite, removeStored, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
@@ -256,27 +257,6 @@ const ENTITY_PACKERS = Object.fromEntries(
 );
 
 /**
- * The encoded form of each live node that holds no inline image payload,
- * keyed on the live node. Nodes are immutable values (every map writer
- * returns a new node), so a node object that a previous save already
- * encoded encodes to the same result. Autosave serializes the whole world
- * on every save, and without this cache the tile pack and the codec
- * dominate that cost at large world sizes.
- *
- * The cache keeps only the encoded node: palette refs and index runs, a few
- * hundred bytes per node. The packed tiles between the live node and its
- * encoded form are garbage once the encode returns. A cache that kept them
- * would keep one packed record per tile for the whole session, about 44 MB
- * at 400 extra regions.
- *
- * A node with an inline payload is not cached. The asset hoist gives it a
- * fresh object on every save, so it re-encodes every time, which keeps the
- * asset table in step with the refs.
- * @type {WeakMap<object, Record<string, any>>}
- */
-const encodedNodes = new WeakMap();
-
-/**
  * A node with its tiles packed.
  * @param {Record<string, any>} node
  * @returns {Record<string, any>}
@@ -287,18 +267,19 @@ function packNode(node) {
 
 /**
  * One live node on its way into a save: its cached encoded form, or the
- * encode of a payload-free node, which is cached here, or the packed node
- * of a node that holds an inline payload, which still needs the hoist.
+ * encode of a payload-free node, which goes into that cache
+ * (`EncodedNodes.js`), or the packed node of a node that holds an inline
+ * payload, which still needs the hoist.
  * @param {Record<string, any>} node a node whose `tiles` is an array
  * @returns {{ encoded: Record<string, any> } | { packed: Record<string, any> }}
  */
 function packForSave(node) {
-  const cached = encodedNodes.get(node);
+  const cached = encodedOf(node);
   if (cached) return { encoded: cached };
   const packed = packNode(node);
   if (nodeHoldsPayload(packed)) return { packed };
   const encoded = encodeNodeTiles(packed);
-  encodedNodes.set(node, encoded);
+  rememberEncoded(node, encoded);
   return { encoded };
 }
 
@@ -443,11 +424,21 @@ function entities(key, value) {
  * pass this argument. A
  * table inside the string wins over it, so an exported file, which is
  * always self-contained, is unaffected.
+ *
+ * `previous` is the node list of a state that this tab already holds. A
+ * stored node whose encoded record equals the cached encoded form of the
+ * previous node with the same id (`EncodedNodes.nodeReuser`) comes back as
+ * that node, with no decode, no asset walk, and no defaults pass. Every other
+ * node decodes. A decoded node whose record names no image payload and no
+ * `asset:` key, and whose refs the asset walk left unchanged, caches that
+ * record as its encoded form, so the first save after a load and the next
+ * read of a save string skip it.
  * @param {string} json
  * @param {Record<string, string>} [assets]
+ * @param {readonly Record<string, any>[]} [previous]
  * @returns {CampaignState}
  */
-export function deserialize(json, assets) {
+export function deserialize(json, assets, previous = []) {
   // The string table is read back first, so every later step sees node
   // palettes that hold strings, the same form one encoded node has alone.
   const raw = restoreStrings(restoreGear(record(JSON.parse(json)) ?? {}));
@@ -469,8 +460,27 @@ export function deserialize(json, assets) {
   // unencoded form passes through the decoder unchanged.
   const decoded = { ...migrated };
   let report = { dropped: 0, emptied: 0 };
+  /** @type {WeakSet<object>} */
+  const reused = new WeakSet();
+  /** @type {WeakSet<object>} */
+  const untouched = new WeakSet();
+  /** @type {Map<object, Record<string, any>>} */
+  const sources = new Map();
   if (Array.isArray(decoded.nodes)) {
-    const { nodes, dropped, emptied } = decodeNodeList(decoded.nodes);
+    const reuseNode = nodeReuser(previous);
+    const { nodes, dropped, emptied } = decodeNodeList(decoded.nodes, {
+      reuse(stored) {
+        const live = reuseNode(stored);
+        if (live) {
+          reused.add(live);
+          untouched.add(live);
+        }
+        return live;
+      },
+      onDecode(node, stored) {
+        if (!namesImageData(stored)) sources.set(node, stored);
+      },
+    });
     decoded.nodes = nodes;
     report = { dropped, emptied };
   }
@@ -479,16 +489,30 @@ export function deserialize(json, assets) {
     // carries, so a save holding its own table resolves from that table alone.
     decoded.assets = { ...assets, ...(record(decoded.assets) ?? {}) };
   }
-  const parsed = restoreAssets(decoded);
+  const parsed = restoreAssets(decoded, untouched);
+  /** @type {Map<object, Record<string, any>>} */
+  const seeds = new Map();
+  const nodes = records(parsed.nodes)
+    .filter((node) => typeof node.id === 'string')
+    .map((node) => {
+      if (reused.has(node)) return /** @type {import('../types/map.js').MapNode} */ (node);
+      const full = withNodeDefaults(node);
+      const source = untouched.has(node) ? sources.get(node) : undefined;
+      if (source) seeds.set(full, source);
+      return full;
+    });
+  // The link palette of an encoded node lists every `childNodeId` of its
+  // tiles, so a reused node skips the tile walk of the dead-link repair.
+  const repaired = withRepairedLinks(withRepairedParents(nodes), (node) =>
+    reused.has(node) ? (encodedOf(node)?.links ?? []) : undefined,
+  );
+  for (const node of repaired) {
+    const source = seeds.get(node);
+    if (source) rememberEncoded(node, source);
+  }
   const state = {
     version: CURRENT_VERSION,
-    nodes: withRepairedLinks(
-      withRepairedParents(
-        records(parsed.nodes)
-          .filter((node) => typeof node.id === 'string')
-          .map(withNodeDefaults),
-      ),
-    ),
+    nodes: repaired,
     party: partyPosition(parsed.party),
     entryTiles: entryTileMemory(parsed.entryTiles),
     characters: entities('characters', parsed.characters),
