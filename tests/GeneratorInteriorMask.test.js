@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
+import { variantIdAt } from '../src/map/TileCatalog.js';
 import {
   besideDoor,
   CAVE_ART,
+  STONE_ART,
   DOOR_H,
   DOOR_V,
   farthest,
@@ -100,7 +102,11 @@ test('maskTiles skips void, joins walls to doors, and the stamper ignores missin
   assert.match(byId.get('0,0') ?? '', /wall-corner-se/);
   assert.match(byId.get('1,0') ?? '', /door-h/);
   assert.match(byId.get('0,1') ?? '', /door-v/);
-  assert.match(byId.get('1,1') ?? '', /floor-1/);
+  assert.equal(
+    byId.get('1,1'),
+    `assets/tiles/interior/${variantIdAt('interior-floor', 1, 1)}.svg`,
+    'a floor cell gets the position pick of its family',
+  );
   const stamp = tileStamper(tiles, palette);
   stamp('2,1', 'stairs-up');
   stamp('1,1', 'stairs-up');
@@ -120,4 +126,24 @@ test('maskTiles draws a cave with one rough wall piece and cave mouths', () => {
   assert.match(byId.get('1,0') ?? '', /cave-mouth-h/);
   assert.match(byId.get('0,1') ?? '', /cave-mouth-v/);
   assert.match(byId.get('1,1') ?? '', /cave-floor-2/);
+});
+
+test('every floor cell gets the position pick of its floor family', () => {
+  for (const [art, family] of /** @type {const} */ ([
+    [STONE_ART, 'interior-floor'],
+    [CAVE_ART, 'interior-cave-floor'],
+  ])) {
+    const size = 6;
+    let draws = 0;
+    const rng = () => {
+      draws += 1;
+      return 0.5;
+    };
+    const tiles = maskTiles(palette, new Array(size * size).fill(FLOOR), size, rng, art);
+    assert.equal(draws, size * size, 'one draw per floor cell');
+    for (const tile of tiles) {
+      const [x, y] = tile.id.split(',').map(Number);
+      assert.equal(tile.imageRef, `assets/tiles/interior/${variantIdAt(family, x, y)}.svg`);
+    }
+  }
 });

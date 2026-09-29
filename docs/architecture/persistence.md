@@ -428,7 +428,21 @@ catalog pass through both ways, and so does every path in a save that
 stores full paths. A bare live ref that reads as a palette id gets a `=`
 prefix, so a hand-edited ref `grass-1` does not come back as a path.
 
-On the example campaign, the encoded node list is 165,192 characters, where
+A variant family (a terrain type with variants, such as `grass`, or an
+interior floor family, such as `interior-floor`) has a shorter form still.
+`TileCatalog.variantIdAt` picks a variant from a hash of the cell position.
+The generators and the random-variant brush paint that pick, and the codec
+writes a cell whose variant is the pick as the family name alone, which the
+decoder expands with the same hash. A field of mixed grass variants then
+stores as one palette entry and one run. A variant that the GM paints on
+purpose and that differs from the pick keeps its palette id. A 40x40 field
+painted with the random grass brush costs 127 characters. A cell whose
+variant equals the pick can store either form, and the encoder takes the
+palette id when the cell before it stored that id, so a field of one fixed
+variant also stays one run. Adding a variant to a family changes the pick, so the
+stored cells of that family read back with new art.
+
+On the example campaign, the encoded node list is 130,825 characters, where
 the same nodes in the per-cell form cost 1,506,124.
 
 The codec never loses data, because it refuses any node that it cannot

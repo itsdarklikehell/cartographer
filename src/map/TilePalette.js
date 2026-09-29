@@ -1,4 +1,4 @@
-import { buildBuiltins, isVariantType, titleCase } from './TileCatalog.js';
+import { buildBuiltins, isVariantType, titleCase, variantIndexAt } from './TileCatalog.js';
 
 /**
  * A catalog tile or a paint brush. `anyVariant` marks a brush that paints a
@@ -80,6 +80,27 @@ export class TilePalette {
   }
 
   /**
+   * The variant of a terrain type for the cell at (x, y). A type with
+   * built-in variants gets a pick from a hash of the position
+   * (`variantIndexAt`). With no custom tile of the type, this is the pick of
+   * `variantIdAt`, which the tile codec stores as the type alone. Any other
+   * type gets a random variant from `rng`. The function draws from `rng`
+   * once in both cases, so the draws after it, and the rest of a seeded
+   * world with them, do not depend on which rule picked the variant.
+   * @param {string} type
+   * @param {number} x
+   * @param {number} y
+   * @param {() => number} rng returns a float in [0, 1)
+   * @returns {PaletteEntry}
+   */
+  variantAt(type, x, y, rng) {
+    const draw = rng();
+    if (!isVariantType(type)) return this.pickVariant(type, () => draw);
+    const variants = this.listVariants(type);
+    return variants[variantIndexAt(variants.length, x, y)];
+  }
+
+  /**
    * A brush that paints a random variant of a terrain type. The entry is not
    * in the catalog. Its id has the `any:` prefix, so it cannot collide with a
    * real tile id. Its imageRef is the first variant, which the palette shows
@@ -122,15 +143,19 @@ export class TilePalette {
   }
 
   /**
-   * The image that one painted cell gets from a brush. A random-variant
-   * brush picks a new variant on each call, so a stroke across several cells
-   * mixes the variants. Any other brush paints its own image.
+   * The image that the cell at (x, y) gets from a brush. A random-variant
+   * brush paints the variant that `variantAt` picks for the position, so a
+   * stroke across several cells mixes the variants, and a painted field
+   * stores as one run of its type. Any other brush paints its own image.
    * @param {PaletteEntry} entry
-   * @param {() => number} rng returns a float in [0, 1)
+   * @param {number} x
+   * @param {number} y
    * @returns {string}
    */
-  imageFor(entry, rng) {
-    return entry.anyVariant ? this.pickVariant(entry.type, rng).imageRef : entry.imageRef;
+  imageFor(entry, x, y) {
+    return entry.anyVariant
+      ? this.variantAt(entry.type, x, y, Math.random).imageRef
+      : entry.imageRef;
   }
 
   /**

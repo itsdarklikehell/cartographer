@@ -1,5 +1,6 @@
 import { overlayList } from './TileGrid.js';
 import { withNodeTiles } from './TileIndex.js';
+import { parseCoords } from './MapGeometry.js';
 import { BIOME_TERRAIN } from './GeneratorTerrain.js';
 import { regionFor } from './GeneratorWorld.js';
 
@@ -71,7 +72,9 @@ export function repaintRegionBlock(node, childId, archetype, palette, rng) {
     if (overlayList(t).some((ref) => coast.has(ref))) return t;
     changed = true;
     const type = ground[Math.floor(rng() * ground.length)];
-    return { ...t, imageRef: palette.pickVariant(type, rng).imageRef };
+    const at = parseCoords(t.id);
+    const art = at ? palette.variantAt(type, at.x, at.y, rng) : palette.pickVariant(type, rng);
+    return { ...t, imageRef: art.imageRef };
   });
   return changed ? withNodeTiles(node, tiles) : node;
 }

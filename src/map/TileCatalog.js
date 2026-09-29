@@ -53,7 +53,84 @@ const VARIANT_COUNTS = {
  * @returns {boolean}
  */
 export function isVariantType(type) {
-  return type in VARIANT_COUNTS;
+  return Object.prototype.hasOwnProperty.call(VARIANT_COUNTS, type);
+}
+
+/**
+ * The interior floor families, with the number of variants of each. Each
+ * variant is an interior piece with the id `<family>-<n>`, so
+ * `interior-floor-2` is the second flagstone floor. The interior generators
+ * pick a floor variant per cell, the same way the terrain generators pick a
+ * terrain variant.
+ * @type {Record<string, number>}
+ */
+const FLOOR_VARIANT_COUNTS = { 'interior-floor': 3, 'interior-cave-floor': 2 };
+
+/**
+ * The number of variants of a variant family, or 0 for any other name. A
+ * variant family is a terrain type with variants, such as `grass`, or an
+ * interior floor family, such as `interior-floor`. Its variants have the
+ * palette ids `<family>-1` to `<family>-<count>`.
+ * @param {string} family
+ * @returns {number}
+ */
+export function variantCount(family) {
+  const has = (/** @type {Record<string, number>} */ table) =>
+    Object.prototype.hasOwnProperty.call(table, family);
+  if (has(VARIANT_COUNTS)) return VARIANT_COUNTS[family];
+  return has(FLOOR_VARIANT_COUNTS) ? FLOOR_VARIANT_COUNTS[family] : 0;
+}
+
+/**
+ * The palette id of the variant of a family that the cell at (x, y) draws
+ * when nothing picks one on purpose, or undefined for a name that is not a
+ * variant family (see `variantCount`). The pick is a hash of the position,
+ * so the same cell always gets the same variant, and neighbors differ about
+ * as often as a random pick would make them. The tile codec relies on this:
+ * a cell whose variant equals this pick stores only its family, and the
+ * decoder picks it again. Adding a variant to a family changes the pick of
+ * about every cell of that family in every stored map.
+ * @param {string} family
+ * @param {number} x
+ * @param {number} y
+ * @returns {string | undefined}
+ */
+export function variantIdAt(family, x, y) {
+  const count = variantCount(family);
+  return count ? `${family}-${1 + variantIndexAt(count, x, y)}` : undefined;
+}
+
+/**
+ * The variant family of a palette id, or undefined when the id is not a
+ * variant (see `variantCount`).
+ * @param {string} id
+ * @returns {string | undefined}
+ */
+export function variantFamilyOf(id) {
+  const dash = id.lastIndexOf('-');
+  const family = id.slice(0, dash);
+  const n = Number(id.slice(dash + 1));
+  return dash > 0 && `${family}-${n}` === id && n >= 1 && n <= variantCount(family)
+    ? family
+    : undefined;
+}
+
+/**
+ * An index in `[0, count)` for the cell at (x, y), from a hash of the
+ * position. `variantIdAt` uses it over the variants of a family.
+ * @param {number} count
+ * @param {number} x
+ * @param {number} y
+ * @returns {number}
+ */
+export function variantIndexAt(count, x, y) {
+  // A 32-bit integer mix (the finalizer of MurmurHash3) over both
+  // coordinates, so a row or a column of cells does not repeat a pattern.
+  let h = Math.imul(x | 0, 0x9e3779b1) ^ Math.imul((y | 0) + 0x632be5ab, 0x85ebca77);
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  h ^= h >>> 16;
+  return (h >>> 0) % count;
 }
 
 /**

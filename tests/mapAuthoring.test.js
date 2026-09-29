@@ -2,6 +2,11 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, getTile } from '../src/map/TileGrid.js';
 import { authoring, INTERIOR, settled } from './helpers/authoring.js';
+import { variantIdAt } from '../src/map/TileCatalog.js';
+
+/** The art path of the plaza variant that the cell at (x, y) picks. */
+const plazaAt = (/** @type {number} */ x, /** @type {number} */ y) =>
+  `assets/tiles/plaza/${variantIdAt('plaza', x, y)}.svg`;
 
 test('a paint stroke settles the ways out along with the rest of the derived state', () => {
   const { gestures, grid, calls } = authoring();
@@ -291,26 +296,23 @@ test('dragover only offers a drop target while authoring', () => {
   assert.equal(ignored.prevented, false);
 });
 
-test('a random-variant brush picks a variant for each painted cell', (t) => {
+test('a random-variant brush paints the position pick of each cell', () => {
   const { gestures, grid, env, app } = authoring();
   env.activeBrush = app.palette.anyVariant('plaza');
-  const rolls = [0, 0.99];
-  t.mock.method(Math, 'random', () => rolls.shift());
   gestures.onStrokeCell(0, 1, null, true);
   gestures.onStrokeCell(1, 1, null, false);
   gestures.onStrokeEnd();
   const node = grid.getNode('keep');
-  assert.equal(getTile(node, '0,1')?.imageRef, 'assets/tiles/plaza/plaza-1.svg');
-  assert.equal(getTile(node, '1,1')?.imageRef, 'assets/tiles/plaza/plaza-5.svg');
+  assert.equal(getTile(node, '0,1')?.imageRef, plazaAt(0, 1));
+  assert.equal(getTile(node, '1,1')?.imageRef, plazaAt(1, 1));
 });
 
-test('dropping a random-variant swatch paints one variant of its type', (t) => {
+test('dropping a random-variant swatch paints the position pick', () => {
   const { gestures, grid } = authoring();
-  t.mock.method(Math, 'random', () => 0.5);
   const canvas = canvasStub();
   gestures.wireCanvasDrop(/** @type {any} */ (canvas));
   canvas.fire('drop', dropEvent('any:plaza', 48, 48));
-  assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, 'assets/tiles/plaza/plaza-3.svg');
+  assert.equal(getTile(grid.getNode('keep'), '1,1')?.imageRef, plazaAt(1, 1));
 });
 
 test('a region stroke leaves a site entrance linked and says so once', () => {

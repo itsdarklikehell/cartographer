@@ -2,7 +2,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { DOCK_KINDS, isOverlayType, isTerrainType, isVariantType } from '../src/map/TileCatalog.js';
+import {
+  DOCK_KINDS,
+  isOverlayType,
+  isTerrainType,
+  isVariantType,
+  variantCount,
+  variantFamilyOf,
+  variantIdAt,
+} from '../src/map/TileCatalog.js';
 import { kindOf } from '../src/map/TileKinds.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
@@ -258,6 +266,44 @@ test('isVariantType covers the multi-variant terrain types only', () => {
   assert.equal(isVariantType('snow-mountain'), true);
   assert.equal(isVariantType('custom'), false);
   assert.equal(isVariantType('road'), false);
+  assert.equal(isVariantType('constructor'), false, 'an Object.prototype key is no type');
+});
+
+test('the variant families name real palette entries', () => {
+  const palette = new TilePalette();
+  assert.equal(variantCount('grass'), 3);
+  assert.equal(variantCount('interior-floor'), 3);
+  assert.equal(variantCount('interior-cave-floor'), 2);
+  assert.equal(variantCount('road'), 0);
+  assert.equal(variantCount('toString'), 0);
+  for (const family of ['grass', 'snow-hills', 'interior-floor', 'interior-cave-floor']) {
+    for (let i = 1; i <= variantCount(family); i += 1) {
+      assert.ok(palette.get(`${family}-${i}`), `${family}-${i} exists`);
+      assert.equal(variantFamilyOf(`${family}-${i}`), family);
+    }
+    assert.equal(variantFamilyOf(`${family}-${variantCount(family) + 1}`), undefined);
+  }
+  for (const id of ['road-h', 'grass-01', 'grass-0', 'settlement', '-1']) {
+    assert.equal(variantFamilyOf(id), undefined, id);
+  }
+});
+
+test('variantIdAt is a fixed, even pick per position', () => {
+  assert.equal(variantIdAt('road', 0, 0), undefined);
+  const counts = new Map();
+  let same = 0;
+  for (let y = 0; y < 40; y += 1) {
+    for (let x = 0; x < 40; x += 1) {
+      const id = variantIdAt('grass', x, y);
+      assert.equal(variantIdAt('grass', x, y), id);
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+      if (x > 0 && variantIdAt('grass', x - 1, y) === id) same += 1;
+    }
+  }
+  assert.deepEqual([...counts.keys()].sort(), ['grass-1', 'grass-2', 'grass-3']);
+  for (const count of counts.values()) assert.ok(count > 450 && count < 620, `${count}`);
+  // Neighbors match about as often as three random picks would, one in three.
+  assert.ok(same / (39 * 40) > 0.28 && same / (39 * 40) < 0.39, `${same}`);
 });
 
 test('anyVariant builds a random-variant brush for a variant type', () => {
@@ -290,34 +336,46 @@ test('brushById resolves catalog ids and random-variant ids', () => {
   assert.equal(palette.brushById('nope'), undefined);
 });
 
-test('imageFor picks a variant per call for a random brush only', () => {
+test('imageFor paints the position pick for a random brush only', () => {
   const palette = new TilePalette();
   const brush = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
     palette.anyVariant('grass')
   );
-  const rolls = [0, 0.5, 0.99];
-  const rng = () => /** @type {number} */ (rolls.shift());
-  assert.deepEqual(
-    [palette.imageFor(brush, rng), palette.imageFor(brush, rng), palette.imageFor(brush, rng)],
-    [1, 2, 3].map((i) => `assets/tiles/grass/grass-${i}.svg`),
-  );
+  const painted = new Set();
+  for (let x = 0; x < 12; x += 1) {
+    const ref = palette.imageFor(brush, x, 4);
+    assert.equal(ref, palette.get(/** @type {string} */ (variantIdAt('grass', x, 4)))?.imageRef);
+    assert.equal(palette.imageFor(brush, x, 4), ref, 'the same cell gets the same variant');
+    painted.add(ref);
+  }
+  assert.equal(painted.size, 3, 'a stroke mixes the variants');
   const exact = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
     palette.get('grass-3')
   );
-  assert.equal(
-    palette.imageFor(exact, () => 0),
-    'assets/tiles/grass/grass-3.svg',
-  );
+  assert.equal(palette.imageFor(exact, 0, 0), 'assets/tiles/grass/grass-3.svg');
 });
 
-test('a custom tile of a variant type joins the random pick', () => {
+test('variantAt draws once and picks by position for a variant type', () => {
+  const palette = new TilePalette();
+  let draws = 0;
+  const rng = () => {
+    draws += 1;
+    return 0.99;
+  };
+  assert.equal(palette.variantAt('snow', 5, 6, rng).id, variantIdAt('snow', 5, 6));
+  // A type without built-in variants takes the random pick from that draw.
+  assert.equal(palette.variantAt('road', 5, 6, rng).id, 'road-end-w');
+  assert.equal(draws, 2);
+});
+
+test('a custom tile of a variant type joins the position pick', () => {
   const palette = new TilePalette();
   palette.addCustom('my-grass', 'My Grass', 'data:image/png;base64,AA', 'grass');
   const brush = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
     palette.anyVariant('grass')
   );
-  assert.equal(
-    palette.imageFor(brush, () => 0.99),
-    'data:image/png;base64,AA',
-  );
+  const painted = new Set();
+  for (let x = 0; x < 40; x += 1) painted.add(palette.imageFor(brush, x, 0));
+  assert.equal(painted.has('data:image/png;base64,AA'), true);
+  assert.equal(painted.size, 4);
 });

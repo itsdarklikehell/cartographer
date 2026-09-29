@@ -23,11 +23,13 @@ and `grass-3.svg`. Mountain, snow-mountain, and badlands have 5, and taiga
 has 4, because their landforms and trees are large and a range of 3
 repeated layouts shows as rows. Plaza also has 5, and its variants differ
 only in the worn stones on one shared cobble layout. `VARIANT_COUNTS` in
-`TileCatalog.js` sets the count per type. `palette.pickVariant(type, rng)`
-selects one so that adjacent tiles of the same type do not look identical.
-The Build-mode palette uses it too. Its default terrain swatch for a type
-is a `palette.anyVariant(type)` brush, which picks a new variant for each
-painted cell. The variants abut
+`TileCatalog.js` sets the count per type. `variantIdAt(type, x, y)` picks
+one from a hash of the cell position, so adjacent tiles of the same type do
+not look identical. The generators and the Build-mode palette use it. The
+default terrain swatch for a type is a `palette.anyVariant(type)` brush,
+which paints that pick on each cell. The save stores a cell with that pick
+as its type alone, so adding a variant to a type changes the art of most
+cells of that type in every saved map. The variants abut
 cleanly in the grid under these rules:
 
 - All variants of a type use the same background fill color. `farmland`

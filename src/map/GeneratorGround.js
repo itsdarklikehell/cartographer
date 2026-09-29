@@ -143,8 +143,9 @@ export function wildTerrain(size, archetype, rng) {
 }
 
 /**
- * Turn classified terrain into tiles. Each cell gets a random variant of its
- * biome, or of its terrain class where a later step changed the class, plus
+ * Turn classified terrain into tiles. Each cell gets the variant of its
+ * biome that its position picks (`TilePalette.variantAt`), or of its terrain
+ * class where a later step changed the class, plus
  * its shoreline, river, and road overlays. The shoreline draws under the
  * channel, so a river drains through the beach into the water, and the
  * channel draws under the road. Where a road crosses a river, the bridge
@@ -173,7 +174,7 @@ export function terrainTiles(palette, terrain, rng, bare = new Set()) {
       const type = cells[y * size + x];
       const biome = biomes?.[y * size + x];
       const art = biome && BIOME_TERRAIN[biome] === type ? biome : type;
-      const base = palette.pickVariant(art, rng).imageRef;
+      const base = palette.variantAt(art, x, y, rng).imageRef;
       if (bare.has(id)) {
         tiles.push(createTile(id, base));
         continue;

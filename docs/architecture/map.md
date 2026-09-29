@@ -264,9 +264,13 @@ variants from connector pieces:
 
 - Terrain types (grass, water, mountains, and other kinds) have multiple
   interchangeable variants, so a painted field does not look like a
-  wallpaper pattern. `pickVariant(type, rng)` chooses one, and takes the
-  random number generator as an argument so tests can pass a deterministic
-  one.
+  wallpaper pattern. `variantAt(type, x, y, rng)` chooses one from a hash of
+  the cell position (`TileCatalog.variantIdAt`), and the random-variant
+  brush paints the same pick. The tile codec stores a cell whose variant is
+  that pick as its type alone (see [Persistence](persistence.md)).
+  `variantAt` still draws from `rng` once, so the later draws of a seeded
+  generator do not depend on the pick. `pickVariant(type, rng)` chooses a
+  random variant, for a caller that has no cell position.
 - Road pieces are named connector pieces (a straight, a corner, a tee), not
   random variants. `getRoadPiece(kind)` looks one up by name.
 
@@ -520,8 +524,8 @@ Each interior generator carves a flat array of cell codes: void, floor,
 wall, and a door in a horizontal or a vertical wall. The helpers in
 `src/map/GeneratorInteriorMask.js` finish the mask. `wrapWalls` turns each
 void cell beside floor into wall, in all eight directions, so no floor cell
-touches the void. `maskTiles` then gives each floor cell a random floor
-variant and each wall cell the piece from `wallKind` that joins the walls
+touches the void. `maskTiles` then gives each floor cell the floor variant
+that its position picks and each wall cell the piece from `wallKind` that joins the walls
 and doors beside it. A void cell gets no tile. A door counts as part of the
 wall around it, so the wall pieces on each side of a door join through it.
 

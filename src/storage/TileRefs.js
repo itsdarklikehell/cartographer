@@ -1,9 +1,10 @@
-import { buildBuiltins } from '../map/TileCatalog.js';
+import { buildBuiltins, variantCount, variantFamilyOf, variantIdAt } from '../map/TileCatalog.js';
 
 /**
  * The short form of a tile art ref inside an encoded node. The tile codec
  * (`TileCodec.js`) writes each palette string through `shortRef` and reads it
- * back through `fullRef`. This module is pure.
+ * back through `fullRef`, both with the position of the cell. This module
+ * is pure.
  *
  * A built-in tile ref is a path such as `assets/tiles/snow/snow-3.svg`, and
  * the example campaign repeats a few hundred of these paths in thousands of
@@ -11,17 +12,25 @@ import { buildBuiltins } from '../map/TileCatalog.js';
  * (`snow-3`), so the codec writes the id instead, at about a third of the
  * length, and reads a palette id back as its path.
  *
+ * A variant, such as a terrain variant or an interior floor variant, goes
+ * one step further. When a cell's variant is the one that `variantIdAt`
+ * picks for its position, the codec writes only the family (`snow`), and
+ * the decoder picks the same variant again. The generators and the
+ * random-variant brush paint that pick, so a field of mixed variants stores
+ * as one palette entry and one run. A variant that the GM paints on purpose
+ * and that differs from the pick keeps its id.
+ *
  * A ref with a `/` or a `:` passes through both ways. This covers a path
  * that is not in the catalog, an `asset:` key, and a `data:` payload. A
- * palette id has neither character, so a stored id never reads as one of
- * these refs.
+ * short form has neither character, so a stored short form never reads as
+ * one of these refs.
  *
  * A live ref with neither character is a bare ref. The tile art never uses
  * one, but a hand-edited file or a test fixture can. Without an escape, a
  * bare live ref `grass-1` reads back as the path of `grass-1`. So a bare ref
- * that reads as a short form (a palette id, or a ref that starts with `=`)
- * gets a `=` prefix, and `fullRef` strips it. Any other bare ref, such as
- * `grass`, stays as written.
+ * that reads as a short form (a palette id, a variant family, or a ref
+ * that starts with `=`) gets a `=` prefix, and `fullRef` strips it. Any
+ * other bare ref, such as `lava`, stays as written.
  */
 
 /** The prefix of an escaped bare ref. */
@@ -30,7 +39,7 @@ const ESCAPE = '=';
 /**
  * The lookup tables of the built-in catalog, built on first use. The catalog
  * is fixed for the life of the page, so one build serves every save.
- * @type {{ idByPath: Map<string, string>, pathById: Map<string, string> } | null}
+ * @type {{ idByPath: Map<string, string>, pathById: Map<string, string>, familyById: Map<string, string> } | null}
  */
 let tables = null;
 
@@ -38,11 +47,14 @@ function catalog() {
   if (!tables) {
     const idByPath = new Map();
     const pathById = new Map();
+    const familyById = new Map();
     for (const entry of buildBuiltins()) {
       idByPath.set(entry.imageRef, entry.id);
       pathById.set(entry.id, entry.imageRef);
+      const family = variantFamilyOf(entry.id);
+      if (family !== undefined) familyById.set(entry.id, family);
     }
-    tables = { idByPath, pathById };
+    tables = { idByPath, pathById, familyById };
   }
   return tables;
 }
@@ -57,28 +69,51 @@ function isBare(ref) {
 }
 
 /**
- * The stored form of one live art ref.
+ * The stored form of one live art ref at the cell (x, y). With `usePick`
+ * false, a variant keeps its palette id even where it equals the pick.
  * @param {string} ref
+ * @param {number} x
+ * @param {number} y
+ * @param {boolean} [usePick]
  * @returns {string}
  */
-export function shortRef(ref) {
-  const { idByPath, pathById } = catalog();
+export function shortRef(ref, x, y, usePick = true) {
+  const { idByPath, pathById, familyById } = catalog();
   const id = idByPath.get(ref);
-  if (id !== undefined) return id;
-  if (isBare(ref) && (ref.startsWith(ESCAPE) || pathById.has(ref))) return ESCAPE + ref;
+  if (id !== undefined) {
+    const family = familyById.get(id);
+    return usePick && family !== undefined && variantIdAt(family, x, y) === id ? family : id;
+  }
+  if (isBare(ref) && (ref.startsWith(ESCAPE) || pathById.has(ref) || variantCount(ref) > 0)) {
+    return ESCAPE + ref;
+  }
   return ref;
 }
 
 /**
- * The live form of one stored art ref. A value that is not a string passes
- * through, so the decoder's own check still skips it.
+ * Whether a stored ref reads differently at different cells: a variant
+ * family, whose variant the decoder picks per position.
  * @param {unknown} ref
+ * @returns {boolean}
+ */
+export function variesByCell(ref) {
+  return typeof ref === 'string' && variantCount(ref) > 0;
+}
+
+/**
+ * The live form of one stored art ref at the cell (x, y). A value that is
+ * not a string passes through, so the decoder's own check still skips it.
+ * @param {unknown} ref
+ * @param {number} x
+ * @param {number} y
  * @returns {unknown}
  */
-export function fullRef(ref) {
+export function fullRef(ref, x, y) {
   if (typeof ref !== 'string' || !isBare(ref)) return ref;
   if (ref.startsWith(ESCAPE)) return ref.slice(ESCAPE.length);
-  return catalog().pathById.get(ref) ?? ref;
+  const { pathById } = catalog();
+  const id = variantIdAt(ref, x, y) ?? ref;
+  return pathById.get(/** @type {string} */ (id)) ?? ref;
 }
 
 /**

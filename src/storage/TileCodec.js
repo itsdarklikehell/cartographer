@@ -1,6 +1,6 @@
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MAX_GRID_CELLS } from '../map/TileIndex.js';
-import { fullRef, mapOverlay, shortRef } from './TileRefs.js';
+import { fullRef, mapOverlay, shortRef, variesByCell } from './TileRefs.js';
 import { EMPTY, expandFog, expandIndexRuns, fogRuns, indexRuns } from './RunLength.js';
 
 /**
@@ -105,27 +105,47 @@ function positionOf(id, width, height) {
  * overlay, or the pair otherwise. The codec keeps both fields together
  * instead of using two palettes and two index streams, because a tile
  * has both fields, and splitting them costs more than it saves. Each ref is
- * in its short form (`TileRefs.js`).
+ * in its short form for the cell (`TileRefs.js`).
  * @param {Record<string, any>} tile
+ * @param {number} x
+ * @param {number} y
+ * @param {boolean} usePick whether a variant may store as its family
  * @returns {string | [string, unknown]}
  */
-function artEntry(tile) {
+function artEntry(tile, x, y, usePick) {
   const overlay = tile.overlayRef;
-  const base = shortRef(tile.imageRef);
-  return overlay == null ? base : [base, mapOverlay(overlay, shortRef)];
+  const base = shortRef(tile.imageRef, x, y, usePick);
+  return overlay == null
+    ? base
+    : [base, mapOverlay(overlay, (/** @type {string} */ ref) => shortRef(ref, x, y, usePick))];
 }
 
+/** @typedef {{ imageRef: string, overlay: unknown }} LiveArt */
+
 /**
- * A palette entry read back into live refs, or null when its base ref is not
- * a string. The decoder skips a cell whose entry is null.
+ * A palette entry read back into live refs for a cell, or null when its
+ * base ref is not a string. The decoder skips a cell whose entry is null.
+ * An entry with no ref that varies by cell reads the same everywhere, so
+ * the function reads it once and returns that object for every cell.
  * @param {unknown} entry
- * @returns {{ imageRef: string, overlay: unknown } | null}
+ * @returns {((x: number, y: number) => LiveArt) | null}
  */
 function liveEntry(entry) {
   const pair = Array.isArray(entry);
-  const imageRef = fullRef(pair ? entry[0] : entry);
-  if (typeof imageRef !== 'string') return null;
-  return { imageRef, overlay: pair ? mapOverlay(entry[1], fullRef) : null };
+  const base = pair ? entry[0] : entry;
+  if (typeof base !== 'string') return null;
+  const overlay = pair ? entry[1] : null;
+  /** @type {(x: number, y: number) => LiveArt} */
+  const read = (x, y) => ({
+    imageRef: /** @type {string} */ (fullRef(base, x, y)),
+    overlay: mapOverlay(overlay, (ref) => fullRef(ref, x, y)),
+  });
+  const varies =
+    variesByCell(base) ||
+    (Array.isArray(overlay) ? overlay.some(variesByCell) : variesByCell(overlay));
+  if (varies) return read;
+  const fixed = read(0, 0);
+  return () => fixed;
 }
 
 /**
@@ -160,7 +180,7 @@ function layOut(node, width, height) {
  * of each position. A position with no value gets `EMPTY`.
  * @template T
  * @param {(Record<string, any> | null)[]} slots
- * @param {(tile: Record<string, any>) => T | undefined} valueOf the value of
+ * @param {(tile: Record<string, any>, pos: number) => T | undefined} valueOf the value of
  *   a tile, or undefined for none
  * @param {(value: T) => string} keyOf the palette key of a value
  * @returns {{ palette: T[], indices: Int32Array }}
@@ -173,7 +193,7 @@ function paletteOf(slots, valueOf, keyOf) {
   const indices = new Int32Array(slots.length).fill(EMPTY);
   for (let pos = 0; pos < slots.length; pos += 1) {
     const tile = slots[pos];
-    const value = tile ? valueOf(tile) : undefined;
+    const value = tile ? valueOf(tile, pos) : undefined;
     if (value === undefined) continue;
     const key = keyOf(value);
     let index = seen.get(key);
@@ -262,7 +282,23 @@ export function encodeNodeTiles(node) {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1) return node;
   const slots = layOut(node, width, height);
   if (!slots) return node;
-  const art = paletteOf(slots, artEntry, artKey);
+  // A cell whose variant equals the position pick has two stored forms, its
+  // family and its id. The encoder takes the id when the cell before it
+  // stored the same id, so a field painted with one fixed variant stays one
+  // run instead of breaking wherever the pick matches.
+  let previous = '';
+  const art = paletteOf(
+    slots,
+    (tile, pos) => {
+      const x = pos % width;
+      const y = (pos / width) | 0;
+      const fixed = artEntry(tile, x, y, false);
+      const value = artKey(fixed) === previous ? fixed : artEntry(tile, x, y, true);
+      previous = artKey(value);
+      return value;
+    },
+    artKey,
+  );
   const links = paletteOf(slots, linkOf, (id) => id);
   const fog = fogRuns(slots.map((tile) => tile !== null && tile.revealed === true));
   const leftovers = encodeLeftovers(slots);
@@ -353,10 +389,12 @@ export function decodeNodeTiles(node) {
   /** @type {Record<string, any>[]} */
   const tiles = [];
   for (let pos = 0; pos < size; pos += 1) {
-    const entry = refs[art[pos]];
-    if (!entry) continue;
+    const readArt = refs[art[pos]];
+    if (!readArt) continue;
     const x = pos % width;
-    const id = tileIdAt(x, (pos - x) / width);
+    const y = (pos - x) / width;
+    const entry = readArt(x, y);
+    const id = tileIdAt(x, y);
     const extra = leftovers.get(id);
     /** @type {Record<string, any>} */
     const tile = extra ? { ...extra } : {};

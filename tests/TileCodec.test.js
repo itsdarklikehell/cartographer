@@ -8,6 +8,7 @@ import {
   MAX_TOTAL_CELLS,
 } from '../src/storage/TileCodec.js';
 import { gridTiles } from './helpers/grid.js';
+import { variantIdAt } from '../src/map/TileCatalog.js';
 
 /**
  * A packed tile: only the fields a real save would carry, since the codec runs
@@ -71,16 +72,16 @@ function roundTrip(node) {
 test('a dense node encodes to a palette plus a run-length stream', () => {
   const node = makeNode({
     tiles: [
-      tile('0,0', 'grass'),
-      tile('1,0', 'grass'),
-      tile('2,0', 'grass'),
-      tile('0,1', 'water'),
-      tile('1,1', 'grass'),
-      tile('2,1', 'water'),
+      tile('0,0', 'meadow'),
+      tile('1,0', 'meadow'),
+      tile('2,0', 'meadow'),
+      tile('0,1', 'lake'),
+      tile('1,1', 'meadow'),
+      tile('2,1', 'lake'),
     ],
   });
   const encoded = roundTrip(node);
-  assert.deepEqual(encoded.refs, ['grass', 'water']);
+  assert.deepEqual(encoded.refs, ['meadow', 'lake']);
   // Three grass, then single cells: the run pays for itself at three, not below.
   assert.deepEqual(encoded.cells, [[0, 3], 1, 0, 1]);
   assert.equal('fog' in encoded, false, 'nothing revealed, so no fog stream');
@@ -107,14 +108,14 @@ test('overlays are part of the palette entry, as a ref and as a stack', () => {
     width: 4,
     height: 1,
     tiles: [
-      tile('0,0', 'grass'),
-      tile('1,0', 'grass', { overlayRef: 'road' }),
-      tile('2,0', 'grass', { overlayRef: ['coast', 'river'] }),
-      tile('3,0', 'grass', { overlayRef: 'road' }),
+      tile('0,0', 'meadow'),
+      tile('1,0', 'meadow', { overlayRef: 'road' }),
+      tile('2,0', 'meadow', { overlayRef: ['coast', 'river'] }),
+      tile('3,0', 'meadow', { overlayRef: 'road' }),
     ],
   });
   const encoded = roundTrip(node);
-  assert.deepEqual(encoded.refs, ['grass', ['grass', 'road'], ['grass', ['coast', 'river']]]);
+  assert.deepEqual(encoded.refs, ['meadow', ['meadow', 'road'], ['meadow', ['coast', 'river']]]);
   assert.deepEqual(encoded.cells, [0, 1, 2, 1], 'the repeated overlay reuses its entry');
 });
 
@@ -123,14 +124,14 @@ test('metadata, span, and unknown fields stay out of line', () => {
     width: 4,
     height: 1,
     tiles: [
-      tile('0,0', 'grass'),
-      tile('1,0', 'grass', {
+      tile('0,0', 'meadow'),
+      tile('1,0', 'meadow', {
         metadata: { poiType: 'shop', discoverable: true, discovered: true, notes: 'hi' },
       }),
-      tile('2,0', 'grass', { childNodeId: 'child', span: 2 }),
+      tile('2,0', 'meadow', { childNodeId: 'child', span: 2 }),
       // A field this module has never heard of: the codec keeps whatever it does
       // not represent itself, so a later `Tile` member survives a save.
-      tile('3,0', 'grass', { futureField: { deep: [1, 2] } }),
+      tile('3,0', 'meadow', { futureField: { deep: [1, 2] } }),
     ],
   });
   const encoded = roundTrip(node);
@@ -259,10 +260,10 @@ test('an empty node encodes to an empty stream and comes back empty', () => {
 });
 
 test('the palette order follows grid position, not the tiles array order', () => {
-  const tiles = [tile('2,0', 'water'), tile('0,0', 'grass'), tile('1,0', 'sand')];
+  const tiles = [tile('2,0', 'lake'), tile('0,0', 'meadow'), tile('1,0', 'sand')];
   const forward = encodeNodeTiles(makeNode({ width: 3, height: 1, tiles }));
   const shuffled = encodeNodeTiles(makeNode({ width: 3, height: 1, tiles: [...tiles].reverse() }));
-  assert.deepEqual(forward.refs, ['grass', 'sand', 'water']);
+  assert.deepEqual(forward.refs, ['meadow', 'sand', 'lake']);
   // Byte-identical output for the same tile set: the undo ring's duplicate skip
   // and the cross-tab watcher both compare raw strings.
   assert.equal(JSON.stringify(forward), JSON.stringify(shuffled));
@@ -382,8 +383,20 @@ test('random nodes round trip', () => {
     seed = (seed * 1103515245 + 12345) % 2147483648;
     return seed % n;
   };
-  const art = ['grass-1', 'grass-2', 'water', 'sand', 'stone'];
-  const overlays = [null, 'road', ['coast', 'river']];
+  const art = [
+    'grass-1',
+    'grass',
+    'lake',
+    'sand',
+    ...[1, 2, 3].map((i) => `assets/tiles/grass/grass-${i}.svg`),
+  ];
+  const overlays = [
+    null,
+    'road',
+    ['coast', 'river'],
+    'assets/tiles/grass/grass-2.svg',
+    ['road', 'assets/tiles/snow/snow-1.svg'],
+  ];
   for (let iteration = 0; iteration < 200; iteration += 1) {
     const width = 1 + rand(9);
     const height = 1 + rand(9);
@@ -409,8 +422,8 @@ test('a tile that carries only codec-owned fields leaves no per-tile record', ()
       width: 2,
       height: 1,
       tiles: [
-        tile('0,0', 'grass', { overlayRef: 'road', revealed: true }),
-        tile('1,0', 'grass', { overlayRef: 'road', metadata: { poiType: 'town' } }),
+        tile('0,0', 'meadow', { overlayRef: 'road', revealed: true }),
+        tile('1,0', 'meadow', { overlayRef: 'road', metadata: { poiType: 'town' } }),
       ],
     }),
   );
@@ -419,24 +432,24 @@ test('a tile that carries only codec-owned fields leaves no per-tile record', ()
 
 test('an id that is not a canonical in-bounds pair keeps the node in per-tile form', () => {
   for (const id of ['01,2', '1,2,3', '1,', ',2', 'a,b', '1, 2', '1,-2', '', '1', '1,02']) {
-    const node = makeNode({ width: 3, height: 3, tiles: [tile(id, 'grass')] });
+    const node = makeNode({ width: 3, height: 3, tiles: [tile(id, 'meadow')] });
     assert.equal(encodeNodeTiles(node), node, `id ${JSON.stringify(id)} was encoded`);
   }
   // A digit string too long to hold exactly still fails the bounds check.
-  const huge = makeNode({ tiles: [tile('99999999999999999999,0', 'grass')] });
+  const huge = makeNode({ tiles: [tile('99999999999999999999,0', 'meadow')] });
   assert.equal(encodeNodeTiles(huge), huge);
 });
 
 test('a bare ref that reads like the JSON of a pair gets its own palette slot', () => {
-  const lookalike = '["grass","road"]';
+  const lookalike = '["meadow","road"]';
   const encoded = roundTrip(
     makeNode({
       width: 2,
       height: 1,
-      tiles: [tile('0,0', lookalike), tile('1,0', 'grass', { overlayRef: 'road' })],
+      tiles: [tile('0,0', lookalike), tile('1,0', 'meadow', { overlayRef: 'road' })],
     }),
   );
-  assert.deepEqual(encoded.refs, [lookalike, ['grass', 'road']]);
+  assert.deepEqual(encoded.refs, [lookalike, ['meadow', 'road']]);
   assert.deepEqual(encoded.cells, [0, 1]);
 });
 
@@ -484,4 +497,24 @@ test('built-in art stores as palette ids, and a stored path still reads', () => 
   // A save that stores the full path decodes to the same tiles.
   const stored = decodeNodeTiles({ ...encoded, refs: [grass, [grass, [road, 'asset:k1']]] });
   assert.deepEqual(stored.tiles, decodeNodeTiles(encoded).tiles);
+});
+
+test('a field of one fixed variant and a field of picks both store as one run', () => {
+  const path = (/** @type {string} */ id) => `assets/tiles/grass/${id}.svg`;
+  const fixed = roundTrip(
+    makeNode({ width: 8, height: 4, tiles: gridTiles(8, 4, (id) => tile(id, path('grass-2'))) }),
+  );
+  assert.deepEqual(fixed.cells, [[0, 32]]);
+  const picked = roundTrip(
+    makeNode({
+      width: 8,
+      height: 4,
+      tiles: gridTiles(8, 4, (id) => {
+        const [x, y] = id.split(',').map(Number);
+        return tile(id, path(/** @type {string} */ (variantIdAt('grass', x, y))));
+      }),
+    }),
+  );
+  assert.deepEqual(picked.refs, ['grass']);
+  assert.deepEqual(picked.cells, [[0, 32]]);
 });

@@ -212,11 +212,11 @@ test('a town with no coast environ generates as it does inland', () => {
   // SHA-256 prefixes of 20 seeded inland town maps per size. A change to
   // the port code that moves an inland town by one tile fails here.
   const expected = {
-    small: 'd39b44596ec2aec6',
-    medium: 'e519a6f016a8ffb6',
-    large: '3809e022e0f6c4c4',
-    huge: '480f5dc0f454a0da',
-    vast: '7f4bd220549acb01',
+    small: '88a5ce63f1a34232',
+    medium: '63ddafdda43d38e3',
+    large: '4ac7ebd9628c439d',
+    huge: 'e9f59d73a307ed64',
+    vast: '56c944be49083806',
   };
   for (const [size, digest] of Object.entries(expected)) {
     for (const environ of [undefined, 'grassland', 'town']) {

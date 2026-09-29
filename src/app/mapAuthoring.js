@@ -1,5 +1,5 @@
 import { getTile, updateTileMetadata, withoutDeadLinks } from '../map/TileGrid.js';
-import { clientToBuffer, screenToTile, tileIdAt } from '../map/MapGeometry.js';
+import { clientToBuffer, parseCoords, screenToTile, tileIdAt } from '../map/MapGeometry.js';
 import {
   paintTile,
   eraseTile,
@@ -288,7 +288,8 @@ export function createMapAuthoring(app, env) {
       // or 3x size creates overlapping blocks. Only the first cell paints.
       if (scale > 1 && !first) return;
       strokeTouched = true;
-      const imageRef = palette.imageFor(brush, Math.random);
+      const at = parseCoords(id);
+      const imageRef = palette.imageFor(brush, at?.x ?? 0, at?.y ?? 0);
       applyToTile(id, (node) => paintTile(node, id, imageRef, overlay, scale));
     } else if (first) {
       // Inspect acts on the pressed cell only. Dragging does not change the
@@ -403,7 +404,7 @@ export function createMapAuthoring(app, env) {
       snapshotEdit(navigator.getCurrentNode());
       const overlay = isOverlayType(entry.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
-      const imageRef = palette.imageFor(entry, Math.random);
+      const imageRef = palette.imageFor(entry, coords.x, coords.y);
       applyToTile(tileId, (node) => paintTile(node, tileId, imageRef, overlay, scale));
       settleAfterStroke();
       finishEdit();

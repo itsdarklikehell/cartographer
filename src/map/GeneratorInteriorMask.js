@@ -1,6 +1,7 @@
 import { createTile, tilesById } from './TileGrid.js';
 import { randInt } from './GeneratorRandom.js';
 import { NEIGHBORS4, NEIGHBORS8, tileIdAt } from './MapGeometry.js';
+import { variantIndexAt } from './TileCatalog.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -181,9 +182,25 @@ export function walkDistances(cells, size, x, y, blocked) {
 }
 
 /**
- * Build the tiles of a finished mask. Each floor cell gets a random floor
- * variant. Each wall cell gets the wall piece that joins the wall and door
- * cells beside it, because a door is a wall segment with a leaf in it.
+ * The floor variant of the cell at (x, y): the pick of `variantIndexAt`, so
+ * the tile codec stores the cell as its floor family alone (see
+ * `TileCatalog.variantIdAt`, whose family order `floors` follows). The
+ * function still draws from `rng` once, so the draws after it, and the rest
+ * of a seeded interior with them, do not depend on how the floor is picked.
+ * @param {string[]} floors @param {number} x @param {number} y
+ * @param {() => number} rng
+ * @returns {string}
+ */
+function floorAt(floors, x, y, rng) {
+  randInt(rng, floors.length);
+  return floors[variantIndexAt(floors.length, x, y)];
+}
+
+/**
+ * Build the tiles of a finished mask. Each floor cell gets the floor
+ * variant that its position picks (`floorAt`). Each wall cell gets the wall
+ * piece that joins the wall and door cells beside it, because a door is a
+ * wall segment with a leaf in it.
  * @param {TilePalette} palette @param {number[]} cells @param {number} size
  * @param {() => number} rng
  * @param {MaskArt} [art] the pieces to draw with, dressed stone by default
@@ -203,7 +220,7 @@ export function maskTiles(palette, cells, size, rng, art = STONE_ART) {
       const code = cells[y * size + x];
       /** @type {string} */
       let kind;
-      if (code === FLOOR) kind = art.floors[randInt(rng, art.floors.length)];
+      if (code === FLOOR) kind = floorAt(art.floors, x, y, rng);
       else if (code === WALL) {
         kind = art.wall(joins(x, y - 1), joins(x + 1, y), joins(x, y + 1), joins(x - 1, y));
       } else if (code === DOOR_H) kind = art.doorH;
