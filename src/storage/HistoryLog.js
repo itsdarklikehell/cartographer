@@ -360,6 +360,18 @@ export function loadPersistedCampaign() {
 }
 
 /**
+ * The save string and save mark of the cached state, or null when nothing
+ * is cached. At boot this is the save the page loaded. A tab that records
+ * the save it last matched takes the string from here, so the tab and this
+ * cache share one string, where a second `getItem` call makes a second copy
+ * of the whole save.
+ * @returns {{ raw: string, mark: string | null } | null}
+ */
+export function persistedSave() {
+  return cached ? { raw: cached.raw, mark: cached.mark } : null;
+}
+
+/**
  * Make `state` the base of the next diff, stamped with the save string
  * stored now. A tab calls this after it adopts another tab's save, when its
  * live state is the stored campaign. The full load path leaves the cache on

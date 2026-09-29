@@ -636,7 +636,7 @@ The codec also follows these rules:
   of its cached state, which is the live state after `adoptPersisted`, so a
   follower's full read decodes only the nodes that changed. At 400 extra
   regions, the full read and reconcile of a save with one changed node cost
-  about 14 ms with the live nodes and 146 ms without them. The entity lists
+  about 13 ms with the live nodes and 107 ms without them. The entity lists
   still decode in full, about 5 ms of that read.
 - **Ordering.** For a node with an inline payload, the codec runs after the
   asset hoist in `packState`, and before the asset restore in `deserialize`.

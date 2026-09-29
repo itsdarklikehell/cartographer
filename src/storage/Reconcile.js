@@ -37,15 +37,51 @@ function isRecord(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+const { hasOwnProperty } = Object.prototype;
+
 /**
- * The keys that a JSON round trip would keep. A key set to `undefined` counts
- * as absent, the same way `StateDiff.equalValues` counts it, so an explicit
- * `undefined` on one side and an absent key on the other is not a difference.
+ * True when a key counts for the walk: an own key whose value is not
+ * `undefined`. A key set to `undefined` counts as absent, the same way
+ * `StateDiff.equalValues` counts it, so an explicit `undefined` on one side
+ * and an absent key on the other is not a difference.
  * @param {Record<string, unknown>} record
- * @returns {string[]}
+ * @param {string} key
+ * @returns {boolean}
  */
-function definedKeys(record) {
-  return Object.keys(record).filter((key) => record[key] !== undefined);
+function isDefined(record, key) {
+  return hasOwnProperty.call(record, key) && record[key] !== undefined;
+}
+
+/**
+ * How many keys of a record count for the walk. The count allocates
+ * nothing, because the walk runs once for every tile and every metadata
+ * record of a changed node.
+ * @param {Record<string, unknown>} record
+ * @returns {number}
+ */
+function definedCount(record) {
+  let count = 0;
+  for (const key in record) if (isDefined(record, key)) count += 1;
+  return count;
+}
+
+/**
+ * True when both lists hold entities with string ids and the same id sits
+ * at every index. A decoded node lists its tiles in grid order, so its tile
+ * list almost always pairs this way, and id pairing then picks the same
+ * mates with no index.
+ * @param {unknown[]} live
+ * @param {unknown[]} incoming
+ * @returns {boolean}
+ */
+function idsAligned(live, incoming) {
+  if (live.length !== incoming.length) return false;
+  for (let i = 0; i < live.length; i += 1) {
+    const a = live[i];
+    const b = incoming[i];
+    if (!isRecord(a) || !isRecord(b) || typeof a.id !== 'string' || a.id !== b.id) return false;
+  }
+  return true;
 }
 
 /**
@@ -71,7 +107,9 @@ function idIndex(list) {
  * @returns {unknown[]}
  */
 function reconcileList(live, incoming) {
-  const byId = idIndex(live);
+  // Aligned ids give each element the same mate as the id index, and a
+  // repeated id pairs by index under both rules.
+  const byId = idsAligned(live, incoming) ? null : idIndex(live);
   let changed = live.length !== incoming.length;
   const out = incoming.map((value, i) => {
     const mate = byId && isRecord(value) ? byId.get(value.id) : live[i];
@@ -83,37 +121,72 @@ function reconcileList(live, incoming) {
 }
 
 /**
+ * Store one value on a record under construction.
+ * @param {Record<string, unknown>} out
+ * @param {string} key
+ * @param {unknown} value
+ */
+function put(out, key, value) {
+  if (key === '__proto__') {
+    // A plain assignment to this key sets the prototype instead of storing
+    // the value, so the property is defined directly.
+    Object.defineProperty(out, key, {
+      value,
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  } else {
+    out[key] = value;
+  }
+}
+
+/**
+ * A new record with the live value of each counted incoming key before
+ * `stop`, or of every counted key when `stop` is null. Each of those keys
+ * kept its live value, so the copy equals what the walk would have built.
+ * @param {Record<string, unknown>} live
+ * @param {Record<string, unknown>} incoming
+ * @param {string | null} stop
+ * @returns {Record<string, unknown>}
+ */
+function keptBefore(live, incoming, stop) {
+  /** @type {Record<string, unknown>} */
+  const out = {};
+  for (const key in incoming) {
+    if (key === stop) break;
+    if (isDefined(incoming, key)) put(out, key, live[key]);
+  }
+  return out;
+}
+
+/**
+ * The walk builds its result only from the first key that differs, so an
+ * unchanged record allocates nothing.
  * @param {Record<string, unknown>} live
  * @param {Record<string, unknown>} incoming
  * @returns {Record<string, unknown>}
  */
 function reconcileRecord(live, incoming) {
-  const keys = definedKeys(incoming);
-  let changed = keys.length !== definedKeys(live).length;
-  /** @type {Record<string, unknown>} */
-  const out = {};
-  for (const key of keys) {
+  /** @type {Record<string, unknown> | null} */
+  let out = null;
+  let count = 0;
+  for (const key in incoming) {
+    if (!isDefined(incoming, key)) continue;
+    count += 1;
     // An own-property check, not `in`: a save can carry an own `__proto__`
     // key, which `in` would match on every object through the prototype
     // chain.
-    const kept = Object.prototype.hasOwnProperty.call(live, key)
+    const kept = hasOwnProperty.call(live, key)
       ? reconcile(live[key], incoming[key])
       : incoming[key];
-    if (kept !== live[key]) changed = true;
-    if (key === '__proto__') {
-      // A plain assignment to this key sets the prototype instead of
-      // storing the value, so the property is defined directly.
-      Object.defineProperty(out, key, {
-        value: kept,
-        writable: true,
-        enumerable: true,
-        configurable: true,
-      });
-    } else {
-      out[key] = kept;
-    }
+    if (!out && kept !== live[key]) out = keptBefore(live, incoming, key);
+    if (out) put(out, key, kept);
   }
-  return changed ? out : live;
+  if (out) return out;
+  // Every counted key kept its live value, and a key only the live side
+  // counts still makes the result a new record.
+  return count === definedCount(live) ? live : keptBefore(live, incoming, null);
 }
 
 /**

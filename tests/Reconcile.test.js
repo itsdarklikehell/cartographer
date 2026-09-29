@@ -221,3 +221,62 @@ test('a structurally equal save with an own __proto__ key comes back live', () =
   const incoming = JSON.parse('{"a":1,"__proto__":{"x":1}}');
   assert.equal(reconcile(live, incoming), live);
 });
+
+/**
+ * A row of tiles in grid order, the way a decoded node lists them.
+ * @param {number} count
+ */
+function tileRow(count) {
+  return Array.from({ length: count }, (_, x) => ({
+    id: `${x},0`,
+    imageRef: 'grass.svg',
+    metadata: { notes: '' },
+  }));
+}
+
+test('a tile list in grid order pairs by index and keeps every unchanged tile', () => {
+  const live = tileRow(4);
+  const incoming = structuredClone(live);
+  incoming[2].imageRef = 'water.svg';
+  const result = reconcile(live, incoming);
+  assert.notEqual(result, live);
+  assert.deepEqual(
+    result.map((tile, i) => tile === live[i]),
+    [true, true, false, true],
+  );
+  assert.equal(result[2].metadata, live[2].metadata, 'the changed tile keeps its metadata');
+});
+
+test('a tile inserted into a tile list pairs the rest by id', () => {
+  const live = tileRow(3);
+  const incoming = structuredClone(live);
+  incoming.splice(1, 0, { id: 'extra', imageRef: 'rock.svg', metadata: { notes: '' } });
+  const result = reconcile(live, incoming);
+  assert.deepEqual(
+    [
+      result[0] === live[0],
+      result[1] === incoming[1],
+      result[2] === live[1],
+      result[3] === live[2],
+    ],
+    [true, true, true, true],
+  );
+});
+
+test('a key that only the live record holds, with every other key kept, gives a new record', () => {
+  const nested = { max: 7 };
+  const live = { id: 'e1', hp: nested, gone: 'x' };
+  const result = reconcile(live, { id: 'e1', hp: { max: 7 } });
+  assert.notEqual(result, live);
+  assert.deepEqual(result, { id: 'e1', hp: { max: 7 } });
+  assert.equal(result.hp, nested);
+});
+
+test('a difference in a late key keeps the live values of the keys before it', () => {
+  const hp = { max: 7 };
+  const live = { id: 'e1', hp, name: 'Goblin' };
+  const result = reconcile(live, { id: 'e1', hp: { max: 7 }, name: 'Goblin Boss' });
+  assert.deepEqual(Object.keys(result), ['id', 'hp', 'name']);
+  assert.equal(result.hp, hp);
+  assert.equal(result.name, 'Goblin Boss');
+});

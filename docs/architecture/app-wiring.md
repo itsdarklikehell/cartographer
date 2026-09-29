@@ -130,7 +130,10 @@ the combat flush do not write, because the save mark in storage differs
 from the one this tab last loaded, wrote, or adopted (`Autosave.markMovedOn`).
 When either mark is missing, `Autosave.storageMovedOn` compares the whole
 save string instead. Without that check, the tab writes its older copy over
-the other tab's change.
+the other tab's change. The string that this tab compares against is the
+one the history cache keeps (`HistoryLog.persistedSave` at boot, then
+`adoptPersisted` and the tab's own save result), so the tab keeps one copy
+of the save string, about 2 MB at 400 extra regions, and not two.
 
 The adoption tries the recorded delta first. Every save writes its exact
 edit as a delta beside the campaign (see the history log in
@@ -372,7 +375,12 @@ object whose untouched sub-objects are still the live ones. A panel that
 compares its rows by identity, which is what `ui/listPanel.js` does, can then
 tell a real edit from a repeated autosave. It pairs a collection by element
 `id`, so an insertion at the front does not make every later entity look
-changed.
+changed. When both lists hold the same id at every index, as the tile list
+of a decoded node does, the pairing by index gives the same mates, and
+`reconcile` builds no id index. An unchanged record allocates nothing,
+because the walk builds its result only from the first key that differs.
+At 400 extra regions, reconciling a fresh read of every node against the
+live nodes costs about 35 ms.
 
 The world's nodes go through the same `reconcile` call before
 `grid.replaceNodes`, because the map caches are keyed on node identity. The

@@ -7,6 +7,7 @@ import {
   planAdoption,
   applyHistoryOps,
   adoptPersisted,
+  persistedSave,
 } from '../storage/HistoryLog.js';
 import { markMovedOn, storageMovedOn } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
@@ -58,19 +59,26 @@ export function wireExternalSaves(app, { isDirty, setDirty, buildCurrentState, p
    * @type {string | null}
    */
   let heldPosition = historyPosition();
+  // The page loaded its save through the history cache, so the cache names
+  // the string and the mark of that save. Taking the string from there
+  // keeps one copy of it in this tab. With nothing cached, the mark is read
+  // before the string, so a save that lands between the two reads has
+  // removed the mark and cannot match it.
+  const loaded = persistedSave();
   /**
    * The save mark of the save this tab last matched in storage, or null when
-   * it is not known. It is read before `heldSave`, so a save that lands
-   * between the two reads has removed it and cannot match it.
+   * it is not known.
    * @type {string | null}
    */
-  let heldMark = readSaveMark();
+  let heldMark = loaded ? loaded.mark : readSaveMark();
   /**
    * The save string this tab last matched in storage: the one it loaded,
    * wrote, or adopted. An automatic write checks storage against it first.
+   * Every later value is the string object that the history cache keeps
+   * (`adoptPersisted`, and the `json` of this tab's own save).
    * @type {string | null}
    */
-  let heldSave = localStorage.getItem(STORAGE_KEY);
+  let heldSave = loaded ? loaded.raw : localStorage.getItem(STORAGE_KEY);
   /** True when this tab declined an external save reload. This suppresses re-prompts. */
   let syncPromptDeclined = false;
   /** True once this tab reported that autosave is paused. This stops the toast from repeating on every poll. */

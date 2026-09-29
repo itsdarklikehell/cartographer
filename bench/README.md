@@ -80,7 +80,7 @@ The `adopt` row times the full read that a follower tab takes when the log
 cannot carry it: `deserialize` of a save with one changed node, given the
 live nodes, then `reconcile`. Each unchanged node matches its cached
 encoded form and keeps the live object, so the row reads about 5 ms. A read
-that decodes every node reads about 35 ms, the same as the `reconcile` row,
+that decodes every node reads about 25 ms, the same as the `reconcile` row,
 and is over its budget of 12 ms.
 
 The `partyStep` row and the `step ms` column of the scale table time one

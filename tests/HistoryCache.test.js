@@ -1,6 +1,11 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { adoptPersisted, loadPersistedCampaign, saveCampaign } from '../src/storage/HistoryLog.js';
+import {
+  adoptPersisted,
+  loadPersistedCampaign,
+  persistedSave,
+  saveCampaign,
+} from '../src/storage/HistoryLog.js';
 import {
   buildState,
   deserialize,
@@ -132,4 +137,19 @@ test('adoptPersisted with nothing stored leaves no cache', () => {
   const state = freshState();
   assert.deepEqual(adoptPersisted(state), { raw: null, mark: null });
   assert.equal(loadPersistedCampaign(), null);
+});
+
+test('persistedSave names the string and the mark of the cached state', () => {
+  adoptPersisted(freshState());
+  assert.equal(persistedSave(), null, 'nothing stored leaves nothing cached');
+  const saved = saveCampaign(freshState());
+  assert.deepEqual(persistedSave(), {
+    raw: saved.json,
+    mark: localStorage.getItem('campaign-builder:save-mark'),
+  });
+  // A save that another tab wrote, then read through the cache.
+  const other = trySaveToLocalStorage(freshState());
+  localStorage.setItem('campaign-builder:save-mark', 'other-tab');
+  loadPersistedCampaign();
+  assert.deepEqual(persistedSave(), { raw: other.json, mark: 'other-tab' });
 });
