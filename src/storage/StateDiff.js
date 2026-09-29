@@ -32,12 +32,19 @@
  * coupling to the schema. Keep that coupling here, not spread through the
  * walker functions.
  *
+ * `combat/order` is keyed too, although it is an ordered sequence. Each
+ * combat action changes one participant's action budget, and as a leaf the
+ * whole order goes into the op twice. In a ten-combatant fight, an attack
+ * that spends an action, deals damage, and logs a line costs 3,438
+ * characters of history with a leaf order and 481 with a keyed one. A
+ * re-sort of the order records as an `order` op over the ids.
+ *
  * Every other array is a leaf, compared and replaced whole. This is
  * deliberate. Lookups go through `idFieldFor`, which reads own keys only, so
  * a state key such as `constructor` cannot pick up an Object.prototype
- * member and take the keyed branch. `proficiencies.skills`, an overlay stack, and `combat.order`
- * are all small. Several are ordered sequences, not keyed sets, and there
- * pairing by id is wrong, not just wasteful.
+ * member and take the keyed branch. `proficiencies.skills` and an overlay
+ * stack are both small. Both are sequences whose elements have no id, and a
+ * keyed diff of them has nothing to pair on.
  * @type {Record<string, string>}
  */
 export const ID_KEYED = {
@@ -51,6 +58,7 @@ export const ID_KEYED = {
   handouts: 'id',
   travelog: 'id',
   bestiary: 'id',
+  'combat/order': 'id',
 };
 
 /**

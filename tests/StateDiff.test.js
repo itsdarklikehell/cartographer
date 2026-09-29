@@ -12,6 +12,7 @@ import {
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { buildState } from '../src/storage/SaveManager.js';
 import { TilePalette } from '../src/map/TilePalette.js';
+import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 
 /** A state whose every id-keyed collection is populated, for path coverage. */
 function exampleState() {
@@ -210,11 +211,11 @@ test('a collection holding an element that is not a record falls back as well', 
 });
 
 test('applyOps ignores an op that addresses inside a positional array', () => {
-  // `combat.order` is a leaf: it is an ordered sequence, so nothing pairs its
-  // elements by id. A log written when it was keyed must not reach inside it.
-  const state = { combat: { order: [{ id: 'a', initiative: 12 }] } };
+  // `proficiencies.skills` is a leaf, so nothing pairs its elements. An op
+  // that names an element inside it changes nothing.
+  const state = { characters: [{ id: 'c1', proficiencies: { skills: ['stealth'] } }] };
   const applied = applyOps(state, [
-    { p: ['combat', 'order', 'a'], f: { id: 'a', initiative: 12 }, t: { id: 'a', initiative: 3 } },
+    { p: ['characters', 'c1', 'proficiencies', 'skills', 0], f: 'stealth', t: 'arcana' },
   ]);
   assert.deepEqual(applied, state);
 });
@@ -317,7 +318,10 @@ test('an order op naming unknown ids keeps every element the collection holds', 
 });
 
 test('every id-keyed path in the table exists in a real campaign', () => {
-  const state = exampleState();
+  const example = exampleState();
+  // The example campaign has no running fight, so start one.
+  const order = example.characters.map((c) => createParticipant(c.id, 10, 0));
+  const state = { ...example, combat: startCombat(order, () => '', 0) };
   for (const pattern of Object.keys(ID_KEYED)) {
     const found = collectByPattern(state, pattern);
     assert.ok(found.length, `${pattern} is present`);
@@ -415,4 +419,41 @@ test('a state key that names an Object.prototype member is a leaf, not a keyed c
   // A write addressed inside the array treats it as positional and is ignored.
   const inside = { p: ['constructor', 'a', 'id'], f: 'a', t: 'z' };
   assert.deepEqual(applyOps(after, [inside]), after);
+});
+
+test('a combat action names one participant of the order, not the whole order', () => {
+  const participant = (/** @type {string} */ id) => ({
+    id,
+    initiative: 12,
+    modifier: 1,
+    used: { action: false, bonus: false, reaction: false, movement: 0 },
+  });
+  const ids = ['pc1', 'pc2', 'gob1', 'gob2', 'gob3'];
+  const before = { combat: { round: 1, index: 0, order: ids.map(participant) } };
+  const after = clone(before);
+  after.combat.order[0].used.action = true;
+  const ops = assertRoundTrip(before, after);
+  assert.deepEqual(ops, [{ p: ['combat', 'order', 'pc1', 'used', 'action'], f: false, t: true }]);
+  // A new combatant sorted into the middle is an insertion at its index.
+  const joined = clone(after);
+  joined.combat.order.splice(2, 0, participant('wolf'));
+  const insert = assertRoundTrip(after, joined);
+  assert.deepEqual(
+    insert.map((op) => [op.p, op.i]),
+    [[['combat', 'order', 'wolf'], 2]],
+  );
+  // A re-sort of the same combatants is one order op over the ids.
+  const resorted = clone(after);
+  resorted.combat.order.reverse();
+  assert.deepEqual(
+    assertRoundTrip(after, resorted).map((op) => op.k),
+    ['order'],
+  );
+  // A participant listed twice cannot be paired, so the order is replaced whole.
+  const doubled = clone(after);
+  doubled.combat.order.push(participant('pc1'));
+  assert.deepEqual(
+    assertRoundTrip(after, doubled).map((op) => op.p),
+    [['combat', 'order']],
+  );
 });
