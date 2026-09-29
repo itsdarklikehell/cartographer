@@ -122,6 +122,12 @@ room for the campaign, and a notice says so. When the save fails even with
 no undo steps left, an error notice appears once, and autosave does not try
 again until you make another change.
 
+New, Load example, and Import keep a copy of the campaign they replace as
+one undo step. That step stays until the undo history of later edits
+fills up. When browser storage has no room for the copy, the confirm says that
+Undo may not be able to restore the current campaign. Export the campaign
+first to keep a copy.
+
 Everything lives in the local storage of one browser, under one origin.
 There is no server and no account.
 

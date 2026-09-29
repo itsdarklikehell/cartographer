@@ -1,25 +1,24 @@
 /**
  * This module implements undo and redo as a log of invertible deltas against
- * the persisted campaign. It replaces an earlier ring of whole-campaign
- * snapshots.
- *
- * The ring stored up to ten complete serialized saves beside the canonical
- * save. Each history step cost a whole campaign, and each save wrote twice
- * the campaign's bytes synchronously. The ring also offered no redo, because
- * a stack of past states cannot describe a future state.
- * A log of deltas costs only the size of the edit. Redo uses the same
- * structure: each op records its old value and its new value, so `invertOps`
- * only swaps the two. Undo and redo are the same walk in opposite directions.
+ * the persisted campaign. A delta costs only the size of the edit. Each op
+ * records its old value and its new value, so `invertOps` only swaps the
+ * two, and redo reads the same records as undo. Undo and redo are the same
+ * walk in opposite directions.
  *
  * Storage layout: one key per record, so a push is one small write.
  *
- * - `campaign-builder:history`: the index, `{ version, deltas, cursor }`.
- *   `deltas` is the ordered list of sequence numbers. `cursor` is how many of
- *   them the persisted save currently reflects. Deltas past the cursor are
- *   the redo tail.
- * - `campaign-builder:history:d<seq>`: one record. A delta record is a
- *   `JSON.stringify`d list of ops. A snapshot record is `snapshot:` followed
- *   by the stored save string on the other side of the step.
+ * - `campaign-builder:history`: the index,
+ *   `{ version, log, deltas, cursor, snapshots }`. `deltas` is the ordered
+ *   list of sequence numbers. `cursor` is how many of them the persisted
+ *   save currently reflects. Deltas past the cursor are the redo tail.
+ *   `snapshots` lists the sequence numbers whose record is a snapshot, so
+ *   the byte budget of `HistoryBudget.js` can tell the two kinds apart from
+ *   the footprint ledger alone. An index without it counts every record as
+ *   a delta.
+ * - `campaign-builder:history:d<seq>`: one record. A delta record is
+ *   `delta:` followed by a `JSON.stringify`d list of ops. A snapshot record
+ *   is `snapshot:` followed by the stored save string on the other side of
+ *   the step.
  *
  * A step that replaces the whole campaign (New, Load example, Import)
  * stores a snapshot record, because its ops contain both worlds and a
@@ -27,41 +26,35 @@
  * a snapshot record with the current save string, so the record always
  * contains the state across the step from the cursor.
  *
- * This module deliberately stores no base snapshot: a packed campaign that
- * the log applies onto. The canonical save already holds that state, and
- * undo and redo apply a delta only to the *current* state, never to a stored
- * base.
- * A base snapshot's only remaining job is to let the oldest deltas fold into
- * it at the byte cap. Dropping those deltas instead has the same effect: it
- * costs undo depth either way, and it avoids rewriting a multi-megabyte base
- * synchronously on every cap hit.
- * A base snapshot also lets the app replay base plus log at load time. If
- * the app does this, it does not need to write the canonical save at all.
- * This idea is out of scope here. Adding it back is what restores a base
- * snapshot to this module.
+ * This module stores no base snapshot: a packed campaign that the log
+ * applies onto. The canonical save already contains that state, and undo and
+ * redo apply a delta only to the *current* state, never to a stored base.
+ * At the byte cap, the oldest deltas drop instead of folding into a base,
+ * which avoids a synchronous rewrite of a multi-megabyte base on every cap
+ * hit. The cost in undo depth is the same either way. Replaying a base plus
+ * the log at load time, so that the app does not write the canonical save
+ * at all, needs a base snapshot. That idea is out of scope here.
  *
  * The `version` field on the index makes an app upgrade safe. This module
- * never migrates a delta: an app version writes a delta against a specific
- * `CampaignState` shape. A log stamped with any version other than the
+ * never migrates a delta, because an app version writes a delta against
+ * one `CampaignState` format. A log stamped with any version other than the
  * current schema version is discarded, not applied. Each app upgrade costs
  * undo depth. Pre-GA save compatibility allows this cost.
  *
- * One property of the ring is worth keeping: a push moves strings around
- * instead of parsing and re-stringifying a campaign. A diff cannot keep this
- * property, because it needs the previous state as a value.
- * This module pays that cost once. It caches the last persisted state in
- * memory, stamped with the raw string it came from. In the normal case, this
- * costs one `getItem` call and one string comparison.
- * The stamp is also a correctness guard. A tab that declines the cross-tab
- * reload prompt keeps editing against a save that another tab has since
- * replaced. Comparing the raw string catches this case. Without the stamp, a
- * plain cache diffs against a state that is no longer stored.
+ * A diff needs the previous state as a value, and parsing the stored save
+ * on every push costs a whole campaign's parse. This module caches the last
+ * persisted state in memory, stamped with the raw string it came from. In
+ * the normal case, this costs one `getItem` call and one string comparison.
+ * The stamp also guards the diff. A tab that declines the cross-tab reload
+ * prompt keeps editing against a save that another tab has since replaced.
+ * Comparing the raw string catches this case. A plain cache would diff
+ * against a state that is no longer stored.
  *
  * Every write in this module happens after the campaign write, never before.
- * The index must never describe a state that was not stored. A quota
- * failure costs undo depth rather than the whole log, and this module
- * reports the failure. Undo silently becoming single-step is the defect that
- * this reporting contract exists to catch.
+ * An index that describes a state that was not stored applies a delta to
+ * the wrong base. A quota failure costs undo depth rather than the whole
+ * log, and this module reports the failure. Without the report, undo drops
+ * to a single step with no notice.
  *
  * The save mark (`SaveManager.SAVE_MARK_KEY`) is the last write of every
  * save and every undo or redo step. Another tab adopts a save only on the
@@ -72,14 +65,27 @@
 import { applyOps, diffState, invertOps } from './StateDiff.js';
 import { compactOps, expandOps } from './HistoryCodec.js';
 import { CURRENT_VERSION } from './Migrations.js';
-import { STORAGE_KEY, deserialize, trySaveToLocalStorage, writeSaveMark } from './SaveManager.js';
-import { loadAssetTable } from './AssetStore.js';
+import {
+  STORAGE_KEY,
+  deserialize,
+  packState,
+  trySaveToLocalStorage,
+  writeSaveMark,
+} from './SaveManager.js';
+import { detachAssets, loadAssetTable } from './AssetStore.js';
 import { clamp } from '../util/num.js';
-import { removeStored, storedLength, writeStored } from './Footprint.js';
+import {
+  QUOTA_BYTES,
+  footprintWhere,
+  removeStored,
+  storedLength,
+  writeStored,
+} from './Footprint.js';
+import { newestSnapshot, olderSnapshotRoom, recordsToDrop, snapshotFits } from './HistoryBudget.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
-/** @typedef {{ version: number, log: string, deltas: number[], cursor: number }} HistoryIndex */
+/** @typedef {{ version: number, log: string, deltas: number[], cursor: number, snapshots: number[] }} HistoryIndex */
 /** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
 /** @typedef {{ ops: DiffOp[] } | { snapshot: string }} HistoryRecord */
 
@@ -104,16 +110,15 @@ const DELTA_PREFIX = 'delta:';
 export const HISTORY_KEY = 'campaign-builder:history';
 
 /**
- * How many bytes of deltas this module keeps. The ring it replaces cost ten
- * whole campaigns (0.73 MB for the example campaign). This cap gives more
- * undo depth and uses less storage for any realistic edit. The cap still
- * bounds a log, because a single handout insertion can add 250,000
- * characters in one step.
+ * How many bytes of delta records this module keeps. Without a cap, a log
+ * of large edits (a region generated or regenerated, a custom tile painted
+ * over a whole node) grows until the origin is over quota. Snapshot records
+ * do not count here. They have their own budget in `HistoryBudget.js`.
  */
 export const HISTORY_BYTE_CAP = 512 * 1024;
 
 /** @type {HistoryIndex} */
-const EMPTY_INDEX = { version: CURRENT_VERSION, log: '', deltas: [], cursor: 0 };
+const EMPTY_INDEX = { version: CURRENT_VERSION, log: '', deltas: [], cursor: 0, snapshots: [] };
 
 /**
  * A random id for a fresh log. Sequence numbers restart at zero after
@@ -155,10 +160,9 @@ function isRecord(value) {
 
 /**
  * Delete the index and every record under it. This module scans by key
- * prefix instead of walking the index, so it also deletes the previous
- * ring's `<key>:<seq>` snapshots. The upgrade path deletes these snapshots
- * instead of converting them, because a whole-campaign snapshot is not a
- * delta and cannot become one.
+ * prefix instead of walking the index, so it also deletes a key under the
+ * prefix that the index does not name, such as a record whose index write
+ * failed.
  * @returns {boolean} whether any key was removed
  */
 export function clearHistoryLog() {
@@ -175,9 +179,9 @@ export function clearHistoryLog() {
 /**
  * The stored index, or an empty index when none exists. This function clears
  * the whole log instead of partially trusting anything unreadable: a corrupt
- * record, the previous ring's array of sequence numbers, or a log written
- * under an older schema version. A delta that does not match this app's
- * state shape corrupts the campaign it is applied to.
+ * record, an index that is not a record, or a log written under an older
+ * schema version. A delta that does not match this app's state format
+ * corrupts the campaign it is applied to.
  * @returns {HistoryIndex}
  */
 function readIndex() {
@@ -205,16 +209,22 @@ function readIndex() {
       ? clamp(Math.trunc(stored), 0, deltas.length)
       : deltas.length;
   const log = typeof record.log === 'string' ? record.log : '';
-  return { version: CURRENT_VERSION, log, deltas, cursor };
+  const snapshots = Array.isArray(record.snapshots)
+    ? record.snapshots.filter((seq) => deltas.includes(seq))
+    : [];
+  return { version: CURRENT_VERSION, log, deltas, cursor, snapshots };
 }
 
 /**
+ * Write the index. `snapshots` keeps only the records that `deltas` still
+ * names, so a caller that drops records needs to change `deltas` only.
  * @param {HistoryIndex} index
  * @returns {boolean} whether the write landed
  */
 function writeIndex(index) {
+  const snapshots = index.snapshots.filter((seq) => index.deltas.includes(seq));
   try {
-    writeStored(HISTORY_KEY, JSON.stringify(index));
+    writeStored(HISTORY_KEY, JSON.stringify({ ...index, snapshots }));
     return true;
   } catch {
     return false;
@@ -299,22 +309,42 @@ function lastPersisted() {
 }
 
 /**
- * Remove the oldest deltas until the log fits the byte cap. Return the
- * surviving sequence numbers, and remove the corresponding keys. Hitting the
- * cap is by design, not a failure, so this function does not report it as
- * lost depth. The alternative, an unbounded log, puts the origin over quota.
+ * True when a key belongs to the undo log.
+ * @param {string} key
+ * @returns {boolean}
+ */
+function isHistoryKey(key) {
+  return key === HISTORY_KEY || key.startsWith(`${HISTORY_KEY}:`);
+}
+
+/**
+ * Remove the oldest records until the delta records fit the byte cap and
+ * the older snapshots fit the room that `HistoryBudget.js` gives them.
+ * Return the surviving sequence numbers, and remove the corresponding keys.
+ * Hitting the budget is by design, not a failure, so this function does not
+ * report it as lost depth. An unbounded log puts the origin over quota.
  * @param {number[]} deltas
+ * @param {number[]} snapshots the sequence numbers whose record is a snapshot
  * @returns {number[]}
  */
-function trimToCap(deltas) {
-  // The ledger already holds each delta's length, so no delta is read again.
-  const sizes = deltas.map((seq) => storedLength(deltaKey(seq)) * 2);
-  let total = sizes.reduce((sum, size) => sum + size, 0);
-  let drop = 0;
-  while (total > HISTORY_BYTE_CAP && drop < deltas.length - 1) {
-    total -= sizes[drop];
-    drop += 1;
-  }
+function trimToCap(deltas, snapshots) {
+  const isSnapshot = new Set(snapshots);
+  // The ledger already holds each record's length, so no record is read again.
+  const records = deltas.map((seq) => ({
+    bytes: storedLength(deltaKey(seq)) * 2,
+    snapshot: isSnapshot.has(seq),
+  }));
+  const newest = newestSnapshot(records);
+  const older = records.some((record, i) => record.snapshot && i !== newest);
+  const room = older
+    ? olderSnapshotRoom({
+        quota: QUOTA_BYTES,
+        cap: HISTORY_BYTE_CAP,
+        outside: footprintWhere((key) => !isHistoryKey(key)),
+        newest: records[newest].bytes,
+      })
+    : Infinity;
+  const drop = recordsToDrop(records, HISTORY_BYTE_CAP, room);
   for (const seq of deltas.slice(0, drop)) removeStored(deltaKey(seq));
   return deltas.slice(drop);
 }
@@ -344,6 +374,36 @@ function stepRecord(before, beforeRaw, after) {
 }
 
 /**
+ * True when browser storage has room for the undo snapshot of a step that
+ * replaces the stored campaign with `next` (New, Load example, Import). The
+ * estimate counts the new save in place of the old one, the images that
+ * `next` adds to the image table, every other key outside the log, and the
+ * snapshot. Every other record of the log can drop to make room, so they do
+ * not count. With nothing stored, the step records no snapshot and loses
+ * nothing. The estimate uses `QUOTA_BYTES`, and a browser that allows more
+ * can still take a snapshot that this function reports as too large.
+ * @param {CampaignState} next
+ * @returns {boolean}
+ */
+export function replaceIsUndoable(next) {
+  const stored = storedLength(STORAGE_KEY);
+  if (!stored) return true;
+  // The pack caches keep this work for the real save that follows.
+  const { state, assets } = detachAssets(packState(next));
+  const saveLength = JSON.stringify(state).length;
+  const entries = Object.entries(assets);
+  const table = entries.length ? loadAssetTable() : {};
+  let added = 0;
+  for (const [key, payload] of entries) {
+    // A key and a payload cost their length plus quotes, a colon, and a comma.
+    if (table[key] !== payload) added += key.length + payload.length + 4;
+  }
+  const outside = footprintWhere((key) => !isHistoryKey(key)) + (saveLength - stored + added) * 2;
+  const record = deltaKey(nextSeq(readIndex())).length + SNAPSHOT_PREFIX.length + stored;
+  return snapshotFits({ quota: QUOTA_BYTES, outside, snapshot: record * 2 });
+}
+
+/**
  * A state with a recorded delta applied: the ops of `planAdoption`, or of
  * a stored record inverted with `invertOps`. The compact node ops become
  * plain ops first. The function is pure, like `applyOps`.
@@ -368,16 +428,26 @@ export function applyHistoryOps(state, ops) {
 function recordStep(record) {
   const index = readIndex();
   const seq = nextSeq(index);
-  const tail = index.deltas.slice(index.cursor);
+  let tail = index.deltas.slice(index.cursor);
   const deltas = [...index.deltas.slice(0, index.cursor), seq];
+  const snapshots = record.startsWith(SNAPSHOT_PREFIX)
+    ? [...index.snapshots, seq]
+    : index.snapshots;
   let evictedAll = false;
   for (;;) {
     try {
       writeStored(deltaKey(seq), record);
       break;
     } catch {
-      // A full origin degrades depth first: give up the oldest step and
-      // retry the write, instead of losing the whole log for one write.
+      // A full origin degrades depth first. The redo tail goes before any
+      // step, because this step drops it anyway, and an undone Import leaves
+      // a whole save in it. Then the oldest step goes, and the write runs
+      // again, instead of losing the whole log for one write.
+      if (tail.length) {
+        for (const dropped of tail) removeStored(deltaKey(dropped));
+        tail = [];
+        continue;
+      }
       if (deltas.length < 2) {
         clearHistoryLog();
         return { ok: false, evictedAll: true };
@@ -387,12 +457,13 @@ function recordStep(record) {
       evictedAll = true;
     }
   }
-  const kept = trimToCap(deltas);
+  const kept = trimToCap(deltas, snapshots);
   const log = index.log || newLogId();
   // The index write happens last. An index that names a key that was never
   // written describes a history step that cannot be applied. An unnamed key
   // is only unused data.
-  if (!writeIndex({ version: CURRENT_VERSION, log, deltas: kept, cursor: kept.length })) {
+  const next = { version: CURRENT_VERSION, log, deltas: kept, cursor: kept.length, snapshots };
+  if (!writeIndex(next)) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
   }
@@ -562,7 +633,7 @@ function swapSnapshot(index, at, direction, snapshot) {
         ? { deltas: index.deltas.slice(0, at), cursor }
         : { deltas: index.deltas.slice(at + 1), cursor: 0 };
   }
-  if (!writeIndex({ ...index, ...next })) {
+  if (!writeIndex({ ...index, ...next, snapshots: [...index.snapshots, seq] })) {
     clearHistoryLog();
     return { save, state: restored };
   }

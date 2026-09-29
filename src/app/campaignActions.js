@@ -29,6 +29,7 @@ import {
   footprintWarning,
   historyLoss,
   historyLossMessage,
+  replacePrompt,
   saveOutcome,
 } from '../storage/SaveNotices.js';
 import {
@@ -39,6 +40,7 @@ import {
   historyPosition,
   planAdoption,
   applyHistoryOps,
+  replaceIsUndoable,
 } from '../storage/HistoryLog.js';
 import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
@@ -352,21 +354,11 @@ export function wireCampaignActions(app) {
   app.actions.mergeQueuedPatches = patches.mergeQueued;
 
   /**
-   * Replaces the whole campaign. This persists the given campaign and
-   * reloads, so every module re-initializes from the same
-   * loadFromLocalStorage path that a normal page load takes. The import flow
-   * uses the same pattern.
-   * @param {import('../campaign/Campaigns.js').Campaign} campaign
-   * @param {string} [toastMessage]
-   */
-  function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
-    persistAndReload(buildState(campaign), toastMessage);
-  }
-
-  /**
-   * Persists a campaign that replaces the live one, then reloads. The save
-   * and history notices go into the queued toast, because a toast shown
-   * here disappears with the page at once.
+   * Persists a campaign that replaces the live one (New, Load example,
+   * Import), then reloads, so every module re-initializes from the same
+   * load path that a normal page load takes. The save and history notices
+   * go into the queued toast, because a toast shown here disappears with
+   * the page at once.
    * @param {import('../types/storage.js').CampaignState} state
    * @param {string} toastMessage
    */
@@ -418,22 +410,34 @@ export function wireCampaignActions(app) {
     return isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
   }
 
+  // A replace confirm needs the new campaign first, because whether Undo can
+  // restore the current one depends on the size of both saves. The example
+  // takes about 50 to 90 ms to build, so it is built once, before the
+  // confirm, and the same state is saved after it.
   mustGetElement('new-btn').addEventListener('click', async () => {
+    const state = buildState(buildBlankCampaign());
     const ok = await confirmModal(
-      'Start a new blank campaign? The current campaign is replaced, including anything saved.',
+      replacePrompt(
+        'Start a new blank campaign? The current campaign is replaced, including anything saved.',
+        replaceIsUndoable(state),
+      ),
       { variant: 'danger', confirmLabel: 'New campaign' },
     );
-    if (ok) replaceCampaign(buildBlankCampaign(), 'Started a new blank campaign.');
+    if (ok) persistAndReload(state, 'Started a new blank campaign.');
   });
 
   mustGetElement('example-btn').addEventListener('click', async () => {
+    const state = buildState(buildExampleCampaign(app.palette));
     const ok =
       isBlank() ||
       (await confirmModal(
-        'Load the example campaign? The current campaign is replaced, including anything saved.',
+        replacePrompt(
+          'Load the example campaign? The current campaign is replaced, including anything saved.',
+          replaceIsUndoable(state),
+        ),
         { variant: 'danger', confirmLabel: 'Load example' },
       ));
-    if (ok) replaceCampaign(buildExampleCampaign(app.palette), 'Loaded the example campaign.');
+    if (ok) persistAndReload(state, 'Loaded the example campaign.');
   });
 
   mustGetElement('save-btn').addEventListener('click', async () => {
@@ -704,7 +708,11 @@ export function wireCampaignActions(app) {
     const replace =
       isBlank() ||
       (await confirmModal(
-        'Import this campaign? It replaces the current campaign. Undo in the header restores the current one.',
+        replacePrompt(
+          'Import this campaign? It replaces the current campaign.',
+          replaceIsUndoable(state),
+          'Undo in the header restores the current one.',
+        ),
         { variant: 'danger', confirmLabel: 'Import' },
       ));
     if (!replace) return;

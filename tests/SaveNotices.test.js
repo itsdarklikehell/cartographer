@@ -9,6 +9,8 @@ import {
   historyLoss,
   historyLossMessage,
   loadFailedMessage,
+  NO_UNDO_ROOM,
+  replacePrompt,
   saveOutcome,
   shortenedBootMessage,
   shortenedImportMessage,
@@ -111,4 +113,11 @@ test('a shortened load names what it left out, and each limit', () => {
   const imported = shortenedImportMessage({ dropped: 3, emptied: 1 });
   assert.ok(imported.startsWith(both));
   assert.match(imported, /Importing stores the shortened map/);
+});
+
+test('a replace confirm adds the undo note only when the step is undoable', () => {
+  assert.equal(replacePrompt('Replace?', true), 'Replace?');
+  assert.equal(replacePrompt('Replace?', true, 'Undo restores it.'), 'Replace? Undo restores it.');
+  assert.equal(replacePrompt('Replace?', false, 'Undo restores it.'), `Replace? ${NO_UNDO_ROOM}`);
+  assert.equal(replacePrompt('Replace?', false), `Replace? ${NO_UNDO_ROOM}`);
 });

@@ -665,8 +665,30 @@ in one pass at the end of the removal phase. The plain ops of a
 regenerated node (about 2,700, of which 1,820 remove a tile) apply in 1.1
 ms, and in 6.5 ms with a copy of the node list and tile list per op.
 
-A record larger than the byte cap stays as the only step, because
-`trimToCap` always keeps the newest record, and the older steps drop.
+Delta records share `HISTORY_BYTE_CAP` (512 KiB), and `trimToCap` drops
+the oldest records until the deltas fit. A record larger than the whole
+cap stays as the only step, because `trimToCap` always keeps the newest
+record. Snapshot records do not count against the cap. One snapshot of the
+example campaign is about 800 KB, so counted against the cap it removes
+every older step when it lands, and the next save removes the snapshot
+itself. `storage/HistoryBudget.js` gives snapshots a budget of their own,
+as pure arithmetic over record sizes. The newest snapshot is outside that
+budget, because its write already succeeded. An older snapshot stays only
+while it fits in the quota estimate (`QUOTA_BYTES`, 5 MiB) less the delta
+cap, every key outside the log, and the newest snapshot. Records always
+drop from the oldest end, because undo cannot reach a record past a gap.
+The index lists the snapshot records in `snapshots`, so the budget reads
+each record's size from the footprint ledger and never reads a record. An
+index without the list counts every record as a delta.
+
+New, Load example, and Import call `replaceIsUndoable` before their
+confirm. It estimates whether the snapshot of the current save fits beside
+the new save, the images that the new campaign adds, and the other keys.
+When the snapshot does not fit, the confirm says that Undo may not restore
+the current campaign and suggests an export (`SaveNotices.replacePrompt`).
+The estimate uses the same 5 MiB model as the footprint warning. A browser
+that allows more can still store a snapshot that the estimate calls too
+large, so the text says "may".
 
 Both header controls step the cursor and then reload. As a result, every
 module re-initializes from the restored state through the ordinary load
@@ -674,7 +696,7 @@ path. Both controls grey out from `historyDepth` when that direction is
 empty.
 
 The storage layout uses one key for each record: an index at
-`campaign-builder:history` that contains `{ version, log, deltas, cursor }`, and
+`campaign-builder:history` that contains `{ version, log, deltas, cursor, snapshots }`, and
 one `campaign-builder:history:d<seq>` for each record. A step is therefore
 one small `setItem` call, instead of a rewrite of the whole log. Measured on
 the example campaign, fifty party steps cost 27,304 bytes of log, where a
@@ -714,9 +736,10 @@ The log's own rules keep it from corrupting the campaign that it describes:
 2. **Every history write happens after the campaign write**, on both the
    save path and the cursor-stepping path. As a result, the index can never
    describe a state that was not stored.
-3. **A full origin degrades depth-first.** The app drops the oldest step and
-   retries, then drops the whole log if that also fails, and reports
-   `{ ok, evictedAll }` either way. The report keeps undo from becoming
+3. **A full origin degrades depth-first.** A record write that fails drops
+   the redo tail first, which the new step discards anyway, then the oldest
+   step, and retries after each. It drops the whole log if that also fails,
+   and reports `{ ok, evictedAll }` either way. The report keeps undo from becoming
    single-step without notice. Reaching the ordinary byte cap is normal
    operation and reports no loss. The campaign write gets the same
    treatment: when it fails, `saveCampaign` passes `makeRoom` to

@@ -25,6 +25,12 @@ import { mulberry32 } from '../util/Rng.js';
  * 5), so it stays under the budget. Its packed save is about 0.5 MiB of
  * text, and localStorage stores two bytes per character, so it adds about
  * 1 MiB against the 3 MiB warning of `SaveManager.QUOTA_WARN_BYTES`.
+ * The undo log costs more on top of that. The generation's own undo record
+ * is the smaller of the new nodes in the save's form and a snapshot of the
+ * save before it. Over the example campaign, that is a snapshot of about
+ * 0.4 million characters. A New, Load example, or Import over the generated
+ * world keeps the replaced save as an undo snapshot, which is a second copy
+ * of the whole save.
  * Only the forced sub-maps of the top map can go past the budget, and
  * `MapGenerator.MAX_LEVELS` limits each stack of dungeon or cave levels.
  */

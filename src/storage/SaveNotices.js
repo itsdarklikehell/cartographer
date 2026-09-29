@@ -10,8 +10,7 @@ import { MAX_NODES, MAX_TOTAL_CELLS } from './TileCodec.js';
  * matters.
  */
 
-/** The approximate storage limit a browser gives one origin in localStorage. */
-export const QUOTA_BYTES = 5 * 1024 * 1024;
+export { QUOTA_BYTES } from './Footprint.js';
 
 /**
  * How much the footprint must grow before the near-quota warning repeats.
@@ -171,3 +170,25 @@ export function shortenedImportMessage(truncation) {
 /** The Save button's confirm while saving is paused. */
 export const SAVE_WHILE_HELD_MESSAGE =
   'Saving now stores the shortened map over the full campaign in this browser.';
+
+/**
+ * The sentence a replace confirm adds when browser storage has no room to
+ * keep the current campaign as an undo snapshot. The GM can still export
+ * the campaign first.
+ */
+export const NO_UNDO_ROOM =
+  'Browser storage has no room for a copy of the current campaign, so Undo may not be able to restore it. Export it first to keep a copy.';
+
+/**
+ * The text of a confirm before New, Load example, or Import. `undoNote`
+ * tells the GM that Undo restores the current campaign, and it shows only
+ * when the step is undoable. A step that is not undoable shows
+ * `NO_UNDO_ROOM` in its place.
+ * @param {string} question
+ * @param {boolean} undoable the answer of `HistoryLog.replaceIsUndoable`
+ * @param {string} [undoNote]
+ * @returns {string}
+ */
+export function replacePrompt(question, undoable, undoNote = '') {
+  return [question, undoable ? undoNote : NO_UNDO_ROOM].filter(Boolean).join(' ');
+}

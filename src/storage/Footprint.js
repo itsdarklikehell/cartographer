@@ -25,6 +25,13 @@
  * installs a fresh stub per case).
  */
 
+/**
+ * The approximate storage limit a browser gives one origin in localStorage,
+ * in bytes at two bytes per character. A browser can allow more, so a
+ * decision made on this number errs toward caution.
+ */
+export const QUOTA_BYTES = 5 * 1024 * 1024;
+
 /** @type {Map<string, number> | null} */
 let ledger = null;
 
@@ -161,7 +168,20 @@ export function storedLength(key) {
  * @returns {number}
  */
 export function storageFootprint() {
+  return footprintWhere(() => true);
+}
+
+/**
+ * What the keys that pass `test` spend of the quota, in bytes, keys
+ * included. The undo log uses it to tell its own bytes from the rest of the
+ * origin.
+ * @param {(key: string) => boolean} test
+ * @returns {number}
+ */
+export function footprintWhere(test) {
   let total = 0;
-  for (const [key, length] of currentLedger()) total += (key.length + length) * 2;
+  for (const [key, length] of currentLedger()) {
+    if (test(key)) total += (key.length + length) * 2;
+  }
   return total;
 }
