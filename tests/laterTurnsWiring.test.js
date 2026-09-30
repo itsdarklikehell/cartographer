@@ -9,7 +9,7 @@ import {
   endTurnEffects,
   startTurnEffects,
 } from '../src/app/turnEffects.js';
-import { applyConditionToTarget, endSpellEffects } from '../src/app/combatants.js';
+import { applyConditionToTarget, endSpellEffects } from '../src/app/combatantWrites.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { createResource } from '../src/entities/Resource.js';

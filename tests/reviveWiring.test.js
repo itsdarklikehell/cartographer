@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { applyOutcomes } from '../src/app/spellOutcomes.js';
-import { applyToTarget } from '../src/app/combatants.js';
+import { applyToTarget } from '../src/app/combatantWrites.js';
 import { createCharacter, damageCharacter, getHP, withHP } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { killOutright, dropToDying } from '../src/entities/DeathSaves.js';

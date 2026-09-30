@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
-import { applyToTarget } from '../src/app/combatants.js';
+import { applyToTarget } from '../src/app/combatantWrites.js';
 import { slayCombatant } from '../src/app/slay.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { createCreature } from '../src/entities/Creature.js';

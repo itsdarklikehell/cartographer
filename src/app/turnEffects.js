@@ -5,13 +5,8 @@ import { isGone } from '../combat/CombatView.js';
 import { settleChips } from './lethargy.js';
 import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
-import {
-  applyToTarget,
-  commitCreatures,
-  defendedDamage,
-  findCombatant,
-  retryImposedSaves,
-} from './combatants.js';
+import { commitCreatures, defendedDamage, findCombatant } from './combatants.js';
+import { applyToTarget, retryImposedSaves } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Condition} Condition */

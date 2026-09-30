@@ -33,14 +33,8 @@ import { addLethargy } from './lethargy.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
-import {
-  commitCreatures,
-  describeCombatant,
-  endSpellEffects,
-  findCombatant,
-  logDefeatTransition,
-  storeCreature,
-} from './combatants.js';
+import { commitCreatures, describeCombatant, findCombatant } from './combatants.js';
+import { endSpellEffects, logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { setCombatantExhaustion } from './exhaustion.js';

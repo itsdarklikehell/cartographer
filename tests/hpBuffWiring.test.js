@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { rosterTargets } from '../src/app/spellTargets.js';
-import { applyConditionToTarget, applyToTarget, endSpellEffects } from '../src/app/combatants.js';
+import {
+  applyConditionToTarget,
+  applyToTarget,
+  endSpellEffects,
+} from '../src/app/combatantWrites.js';
 import { startTurnEffects } from '../src/app/turnEffects.js';
 import { passTime } from '../src/app/passTime.js';
 import { grantTempTo } from '../src/app/tempHP.js';

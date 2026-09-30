@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { rosterTargets } from '../src/app/spellTargets.js';
-import { applyConditionToTarget, endSpellEffects } from '../src/app/combatants.js';
+import { applyConditionToTarget, endSpellEffects } from '../src/app/combatantWrites.js';
 import { addLethargy } from '../src/app/lethargy.js';
 import { advancePastHeld } from '../src/app/turnAdvance.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';

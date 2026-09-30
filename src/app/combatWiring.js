@@ -6,13 +6,8 @@ import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
-import {
-  applyToTarget,
-  endSpellEffects,
-  findCombatant,
-  spellsOf,
-  weaponsOf,
-} from './combatants.js';
+import { findCombatant, spellsOf, weaponsOf } from './combatants.js';
+import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';

@@ -21,12 +21,8 @@ import {
   exhaustionNote,
   setExhaustion,
 } from '../entities/Exhaustion.js';
-import {
-  findCombatant,
-  logDefeatTransition,
-  storeCharacterChips,
-  storeCreature,
-} from './combatants.js';
+import { findCombatant } from './combatants.js';
+import { logDefeatTransition, storeCharacterChips, storeCreature } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */

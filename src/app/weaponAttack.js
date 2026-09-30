@@ -23,7 +23,8 @@ import {
   droppedNote,
   resolveAttack,
 } from '../combat/AttackResolve.js';
-import { findCombatant, combatantsAsTargets, applyToTarget, defendedDamage } from './combatants.js';
+import { findCombatant, combatantsAsTargets, defendedDamage } from './combatants.js';
+import { applyToTarget } from './combatantWrites.js';
 import { skipsTurn } from '../combat/CombatView.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { spendRollRiders } from './riderSpend.js';

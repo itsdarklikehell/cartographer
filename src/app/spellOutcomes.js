@@ -6,12 +6,8 @@ import { defenseNote } from '../entities/DamageDefenses.js';
 import { chipTiming } from '../entities/TurnEffects.js';
 import { currentParticipant } from '../combat/Initiative.js';
 import { spawnSummons } from './summons.js';
-import {
-  applyToTarget,
-  applyConditionToTarget,
-  defendedDamage,
-  findCombatant,
-} from './combatants.js';
+import { defendedDamage, findCombatant } from './combatants.js';
+import { applyToTarget, applyConditionToTarget } from './combatantWrites.js';
 import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
 import { grantTempTo } from './tempHP.js';

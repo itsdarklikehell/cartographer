@@ -860,7 +860,7 @@ creature, so every HP reader works unchanged. `hpBoost` records how much of
 the maximum is the raise. `HPBuffs.settleHPBuffs` compares that record with
 the chips the entity holds and moves the maximum by the difference. Every
 writer that changes a chip list calls it: the chip write in
-`app/combatants.js`, the round tick and the game time in `TimedEffects.js`,
+`app/combatantWrites.js`, the round tick and the game time in `TimedEffects.js`,
 the turn-boundary sweep, the end of a spell, and the conditions bar of the
 character sheet, the NPC panel, and the encounter panel. A writer that
 skips it leaves the raise in the maximum after the chip is gone.
@@ -880,7 +880,7 @@ that temporary hit points absorb, and it asks for no save when the HP drop
 comes from an HP chip that ends.
 
 `mods.immune` names the conditions that its holder can't take.
-`combatants.applyConditionToTarget` refuses such a condition and logs the
+`combatantWrites.applyConditionToTarget` refuses such a condition and logs the
 chip that blocks it, and a new chip with an immunity ends the chips it
 names.
 
@@ -1387,12 +1387,12 @@ modules use the same spelling.
   concentration spell succeeds. It writes the field onto the same entity as
   the spent slot and the consumed component, so one store call covers all
   three.
-- `applyToTarget` in `app/combatants.js` calls for the save on damage. Weapon
+- `applyToTarget` in `app/combatantWrites.js` calls for the save on damage. Weapon
   hits and spell damage both arrive through this function. A character
   knocked to 0 HP loses the spell with no roll.
 - The round wrap in `app/encounterWiring.js` ticks the duration and logs a
   spell that ran out.
-- `storeCharacterChips` in `app/combatants.js` stores a character whose chips
+- `storeCharacterChips` in `app/combatantWrites.js` stores a character whose chips
   changed, through `dropIfHelpless`. A spell that paralyzes the caster and a
   death from exhaustion both go through it.
 - The conditions bar of the character sheet ends the spell in the same way
@@ -1407,7 +1407,7 @@ next)` in `entities/CreatureHit.js` reads one write to a creature. It ends the
 creature's spell on a drop to 0 HP, a failed CON save after damage, a chip that
 stops it acting, or a hand removal of the `Concentrating` chip. The save uses
 the creature's own bonus from `creatureSaveBonus`. `storeCreature` in
-`app/combatants.js` applies it to every creature write: `applyToTarget`,
+`app/combatantWrites.js` applies it to every creature write: `applyToTarget`,
 `applyConditionToTarget`, the exhaustion stepper, and the `onUpdate` of the
 Encounters and NPC panels. The Drop control of the combat screen works for a
 creature caster too, and the round wrap ticks its duration.
@@ -1495,7 +1495,7 @@ the spell that the hit ended. The events are the drop to 0, massive damage, a
 failure while down, a heal above 0, and the concentration outcome. The
 consequences go into the same write as the HP change.
 
-`applyToTarget` in `app/combatants.js` calls these functions and logs the
+`applyToTarget` in `app/combatantWrites.js` calls these functions and logs the
 events. Every hit and every heal arrives through that function, including the
 HP steppers of the character sheet, which reach it through the sheet's
 `hpStep` host. `applyToTarget` takes `opts.crit` for the doubled failure, and
@@ -1539,7 +1539,7 @@ target each keep their own chips.
 
 ### The sweep
 
-`app/combatants.js` runs these functions, because only the wiring can see
+`app/combatantWrites.js` runs these functions, because only the wiring can see
 every collection that a target can be in. `endSpellEffects(app, casterId,
 spellId)` sweeps the characters and the creatures and logs each one that the
 sweep freed. It also removes the creatures that the cast summoned (see
@@ -1719,7 +1719,7 @@ then drops the spell it concentrated on. Power Word Kill uses a limit and
 
 `endsOnDamage` stamps `source.endsOnDamage` on the chip. The two damage
 writes, `Character.damageCharacter` and `Creature.applyDamage`, take such a
-chip off on any damage above 0, and `combatants.applyToTarget` logs it.
+chip off on any damage above 0, and `combatantWrites.applyToTarget` logs it.
 Sleep uses a pool and `endsOnDamage`, and Color Spray uses a pool and a
 turn boundary.
 

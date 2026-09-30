@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyToTarget } from '../src/app/combatants.js';
+import { applyToTarget } from '../src/app/combatantWrites.js';
 import { createCharacter, withHP } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';

@@ -1,5 +1,6 @@
 import { ROUNDS_PER_WATCH, elapseCharacter, elapseCreature } from '../entities/TimedEffects.js';
-import { commitCreatures, endSpellEffects } from './combatants.js';
+import { commitCreatures } from './combatants.js';
+import { endSpellEffects } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 

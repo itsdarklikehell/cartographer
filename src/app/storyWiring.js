@@ -17,7 +17,8 @@ import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
 import { creatureForm } from './creatureForm.js';
-import { commitCreatures, storeCreature } from './combatants.js';
+import { commitCreatures } from './combatants.js';
+import { storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { addLethargy } from './lethargy.js';
 

@@ -14,7 +14,8 @@ import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
-import { applyToTarget, endSpellEffects, rosterIds } from './combatants.js';
+import { rosterIds } from './combatants.js';
+import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { addLethargy } from './lethargy.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';

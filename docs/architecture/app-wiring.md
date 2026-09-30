@@ -562,7 +562,7 @@ stamps that `findRegionGroups` in `map/RegionGroups.js` and `spanBlocks` in
 the object that those caches already know, so an adoption that moved nothing
 leaves them warm.
 
-### encounterWiring.js (plus creatureForm.js, weaponAttack.js, the four cast modules, combatants.js)
+### encounterWiring.js (plus creatureForm.js, weaponAttack.js, the four cast modules, combatants.js, combatantWrites.js)
 
 `encounterWiring.js` owns the Encounters panel, the sidebar's Initiative
 card, the Build-rail encounter list, and the alert when the party walks
@@ -657,14 +657,23 @@ to a range check.
 
 All of this builds on `combatants.js`, the one place that resolves a
 participant id across the two combatant collections (characters and
-creatures):
+creatures). It also has the reads that the attack and cast dialogs make of a
+target, such as its save bonus, its weapons, and its spells:
 
 - `findCombatant(app, id)` returns `{ entity, kind, store }`. `store` writes
   an update back to the owning collection, with its panel refreshes.
 - `combatantsAsTargets` assembles a list of foe or ally targets from the
   running order.
+- `commitCreatures(app)` is the refresh that follows a write to
+  `state.creatures`.
+
+`combatantWrites.js` has the write paths that change a combatant. Each one
+resolves the id through `findCombatant` and stores through its `store`:
+
 - `applyToTarget` is the single write path for damage and healing. It logs
-  the defeat and drop-to-0 transitions exactly once each.
+  the defeat and drop-to-0 transitions exactly once each. The pure
+  `combat/HitEventLines.js` words the lines for the events of a hit or a
+  heal.
 - `applyConditionToTarget` is the same for a condition that a spell imposes.
   A failed save against a spell with a `condition` adds that chip to the
   target. The chip has a round counter, read from the spell's duration
@@ -676,8 +685,8 @@ creatures):
   longer stays in place (`Conditions.outlasts`).
 - `endSpellEffects` removes the chips and summons of a spell when the spell
   ends.
-- `commitCreatures(app)` is the refresh that follows a write to
-  `state.creatures`.
+- `retryImposedSaves` rolls the repeated saves that a combatant gets at the
+  end of its turn.
 
 Several panels can show the same creature: the Encounters and NPCs lists in
 the Play sidebar, and the two authoring lists in the Build rail. Nothing

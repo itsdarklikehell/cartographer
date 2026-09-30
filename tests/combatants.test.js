@@ -5,18 +5,20 @@ import {
   asTarget,
   describeCombatant,
   combatantsAsTargets,
-  applyToTarget,
-  applyConditionToTarget,
   commitCreatures,
-  endSpellEffects,
-  logDefeatTransition,
-  retryImposedSaves,
   spellsOf,
   targetConditions,
   targetFeatRiders,
   targetSaveBonus,
   weaponsOf,
 } from '../src/app/combatants.js';
+import {
+  applyToTarget,
+  applyConditionToTarget,
+  endSpellEffects,
+  logDefeatTransition,
+  retryImposedSaves,
+} from '../src/app/combatantWrites.js';
 import {
   addItem,
   createCharacter,

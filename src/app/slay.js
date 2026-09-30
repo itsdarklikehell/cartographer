@@ -7,12 +7,8 @@
 
 import { isDefeated, slay } from '../entities/Creature.js';
 import { isDead, killOutright } from '../entities/DeathSaves.js';
-import {
-  findCombatant,
-  logDefeatTransition,
-  storeCharacterChips,
-  storeCreature,
-} from './combatants.js';
+import { findCombatant } from './combatants.js';
+import { logDefeatTransition, storeCharacterChips, storeCreature } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
