@@ -338,9 +338,11 @@ export function readableScale(tileSize) {
  * tall occluder at the top corner, such as the mini-map, pushes the left or
  * right side past it. On the left, the side also keeps `lead` past the
  * occluder for the row labels. With only a small inset there, the labels of
- * the first rows of a map taller than the canvas draw under the mini-map. A wide occluder at the top, such as the zoom toolbar,
- * pushes the top side below it, with half of `lead` left for the column
- * labels.
+ * the first rows of a map taller than the canvas draw under the mini-map. A
+ * wide occluder at the top, such as the zoom toolbar, pushes the top side
+ * below it, with `labelDepth` left for the column label plate (half of
+ * `lead` when not given). The caller scales `inset` and `labelDepth` by the
+ * pixel ratio, because every other length here is in buffer px.
  * @param {{
  *   lead: number,
  *   trail: number,
@@ -349,12 +351,14 @@ export function readableScale(tileSize) {
  *   occluders?: { x: number, y: number, w: number, h: number }[],
  *   canvasWidth: number,
  *   inset?: number,
+ *   labelDepth?: number,
  * }} opts
  * @returns {FitSides}
  */
 export function fitSides(opts) {
   const { lead, trail, canvasWidth } = opts;
   const inset = opts.inset ?? 8;
+  const labelDepth = opts.labelDepth ?? lead / 2;
   const exits = new Set(opts.exitSides ?? []);
   const depth = (opts.bandDepth ?? 0) + inset;
   const sides = {
@@ -365,7 +369,7 @@ export function fitSides(opts) {
   };
   for (const o of opts.occluders ?? []) {
     if (o.y > inset * 2) continue;
-    if (o.w > o.h) sides.top = Math.max(sides.top, o.y + o.h + lead / 2);
+    if (o.w > o.h) sides.top = Math.max(sides.top, o.y + o.h + labelDepth);
     else if (o.x <= inset * 2) sides.left = Math.max(sides.left, o.x + o.w + lead);
     else if (o.x + o.w >= canvasWidth - inset * 2) {
       sides.right = Math.max(sides.right, canvasWidth - o.x + inset);

@@ -129,3 +129,49 @@ test('fitToExtent uses the sides it is given', () => {
   assert.equal(fitted.offsetX, 250);
   assert.equal(fitted.offsetY, 100);
 });
+
+test('coordLabelLayout moves the column digits below a wide box over them', () => {
+  const toolbar = { x: 400, y: 0, w: 300, h: 50 };
+  const map = { ...view, node, offsetY: 0 };
+  const plain = coordLabelLayout(map, 48);
+  const moved = coordLabelLayout({ ...map, occluders: [toolbar] }, 48);
+  assert.ok(plain && moved?.columns);
+  assert.ok(plain.colY < 50, 'the pinned digits start under the toolbar');
+  assert.equal(moved.columns.y, 50);
+  assert.equal(moved.colPinned, true);
+  // A tall box and a wide box that misses the run leave the columns alone.
+  const aside = [
+    { x: 0, y: 0, w: 50, h: 200 },
+    { x: 20, y: 0, w: 60, h: 30 },
+    { x: 100, y: 400, w: 300, h: 30 },
+  ];
+  assert.equal(coordLabelLayout({ ...map, occluders: aside }, 48)?.colY, plain.colY);
+});
+
+test('coordLabelLayout moves the row digits right of a tall box over them', () => {
+  const miniMap = { x: 0, y: 0, w: 170, h: 190 };
+  const map = { ...view, node, offsetX: 0 };
+  const moved = coordLabelLayout({ ...map, occluders: [miniMap] }, 48);
+  assert.ok(moved?.rows);
+  assert.equal(moved.rows.x, 170);
+  assert.equal(moved.rowPinned, true);
+  // A tall box below the rows, and a wide box, leave the rows alone.
+  const plain = coordLabelLayout(map, 48);
+  const aside = [
+    { x: 0, y: 700, w: 50, h: 200 },
+    { x: 0, y: 300, w: 400, h: 30 },
+    { x: 800, y: 0, w: 50, h: 200 },
+  ];
+  assert.equal(coordLabelLayout({ ...map, occluders: aside }, 48)?.rowX, plain?.rowX);
+});
+
+test('fitSides leaves labelDepth below a wide box at the top', () => {
+  const sides = fitSides({
+    lead: 64,
+    trail: 16,
+    canvasWidth: 900,
+    occluders: [{ x: 500, y: 4, w: 300, h: 40 }],
+    labelDepth: 63,
+  });
+  assert.equal(sides.top, 107);
+});

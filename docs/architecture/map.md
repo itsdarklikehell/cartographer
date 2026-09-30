@@ -1404,6 +1404,14 @@ each occluder on the other axis, and a north band with no room above the
 column digits drops just below them. When no place is clear, the band stays
 where it is.
 
+The coordinate digits move off the same HTML. `coordLabelLayout` takes the
+rectangles as `view.occluders`. A wide box, such as the zoom toolbar, moves
+the whole run of column digits below it, and a tall box, such as the
+mini-map, moves the whole run of row digits right of it. A digit that stays
+under the other kind of box is hidden by it. The band geometry keeps the
+HTML rectangles apart as `chrome`, because its own `occluders` list also
+contains the digit strips, and a strip tested against itself would move.
+
 `app/mapChrome.js` converts the client rectangles of the mini-map and the
 zoom toolbar with `clientRectToBuffer`. It does this from a `ResizeObserver`
 on each of them and on each canvas resize.
@@ -1411,7 +1419,9 @@ on each of them and on each canvas resize.
 A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
 the height of a band to a north or south side that has an exit, pushes the
 left side past a mini-map at the top-left corner, and pushes the top side
-below the zoom toolbar. Past the mini-map, the left side keeps the full label
+below the zoom toolbar, with room for the column label plate there (1.5 times
+the largest label font). The inset that decides whether a box sits at an
+edge scales with the pixel ratio. Past the mini-map, the left side keeps the full label
 width. A map taller than the canvas starts at its top edge, and a smaller gap
 puts the labels of rows 1 to 3 under the mini-map. A west or east band is wide, so a fit keeps no room
 for it, and the band slides clear instead. The exits and the occluders reach

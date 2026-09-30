@@ -22,6 +22,7 @@ const MIN_LABELLED_TILE = 20;
  * @property {number} canvasWidth
  * @property {number} canvasHeight
  * @property {number} [pixelRatio]
+ * @property {Rect[]} [occluders] rects in buffer px of the HTML over the canvas
  */
 
 /**
@@ -59,10 +60,6 @@ export function coordLabelLayout(view, tileSize) {
   if (size < MIN_LABELLED_TILE) return null;
   const fontSize = labelSize(size, COORD_SCALE, view.pixelRatio);
   const pad = fontSize * 0.9;
-  const colPinned = view.offsetY - pad < pad;
-  const colY = colPinned ? pad : view.offsetY - pad;
-  const rowPinned = view.offsetX - pad < pad;
-  const rowX = rowPinned ? pad : view.offsetX - pad;
   // The plate of a digit reaches 0.6 of the font size past its centre line,
   // and a row label is as wide as its longest number.
   const half = fontSize * 0.6;
@@ -72,6 +69,30 @@ export function coordLabelLayout(view, tileSize) {
   const top = Math.max(0, view.offsetY);
   const right = Math.min(view.canvasWidth, view.offsetX + node.width * size);
   const bottom = Math.min(view.canvasHeight, view.offsetY + node.height * size);
+  let colPinned = view.offsetY - pad < pad;
+  let colY = colPinned ? pad : view.offsetY - pad;
+  let rowPinned = view.offsetX - pad < pad;
+  let rowX = rowPinned ? pad : view.offsetX - pad;
+  // HTML over the canvas hides a digit drawn under it. A wide box, such as
+  // the zoom toolbar, moves the whole column run below it, and a tall box,
+  // such as the mini-map, moves the whole row run right of it. The boxes go
+  // in order of their far edge, so a run that moves past one box is tested
+  // against the next.
+  const boxes = view.occluders ?? [];
+  for (const o of [...boxes].sort((a, b) => a.y + a.h - (b.y + b.h))) {
+    if (o.w <= o.h || !(o.x < right && left < o.x + o.w)) continue;
+    if (colY - half < o.y + o.h && o.y < colY + half) {
+      colY = o.y + o.h + half;
+      colPinned = true;
+    }
+  }
+  for (const o of [...boxes].sort((a, b) => a.x + a.w - (b.x + b.w))) {
+    if (o.w > o.h || !(o.y < bottom && top < o.y + o.h)) continue;
+    if (rowX - rowHalf < o.x + o.w && o.x < rowX + rowHalf) {
+      rowX = o.x + o.w + rowHalf;
+      rowPinned = true;
+    }
+  }
   const columns = right > left ? { x: left, y: colY - half, w: right - left, h: half * 2 } : null;
   const rows = bottom > top ? { x: rowX - rowHalf, y: top, w: rowHalf * 2, h: bottom - top } : null;
   const strips = [columns, rows].filter((r) => r !== null);

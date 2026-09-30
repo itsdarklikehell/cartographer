@@ -4,6 +4,7 @@ import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
 import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
 import { exitBandDepth } from './ExitBands.js';
+import { COORD_SCALE } from './CoordLabels.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -463,6 +464,10 @@ export class MapCanvas {
       bandDepth: exitBandDepth(ratio),
       occluders: this.occluders,
       canvasWidth: this.canvas.width,
+      inset: 8 * ratio,
+      // The column label plate reaches 1.5 font sizes above the map, at
+      // most the label cap.
+      labelDepth: 1.5 * COORD_SCALE.max * ratio,
     });
   }
 

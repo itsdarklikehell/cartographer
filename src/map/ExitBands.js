@@ -33,6 +33,8 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * @property {number} alongCell cell index along the side to centre the band on
  * @property {Rect[]} [occluders] rects in buffer px that a band keeps off: the
  *   HTML over the canvas, the coordinate label strips, and the party's tile
+ * @property {Rect[]} [chrome] the HTML over the canvas alone, which the
+ *   coordinate labels move off
  * @property {number} [pixelRatio] buffer px per CSS px
  */
 
@@ -96,6 +98,7 @@ export function exitBandGeometry(node, view, tileSize, exit) {
     canvasHeight: view.canvasHeight,
     alongCell,
     occluders: [...(view.occluders ?? []), ...viewKeepOuts(node, view, tileSize, party)],
+    chrome: view.occluders ?? [],
     pixelRatio: view.pixelRatio ?? 1,
   };
 }
@@ -203,7 +206,7 @@ export function exitBandDepth(pixelRatio = 1) {
  */
 function labelGap(geom, side) {
   if (side !== 'north' && side !== 'west') return 0;
-  const layout = coordLabelLayout({ ...geom, node: geom }, geom.tileSize);
+  const layout = coordLabelLayout({ ...geom, node: geom, occluders: geom.chrome }, geom.tileSize);
   if (!layout) return 0;
   const { columns, rows } = layout;
   if (side === 'north') return columns ? geom.offsetY - columns.y + BAND_INSET : 0;
