@@ -706,7 +706,11 @@ A heal effect with `addsModifier` adds the caster's spellcasting ability
 modifier to the roll (`Casting.castSpell` takes it as `spellModifier`). Cure
 Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure
 Wounds ship with it, and the spell form offers it as the "Add spellcasting
-modifier" box.
+modifier" box. A heal effect with `revives` raises the dead, and it heals only
+a dead target (see [Damage and healing at 0 HP](#damage-and-healing-at-0-hp)).
+Revivify ships with it, and the spell form offers it as the "Raises the dead"
+box. `Library.normalizeSpell` and `SpellDraft.assembleEffect` keep the flag
+only when it is true.
 
 `DiceRoller.rollDamage` groups the terms by damage type and adds the bonus of
 each term to its own group. The `modifier` argument (the attacker's ability
@@ -1447,13 +1451,25 @@ saves does not apply to a death save.
 
 ### Damage and healing at 0 HP
 
-A heal above 0 HP clears the tracker, whatever it recorded, a dead tracker
-included. Nothing else brings a dead character back, so a heal is how the GM
-decides that the death did not happen. The rule is in
-`Character.restoreResource`, because every heal in the app goes through that
-function: the heal control of the combat screen, the HP stepper of the sheet,
-a healing spell, and a rest. A character at 5 HP can therefore never read as
-dying.
+A heal above 0 HP clears the tracker of a dying or stable character. The rule
+is in `Character.restoreResource`, because every heal in the app goes through
+that function: the heal control of the combat screen, the HP stepper of the
+sheet, a healing spell, and a rest. A character at 5 HP can therefore never
+read as dying.
+
+The same function refuses HP to a dead character (three failures), and
+`Character.restAll` skips its HP pool. Without the guard, a Healing Word or a
+long rest would bring the character back. Only a heal effect with
+`revives: true` (Revivify) raises the dead. `CharacterHit.healCharacter` reads
+the flag: it clears the tracker with `clearDying` and then heals, and it has no
+effect on a character that is not dead. Each refusal comes back as a `dead` or
+`living` event for the log.
+
+A cast checks each target with `HealTarget.healBlocked` before it heals. The
+check covers creatures too. A creature at 0 HP takes no healing from a spell
+that does not revive, and a reviving spell has no effect on a creature above
+0 HP. The heal control of the combat screen skips the creature check, so the
+GM can still bring back an NPC that was only knocked out.
 
 Damage on a character already at 0 HP is an automatic failure with no roll,
 and a critical hit counts as two failures. Damage on a stable character makes

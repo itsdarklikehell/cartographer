@@ -1,5 +1,5 @@
 import { HP_RESOURCE_ID, damageCharacter, getHP, restoreResource } from './Character.js';
-import { dropToDying, isDead, killOutright, recordDamage } from './DeathSaves.js';
+import { clearDying, dropToDying, isDead, killOutright, recordDamage } from './DeathSaves.js';
 import { checkOnDamage, drop as dropConcentration } from './Concentration.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -10,13 +10,19 @@ import { checkOnDamage, drop as dropConcentration } from './Concentration.js';
  * log. `downed` is a drop to 0 HP. `massive` is a death from one hit whose
  * damage past 0 HP is at least the HP maximum. `failures` is the automatic
  * death-save failure of a hit on a character already at 0 HP. `revived` is a
- * heal that ends the dying state. `fell` is concentration lost to a drop to
- * 0 HP. `concentration` is the CON save that damage calls for.
+ * heal that ends the dying state. `dead` is a heal that has no effect because
+ * the character is dead. `raised` is a spell that raises a dead character.
+ * `living` is such a spell with no effect because the character is not dead.
+ * `fell` is concentration lost to a drop to 0 HP. `concentration` is the CON
+ * save that damage calls for.
  * @typedef {(
  *   | { kind: 'downed' }
  *   | { kind: 'massive' }
  *   | { kind: 'failures', count: number, dead: boolean }
  *   | { kind: 'revived' }
+ *   | { kind: 'dead' }
+ *   | { kind: 'raised' }
+ *   | { kind: 'living' }
  *   | { kind: 'fell', spellName: string }
  *   | { kind: 'concentration', spellName: string, kept: boolean, total: number, dc: number }
  * )} HitEvent
@@ -94,13 +100,28 @@ export function hitCharacter(character, amount, { crit = false, rng } = {}) {
 }
 
 /**
- * Heal a party character. A heal above 0 HP ends the dying state, a dead
- * tracker included (see `restoreResource`), and the result says so.
+ * Heal a party character. A heal above 0 HP ends the dying state, and the
+ * result says so. A heal has no effect on a dead character, and the result
+ * says that instead.
+ *
+ * `revives` is the heal of a spell that raises the dead (Revivify). It clears
+ * the tracker of a dead character and then heals it. It has no effect on a
+ * character that is not dead, a dying one included, because the spell targets
+ * a creature that has died.
  * @param {Character} character
  * @param {number} amount
+ * @param {{ revives?: boolean }} [opts]
  * @returns {HitResult}
  */
-export function healCharacter(character, amount) {
+export function healCharacter(character, amount, { revives = false } = {}) {
+  const dead = isDead(character);
+  if (revives !== dead) {
+    return { character, events: [{ kind: dead ? 'dead' : 'living' }], ended: null };
+  }
+  if (revives) {
+    const raised = restoreResource(clearDying(character), HP_RESOURCE_ID, amount);
+    return { character: raised, events: [{ kind: 'raised' }], ended: null };
+  }
   const next = restoreResource(character, HP_RESOURCE_ID, amount);
   /** @type {HitEvent[]} */
   const events = character.deathSaves && !next.deathSaves ? [{ kind: 'revived' }] : [];

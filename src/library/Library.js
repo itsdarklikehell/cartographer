@@ -303,6 +303,7 @@ function normalizeSpell(raw, id) {
       kind: 'heal',
       healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES),
       ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
+      ...(raw.effect.revives === true ? { revives: true } : {}),
     };
   } else if (kind === 'buff') {
     // An unnamed chip stays absent, and the cast falls back to the spell's

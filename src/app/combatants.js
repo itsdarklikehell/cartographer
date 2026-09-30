@@ -675,11 +675,16 @@ export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) 
  * path has no roll to log, so this function writes the line itself: the
  * name, the amount, and the HP that results. An attack or a cast writes its
  * own line with the roll in it, and leaves this option off.
+ *
+ * `opts.revives` says the heal comes from a spell that raises the dead. A
+ * character heal then goes through `CharacterHit.healCharacter` with that
+ * flag. The caller has already checked the target with
+ * `HealTarget.healBlocked`.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {number} amount
  * @param {boolean} isHeal
- * @param {{ crit?: boolean, manual?: boolean }} [opts]
+ * @param {{ crit?: boolean, manual?: boolean, revives?: boolean }} [opts]
  */
 export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (amount <= 0) return;
@@ -719,11 +724,12 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   }
   if (found.kind === 'character') {
     const result = isHeal
-      ? healCharacter(found.entity, amount)
+      ? healCharacter(found.entity, amount, { revives: opts.revives ?? false })
       : hitCharacter(found.entity, amount, { crit: opts.crit ?? false });
     // The amount line comes first, so the drop and the death-save lines that
-    // follow read as its consequences.
-    logManual(result.character);
+    // follow read as its consequences. A heal with no effect writes only the
+    // line that says why.
+    if (result.character !== found.entity) logManual(result.character);
     logHitEvents(app, result.character.name, result.events);
     found.store(result.character);
     app.actions.markDirty();
@@ -781,6 +787,12 @@ function hitEventLine(name, event) {
       return `${name} takes ${event.count === 2 ? 'two failed death saves' : 'a failed death save'} from the hit.`;
     case 'revived':
       return `${name} regains consciousness.`;
+    case 'dead':
+      return `${name} is dead, and the heal has no effect.`;
+    case 'raised':
+      return `${name} returns to life.`;
+    case 'living':
+      return `${name} is not dead, and the spell has no effect.`;
     case 'fell':
       return `${name} falls and loses concentration on ${event.spellName}.`;
     default:

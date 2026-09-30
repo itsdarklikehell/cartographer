@@ -64,9 +64,17 @@ export const LEVEL_3 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Return a creature dead no more than a minute to life with 1 hit point.',
-    // Exactly one hit point, so a flat amount with no dice behind it.
-    effect: { kind: 'heal', healing: [{ count: 0, sides: 4, damageType: 'healing', bonus: 1 }] },
+    description:
+      'Return a creature dead no more than a minute to life with 1 hit point. The spell ' +
+      'has no effect on a living creature. It cannot restore a creature that died of old ' +
+      'age, and the GM checks that the creature died within the last minute.',
+    // Exactly one hit point, so a flat amount with no dice behind it. The
+    // `revives` flag makes the heal reach only a dead target.
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 0, sides: 4, damageType: 'healing', bonus: 1 }],
+      revives: true,
+    },
   },
   {
     id: 'counterspell',

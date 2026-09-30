@@ -20,6 +20,7 @@ import {
   setBonusHP,
   setBaseAC,
   damageCharacter,
+  restAll,
 } from '../src/entities/Character.js';
 import { setStat } from '../src/entities/Progression.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
@@ -320,16 +321,39 @@ test('healing HP above 0 ends a death-save tracker and takes the chip with it', 
   );
 });
 
-// The app has no revival spell, so any heal above 0 HP brings a dead character
-// back, and the GM decides when that is allowed.
-test('healing a dead character ends the tracker and brings the character back', () => {
+// Only a spell that raises the dead brings a dead character back (see
+// `CharacterHit.healCharacter`), so a plain heal leaves the character as is.
+test('healing a dead character changes nothing', () => {
   const dead = /** @type {any} */ ({
     ...withHP(createCharacter('c1', 'Hero'), 10),
     deathSaves: { successes: 0, failures: 3, stable: false },
     conditions: [{ name: 'Unconscious', rounds: null }],
   });
-  const healed = restoreResource(damageCharacter(dead, 10), HP_RESOURCE_ID, 1);
-  assert.equal(healed.deathSaves, null);
+  const zero = damageCharacter(dead, 10);
+  assert.equal(restoreResource(zero, HP_RESOURCE_ID, 5), zero);
+});
+
+test('a dead character still restores a pool that is not HP', () => {
+  const dead = /** @type {any} */ ({
+    ...addResource(
+      withHP(createCharacter('c1', 'Hero'), 10),
+      createResource('ki', 'Ki', 'custom', 4),
+    ),
+    deathSaves: { successes: 0, failures: 3, stable: false },
+  });
+  const spent = spendResource(dead, 'ki', 2);
+  assert.equal(restoreResource(spent, 'ki', 2).resources.find((r) => r.id === 'ki').current, 4);
+});
+
+test('a rest gives a dead character no HP and keeps its tracker', () => {
+  const tracker = { successes: 0, failures: 3, stable: false };
+  const dead = /** @type {any} */ ({
+    ...damageCharacter(withHP(createCharacter('c1', 'Hero'), 10), 10),
+    deathSaves: tracker,
+  });
+  const rested = restAll(dead, 1);
+  assert.equal(getHP(rested).current, 0);
+  assert.equal(rested.deathSaves, tracker);
 });
 
 test('a restore that leaves a character at 0 HP keeps the tracker', () => {

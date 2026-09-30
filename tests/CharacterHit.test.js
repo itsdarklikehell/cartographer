@@ -91,3 +91,35 @@ test('a heal above 0 HP revives a dying character and says so', () => {
     'a heal on a standing character says nothing',
   );
 });
+
+/** A hero at 0 HP with three failed death saves. */
+const deadHero = () => killOutright(hitCharacter(hero(), 12).character);
+
+test('a heal has no effect on a dead character and says so', () => {
+  const dead = deadHero();
+  assert.equal(isDead(dead), true);
+  const healed = healCharacter(dead, 5);
+  assert.equal(healed.character, dead);
+  assert.deepEqual(kinds(healed), ['dead']);
+});
+
+test('a spell that raises the dead brings a dead character back at the healed HP', () => {
+  const raised = healCharacter(deadHero(), 1, { revives: true });
+  assert.deepEqual(kinds(raised), ['raised']);
+  assert.equal(getHP(raised.character).current, 1);
+  assert.equal(raised.character.deathSaves, null);
+  assert.equal(
+    raised.character.conditions.some((c) => c.name === 'Unconscious'),
+    false,
+    'the Unconscious chip comes off',
+  );
+});
+
+test('a spell that raises the dead has no effect on a living or dying character', () => {
+  const standing = hero();
+  const onStanding = healCharacter(standing, 1, { revives: true });
+  assert.deepEqual(kinds(onStanding), ['living']);
+  assert.equal(onStanding.character, standing);
+  const dying = hitCharacter(hero(), 12).character;
+  assert.equal(healCharacter(dying, 1, { revives: true }).character, dying);
+});

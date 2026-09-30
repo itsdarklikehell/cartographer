@@ -16,6 +16,7 @@ import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
 import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
+import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -116,12 +117,21 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     return;
   }
   if (kind === 'heal') {
+    const revives = spell.effect.revives === true;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
+      // A heal skips a dead target, and a spell that raises the dead skips a
+      // living one. The log names the reason in place of the heal line.
+      const found = findCombatant(app, o.target.id);
+      const blocked = found ? healBlocked(found.kind, found.entity, revives) : null;
+      if (blocked) {
+        app.actions.logEvent('combat', healBlockedLine(spell.name, o.target.name, blocked));
+        continue;
+      }
       app.actions.logEvent(
         'combat',
         `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
       );
-      applyToTarget(app, o.target.id, o.healing.total, true);
+      applyToTarget(app, o.target.id, o.healing.total, true, { revives });
     }
     app.toasts.show(`${spell.name} heals ${summary}.`);
     return;

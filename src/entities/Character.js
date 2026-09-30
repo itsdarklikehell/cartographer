@@ -527,12 +527,18 @@ export function spendResource(character, resourceId, amount) {
  * sheet's HP stepper, a healing spell, and a rest. Any of them can be the one
  * that brings a character back, and a character standing at 5 HP must not
  * still read as dying.
+ *
+ * A dead character (three failed death saves) regains no HP, so the HP pool
+ * and the tracker stay as they are. Only a spell that raises the dead brings
+ * the character back, and it clears the tracker first (see
+ * `CharacterHit.healCharacter`).
  * @param {Character} character
  * @param {string} resourceId
  * @param {number} amount
  * @returns {Character}
  */
 export function restoreResource(character, resourceId, amount) {
+  if (resourceId === HP_RESOURCE_ID && isDead(character)) return character;
   const next = {
     ...character,
     resources: updateById(character.resources, resourceId, (r) => restorePool(r, amount)),
@@ -550,14 +556,17 @@ export function restoreResource(character, resourceId, amount) {
  * slots refill in full on a short or long rest (fraction 0.5 and up). A full
  * rest restores half of the total hit dice (see `HitDice.restoreHitDice`).
  * A rest that lifts HP above 0 clears the dying state, the same as any other
- * heal (see `restoreResource`). This function is pure.
+ * heal (see `restoreResource`). A dead character regains no HP from a rest.
+ * This function is pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
  */
 export function restAll(character, fraction) {
   const clamped = clamp(fraction, 0, 1);
+  const dead = isDead(character);
   const pools = character.resources.map((r) => {
+    if (r.id === HP_RESOURCE_ID && dead) return r;
     if (r.id === HP_RESOURCE_ID || isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
     if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
     if (isHitDicePool(r)) return r;

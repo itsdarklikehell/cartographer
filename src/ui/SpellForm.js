@@ -226,6 +226,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     (spell?.effect.kind === 'heal' || spell?.effect.kind === 'attack') &&
       spell.effect.addsModifier === true,
   );
+  const revives = checkbox(
+    'Raises the dead',
+    spell?.effect.kind === 'heal' && spell.effect.revives === true,
+  );
   const later = buildLaterTurnControls(spell);
   const onHit = buildOnHitControls(spell);
   const hp = buildHPControls(spell);
@@ -363,7 +367,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
   const saveEndsRow = fieldRow(saveEnds.label);
-  const healTogglesRow = fieldRow(addsModifier.label);
+  const healTogglesRow = fieldRow(addsModifier.label, revives.label);
   const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
   const riderRollsRow = fieldRow(riderRollsField);
   const riderOnceRow = fieldRow(riderOnce.label);
@@ -406,6 +410,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
     healTogglesRow.hidden = kind !== 'heal' && kind !== 'attack';
+    revives.label.hidden = kind !== 'heal';
     later.sync(kind, conditionSelect.value !== '');
     onHit.sync(kind);
     hp.sync(kind, conditionSelect.value !== '');
@@ -526,6 +531,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         halfOnSave: halfOnSave.input.checked,
         saveEnds: saveEnds.input.checked,
         addsModifier: addsModifier.input.checked,
+        revives: revives.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
         rider: {

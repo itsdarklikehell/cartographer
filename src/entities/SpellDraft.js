@@ -49,6 +49,7 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [endsOnDamage] whether damage ends the save's condition
  * @property {boolean} [addsModifier] whether the heal or the attack kind adds
  *   the spellcasting ability modifier
+ * @property {boolean} [revives] whether the heal kind raises the dead
  * @property {boolean} [melee] whether the attack kind is a melee spell attack
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
@@ -149,6 +150,7 @@ export function assembleEffect(draft) {
       kind: 'heal',
       healing: draft.damage,
       ...(draft.addsModifier ? { addsModifier: true } : {}),
+      ...(draft.revives ? { revives: true } : {}),
     };
   }
   // A summons with no template names nothing to spawn, so it casts nothing and

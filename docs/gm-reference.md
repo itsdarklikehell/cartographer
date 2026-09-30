@@ -1224,11 +1224,20 @@ on the combat screen and on its sheet, and the Unconscious chip.
   character dies at once. A 12 HP character hit for 24 dies, and so does a
   character at 0 HP hit for 12. Bonus HP absorbs the hit first.
 - The hit that drops the character to 0 HP costs no failure.
-- Any healing above 0 HP clears the tracker, including a dead one. The app
-  has no revival spell, so any heal above 0 HP brings a dead character
-  back. You decide when that is allowed.
-- Healing from the combat screen, from the HP stepper of the sheet, from a
+- Any healing above 0 HP clears the tracker of a dying or stable character.
+  Healing from the combat screen, from the HP stepper of the sheet, from a
   spell, and from a rest all count.
+- A dead character regains no HP. A heal or a rest has no effect on it, and
+  the combat log says so.
+- Only a spell that raises the dead brings a dead character back. Revivify
+  is the built-in one. It clears the tracker and heals the character to
+  1 HP. It has no effect on a character that is not dead, a dying one
+  included. In a custom spell, the **Raises the dead** box of a heal gives
+  the same rule.
+- A healing spell has no effect on a creature at 0 HP, because a creature
+  rolls no death saves. Revivify brings a creature at 0 HP back to 1 HP.
+  The heal control of the combat screen still heals a creature at 0 HP,
+  so you can bring back an NPC that was only knocked out.
 - The roll is a button, not an automatic step, so nobody rolls for the
   player when the turn advances.
 

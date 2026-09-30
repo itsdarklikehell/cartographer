@@ -158,6 +158,10 @@ export interface SpellHealEffect {
    * healing roll, once per target (Cure Wounds, Healing Word). Absent means
    * the dice alone heal. */
   addsModifier?: boolean;
+  /** True for a spell that raises the dead (Revivify). It heals only a dead
+   * target, and it has no effect on a living one. Absent means the heal has no
+   * effect on a dead target. */
+  revives?: boolean;
 }
 
 /** A spell that puts a condition chip on each willing target, with no roll
