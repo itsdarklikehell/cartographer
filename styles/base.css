@@ -937,8 +937,12 @@ select.field option::checkmark {
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3) var(--space-4);
   /* A fixed width, not a minimum: a caption that lengthens mid-edit (e.g. the
-     point-buy budget readout) wraps instead of resizing the whole dialog. */
+     point-buy budget readout) wraps instead of resizing the whole dialog.
+     The max-width stops the form at the content width of the dialog. On a
+     phone, 85vw is wider than a dialog at its 90vw cap once the padding and
+     a scrollbar come off, and the dialog then scrolls sideways. */
   width: min(var(--modal-measure), 85vw);
+  max-width: 100%;
 }
 
 .modal--wide .modal__title {
