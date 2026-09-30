@@ -285,15 +285,21 @@ export function mountWorldTree(container, opts) {
 
     const openPath = new Set(ancestorIds(nodes, opts.getCurrentId()));
     const tree = filterWorldTree(buildWorldTree(nodes), query);
-    root.replaceChildren(
-      tree.length
-        ? el(
-            'ul',
-            'world-tree__children world-tree__root',
-            ...tree.map((t) => renderNode(t, openPath).item),
-          )
-        : emptyState(`No place matches "${query}".`),
-    );
+    // With no search, an empty tree has no nodes at all. That is the tree of a
+    // Player tab, which lists no place, so it shows no message either.
+    if (tree.length) {
+      root.replaceChildren(
+        el(
+          'ul',
+          'world-tree__children world-tree__root',
+          ...tree.map((t) => renderNode(t, openPath).item),
+        ),
+      );
+    } else if (query.trim()) {
+      root.replaceChildren(emptyState(`No place matches "${query}".`));
+    } else {
+      root.replaceChildren();
+    }
     root.scrollTop = scrollTop;
     if (focusedId) rows.get(focusedId)?.focus();
   }
