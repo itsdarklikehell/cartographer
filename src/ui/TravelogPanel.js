@@ -1,6 +1,6 @@
 import { textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { entriesAfter, isoTimestamp, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { entriesAfter, isoTimestamp, stampLabel, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 
@@ -17,13 +17,19 @@ function formatTime(at, iso) {
 }
 
 /** Build the list row for one entry. Shared with the combat screen's log
- * column, so an entry reads the same in both places.
- * @param {LogEntry} entry */
-export function entryItem(entry) {
+ * column. The row shows the in-game time (see `stampLabel`), and the
+ * wall-clock time goes in the tooltip. An entry with no in-game stamp shows
+ * the wall-clock time.
+ * @param {LogEntry} entry
+ * @param {boolean} [withRound] show "Round N" alone for a fight line
+ */
+export function entryItem(entry, withRound = false) {
   // A timestamp that is not a date gets no machine-readable attribute.
   const iso = isoTimestamp(entry.at);
-  const time = el('time', 'travelog__time', formatTime(entry.at, iso));
+  const wall = formatTime(entry.at, iso);
+  const time = el('time', 'travelog__time', stampLabel(entry, withRound) ?? wall);
   if (iso !== null) time.dateTime = iso;
+  if (time.textContent !== wall) time.title = wall;
 
   return el(
     'li',

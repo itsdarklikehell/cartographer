@@ -54,7 +54,7 @@ export function mountCombatLog() {
     }
     // The list is newest first. Prepending in oldest-to-newest order leaves
     // the newest row on top.
-    for (const entry of fresh ?? entries) list.prepend(entryItem(entry));
+    for (const entry of fresh ?? entries) list.prepend(entryItem(entry, true));
     while (list.children.length > TRAVELOG_FIGHT_LIMIT) list.lastElementChild?.remove();
     const hasRows = list.children.length > 0;
     empty.hidden = hasRows;

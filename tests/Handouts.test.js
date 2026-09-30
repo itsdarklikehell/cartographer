@@ -5,6 +5,7 @@ import {
   cleanAudience,
   withDefaults,
   toggleRevealed,
+  handoutRevealLine,
   handoutsAt,
   handoutsFor,
   inAudience,
@@ -270,4 +271,17 @@ test('restoreBindings skips a handout that is gone, and no bindings at all', () 
     restoreBindings(list, [{ handoutId: 'deleted', nodeId: 'world', tileId: null }]),
     list,
   );
+});
+
+test('handoutRevealLine hides the title of a hidden or targeted handout', () => {
+  const open = { ...createHandout('h1', 'Map'), revealed: true };
+  assert.deepEqual(handoutRevealLine(open), ['The party receives the handout Map.', undefined]);
+  assert.deepEqual(handoutRevealLine({ ...open, audience: ['c1'] }), [
+    'The party receives the handout Map.',
+    { gm: true },
+  ]);
+  assert.deepEqual(handoutRevealLine({ ...open, revealed: false }), [
+    'The handout Map is hidden from players.',
+    { gm: true },
+  ]);
 });

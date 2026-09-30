@@ -12,7 +12,12 @@ import {
 } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
-import { createQuest, toggleQuestRevealed, toggleQuestStatus } from '../quest/Quests.js';
+import {
+  createQuest,
+  questRevealLine,
+  toggleQuestRevealed,
+  toggleQuestStatus,
+} from '../quest/Quests.js';
 import { completeQuest, questDetailCallbacks } from './questDetail.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
@@ -58,7 +63,10 @@ export function wireStory(app) {
     // combat log column lists the fight from its start.
     state.travelog = appendEntry(
       state.travelog,
-      createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now, options),
+      createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now, options, {
+        clock: state.clock,
+        round: state.combat?.round,
+      }),
       TRAVELOG_LIMIT,
       state.combat?.startedAt ?? null,
     );
@@ -192,8 +200,10 @@ export function wireStory(app) {
       app.actions.markDirty();
     },
     onToggleRevealed: (quest) => {
-      state.quests = replaceById(state.quests, toggleQuestRevealed(quest));
-      app.actions.markDirty();
+      const next = toggleQuestRevealed(quest);
+      state.quests = replaceById(state.quests, next);
+      // logEvent saves the change.
+      app.actions.logEvent('note', ...questRevealLine(next));
     },
     ...questList,
     ...questDetailCallbacks(app),

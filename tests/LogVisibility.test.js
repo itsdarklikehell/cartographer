@@ -92,3 +92,30 @@ test('the save line helpers hide a foe bonus and an HP rule from a Player tab', 
   });
   assert.deepEqual(unaffectedLine('Ogre', 'at 0 HP', false), ['Ogre is unaffected (at 0 HP).', {}]);
 });
+
+test('an in-game stamp stays on a Player line and through a load', () => {
+  const stamped = { ...swapped, id: 's1', clock: { day: 2, watch: 1 }, round: 3 };
+  assert.deepEqual(playerEntry(stamped), {
+    id: 's1',
+    at: stamped.at,
+    kind: stamped.kind,
+    message: stamped.player,
+    clock: { day: 2, watch: 1 },
+    round: 3,
+  });
+  const loaded = logEntries([
+    { id: 'a', at: 1, kind: 'note', message: 'M', clock: { day: 2, watch: 5 }, round: 1 },
+    { id: 'b', at: 1, kind: 'note', message: 'N', clock: { day: 0, watch: 1 }, round: 0 },
+    { id: 'c', at: 1, kind: 'note', message: 'O', clock: { day: 1, watch: 6 } },
+    { id: 'd', at: 1, kind: 'note', message: 'P', clock: 'x', round: 1.5 },
+  ]);
+  assert.deepEqual(
+    loaded.map((e) => [e.clock ?? null, e.round ?? null]),
+    [
+      [{ day: 2, watch: 5 }, 1],
+      [null, null],
+      [null, null],
+      [null, null],
+    ],
+  );
+});

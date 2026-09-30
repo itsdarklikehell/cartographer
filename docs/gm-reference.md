@@ -2285,7 +2285,11 @@ undo of the erase or the regeneration binds it to its tile again.
 ### Travelogue
 
 The Travelogue in the Log tab records events automatically, newest first.
-Each entry shows its local time.
+Each entry shows the in-game day and watch when it happened, such as "Day 1,
+Dusk". A line from a fight adds the round, such as "Day 1, Dusk, round 2".
+Hover the time to see the local time of the entry. An entry saved
+without an in-game time shows the local time instead. The combat log shows only
+the round, such as "Round 2".
 
 | Entry kind | Examples |
 | --- | --- |
@@ -2293,7 +2297,7 @@ Each entry shows its local time.
 | Combat | Defeats, lost concentration, ended conditions, and the lines of a fight |
 | Rest | Short and long rests |
 | Roll | Every dice tray roll, with the name of the roller |
-| Note | Meetings, cleared foes, the end of a concentration spell, and other notices |
+| Note | Meetings, cleared foes, quests and handouts that the GM reveals or hides, the end of a concentration spell, and other notices |
 
 | Limit | Value |
 | --- | --- |

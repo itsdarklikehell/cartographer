@@ -16,6 +16,17 @@ export interface LogEntry {
   /** The line a Player tab shows for a GM-only entry. Absent on a GM-only
    * entry means a Player tab leaves the entry out. */
   player?: string;
+  /** The in-game day and watch when the event was logged. Absent on an
+   * entry from a save without it, which then shows the wall-clock time. */
+  clock?: { day: number; watch: number };
+  /** The combat round when the event was logged during a fight. */
+  round?: number;
+}
+
+/** When a new entry happened, in game terms. */
+export interface LogStamp {
+  clock?: { day: number; watch: number };
+  round?: number;
 }
 
 /** Who may read a logged line. `player` is the line a Player tab shows in

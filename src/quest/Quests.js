@@ -51,6 +51,19 @@ export function toggleQuestRevealed(quest) {
 }
 
 /**
+ * The travelogue line for a quest the GM just revealed or hid, with its log
+ * options. A revealed quest is news for every viewer. A hidden quest is
+ * GM-only, so a Player tab does not learn its title.
+ * @param {Quest} quest the quest after the change
+ * @returns {[string, import('../types/log.js').LogOptions | undefined]}
+ */
+export function questRevealLine(quest) {
+  return quest.revealed
+    ? [`The party learns of the quest ${quest.title}.`, undefined]
+    : [`The quest ${quest.title} is hidden from players.`, { gm: true }];
+}
+
+/**
  * The player copies already made, keyed on the quest object. A quest is
  * never changed in place, so a cached copy stays current. The cache also
  * keeps the list panel's repaint guard working on a player tab. The guard

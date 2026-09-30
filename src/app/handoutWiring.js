@@ -1,6 +1,11 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountHandoutPanel } from '../ui/HandoutPanel.js';
-import { createHandout, toggleRevealed, handoutsFor } from '../handout/Handouts.js';
+import {
+  createHandout,
+  toggleRevealed,
+  handoutsFor,
+  handoutRevealLine,
+} from '../handout/Handouts.js';
 import {
   describeHandout,
   parseAudience,
@@ -120,8 +125,10 @@ export function wireHandouts(app) {
     // The notes name characters, which the handout rows do not change with.
     dependsOn: () => state.characters,
     onToggle: (handout) => {
-      state.handouts = replaceById(state.handouts, toggleRevealed(handout));
-      app.actions.markDirty();
+      const next = toggleRevealed(handout);
+      state.handouts = replaceById(state.handouts, next);
+      // logEvent saves the change.
+      app.actions.logEvent('note', ...handoutRevealLine(next));
     },
     ...handoutList,
     getRole: () => state.role,

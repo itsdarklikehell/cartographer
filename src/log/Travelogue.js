@@ -7,6 +7,7 @@
  */
 
 import { visibilityFields } from './LogVisibility.js';
+import { formatClock } from '../time/GameClock.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 /** @typedef {import('../types/log.js').LogEntryKind} LogEntryKind */
@@ -29,10 +30,30 @@ export const TRAVELOG_FIGHT_LIMIT = 1000;
  * @param {number} at Epoch milliseconds.
  * @param {import('../types/log.js').LogOptions} [options] who may read the line (see
  *   `LogVisibility.visibilityFields`)
+ * @param {import('../types/log.js').LogStamp} [stamp] the in-game day and watch, and
+ *   the combat round during a fight
  * @returns {LogEntry}
  */
-export function createEntry(id, kind, message, at, options) {
-  return { id, kind, message, at, ...visibilityFields(options) };
+export function createEntry(id, kind, message, at, options, stamp = {}) {
+  const clock = stamp.clock ? { clock: { day: stamp.clock.day, watch: stamp.clock.watch } } : {};
+  const round = stamp.round ? { round: stamp.round } : {};
+  return { id, kind, message, at, ...visibilityFields(options), ...clock, ...round };
+}
+
+/**
+ * The in-game time of an entry, or null for an entry with no clock. The
+ * combat log passes `withRound`, so a line from a fight reads "Round 2". The
+ * travelogue reads the day and watch, with the round added for a fight line.
+ * @param {LogEntry} entry
+ * @param {boolean} [withRound] show only the round when the entry has one
+ * @returns {string | null}
+ */
+export function stampLabel(entry, withRound = false) {
+  const round = entry.round ? `Round ${entry.round}` : null;
+  if (withRound && round) return round;
+  if (!entry.clock) return round;
+  const clock = formatClock(entry.clock);
+  return round ? `${clock}, ${round.toLowerCase()}` : clock;
 }
 
 /**

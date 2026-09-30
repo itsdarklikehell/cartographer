@@ -85,6 +85,21 @@ export function toggleRevealed(handout) {
 }
 
 /**
+ * The travelogue line for a handout the GM just revealed or hid, with its
+ * log options. A handout for every player is news for every viewer. A hidden
+ * handout, or one for only some characters, is GM-only, so the other Player
+ * tabs do not learn its title.
+ * @param {Handout} handout the handout after the change
+ * @returns {[string, import('../types/log.js').LogOptions | undefined]}
+ */
+export function handoutRevealLine(handout) {
+  if (!handout.revealed)
+    return [`The handout ${handout.title} is hidden from players.`, { gm: true }];
+  const line = `The party receives the handout ${handout.title}.`;
+  return [line, handout.audience?.length ? { gm: true } : undefined];
+}
+
+/**
  * Handouts that belong to a node: those bound to the node or to one of its
  * tiles, plus campaign-wide handouts (nodeId null). Keeps the input order.
  * The GM's list is this one, so the GM can prepare a tile's handout before

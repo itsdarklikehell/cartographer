@@ -5,6 +5,7 @@ import {
   appendEntry,
   entriesAfter,
   isoTimestamp,
+  stampLabel,
   TRAVELOG_LIMIT,
   TRAVELOG_FIGHT_LIMIT,
 } from '../src/log/Travelogue.js';
@@ -120,4 +121,25 @@ test('a fight that never ends stops growing at the fight limit', () => {
   }
   assert.equal(log.length, TRAVELOG_FIGHT_LIMIT);
   assert.equal(log[0].id, 'e5');
+});
+
+test('createEntry keeps an in-game clock and a round, copied', () => {
+  const clock = { day: 2, watch: 4, minutes: 30 };
+  const entry = createEntry('e1', 'combat', 'Hit.', 5, undefined, { clock, round: 3 });
+  assert.deepEqual(entry.clock, { day: 2, watch: 4 });
+  assert.equal(entry.round, 3);
+  assert.notEqual(entry.clock, clock);
+  const plain = createEntry('e2', 'note', 'A', 5, undefined, { round: undefined });
+  assert.equal('clock' in plain || 'round' in plain, false);
+});
+
+test('stampLabel reads the day and watch, and the round of a fight line', () => {
+  const clock = { day: 3, watch: 4 };
+  assert.equal(stampLabel(createEntry('a', 'note', 'A', 1)), null);
+  assert.equal(stampLabel(createEntry('a', 'note', 'A', 1, {}, { clock })), 'Day 3, Dusk');
+  const fight = createEntry('b', 'combat', 'B', 1, {}, { clock, round: 2 });
+  assert.equal(stampLabel(fight), 'Day 3, Dusk, round 2');
+  assert.equal(stampLabel(fight, true), 'Round 2');
+  assert.equal(stampLabel(createEntry('c', 'combat', 'C', 1, {}, { round: 4 })), 'Round 4');
+  assert.equal(stampLabel(createEntry('d', 'note', 'D', 1, {}, { clock }), true), 'Day 3, Dusk');
 });

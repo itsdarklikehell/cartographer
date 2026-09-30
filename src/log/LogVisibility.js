@@ -34,7 +34,8 @@ export function visibilityFields(options = {}) {
 export function playerEntry(entry) {
   if (!entry.gm) return entry;
   if (!entry.player) return null;
-  return { id: entry.id, at: entry.at, kind: entry.kind, message: entry.player };
+  const { gm: _gm, player, ...rest } = entry;
+  return { ...rest, message: player };
 }
 
 /** The Player-tab list of each travelogue list, keyed on the source list. The

@@ -678,7 +678,10 @@ so the column does not replay every fight in the campaign. The setup takes a
 timestamp when its dialog opens, and `startCombat` stores it as
 `CombatState.startedAt`. The "Initiative rolled" line is logged inside the
 dialog, so it falls after that timestamp. The column shares the row builder
-of `TravelogPanel.js`, so an entry reads the same in both lists.
+of `TravelogPanel.js`. `logEvent` stamps each entry with the in-game clock
+and, during a fight, the round. The column passes `withRound` to `entryItem`,
+so a fight line reads "Round 2" there and "Day 1, Dusk, round 2" in the
+travelogue.
 
 The travelogue keeps its newest 200 entries (`TRAVELOG_LIMIT`). A fight of five
 rounds with ten combatants can log more than that. `logEvent` therefore passes

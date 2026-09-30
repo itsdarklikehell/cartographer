@@ -179,6 +179,29 @@ export function entryTiles(value) {
   return memory;
 }
 
+/**
+ * The in-game stamp of a loaded entry. A clock with a day below 1 or a
+ * watch that names no watch is dropped, and so is a
+ * round below 1, so the row falls back to the wall-clock time.
+ * @param {Record<string, any>} entry
+ * @returns {{ clock?: { day: number, watch: number }, round?: number }}
+ */
+function logStamp(entry) {
+  const c = entry.clock;
+  const okClock =
+    c &&
+    Number.isInteger(c.day) &&
+    c.day >= 1 &&
+    Number.isInteger(c.watch) &&
+    c.watch >= 0 &&
+    c.watch < WATCHES.length;
+  const okRound = Number.isInteger(entry.round) && entry.round >= 1;
+  return {
+    ...(okClock ? { clock: { day: c.day, watch: c.watch } } : {}),
+    ...(okRound ? { round: entry.round } : {}),
+  };
+}
+
 /** The entry kinds the travelogue styles. Any other value reads as a note. */
 const LOG_KINDS = new Set(['travel', 'combat', 'note', 'rest', 'roll']);
 
@@ -197,7 +220,13 @@ export function logEntries(value) {
     const entryId = id(entry.id);
     if (entryId === null) return [];
     const kind = LOG_KINDS.has(entry.kind) ? entry.kind : 'note';
-    const base = { id: entryId, at: number(entry.at, 0), kind, message: string(entry.message, '') };
+    const base = {
+      id: entryId,
+      at: number(entry.at, 0),
+      kind,
+      message: string(entry.message, ''),
+      ...logStamp(entry),
+    };
     if (!entry.gm) return [base];
     const player = string(entry.player, '');
     return [{ ...base, gm: true, ...(player ? { player } : {}) }];

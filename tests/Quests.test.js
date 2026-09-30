@@ -5,6 +5,7 @@ import {
   setQuestStatus,
   toggleQuestStatus,
   toggleQuestRevealed,
+  questRevealLine,
   visibleQuests,
   groupByStatus,
   playerQuestView,
@@ -122,4 +123,16 @@ test('playerQuestView returns the same copy for the same quest', () => {
   const quest = secretQuest();
   assert.equal(playerQuestView(quest), playerQuestView(quest));
   assert.notEqual(playerQuestView(quest), playerQuestView({ ...quest }));
+});
+
+test('questRevealLine is public on reveal and GM-only on hide', () => {
+  const quest = createQuest('q1', 'Find the sword');
+  assert.deepEqual(questRevealLine({ ...quest, revealed: true }), [
+    'The party learns of the quest Find the sword.',
+    undefined,
+  ]);
+  assert.deepEqual(questRevealLine({ ...quest, revealed: false }), [
+    'The quest Find the sword is hidden from players.',
+    { gm: true },
+  ]);
 });
