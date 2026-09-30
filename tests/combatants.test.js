@@ -79,6 +79,17 @@ test('findCombatant resolves each collection with the right kind', () => {
   assert.equal(findCombatant(app, 'nobody'), null);
 });
 
+test('findCombatant labels two foes of one name by their place in the fight', () => {
+  const { hero } = fixtures();
+  const wolf = (/** @type {string} */ id) => createCreature(id, 'Gray Wolf', { location: HERE });
+  const app = stubApp({ characters: [hero], creatures: [wolf('w1'), wolf('w2'), wolf('w3')] });
+  assert.equal(findCombatant(app, 'w2')?.label, 'Gray Wolf', 'no fight, no number');
+  app.state.combat = /** @type {any} */ ({ order: [{ id: 'hero' }, { id: 'w1' }, { id: 'w2' }] });
+  assert.equal(findCombatant(app, 'w2')?.label, 'Gray Wolf 2');
+  assert.equal(findCombatant(app, 'hero')?.label, 'Hero');
+  assert.equal(findCombatant(app, 'w3')?.label, 'Gray Wolf', 'outside the order, no number');
+});
+
 test('findCombatant store writes back to the owning collection', () => {
   const { hero, goblin, sage } = fixtures();
   const app = stubApp({ characters: [hero], creatures: [goblin, sage] });

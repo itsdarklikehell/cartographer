@@ -71,7 +71,7 @@ export function turnActionsOf(app, id) {
 export function takeTurnAction(app, id, action, { rng = Math.random } = {}) {
   const found = findCombatant(app, id);
   if (!found) return false;
-  const name = found.entity.name;
+  const name = found.label;
   if (action.poolId) {
     if (found.kind !== 'character') return false;
     return useClassAction(app, found, action, rng);
@@ -107,7 +107,7 @@ export function toggleBudget(app, id, cost) {
   const spent = app.actions.toggleBudget?.(id, cost) ?? null;
   if (spent === null) return;
   // The log keeps a record of the override, because nothing else does.
-  const name = findCombatant(app, id)?.entity.name ?? 'Unknown combatant';
+  const name = findCombatant(app, id)?.label ?? 'Unknown combatant';
   const label = spare ? 'Action Surge action' : COST_LABELS[cost].toLowerCase();
   app.actions.logEvent('combat', `${name}'s ${label} is marked ${spent ? 'used' : 'free'}.`);
 }
@@ -116,7 +116,7 @@ export function toggleBudget(app, id, cost) {
  * Spend one use of a class pool on its action. The use comes off only after
  * the turn pays for the action, so a refused bonus action keeps the use.
  * @param {AppContext} app
- * @param {{ entity: Character, store: (next: Character) => void }} found
+ * @param {{ entity: Character, label: string, store: (next: Character) => void }} found
  * @param {TurnAction} action
  * @param {RandomFn} rng
  * @returns {boolean} whether the action went through
@@ -125,12 +125,12 @@ function useClassAction(app, found, action, rng) {
   const { entity, store } = found;
   const poolId = /** @type {string} */ (action.poolId);
   if ((usesOf(entity, poolId) ?? 0) <= 0) {
-    app.toasts.show(`${entity.name} has no use of ${action.name} left. A short rest restores it.`);
+    app.toasts.show(`${found.label} has no use of ${action.name} left. A short rest restores it.`);
     return false;
   }
   if (poolId === ACTION_SURGE_ID) {
     if (app.actions.surgeBudget && !app.actions.surgeBudget(entity.id)) {
-      app.toasts.show(`${entity.name} already used Action Surge this turn.`);
+      app.toasts.show(`${found.label} already used Action Surge this turn.`);
       return false;
     }
   } else if (
@@ -139,19 +139,19 @@ function useClassAction(app, found, action, rng) {
     !app.actions.spendBudget(entity.id, action.cost)
   ) {
     app.toasts.show(
-      `${entity.name} has no ${COST_LABELS[action.cost].toLowerCase()} left this turn.`,
+      `${found.label} has no ${COST_LABELS[action.cost].toLowerCase()} left this turn.`,
     );
     return false;
   }
   store(spendResource(entity, poolId, 1));
   app.actions.markDirty();
   if (poolId === ACTION_SURGE_ID) {
-    app.actions.logEvent('combat', actionSurgeLine(entity.name));
+    app.actions.logEvent('combat', actionSurgeLine(found.label));
     return true;
   }
   const die = Math.floor(rng() * 10) + 1;
   const level = classLevelOf(entity, 'fighter');
-  app.actions.logEvent('combat', secondWindLine(entity.name, die, level));
+  app.actions.logEvent('combat', secondWindLine(found.label, die, level));
   applyToTarget(app, entity.id, die + level, true);
   return true;
 }

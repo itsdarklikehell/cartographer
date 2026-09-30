@@ -23,7 +23,7 @@ import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { rollRiders, spendRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { currentParticipant } from '../combat/Initiative.js';
-import { findCombatant } from './combatants.js';
+import { findCombatant, logName } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -105,10 +105,10 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
   app.actions.logEvent(
     'combat',
-    `${character.name} rolls a death save (${result.total}${tiredNote}${rode} vs DC ${DEATH_SAVE_DC}): ` +
-      `${OUTCOME_LINES[judged.outcome](character.name)}${naturalNote}`,
+    `${logName(app, character)} rolls a death save (${result.total}${tiredNote}${rode} vs DC ${DEATH_SAVE_DC}): ` +
+      `${OUTCOME_LINES[judged.outcome](logName(app, character))}${naturalNote}`,
   );
-  app.toasts.show(OUTCOME_LINES[judged.outcome](character.name));
+  app.toasts.show(OUTCOME_LINES[judged.outcome](logName(app, character)));
 }
 
 /**
@@ -125,8 +125,8 @@ export function stabilizeCharacter(app, characterId) {
   if (!found.entity.deathSaves || isDead(found.entity)) return;
   found.store(stabilize(found.entity));
   app.actions.markDirty();
-  app.actions.logEvent('combat', `${found.entity.name} is stabilized at 0 HP.`);
-  app.toasts.show(`${found.entity.name} is stable.`);
+  app.actions.logEvent('combat', `${found.label} is stabilized at 0 HP.`);
+  app.toasts.show(`${found.label} is stable.`);
 }
 
 /**
@@ -142,11 +142,13 @@ function mayRollNow(app, character) {
   const combat = app.state.combat;
   if (!combat?.order.some((p) => p.id === character.id)) return true;
   if (currentParticipant(combat)?.id !== character.id) {
-    app.toasts.show(`${character.name} rolls a death save at the start of their own turn.`);
+    app.toasts.show(
+      `${logName(app, character)} rolls a death save at the start of their own turn.`,
+    );
     return false;
   }
   if (app.actions.spendBudget && !app.actions.spendBudget(character.id, 'deathSave')) {
-    app.toasts.show(`${character.name} already rolled a death save this turn.`);
+    app.toasts.show(`${logName(app, character)} already rolled a death save this turn.`);
     return false;
   }
   return true;

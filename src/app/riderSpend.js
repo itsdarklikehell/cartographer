@@ -48,6 +48,6 @@ export function spendOnceChips(app, rollerId, targetId, query) {
     if (found.kind === 'character') found.store({ ...found.entity, conditions });
     else found.store({ ...found.entity, conditions });
     app.actions.markDirty();
-    app.actions.logEvent('combat', `${found.entity.name}'s ${names.join(' and ')} ends.`);
+    app.actions.logEvent('combat', `${found.label}'s ${names.join(' and ')} ends.`);
   }
 }

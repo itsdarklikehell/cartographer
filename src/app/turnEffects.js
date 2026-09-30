@@ -6,7 +6,7 @@ import { isDying } from '../entities/DeathSaves.js';
 import { settleChips } from './lethargy.js';
 import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
-import { commitCreatures, defendedDamage, findCombatant } from './combatants.js';
+import { commitCreatures, defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, retryImposedSaves } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -69,7 +69,7 @@ export function startTurnEffects(app, id) {
     if (amount > 0) grantTempTo(app, id, amount, chip.name, { quiet: true });
   }
   if (found?.kind === 'character' && isDying(found.entity)) {
-    const line = `${found.entity.name} is dying. Roll a death save.`;
+    const line = `${found.label} is dying. Roll a death save.`;
     app.actions.logEvent('combat', line);
     app.toasts.show(line);
   }
@@ -104,7 +104,7 @@ function dealOngoing(app, id, chip, rng) {
   const from = chip.source?.spellName ?? chip.name;
   app.actions.logEvent(
     'combat',
-    `${from} deals ${damage.detail}${defenseNote(taken.notes, taken.total)} to ${found.entity.name}.`,
+    `${from} deals ${damage.detail}${defenseNote(taken.notes, taken.total)} to ${found.label}.`,
   );
   applyToTarget(app, id, taken.total, false);
 }
@@ -136,7 +136,7 @@ function sweepChips(app, rule) {
       // A chip that only counted a boundary down still changes the list, so
       // the entity is written. Only an ended chip settles HP and logs.
       if (ended.length === 0) return { ...entity, conditions };
-      for (const c of ended) freed.push({ name: entity.name, condition: c.name });
+      for (const c of ended) freed.push({ name: logName(app, entity), condition: c.name });
       return settleChips(app, entity, conditions, notes);
     });
     return next.some((entity, i) => entity !== list[i]) ? next : null;

@@ -16,7 +16,7 @@ import { parleyLine, passivePerceptionOf, rollStealth } from '../combat/Stealth.
 import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
-import { combatLabels, describeCombatant, findCombatant } from './combatants.js';
+import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
@@ -289,7 +289,7 @@ export function wireEncounters(app) {
         if (ended) {
           app.actions.logEvent(
             'combat',
-            `${entity.name}'s concentration on ${ended.spellName} ends.`,
+            `${logName(app, entity)}'s concentration on ${ended.spellName} ends.`,
           );
           expired.push({ casterId: entity.id, spellId: ended.spellId });
         }

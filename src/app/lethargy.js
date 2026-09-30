@@ -2,6 +2,7 @@ import { currentParticipant } from '../combat/Initiative.js';
 import { chipTiming } from '../entities/TurnEffects.js';
 import { settleHPBuffs } from '../entities/HPBuffs.js';
 import { withLethargy } from '../entities/Lethargy.js';
+import { logName } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Condition} Condition */
@@ -36,7 +37,7 @@ export function addLethargy(app, prev, next, notes) {
   });
   const conditions = withLethargy(prev.conditions, next.conditions, timing);
   if (conditions === next.conditions) return next;
-  const line = `${next.name} is lethargic and can't move or take actions until after its next turn.`;
+  const line = `${logName(app, next)} is lethargic and can't move or take actions until after its next turn.`;
   if (notes) notes.push(line);
   else app.actions.logEvent('combat', line);
   return { ...next, conditions };

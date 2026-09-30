@@ -225,3 +225,39 @@ test('style.css lists every sheet under styles/, and nothing missing', () => {
     'A sheet nobody imports is dead, and an import with no file is a silent 404.',
   );
 });
+
+/** The combat modules whose log and toast lines name a combatant. */
+const COMBAT_LOGGERS = [
+  'app/combatantWrites.js',
+  'app/deathSaves.js',
+  'app/encounterWiring.js',
+  'app/exhaustion.js',
+  'app/healCure.js',
+  'app/lethargy.js',
+  'app/riderSpend.js',
+  'app/shieldWard.js',
+  'app/slay.js',
+  'app/spellOutcomes.js',
+  'app/tempHP.js',
+  'app/turnActions.js',
+  'app/turnEffects.js',
+  'app/weaponAttack.js',
+];
+
+test('combat log lines name a combatant by its numbered label', () => {
+  const raw =
+    /\$\{(?:found\.entity|before\.entity|entity|next|character|creature|attacker|defender|o\.target)\.name\}/;
+  /** @type {string[]} */
+  const offenders = [];
+  for (const path of COMBAT_LOGGERS) {
+    const lines = readFileSync(join(SRC, path), 'utf8').split('\n');
+    lines.forEach((text, i) => {
+      if (raw.test(text)) offenders.push(`src/${path}:${i + 1}`);
+    });
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    `Two foes of one name read the same in the log. Use found.label or logName(app, target):\n${offenders.join('\n')}`,
+  );
+});

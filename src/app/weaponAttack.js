@@ -17,6 +17,7 @@ import {
   combatantSaveBonus,
   defendedDamage,
   hpOf,
+  logName,
 } from './combatants.js';
 import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
 import { resolveSave } from '../entities/Checks.js';
@@ -153,7 +154,7 @@ export function rollWeaponAttack(
         : {},
     );
     if (!spent) {
-      app.toasts.show(`${attacker.name} ${swing.blocked}.`);
+      app.toasts.show(`${logName(app, attacker)} ${swing.blocked}.`);
       return;
     }
   }
@@ -163,7 +164,7 @@ export function rollWeaponAttack(
   const attack = { attacker, weapon, tweaks, rng, ask, swing };
   const redirect = pendingRedirect(app, defender.id, attacker.id);
   if (!redirect) return swingAt(app, { ...attack, defender });
-  const message = `${attacker.name} attacks ${defender.name} with ${weapon.name}.`;
+  const message = `${logName(app, attacker)} attacks ${logName(app, defender)} with ${weapon.name}.`;
   return offerRedirect(app, redirect, message, { prompt }).then((ally) =>
     swingAt(app, { ...attack, defender: ally ?? defender }),
   );
@@ -185,6 +186,8 @@ export function rollWeaponAttack(
  * @returns {void | Promise<void>}
  */
 function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
+  const attackerName = logName(app, attacker);
+  const defenderName = logName(app, defender);
   const setup = prepareSwing({ attacker, defender, weapon, tweaks, rng });
   const { ac, autoCrit, rider } = setup;
   const { result } = app.actions.rollDice(
@@ -220,6 +223,8 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
         total: result.total,
         d20,
         rollMode: result.selection.mode,
+        attackerName,
+        defenderName,
         raised,
         wardName: ward ? ward.spell.name : null,
         outcome,
@@ -229,7 +234,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
     // A one-shot chip such as Guiding Bolt ends on the roll, hit or miss.
     spendOnceChips(app, attacker.id, defender.id, setup.conditionQuery);
     if (!hit) {
-      app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
+      app.toasts.show(`${result.total} vs AC ${warded}: ${attackerName} misses ${defenderName}.`);
       return;
     }
     // Surprise Attack reads the fight, so it applies without a dialog box.
@@ -251,7 +256,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
       const taken = defendedDamage(app, defender.id, damage.byType, defense);
       const lines = hitLines({
         weapon,
-        defenderName: defender.name,
+        defenderName,
         crit,
         damage,
         sneakDice,
@@ -270,11 +275,11 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
     // the question after the damage roll and before the damage lands.
     const guard = pendingDamageWard(app, defender.id, attacker.id, damage.byType, defense);
     if (!guard) return strike();
-    const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} for ${damage.total} damage.`;
+    const hitLine = `${attackerName} hits ${defenderName} with ${weapon.name} for ${damage.total} damage.`;
     return offerDamageWard(app, guard, hitLine, { ask }).then(strike);
   };
   if (ward && result.total < ac + ward.bonus) {
-    const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} (${result.total} vs AC ${ac}).`;
+    const hitLine = `${attackerName} hits ${defenderName} with ${weapon.name} (${result.total} vs AC ${ac}).`;
     return offerWard(app, ward, hitLine, { ask }).then(land);
   }
   return land(0);
@@ -389,7 +394,7 @@ export function rollHitSave(app, defenderId, weapon, rng) {
   app.actions.logEvent(
     'combat',
     hitSaveLine({
-      defenderName: found.entity.name,
+      defenderName: found.label,
       weaponName: weapon.name,
       rider,
       total: save.total,

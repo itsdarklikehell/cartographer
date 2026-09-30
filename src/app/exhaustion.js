@@ -21,7 +21,7 @@ import {
   exhaustionNote,
   setExhaustion,
 } from '../entities/Exhaustion.js';
-import { findCombatant } from './combatants.js';
+import { findCombatant, logName } from './combatants.js';
 import { logDefeatTransition, storeCharacterChips, storeCreature } from './combatantWrites.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -52,7 +52,7 @@ export function setCombatantExhaustion(app, id, level) {
   if (after === exhaustionLevel(found.entity)) return false;
   // The level goes into the log before the death line that the sixth one adds,
   // so the log reads in the order the two things happened.
-  app.actions.logEvent('note', `${found.entity.name}: ${exhaustionNote({ exhaustion: after })}`);
+  app.actions.logEvent('note', `${found.label}: ${exhaustionNote({ exhaustion: after })}`);
   // The two branches do the same write. They are split because each store
   // function accepts only its own entity type, and because the sixth level
   // kills the two kinds differently. A combatant who dies of exhaustion also
@@ -80,7 +80,7 @@ export function setCombatantExhaustion(app, id, level) {
  */
 function killIfFatalCharacter(app, character) {
   if (!atDeathLevel(character) || isDead(character)) return character;
-  app.actions.logEvent('combat', `${character.name} dies of exhaustion.`);
+  app.actions.logEvent('combat', `${logName(app, character)} dies of exhaustion.`);
   return killOutright(character);
 }
 

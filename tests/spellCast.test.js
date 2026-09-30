@@ -2157,3 +2157,27 @@ test('a resist choice asks for a damage type and the chip resists the pick', () 
   const chip = app.state.characters[0].conditions.find((c) => c.name === 'Protection from Energy');
   assert.deepEqual(chip.mods.resist, ['cold']);
 });
+
+test('two foes of one name keep their numbers in the save line', () => {
+  const caster = mage();
+  const goblin = (/** @type {string} */ id) =>
+    createCreature(id, 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    });
+  const app = stubApp({ characters: [caster], creatures: [goblin('g1'), goblin('g2')] });
+  const plan = planFor(app, caster, burningHands);
+  app.state.combat = /** @type {any} */ ({
+    order: [{ id: 'mage' }, { id: 'g1' }, { id: 'g2' }],
+    round: 1,
+    turn: 0,
+  });
+  resolveCast(app, plan, submit({ target: 'g2', dc: '14' }), {
+    writeBack: () => {},
+    rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(20)]),
+  });
+  assert.match(app.log[1], /^Goblin 2 saves DC 14 /);
+});

@@ -29,10 +29,11 @@ import { pruneCreatureLinks } from './questCleanup.js';
  * collection it lives in, and a store function. Store writes an updated copy
  * back to the collection and refreshes the panels that show it. Combat code
  * uses this one shape to act on any participant id, without a separate lookup
- * for characters and creatures.
+ * for characters and creatures. `label` is the name that log lines use, with
+ * the number that tells two foes of one name apart ("Gray Wolf 2").
  * @typedef {(
- *   { kind: 'character', entity: Character, store: (next: Character) => void }
- *   | { kind: 'creature', entity: Creature, store: (next: Creature) => void }
+ *   { kind: 'character', entity: Character, label: string, store: (next: Character) => void }
+ *   | { kind: 'creature', entity: Creature, label: string, store: (next: Creature) => void }
  * )} Combatant
  */
 
@@ -131,6 +132,9 @@ export function findCombatant(app, id) {
     return {
       kind: 'character',
       entity: character,
+      get label() {
+        return labelOf(app, character);
+      },
       store: (next) => {
         state.characters = replaceById(state.characters, next);
         app.actions.refreshSelectedCharacter();
@@ -145,6 +149,9 @@ export function findCombatant(app, id) {
     return {
       kind: 'creature',
       entity: creature,
+      get label() {
+        return labelOf(app, creature);
+      },
       store: (next) => {
         state.creatures = replaceById(state.creatures, next);
         commitCreatures(app, { dirty: false });
@@ -423,4 +430,35 @@ export function hpOf(kind, entity) {
   }
   const hp = getHP(/** @type {Character} */ (entity));
   return hp ? { current: hp.current, max: hp.max } : null;
+}
+
+/**
+ * The log label of one combatant. In a running fight, the labels number the
+ * foes that share a name across the whole order, so a log line names the
+ * same "Gray Wolf 2" as the card. Outside a fight, or for an entity outside
+ * the order, the label is the plain name. `findCombatant` reads this through
+ * a getter, so a lookup that never logs does not pay for the numbering.
+ * @param {AppContext} app
+ * @param {Character | Creature} entity
+ * @returns {string}
+ */
+function labelOf(app, entity) {
+  const combat = app.state.combat;
+  if (!combat) return entity.name;
+  const labels = combatLabels(
+    app,
+    combat.order.map((p) => p.id),
+  );
+  return labels.get(entity.id) ?? entity.name;
+}
+
+/**
+ * The log label of a combatant by id, or the fallback name when the id is not
+ * in the roster (a target that left the fight, for example).
+ * @param {AppContext} app
+ * @param {{ id: string, name: string }} target
+ * @returns {string}
+ */
+export function logName(app, target) {
+  return findCombatant(app, target.id)?.label ?? target.name;
 }

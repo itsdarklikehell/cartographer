@@ -1624,3 +1624,34 @@ test('Stoneskin does not resist a hit from a Pact of the Blade pact weapon', () 
   });
   assert.equal(app.state.creatures[0].currentHP, 12);
 });
+
+test('two foes of one name keep their numbers in the attack and hit lines', () => {
+  const hero = makeHero({ STR: 16 });
+  const wolf = (/** @type {string} */ id) =>
+    createCreature(id, 'Gray Wolf', {
+      disposition: 'hostile',
+      maxHP: 20,
+      stats: { AC: 10 },
+      location: HERE,
+      level: 1,
+    });
+  const app = stubApp({
+    characters: [hero],
+    creatures: [wolf('w1'), wolf('w2')],
+    rng: scripted([d20(15)]),
+  });
+  app.state.combat = /** @type {any} */ ({
+    round: 1,
+    order: [{ id: hero.id }, { id: 'w1' }, { id: 'w2' }],
+  });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'w2', name: 'Gray Wolf', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { freeAction: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.match(app.log[0], /^Hero attacks Gray Wolf 2 with Sword/);
+  assert.match(app.log[1], /^Sword hits Gray Wolf 2 for /);
+  assert.match(app.toastMessages[0], /^Hit! Gray Wolf 2 takes /);
+});

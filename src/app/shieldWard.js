@@ -8,7 +8,7 @@ import { blockerOf } from '../entities/ChipMods.js';
 import { createCondition } from '../entities/Conditions.js';
 import { wardTurns, wardedOutcome } from '../entities/CastRolls.js';
 import { isGM } from '../view/ViewRole.js';
-import { findCombatant, spellsOf } from './combatants.js';
+import { findCombatant, logName, spellsOf } from './combatants.js';
 import { combatTargets, rosterTargets } from './spellTargets.js';
 import { castPlan } from './spellCast.js';
 import { resolveCast } from './spellCastResolve.js';
@@ -138,7 +138,7 @@ export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
     if (plan.material.required && !plan.material.satisfied) continue;
     return {
       id: defenderId,
-      name: found.entity.name,
+      name: found.label,
       spell,
       bonus,
       blocks,
@@ -187,12 +187,13 @@ export async function offerWard(app, ward, message, { ask = confirmModal } = {})
 /**
  * The line that says what an attack spell did to one target, ahead of the
  * ward's question.
+ * @param {AppContext} app
  * @param {Spell} spell
  * @param {any} o one outcome of the cast
  * @returns {string}
  */
-function spellHitMessage(spell, o) {
-  const name = o.target.name;
+function spellHitMessage(app, spell, o) {
+  const name = logName(app, o.target);
   if (!o.shots) return `${spell.name} hits ${name} (${o.attack.total} vs AC ${o.ac}).`;
   const how = o.shots[0]?.attack ? `(AC ${o.ac})` : 'automatically';
   return `${spell.name}: ${o.hits} of ${o.fired} hit ${name} ${how}.`;
@@ -233,7 +234,7 @@ export function wardSpellAttack(app, spell, result, casterId, opts = {}) {
     const checked = [];
     for (const [i, o] of outcomes.entries()) {
       const ward = wards[i];
-      const raised = ward ? await offerWard(app, ward, spellHitMessage(spell, o), opts) : 0;
+      const raised = ward ? await offerWard(app, ward, spellHitMessage(app, spell, o), opts) : 0;
       checked.push(ward ? wardedOutcome(effect, o, raised, blocked(o)) : o);
     }
     return { ...result, outcomes: checked };

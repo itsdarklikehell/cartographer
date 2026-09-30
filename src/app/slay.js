@@ -25,7 +25,7 @@ export function slayCombatant(app, id) {
   if (!found) return false;
   if (found.kind === 'character') {
     if (isDead(found.entity)) return false;
-    app.actions.logEvent('combat', `${found.entity.name} dies.`);
+    app.actions.logEvent('combat', `${found.label} dies.`);
     storeCharacterChips(app, found, killOutright(found.entity));
     return true;
   }

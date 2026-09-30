@@ -175,7 +175,7 @@ test('a redirected hit lands on the ally and spends the reaction', async () => {
   const swap = app.log.findIndex((l) =>
     /Boss uses Redirect Attack .* Goblin 2, who becomes the target/.test(l),
   );
-  const swung = app.log.findIndex((l) => /^Hero attacks Goblin with Scimitar/.test(l));
+  const swung = app.log.findIndex((l) => /^Hero attacks Goblin 2 with Scimitar/.test(l));
   assert.ok(swap >= 0 && swung > swap, 'the swap comes before the roll, which targets the ally');
   assert.match(
     asked[0].options.message,

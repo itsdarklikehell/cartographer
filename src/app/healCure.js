@@ -60,7 +60,7 @@ export async function cureTarget(app, spell, targetId, { pick = askCure } = {}) 
   if (!before) return;
   const { always, choices } = cureOptions(effect, before.entity);
   const picked =
-    choices.length > 1 ? await pick(spell, before.entity.name, choices) : (choices[0] ?? null);
+    choices.length > 1 ? await pick(spell, before.label, choices) : (choices[0] ?? null);
   // The dialog can sit open while the fight moves on, so the write reads the
   // target again.
   const found = findCombatant(app, targetId);
@@ -68,7 +68,7 @@ export async function cureTarget(app, spell, targetId, { pick = askCure } = {}) 
   const { entity, ended } = applyCure(found.entity, [...always, ...(picked ? [picked] : [])]);
   if (ended.length === 0) {
     if (effect.removesOneOf) {
-      app.actions.logEvent('combat', `${spell.name} ends nothing on ${found.entity.name}.`);
+      app.actions.logEvent('combat', `${spell.name} ends nothing on ${found.label}.`);
     }
     return;
   }
@@ -79,5 +79,5 @@ export async function cureTarget(app, spell, targetId, { pick = askCure } = {}) 
     app.actions.markDirty();
   }
   const list = ended.map(cureLabel).join(' and ');
-  app.actions.logEvent('combat', `${spell.name} ends ${list} on ${found.entity.name}.`);
+  app.actions.logEvent('combat', `${spell.name} ends ${list} on ${found.label}.`);
 }

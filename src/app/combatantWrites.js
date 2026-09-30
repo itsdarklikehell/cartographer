@@ -18,7 +18,7 @@ import { healingBlockedBy } from '../entities/HealTarget.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { settleChips } from './lethargy.js';
-import { combatantSaveBonus, commitCreatures, findCombatant, hpOf } from './combatants.js';
+import { combatantSaveBonus, commitCreatures, findCombatant, hpOf, logName } from './combatants.js';
 
 /**
  * The write paths that change a combatant: damage and healing, condition
@@ -42,7 +42,7 @@ import { combatantSaveBonus, commitCreatures, findCombatant, hpOf } from './comb
  */
 export function logDefeatTransition(app, prev, next) {
   if (!isDefeated(prev) && isDefeated(next)) {
-    app.actions.logEvent('combat', `Defeated ${next.name}.`);
+    app.actions.logEvent('combat', `Defeated ${logName(app, next)}.`);
   }
 }
 
@@ -98,12 +98,12 @@ export function applyConditionToTarget(
   // A creature's own immunity list keeps the chip off, the same way an
   // immunity chip does.
   if (isImmuneToCondition(found.entity, name)) {
-    app.actions.logEvent('combat', `${found.entity.name} is immune to ${name}.`);
+    app.actions.logEvent('combat', `${found.label} is immune to ${name}.`);
     return true;
   }
   const guard = immunityTo(found.entity.conditions, name);
   if (guard) {
-    app.actions.logEvent('combat', `${found.entity.name} is immune to ${name} (${guard.name}).`);
+    app.actions.logEvent('combat', `${found.label} is immune to ${name} (${guard.name}).`);
     return true;
   }
   if (outlasts(held, chip)) return true;
@@ -113,7 +113,7 @@ export function applyConditionToTarget(
   const kept = found.entity.conditions.filter((c) => !ended.includes(c));
   const conditions = addCondition(kept, name, rounds, extras);
   for (const c of ended) {
-    app.actions.logEvent('combat', `${endedLine(found.entity.name, c.name)}.`);
+    app.actions.logEvent('combat', `${endedLine(found.label, c.name)}.`);
   }
   if (found.kind === 'character') {
     storeCharacterChips(app, found, settleChips(app, found.entity, conditions));
@@ -137,7 +137,7 @@ export function storeCharacterChips(app, found, character) {
   found.store(next);
   app.actions.markDirty();
   if (!ended) return;
-  app.actions.logEvent('combat', `${next.name} loses concentration on ${ended.spellName}.`);
+  app.actions.logEvent('combat', `${found.label} loses concentration on ${ended.spellName}.`);
   // The sweep rewrites `state.characters`, so it runs after the store.
   endSpellEffects(app, next.id, ended.spellId);
 }
@@ -154,7 +154,7 @@ export function storeCharacterChips(app, found, character) {
  */
 export function storeCreature(app, prev, next, store) {
   const settled = settleConcentration(prev, next);
-  logHitEvents(app, settled.creature.name, settled.events);
+  logHitEvents(app, logName(app, settled.creature), settled.events);
   store(settled.creature);
   if (settled.ended) endSpellEffects(app, settled.creature.id, settled.ended);
 }
@@ -204,7 +204,7 @@ export function endSpellEffects(app, casterId, spellId) {
     if (removed.length === 0) return entity;
     for (const c of removed) {
       freed.push({
-        name: entity.name,
+        name: logName(app, entity),
         condition: c.name,
         repeat: !!c.source?.repeat,
       });
@@ -257,7 +257,10 @@ export function endSpellEffects(app, casterId, spellId) {
   }
   for (const line of notes) app.actions.logEvent('combat', line);
   for (const creature of despawned) {
-    app.actions.logEvent('combat', `${creature.name} vanishes as ${spellNameOf(creature)} ends.`);
+    app.actions.logEvent(
+      'combat',
+      `${logName(app, creature)} vanishes as ${spellNameOf(creature)} ends.`,
+    );
   }
 }
 
@@ -309,8 +312,8 @@ export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) 
     app.actions.logEvent(
       'combat',
       ended
-        ? `${found.entity.name} shakes off ${condition.name} (${roll}).`
-        : `${found.entity.name} is still ${condition.name} (${roll}).`,
+        ? `${found.label} shakes off ${condition.name} (${roll}).`
+        : `${found.label} is still ${condition.name} (${roll}).`,
     );
   }
   return results;
@@ -353,10 +356,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   // names the chip. Temporary HP takes another path, so it still lands.
   const chilled = isHeal ? healingBlockedBy(found.entity.conditions) : undefined;
   if (chilled) {
-    app.actions.logEvent(
-      'combat',
-      `${found.entity.name} cannot regain hit points (${chilled.name}).`,
-    );
+    app.actions.logEvent('combat', `${found.label} cannot regain hit points (${chilled.name}).`);
     return;
   }
   // The damage write of each kind takes off a chip that damage ends (Sleep).
@@ -364,10 +364,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (!isHeal) {
     for (const c of found.entity.conditions) {
       if (!c.source?.endsOnDamage) continue;
-      app.actions.logEvent(
-        'combat',
-        `${endedLine(found.entity.name, c.name)} (${c.source.spellName}).`,
-      );
+      app.actions.logEvent('combat', `${endedLine(found.label, c.name)} (${c.source.spellName}).`);
     }
   }
   /** @param {Character | Creature} next */
@@ -375,7 +372,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     if (!opts.manual) return;
     /** @param {ReturnType<typeof hpOf>} hp */
     const line = (hp) =>
-      isHeal ? healLine(next.name, amount, hp) : damageLine(next.name, amount, hp);
+      isHeal ? healLine(found.label, amount, hp) : damageLine(found.label, amount, hp);
     const hp = hpOf(found.kind, next);
     // A Player tab shows a creature's HP only as a band, so the readout of a
     // creature's HP is GM-only.
@@ -407,7 +404,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // follow read as its consequences. A heal with no effect writes only the
     // line that says why.
     if (result.character !== found.entity) logManual(result.character);
-    logHitEvents(app, result.character.name, result.events);
+    logHitEvents(app, found.label, result.events);
     found.store(result.character);
     app.actions.markDirty();
     // Do this after the store, never before. The sweep rewrites

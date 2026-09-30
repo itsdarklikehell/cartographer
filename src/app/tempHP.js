@@ -21,7 +21,7 @@ import { findCombatant } from './combatants.js';
 export function grantTempTo(app, id, amount, from, { detail = '', quiet = false } = {}) {
   const found = findCombatant(app, id);
   if (!found || amount <= 0) return false;
-  const name = found.entity.name;
+  const name = found.label;
   const had = found.entity.bonusHP ?? 0;
   if (amount <= had) {
     if (quiet) return false;

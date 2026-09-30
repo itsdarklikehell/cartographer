@@ -7,7 +7,7 @@ import { defenseNote } from '../entities/DamageDefenses.js';
 import { chipTiming } from '../entities/TurnEffects.js';
 import { currentParticipant } from '../combat/Initiative.js';
 import { spawnSummons } from './summons.js';
-import { defendedDamage, findCombatant } from './combatants.js';
+import { defendedDamage, findCombatant, logName } from './combatants.js';
 import { applyToTarget, applyConditionToTarget } from './combatantWrites.js';
 import { targetSummary } from './spellTargets.js';
 import { spendRollRiders } from './riderSpend.js';
@@ -54,7 +54,7 @@ function riderNote(riders) {
  * @returns {import('../types/entities.js').ConditionSource}
  */
 function castSource(app, spell, casterId) {
-  const casterName = findCombatant(app, casterId)?.entity.name;
+  const casterName = findCombatant(app, casterId)?.label;
   return {
     spellId: spell.id,
     spellName: spell.name,
@@ -152,14 +152,17 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       if (o.unaffectedBy) {
         app.actions.logEvent(
           'combat',
-          `${spell.name} has no effect on ${o.target.name} (${o.unaffectedBy}).`,
+          `${spell.name} has no effect on ${logName(app, o.target)} (${o.unaffectedBy}).`,
         );
         continue;
       }
       const found = findCombatant(app, o.target.id);
       const blocked = found ? healBlocked(found.kind, found.entity, revives, stabilizes) : null;
       if (blocked) {
-        app.actions.logEvent('combat', healBlockedLine(spell.name, o.target.name, blocked));
+        app.actions.logEvent(
+          'combat',
+          healBlockedLine(spell.name, logName(app, o.target), blocked),
+        );
         continue;
       }
       // A spell that stabilizes heals nothing, so it skips the heal line.
@@ -170,7 +173,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       if (heals) {
         app.actions.logEvent(
           'combat',
-          `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
+          `${spell.name} heals ${logName(app, o.target)} for ${o.healing.total} HP.`,
         );
       }
       applyToTarget(app, o.target.id, o.healing.total, true, { revives });
@@ -211,7 +214,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       const adds = changes.length > 0 ? `: ${changes.join(', ')}` : '';
       app.actions.logEvent(
         'combat',
-        `${o.target.name} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,
+        `${logName(app, o.target)} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,
       );
       // The chip is written first, so the temporary HP name a chip that is there.
       if (o.tempHP) {
@@ -267,7 +270,7 @@ function applyAttack(app, spell, result, casterId) {
     // rolls are already aggregated per creature, and the damage carries
     // every ray's dice.
     if (o.shots) {
-      const tally = `${o.hits} of ${o.fired} hit ${o.target.name}`;
+      const tally = `${o.hits} of ${o.fired} hit ${logName(app, o.target)}`;
       // Each ray rolls the caster's riders again, so the line names every
       // ray's dice. The tally itself prints no to-hit numbers, and this is
       // the only place the rays' own rolls are recorded.
@@ -309,7 +312,7 @@ function applyAttack(app, spell, result, casterId) {
         : '';
       app.actions.logEvent(
         'combat',
-        `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${o.target.name}${splashed}.`,
+        `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${logName(app, o.target)}${splashed}.`,
       );
       if (splash) applyToTarget(app, o.target.id, splash.total, false);
       dealt += splash?.total ?? 0;
@@ -318,7 +321,7 @@ function applyAttack(app, spell, result, casterId) {
     const taken = defendedDamage(app, o.target.id, o.damage?.byType ?? []);
     app.actions.logEvent(
       'combat',
-      `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}${o.hitNote ?? ''}` +
+      `${spell.name} ${verb} ${logName(app, o.target)}${rode} for ${o.damage?.detail || '0 damage'}${o.hitNote ?? ''}` +
         `${defenseNote(taken.notes, taken.total)}.`,
     );
     applyToTarget(app, o.target.id, taken.total, false, { crit: o.crit });
@@ -346,7 +349,7 @@ function applyOnHit(app, spell, o, casterId) {
   const effect = /** @type {import('../types/spell.js').SpellAttackEffect} */ (spell.effect);
   const onHit = /** @type {import('../types/spell.js').SpellOnHit} */ (effect.onHit);
   const hit = o.onHit;
-  const name = o.target.name;
+  const name = logName(app, o.target);
   const timing = onHit.until ? timingFor(app, onHit.until, casterId, o.target.id) : null;
   const imposed = hit.condition
     ? applyConditionToTarget(
@@ -400,7 +403,7 @@ function drainTo(app, spell, casterId, drain, dealt) {
   // A caster that left the campaign has no hit points to regain.
   const found = findCombatant(app, casterId);
   if (!found || regained <= 0) return;
-  app.actions.logEvent('combat', `${found.entity.name} regains ${regained} HP from ${spell.name}.`);
+  app.actions.logEvent('combat', `${found.label} regains ${regained} HP from ${spell.name}.`);
   applyToTarget(app, casterId, regained, true);
 }
 
@@ -442,7 +445,10 @@ function applySave(app, spell, result, casterId) {
   const hpRule = !!pool || effect.hpLimit !== undefined;
   for (const o of outcomes) {
     if (o.unaffectedBy) {
-      app.actions.logEvent('combat', ...unaffectedLine(o.target.name, o.unaffectedBy, hpRule));
+      app.actions.logEvent(
+        'combat',
+        ...unaffectedLine(logName(app, o.target), o.unaffectedBy, hpRule),
+      );
       continue;
     }
     const verdict = o.saved ? 'saves' : 'fails';
@@ -512,8 +518,8 @@ function applySave(app, spell, result, casterId) {
     /** @param {string} text */
     const line = (text) =>
       o.noRoll
-        ? `${o.target.name} is affected${paren(text)}${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
-        : `${o.target.name} ${verdict} DC ${o.dc}${paren(text)} — ${takes}${cond}.`;
+        ? `${logName(app, o.target)} is affected${paren(text)}${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
+        : `${logName(app, o.target)} ${verdict} DC ${o.dc}${paren(text)} — ${takes}${cond}.`;
     app.actions.logEvent('combat', ...splitLine(line(detail.gm), line(detail.player)));
     applyToTarget(app, o.target.id, taken.total, false);
     if (effect.kills && !o.saved) slayCombatant(app, o.target.id);
@@ -551,5 +557,6 @@ function applyTypedChip(app, spell, onHit, o, casterId) {
       ...(typed.mods ? { mods: typed.mods } : {}),
     },
   );
-  if (imposed) app.actions.logEvent('combat', `${o.target.name} gains ${typed.condition}.`);
+  if (imposed)
+    app.actions.logEvent('combat', `${logName(app, o.target)} gains ${typed.condition}.`);
 }

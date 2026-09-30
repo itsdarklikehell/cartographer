@@ -417,3 +417,15 @@ test('the end of a fight deals the later-turn damage a boundary chip still owes'
   assert.deepEqual(creature(app, 'imp').conditions, []);
   assert.equal(app.log.filter((l) => l.startsWith('Acid Arrow deals')).length, 1);
 });
+
+test('a turn-end chip names the numbered foe it burns and frees', () => {
+  const app = stubApp([
+    { ...foe('o1'), name: 'Ogre' },
+    { ...foe('o2'), name: 'Ogre' },
+  ]);
+  fight(app);
+  cast(app, 'acid-arrow', { slot: '2', target: 'o2' }, [d20(15)]);
+  endTurnEffects(app, 'o2', { rng: seq([face(4, 4), face(4, 4)]) });
+  assert.ok(app.log.some((l) => /^Acid Arrow deals .* to Ogre 2\.$/.test(l)));
+  assert.ok(app.log.includes('Ogre 2 is no longer affected by Acid Arrow.'));
+});

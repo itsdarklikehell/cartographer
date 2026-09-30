@@ -119,6 +119,18 @@ condition ticks and the concentration sweeps. `removeCombatant` follows the
 same pattern, so anything that changes the fight goes through the module
 that owns it.
 
+### Names in the log
+
+Two foes of one name get a number on their cards ("Gray Wolf 1", "Gray
+Wolf 2"). `combatLabels` in `src/app/combatants.js` numbers them across the
+whole running order. The combatant that `findCombatant` returns has a
+`label` getter over those labels, and `logName(app, target)` gives the same
+label for a target by id. Every log and toast line in the combat modules
+uses one of the two. A line built from `entity.name` would read "Gray Wolf"
+for both wolves, and a source-text test in `tests/uiVocabulary.test.js`
+fails on it. The fight-end lines run after the fight clears, so
+`confirmFightEnd` takes the labels while the order still exists.
+
 ### The turn advance
 
 `advanceTurn` in `Initiative.js` takes a predicate and steps the pointer past
