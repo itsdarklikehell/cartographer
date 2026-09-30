@@ -5,6 +5,7 @@ import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
 import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
 import { exitBandDepth } from './ExitBands.js';
 import { COORD_SCALE } from './CoordLabels.js';
+import { FollowScheduler, followOffset } from './MapFollow.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -136,6 +137,7 @@ export class MapCanvas {
     );
 
     this._pointer = new MapCanvasPointer(this);
+    this._follow = new FollowScheduler(canvas, () => this._applyFollow());
     this._keyboard = new MapCanvasKeyboard(this);
     this._pointer.attach();
     this._keyboard.attach();
@@ -215,11 +217,13 @@ export class MapCanvas {
   }
 
   /**
-   * Set the tile that a fit centers on. While the view is still the fitted
-   * default, a focus tile that lies outside the view, or within one tile of
-   * its edge, re-fits the view around it. A party that walks toward the
-   * edge of a large map then stays in view until the user pans or zooms.
-   * Clearing the focus on a fitted view re-fits it too.
+   * Set the tile that a fit centers on and that the view follows. While the
+   * view is still the fitted default, a focus tile off the canvas re-fits
+   * the view around it. A focus tile on the canvas gets the smallest pan
+   * that keeps it inside the follow deadzone, at the same zoom, and the pan
+   * waits while the pointer is over the canvas (see `FollowScheduler`). A
+   * party that walks toward the edge of a large map then stays in view until
+   * the user pans or zooms. Clearing the focus on a fitted view re-fits it.
    * @param {string | null} tileId
    */
   setFocusTile(tileId) {
@@ -228,7 +232,46 @@ export class MapCanvas {
     if (this._userView) return;
     // With no focus, a fit starts a large map at its top-left corner, past
     // the coordinate labels and the mini-map.
-    if (!tileId || !this._tileWellInView(tileId)) this.fit();
+    if (!tileId || !this._tileOnCanvas(tileId)) {
+      this._follow.cancel();
+      this.fit();
+    } else this._follow.request();
+  }
+
+  /** Pan to keep the focus tile inside the follow deadzone. */
+  _applyFollow() {
+    const { node, focusTileId } = this;
+    if (this._userView || !node || !focusTileId) return;
+    const next = followOffset(
+      {
+        offsetX: this.offsetX,
+        offsetY: this.offsetY,
+        scale: this.scale,
+        tileSize: this.tileSize,
+        canvasWidth: this.canvas.width,
+        canvasHeight: this.canvas.height,
+        width: node.width,
+        height: node.height,
+      },
+      focusTileId,
+    );
+    if (next.offsetX === this.offsetX && next.offsetY === this.offsetY) return;
+    this.offsetX = next.offsetX;
+    this.offsetY = next.offsetY;
+    this.render();
+  }
+
+  /**
+   * Whether any part of a tile draws on the canvas.
+   * @param {string} tileId
+   */
+  _tileOnCanvas(tileId) {
+    const coords = parseCoords(tileId);
+    if (!coords) return true;
+    const size = this.tileSize * this.scale;
+    const x = this.offsetX + coords.x * size;
+    const y = this.offsetY + coords.y * size;
+    return x + size > 0 && y + size > 0 && x < this.canvas.width && y < this.canvas.height;
   }
 
   /**

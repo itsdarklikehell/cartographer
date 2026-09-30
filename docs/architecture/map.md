@@ -7,7 +7,6 @@ explores in Play mode. A small data model of nodes and tiles is under it. The
 hierarchy, regions, drawing, fog of war, and party movement all build on that
 model, so read the first section before any later one.
 
-## Nodes and tiles
 
 `src/types/map.ts` declares both types of the model:
 
@@ -1125,7 +1124,7 @@ moves. While the party is split, the GM's clicks move the character selected
 in the Party roster, and a tab bound to one player moves that player's
 character.
 
-A moved character's steps reveal fog through the same `revealAround` path.
+A moved character's steps reveal fog through the same `PartyTracker.reveal` path.
 The GM can also place any single character on any node through the roster's
 place action, which reaches nodes that are not on screen.
 
@@ -1161,6 +1160,20 @@ A character placed on a node that no longer exists, because the node was
 deleted or is gone from a save that another tab adopted, is left out of the
 pick through `regroupCandidates`. That character counts as standing with the
 party. When nobody is left to pick, the party regroups at its own marker.
+
+### View follow
+
+`MapCanvas.setFocusTile` sets the tile that the view follows, which is the
+party or the followed character. A focus tile off the canvas refits the
+view around it. A focus tile on the canvas gets the smallest pan that keeps
+it inside a deadzone of 20% of the canvas on each side, and at least three
+tiles, from `followOffset` in `map/MapFollow.js`. The zoom stays the same, and
+an axis where the whole map fits the canvas never pans. `FollowScheduler`
+holds the pan while the pointer is over the canvas and runs it when the
+pointer leaves or 600 ms after the last click. Without the wait, a pan
+between two clicks puts a different tile under the pointer, so the second
+click of a double click lands one tile off. Once the user pans or zooms,
+follow stays off (`_userView`) until the Fit control refits the view.
 
 ## Leaving a sub-region
 
