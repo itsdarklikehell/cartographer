@@ -11,6 +11,7 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
 import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
+import { isDead } from '../entities/DeathSaves.js';
 import { canAct } from '../entities/ConditionEffects.js';
 import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
@@ -88,6 +89,17 @@ export function isDowned(found) {
   if (found.kind === 'creature') return isDefeated(found.entity);
   const hp = getHP(found.entity);
   return Boolean(hp && hp.current <= 0);
+}
+
+/**
+ * Whether a combatant is gone for good: a defeated creature, or a character
+ * with three failed death saves. A dying character at 0 HP is not gone. It
+ * still has turns, and damage on those turns costs it death saves.
+ * @param {ResolvedCombatant} found
+ * @returns {boolean}
+ */
+export function isGone(found) {
+  return found.kind === 'creature' ? isDefeated(found.entity) : isDead(found.entity);
 }
 
 /**

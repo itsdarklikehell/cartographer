@@ -4,6 +4,7 @@ import {
   sideOf,
   conditionsOf,
   isDowned,
+  isGone,
   skipsTurn,
   hpOf,
   acOf,
@@ -52,6 +53,16 @@ test('isDowned reads a defeated encounter and a 0 HP character', () => {
   assert.equal(isDowned({ kind: 'character', entity: damageCharacter(hero, 99) }), true);
   assert.equal(isDowned({ kind: 'creature', entity: sage }), false);
   assert.equal(isDowned({ kind: 'creature', entity: applyDamage(sage, 99) }), true);
+});
+
+test('isGone reads a defeated creature and a dead character, but not a dying one', () => {
+  const { hero, goblin } = fixtures();
+  const down = damageCharacter(hero, 99);
+  assert.equal(isGone({ kind: 'creature', entity: applyDamage(goblin, 99) }), true);
+  assert.equal(isGone({ kind: 'creature', entity: goblin }), false);
+  assert.equal(isGone({ kind: 'character', entity: down }), false);
+  const dead = { ...down, deathSaves: { successes: 0, failures: 3, stable: false } };
+  assert.equal(isGone({ kind: 'character', entity: dead }), true);
 });
 
 test('isDowned is false for a character without an HP pool', () => {

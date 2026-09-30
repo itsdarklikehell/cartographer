@@ -126,3 +126,24 @@ test('with no fight running, nothing advances', () => {
   app.state.combat = null;
   assert.equal(advance(app), null);
 });
+
+test('a wrap runs the skipped turns before the wrap, then ticks, then the ones after', () => {
+  const { app } = fight(1);
+  const [mage, hero] = app.state.characters;
+  app.state.characters = [
+    { ...mage, conditions: held(1) },
+    { ...hero, conditions: held(1) },
+  ];
+  app.state.creatures = [{ ...app.state.creatures[0], conditions: [] }];
+  app.state.combat = { ...app.state.combat, index: 1 };
+  advancePastHeld(app, {
+    setCombat: (next) => {
+      app.state.combat = next;
+    },
+    tickRound: () => app.log.push('tick'),
+  });
+  assert.deepEqual(
+    app.log.map((line) => line.split(' ')[0]),
+    ['Hero', 'tick', 'Mage'],
+  );
+});

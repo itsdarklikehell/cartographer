@@ -43,7 +43,7 @@ import {
   storeCreature,
 } from './combatants.js';
 import { advancePastHeld } from './turnAdvance.js';
-import { dropTurnChips, startTurnEffects } from './turnEffects.js';
+import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { focusMapCanvas } from './combatWiring.js';
 import { confirmFightEnd, offerFightXP } from './combatEnd.js';
@@ -70,13 +70,14 @@ export function wireEncounters(app) {
 
   // The end of a fight also ends every chip that waits on a turn boundary,
   // because no turn comes again. Left in place, a Shield cast on the last turn
-  // of a fight keeps its +5 AC for good.
+  // of a fight keeps its +5 AC for good. The later-turn damage such a chip
+  // still owes lands first (see `endFightEffects`).
   /** @param {import('../types/combat.js').CombatState | null} next */
   function setCombat(next) {
     const ended = next === null && state.combat !== null;
     state.combat = next;
     app.actions.markDirty();
-    if (ended) dropTurnChips(app);
+    if (ended) endFightEffects(app);
   }
 
   /**

@@ -14,8 +14,10 @@ import { endTurnEffects, startTurnEffects } from './turnEffects.js';
  * The turn now ending runs its end-of-turn work first. That work can deal
  * damage, and damage can end a spell whose summons then leave the order, so
  * the pointer moves from the order as it stands afterward, never from a copy
- * taken before. The new order is stored, and a round that wrapped ticks,
- * before any later turn boundary runs.
+ * taken before. The new order is stored first. When the round wraps, the
+ * skipped combatants that sit below the old pointer take their turns in the
+ * round that is ending, then the round ticks, and then the skipped
+ * combatants at the top of the order take theirs in the new round.
  *
  * A combatant that the pointer steps past because a chip leaves it unable to
  * act (Paralyzed, Stunned) still has a turn that starts and ends. Its retry
@@ -46,11 +48,18 @@ export function advancePastHeld(app, { setCombat, tickRound, rng = Math.random }
     return true;
   });
   setCombat(result.state);
-  if (result.wrapped) tickRound();
-  for (const id of skipped) {
+  // A skipped combatant below the old pointer sits before the wrap, so its
+  // turn belongs to the round that is ending and runs before the tick.
+  const from = combat.index;
+  const position = (/** @type {string} */ id) => combat.order.findIndex((p) => p.id === id);
+  const early = result.wrapped ? skipped.filter((id) => position(id) > from) : [];
+  const skipTurn = (/** @type {string} */ id) => {
     startTurnEffects(app, id);
     endTurnEffects(app, id, { rng });
-  }
+  };
+  early.forEach(skipTurn);
+  if (result.wrapped) tickRound();
+  skipped.filter((id) => !early.includes(id)).forEach(skipTurn);
   const landing = app.state.combat ? currentParticipant(app.state.combat) : null;
   if (landing && !skipped.includes(landing.id)) startTurnEffects(app, landing.id);
   return result;

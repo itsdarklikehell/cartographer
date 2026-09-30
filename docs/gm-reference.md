@@ -1333,7 +1333,10 @@ Some spell chips end at a turn boundary instead of a round count, such as
 the Blinded of Sunbeam, which ends at the start of the caster's next turn.
 Such a chip shows "next turn". Some chips deal damage at the end of each
 turn of their holder, such as the chip of Acid Arrow. Point at a chip to
-read what it does and when it ends.
+read what it does and when it ends. A dying character still takes this
+damage, and each hit costs it a failed death save. When the fight ends,
+the damage that such a chip still owes lands at once. Outside a fight the
+app deals no later-turn damage, so apply it by hand.
 
 A combatant that loses its turn keeps its place in the initiative order.
 **Next turn** steps past it without a message. A save that fails at once

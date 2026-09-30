@@ -140,18 +140,31 @@ temporary hit points to the combatant.
 2. The pointer moves from `state.combat` as that work left it. Damage can
    end a spell whose summons then leave the order, and a pointer moved from
    a copy taken earlier would write those summons back.
-3. The new order is stored, and a wrapped round ticks.
+3. The new order is stored.
 4. Each combatant that the pointer stepped past starts and ends its turn.
    A paralyzed target still has a turn that ends, so its retry rolls there.
-   Without that roll, it stays held for the whole duration.
+   Without that roll, it stays held for the whole duration. When the round
+   wraps, the skipped combatants below the old pointer take their turns
+   first, then the round ticks, and then the skipped combatants at the top
+   of the order take theirs.
 5. The combatant that the pointer lands on starts its turn.
 
-A downed or missing combatant rolls no save and takes no damage, but the
-chips keyed to its turns still count the boundary. The start of a fight
+A dead character, a defeated creature, or a missing combatant rolls no save
+and takes no damage, but the chips keyed to its turns still count the
+boundary. A dying character at 0 HP still has its turn end, and the damage
+of a chip costs it a failed death save, as any hit does. The start of a fight
 starts the first turn. A removal from the fight ends the chips keyed to the
 removed combatant, and it starts the turn of the next combatant when the
 removed one held the turn. The end of a fight ends every chip that waits on
-a turn boundary, because no turn comes again.
+a turn boundary, because no turn comes again. `endFightEffects` first deals
+the later-turn damage that such a chip still owes, so an Acid Arrow that hit
+on the last turn still burns. A chip that deals damage only on a failed
+repeated save deals none at the end of a fight.
+
+A chip that only counts a boundary down, such as a chip with two ends left,
+still writes the new count back. An entity whose chips no boundary touches
+keeps its identity, and so does a roster with no change, because the roster
+indexes and the pack cache of the save key on that identity.
 
 ### The round wrap
 

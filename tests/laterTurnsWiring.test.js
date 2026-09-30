@@ -3,7 +3,12 @@ import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { rosterTargets } from '../src/app/spellTargets.js';
-import { dropTurnChips, endTurnEffects, startTurnEffects } from '../src/app/turnEffects.js';
+import {
+  dropTurnChips,
+  endFightEffects,
+  endTurnEffects,
+  startTurnEffects,
+} from '../src/app/turnEffects.js';
 import { applyConditionToTarget, endSpellEffects } from '../src/app/combatants.js';
 import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { createCreature } from '../src/entities/Creature.js';
@@ -338,4 +343,77 @@ test('later damage lands on a projectile hit and on a failed save with no condit
   assert.deepEqual(names, ['Acid Rays', 'Acid Spray']);
   const spray2 = creature(app, 'ogre').conditions[1];
   assert.deepEqual(spray2.expires, { who: 'mage', at: 'end', count: 2 });
+  endTurnEffects(app, 'mage', { rng: seq([]) });
+  const counted = creature(app, 'ogre').conditions.find((c) => c.name === 'Acid Spray');
+  assert.equal(counted?.expires?.count, 1, 'the first caster turn end counts the chip down');
+  endTurnEffects(app, 'mage', { rng: seq([]) });
+  assert.deepEqual(
+    creature(app, 'ogre').conditions.map((c) => c.name),
+    ['Acid Rays'],
+    'the second caster turn end removes it',
+  );
+});
+
+test('a turn end that counts no chip down keeps every entity and both rosters', () => {
+  const app = stubApp();
+  const { characters, creatures } = app.state;
+  endTurnEffects(app, 'ogre', { rng: seq([]) });
+  assert.equal(app.state.characters, characters);
+  assert.equal(app.state.creatures, creatures);
+});
+
+test('a dying character takes later-turn damage as a failed death save', () => {
+  const app = stubApp();
+  const acid = createCondition('Acid Arrow', null, {
+    expires: { who: 'mage', at: 'end', count: 1 },
+    ongoing: { damage: [{ count: 2, sides: 4, damageType: 'acid' }] },
+  });
+  const dying = {
+    ...liveMage(app),
+    resources: [{ ...createResource('hp', 'HP', 'custom', 30), current: 0 }],
+    deathSaves: { successes: 0, failures: 0, stable: false },
+    conditions: [acid],
+  };
+  app.state.characters = [dying];
+  endTurnEffects(app, 'mage', { rng: seq([]) });
+  assert.equal(liveMage(app).deathSaves.failures, 1);
+  assert.ok(app.log.some((l) => l.startsWith('Acid Arrow deals')));
+});
+
+test('a dead character takes no later-turn damage', () => {
+  const app = stubApp();
+  const acid = createCondition('Acid Arrow', null, {
+    expires: { who: 'mage', at: 'end', count: 1 },
+    ongoing: { damage: [{ count: 2, sides: 4, damageType: 'acid' }] },
+  });
+  app.state.characters = [
+    {
+      ...liveMage(app),
+      resources: [{ ...createResource('hp', 'HP', 'custom', 30), current: 0 }],
+      deathSaves: { successes: 0, failures: 3, stable: false },
+      conditions: [acid],
+    },
+  ];
+  endTurnEffects(app, 'mage', { rng: seq([]) });
+  assert.equal(
+    app.log.some((l) => l.startsWith('Acid Arrow deals')),
+    false,
+  );
+});
+
+test('the end of a fight deals the later-turn damage a boundary chip still owes', () => {
+  const app = stubApp([foe('ogre'), foe('imp')]);
+  const acid = (/** @type {string} */ who) =>
+    createCondition('Acid Arrow', null, {
+      expires: { who, at: 'end', count: 1 },
+      ongoing: { damage: [{ count: 2, sides: 4, damageType: 'acid' }] },
+    });
+  const ogre = { ...creature(app, 'ogre'), conditions: [acid('ogre')] };
+  const imp = { ...creature(app, 'imp'), currentHP: 0, conditions: [acid('imp')] };
+  app.state.creatures = [ogre, imp];
+  endFightEffects(app, { rng: seq([face(4, 2), face(4, 3)]) });
+  assert.equal(creature(app, 'ogre').currentHP, 35);
+  assert.deepEqual(creature(app, 'ogre').conditions, []);
+  assert.deepEqual(creature(app, 'imp').conditions, []);
+  assert.equal(app.log.filter((l) => l.startsWith('Acid Arrow deals')).length, 1);
 });

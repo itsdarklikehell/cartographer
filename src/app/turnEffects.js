@@ -1,7 +1,7 @@
 import { rollDamage } from '../dice/DiceRoller.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
-import { isDowned } from '../combat/CombatView.js';
+import { isGone } from '../combat/CombatView.js';
 import { settleHPBuffs } from '../entities/HPBuffs.js';
 import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
@@ -28,17 +28,19 @@ import {
  */
 
 /**
- * The end of one combatant's turn. A combatant that is down or gone has no
- * turn to take, so it rolls no save and takes no damage. The chips keyed to
- * its turns still count the boundary, because a caster who drops before its
- * next turn still ends "until the end of your next turn" at that point.
+ * The end of one combatant's turn. A dead character or a defeated creature
+ * has no turn to take, so it rolls no save and takes no damage. A dying
+ * character at 0 HP still does both, and the damage costs it a death save.
+ * The chips keyed to its turns always count the boundary, because a caster
+ * who drops before its next turn still ends "until the end of your next
+ * turn" at that point.
  * @param {AppContext} app
  * @param {string} id
  * @param {{ rng?: RandomFn }} [options]
  */
 export function endTurnEffects(app, id, { rng = Math.random } = {}) {
   const found = findCombatant(app, id);
-  if (found && !isDowned(found)) {
+  if (found && !isGone(found)) {
     // A retry that fails leaves the chip, and a chip with later-turn damage
     // then deals it. Phantasmal Killer works this way: the save both ends the
     // spell and spares the damage.
@@ -125,7 +127,10 @@ function sweepChips(app, rule) {
   const swept = (list) => {
     const next = list.map((entity) => {
       const { conditions, ended } = rule(entity.conditions);
-      if (ended.length === 0) return entity;
+      if (conditions === entity.conditions) return entity;
+      // A chip that only counted a boundary down still changes the list, so
+      // the entity is written. Only an ended chip settles HP and logs.
+      if (ended.length === 0) return { ...entity, conditions };
       for (const c of ended) freed.push({ name: entity.name, condition: c.name });
       return settleHPBuffs({ ...entity, conditions });
     });
@@ -133,7 +138,7 @@ function sweepChips(app, rule) {
   };
   const characters = swept(state.characters);
   const creatures = swept(state.creatures);
-  if (freed.length === 0) return;
+  if (!characters && !creatures) return;
   if (characters) {
     state.characters = characters;
     app.actions.refreshSelectedCharacter();
@@ -147,4 +152,25 @@ function sweepChips(app, rule) {
   for (const { name, condition } of freed) {
     app.actions.logEvent('combat', `${endedLine(name, condition)}.`);
   }
+}
+
+/**
+ * The end of a fight. A chip that waits on a turn boundary has no turn left
+ * to wait for, so it ends (see {@link dropTurnChips}). The later-turn damage
+ * such a chip still owes lands first, because in 5e the time of that turn
+ * still passes after the fight: an Acid Arrow that hit on the last turn still
+ * burns. A chip that deals its damage only on a failed repeated save deals
+ * none here, because no save is rolled. A dead character or a defeated
+ * creature takes nothing.
+ * @param {AppContext} app
+ * @param {{ rng?: RandomFn }} [options]
+ */
+export function endFightEffects(app, { rng = Math.random } = {}) {
+  for (const { id, conditions } of [...app.state.characters, ...app.state.creatures]) {
+    for (const chip of ongoingChips(conditions ?? [])) {
+      const found = chip.expires ? findCombatant(app, id) : null;
+      if (found && !isGone(found)) dealOngoing(app, id, chip, rng);
+    }
+  }
+  dropTurnChips(app);
 }
