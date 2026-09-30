@@ -241,7 +241,10 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       options: choice.map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) })),
     });
   }
-  if (kind === 'attack') {
+  // A spell whose projectiles hit automatically (Magic Missile) rolls no
+  // attack, so it offers no attack roll mode.
+  const autoHit = spell.effect.kind === 'attack' && spell.effect.projectiles?.autoHit;
+  if (kind === 'attack' && !autoHit) {
     fields.push({
       name: 'mode',
       label: 'Attack roll',

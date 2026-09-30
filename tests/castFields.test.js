@@ -302,3 +302,24 @@ test('an area or capped group caption adds the range after its count', () => {
   const near = castFields({ ...blast, range: 'Self' }, targets, [1], 13, Infinity);
   assert.equal(near.find((f) => f.name === 'targets').label, 'Targets in the area');
 });
+
+test('a spell whose projectiles hit automatically offers no attack roll mode', () => {
+  const magicMissile = {
+    ...scorchingRay,
+    id: 'magic-missile',
+    name: 'Magic Missile',
+    level: 1,
+    effect: { ...scorchingRay.effect, projectiles: { count: 3, perStep: 1, autoHit: true } },
+  };
+  const names = (/** @type {any} */ spell) =>
+    (castFields(spell, targets, [1, 2], 13, capAt(spell, 1)) ?? []).map((f) => f.name);
+  assert.ok(!names(magicMissile).includes('mode'));
+  assert.ok(names(scorchingRay).includes('mode'));
+});
+
+test('a cast blocked by the bonus action spell rule adds its opt-out box', () => {
+  const fields = castFields(fireBolt, targets, [], 13, 1, { ruleLabel: 'Ignore it (why)' }) ?? [];
+  const box = fields.find((f) => f.name === 'ignore-spell-rule');
+  assert.equal(box?.label, 'Ignore it (why)');
+  assert.equal(box?.type, 'checkbox');
+});

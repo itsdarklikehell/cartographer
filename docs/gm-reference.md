@@ -1883,7 +1883,7 @@ but no actions.
 | Targets | A spell with more than one target | Up to the cap of the spell. An upcast spell such as Hold Person reaches one more creature per level. The caption names the range too |
 | Projectile allocation | A spell with several projectiles | How many projectiles go to each target. The total follows the slot level |
 | Resist | A buff with a list of damage types, such as Protection from Energy | The damage type that the chip resists |
-| Attack roll | An attack spell | Normal, Advantage, or Disadvantage |
+| Attack roll | An attack spell, except one whose projectiles hit automatically, such as Magic Missile | Normal, Advantage, or Disadvantage |
 | Save DC on a hit | An attack spell whose hit brings a save, such as Ray of Sickness | The DC of that save. Starts at the spell save DC of the caster |
 | Save DC | A save spell that rolls a save. Sleep, Color Spray, and Power Word Kill roll none | Starts at 8 plus the proficiency bonus plus the spell ability modifier |
 | Save roll | A save spell that rolls a save | Normal, Advantage, or Disadvantage |
