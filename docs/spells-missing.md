@@ -367,8 +367,10 @@ The app models the SRD eldritch invocations of the warlock. The ones that
 change Eldritch Blast, cast a spell, or grant skills have rules in the app,
 and the rest, such as Devil's Sight, are text for the GM. The
 [GM reference](gm-reference.md#eldritch-invocations) lists each effect and
-the rules that the GM enforces. The app records the pact boon, but it does
-not model the Book of Shadows, the pact weapon, or the familiar of a boon.
+the rules that the GM enforces. The app models the Book of Shadows of the
+Pact of the Tome, with its cantrips from any class and the rituals of Book
+of Ancient Secrets, and the Mystic Arcanum. It does not model the pact
+weapon or the familiar of a boon.
 Pact magic is modeled, so a warlock casts from its own pact pool and not
 from the standard slot table.
 

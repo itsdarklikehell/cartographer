@@ -8,6 +8,8 @@ import {
 } from '../entities/InvocationLevelUp.js';
 import { arcanumOptions, pendingArcana } from '../entities/MysticArcanum.js';
 import { activeSpells } from '../library/Library.js';
+import { askTomeCantrips, askTomeRituals } from './TomeFlow.js';
+import { pendingTomeCantrips, pendingTomeRituals, tomeCantrips } from '../entities/PactTome.js';
 import { PACT_BOONS } from '../data/invocations.js';
 import { splitList } from '../util/text.js';
 
@@ -137,7 +139,7 @@ const ordinal = (n) => `${n}th`;
 /**
  * Gather the warlock picks against a preview character. The pact boon comes
  * first, because it changes which invocations qualify, and the swap comes
- * after the new picks, then the Mystic Arcanum. `swap` false skips the swap, as the sheet's pending
+ * after the new picks, then the Mystic Arcanum and the Book of Shadows. `swap` false skips the swap, as the sheet's pending
  * row does, since the rules allow a swap only when a warlock level is gained.
  * @param {Character} preview
  * @param {{ swap: boolean }} opts
@@ -149,8 +151,15 @@ export async function askWarlockPicks(preview, opts) {
   const added = await askNewInvocations(next);
   next = applyWarlockPicks(next, { added });
   const swap = opts.swap ? await askSwap(next) : null;
+  next = applyWarlockPicks(next, { added: [], swap });
   const arcana = await askArcana(pendingArcana(next));
-  return { boon, added, swap, arcana };
+  // A new Tome boon asks for its cantrips, and a new Book of Ancient Secrets
+  // for its two 1st-level rituals.
+  const tome = pendingTomeCantrips(next) > 0 && tomeCantrips(next).length === 0;
+  const tomeCantripIds = tome ? await askTomeCantrips(next) : [];
+  const ritualCount = pendingTomeRituals(next);
+  const rituals = ritualCount > 0 ? await askTomeRituals(next, ritualCount, 1) : [];
+  return { boon, added, swap, arcana, tomeCantrips: tomeCantripIds, rituals };
 }
 
 /**

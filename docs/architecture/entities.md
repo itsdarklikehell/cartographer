@@ -671,6 +671,25 @@ spellbook check and pays from the pact pool only. `resolveCast` reads the use
 again off the live caster, refuses a use that another tab spent while the
 dialog was open, and then marks the use with `markInvocationUsed`.
 
+### Pact of the Tome
+
+`entities/PactTome.js` defines the Book of Shadows. The three book cantrips
+sit in `spellbook.cantrips` with the warlock as their source, so every cast
+path reads them as warlock cantrips with CHA, and `bookOfShadows.cantrips`
+marks them. `Classes.cantripLimit` adds the book cantrips that the
+spellbook still has to the class limit, so they do not count against it.
+The rituals of Book of Ancient Secrets sit in `bookOfShadows.rituals` only,
+and not in the known list, because a known spell of a known-rule class
+casts with a slot. `SpellView.isRitualOnly` is true for a ritual in the
+book, so `castPlan` offers no slot, `payForCast` accepts the ritual cast,
+and the sheet lists it. `Classes.hasRitualCasting` is true for a warlock
+with the invocation, and with a spell id only for a ritual in the book.
+`toCaster` copies `invocations`, `pactBoon`, and `bookOfShadows`, so these
+checks read the caster view. `PactTome.js` imports only `Multiclass.js`,
+because `Classes.js` imports it and `Invocations.js` imports the
+spellbook, so its invocation check reads the stored picks and the Tome
+boon directly.
+
 ### Mystic Arcanum
 
 `entities/MysticArcanum.js` defines the Mystic Arcanum. At warlock levels 11,

@@ -1,5 +1,4 @@
 import { promptModal } from './Modal.js';
-import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { classLevelOf } from '../entities/Multiclass.js';
 import {
@@ -15,6 +14,8 @@ import {
 import { PACT_BOONS } from '../data/invocations.js';
 import { splitList } from '../util/text.js';
 import { askArcana, choosePendingWarlockPicks } from './InvocationLevelFlow.js';
+import { buildTomeRows, progressRow } from './TomeFlow.js';
+import { pendingTomeCantrips, pendingTomeRituals } from '../entities/PactTome.js';
 import { arcanumLevels, getArcana, pendingArcana, setArcana } from '../entities/MysticArcanum.js';
 import { activeSpellIndex } from '../library/Library.js';
 import { pactBoonPending, pendingInvocationCount } from '../entities/InvocationLevelUp.js';
@@ -47,23 +48,29 @@ export function buildInvocationRows(getCharacter, opts) {
   if (level >= PACT_BOON_LEVEL) {
     const boon = getPactBoon(character);
     rows.push(
-      row(
+      progressRow(
         boon ? `Pact boon: ${pactBoonName(boon)}` : 'Pact boon pending',
         opts.editBase && ['GM edit', choosePactBoon, 'GM override: set the pact boon freely'],
       ),
     );
+    rows.push(...buildTomeRows(getCharacter, opts));
   }
 
   const pending = pendingInvocationCount(character);
   const arcanaPending = pendingArcana(character).length;
-  if (pending > 0 || arcanaPending > 0 || pactBoonPending(character)) {
+  const tomePending = pendingTomeCantrips(character);
+  const ritualsPending = pendingTomeRituals(character);
+  const any = pending + arcanaPending + tomePending + ritualsPending > 0;
+  if (any || pactBoonPending(character)) {
     const parts = [
       ...(pactBoonPending(character) ? ['pact boon'] : []),
       ...(pending > 0 ? [`${pending} invocation${pending === 1 ? '' : 's'}`] : []),
       ...(arcanaPending > 0 ? [`${arcanaPending} Mystic Arcanum`] : []),
+      ...(tomePending > 0 ? [`${tomePending} Book of Shadows cantrips`] : []),
+      ...(ritualsPending > 0 ? [`${ritualsPending} book rituals`] : []),
     ];
     rows.push(
-      row(
+      progressRow(
         `Warlock choices pending (${parts.join(', ')})`,
         opts.editBase && [
           'Choose',
@@ -77,7 +84,7 @@ export function buildInvocationRows(getCharacter, opts) {
   if (count > 0) {
     const picked = getInvocations(character);
     rows.push(
-      row(
+      progressRow(
         `Invocations (${picked.length} of ${count})`,
         opts.editBase && [
           'GM edit',
@@ -109,7 +116,7 @@ export function buildInvocationRows(getCharacter, opts) {
       (a) => `${index.get(a.spellId)?.name ?? a.spellId} (${a.level}th)`,
     );
     rows.push(
-      row(
+      progressRow(
         `Mystic Arcanum: ${picks.length > 0 ? picks.join(', ') : 'none'}`,
         opts.editBase && ['GM edit', chooseArcana, 'GM override: set the Mystic Arcanum freely'],
       ),
@@ -175,21 +182,4 @@ export function buildInvocationRows(getCharacter, opts) {
   }
 
   return rows;
-}
-
-/**
- * One progression row: its text and an optional button.
- * @param {string} text
- * @param {false | [string, () => void, string]} button label, handler, and
- *   accessible label, or false for none
- * @returns {HTMLElement}
- */
-function row(text, button) {
-  const line = el(
-    'div',
-    'character-sheet__progress-row u-row u-g2 u-muted',
-    el('span', 'character-sheet__progress-text', text),
-  );
-  if (button) line.appendChild(textButton(button[0], button[1], { ariaLabel: button[2] }));
-  return line;
 }

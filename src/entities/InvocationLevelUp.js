@@ -9,6 +9,7 @@ import {
   setPactBoon,
 } from './Invocations.js';
 import { pendingArcana, setArcana } from './MysticArcanum.js';
+import { addTomeRituals, setTomeCantrips, tomeCantrips } from './PactTome.js';
 
 /**
  * The warlock picks that a level-up asks for: the pact boon from 3rd warlock
@@ -77,9 +78,11 @@ export function swapInvocation(character, from, to) {
 /**
  * The character with the picks of a warlock level-up applied: the pact boon
  * first, since an invocation can need it, then the new invocations, and the
- * swap, and the Mystic Arcanum picks last. A pick that no longer qualifies
+ * swap, the Mystic Arcanum picks, and the Book of Shadows picks last. A pick that no longer qualifies
  * drops, the new invocations stop at the count of the warlock level, and an
- * arcanum pick lands only on a spell level with no pick yet.
+ * arcanum pick lands only on a spell level with no pick yet. The Book of
+ * Shadows cantrips land only in a book with none, and a ritual lands only
+ * when it qualifies (see `PactTome.addTomeRituals`).
  * @param {Character} character
  * @param {WarlockPicks} picks
  * @returns {Character}
@@ -97,5 +100,9 @@ export function applyWarlockPicks(character, picks) {
     open.includes(Number(level)),
   );
   if (arcana.length > 0) next = setArcana(next, Object.fromEntries(arcana));
+  if (picks.tomeCantrips?.length && tomeCantrips(next).length === 0) {
+    next = setTomeCantrips(next, picks.tomeCantrips);
+  }
+  if (picks.rituals?.length) next = addTomeRituals(next, picks.rituals);
   return next;
 }

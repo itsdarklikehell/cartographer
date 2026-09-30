@@ -41,6 +41,9 @@ import { isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlo
  *   spellbook?: Spellbook,
  *   exhaustion?: number,
  *   cr?: number,
+ *   invocations?: string[],
+ *   pactBoon?: import('../types/invocation.js').PactBoon,
+ *   bookOfShadows?: { cantrips: string[], rituals: string[] },
  * }} CasterEntity
  */
 
@@ -103,6 +106,11 @@ export function toCaster(entity) {
     // to carry the level. Dropping it here would leave a tired caster casting
     // at full bonus.
     exhaustion: entity.exhaustion,
+    // Book of Ancient Secrets lets a warlock cast the rituals in its book, so
+    // the ritual checks read the invocations, the boon, and the book.
+    ...(entity.invocations ? { invocations: entity.invocations } : {}),
+    ...(entity.pactBoon ? { pactBoon: entity.pactBoon } : {}),
+    ...(entity.bookOfShadows ? { bookOfShadows: entity.bookOfShadows } : {}),
     // A rated creature's spell DC and attack read the rating ladder, the
     // same source `creatureProficiencyBonus` gives its saves and skills.
     // An unrated caster falls through to the level ladder in `Classes`,

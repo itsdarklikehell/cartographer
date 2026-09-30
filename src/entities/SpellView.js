@@ -1,5 +1,6 @@
 import { getSpellbook, spellSource } from './Character.js';
 import { casterDefOf, primaryCasterClass } from './Classes.js';
+import { tomeRituals } from './PactTome.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -95,7 +96,8 @@ export function isSpellCastable(character, spell) {
 /**
  * Whether the character can cast this spell only as a ritual: a ritual in
  * the known list of a class that casts rituals from its book (the Wizard),
- * and not prepared. Such a spell casts with no slot and the extra ten
+ * and not prepared, or a ritual in the Book of Shadows of a warlock with
+ * Book of Ancient Secrets. Such a spell casts with no slot and the extra ten
  * minutes, never from a slot. This function is pure.
  * @param {SpellCaster} character
  * @param {Spell} spell
@@ -103,6 +105,7 @@ export function isSpellCastable(character, spell) {
  */
 export function isRitualOnly(character, spell) {
   if (!spell.ritual || spell.level === 0 || isSpellCastable(character, spell)) return false;
+  if (tomeRituals(character).includes(spell.id)) return true;
   if (!getSpellbook(character).known.includes(spell.id)) return false;
   const classId = spellSource(character, spell.id) ?? primaryCasterClass(character)?.classId;
   return casterDefOf(character, classId)?.ritualFromBook === true;

@@ -381,6 +381,12 @@ export interface SpellCaster {
    * for a creature with a challenge rating, from the rating ladder. Absent
    * means `proficiencyBonus(level)`. A Character never carries it. */
   proficiency?: number;
+  /** A warlock's invocation ids, pact boon, and Book of Shadows, which
+   * `toCaster` copies so the ritual rules of Book of Ancient Secrets can
+   * read them (see PactTome.js). */
+  invocations?: string[];
+  pactBoon?: import('./invocation.js').PactBoon;
+  bookOfShadows?: { cantrips: string[]; rituals: string[] };
 }
 
 /** Weapon proficiencies, split by namespace the way MulticlassGrant already

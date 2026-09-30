@@ -1813,6 +1813,7 @@ Invocation rules list under the rows shows what each picked invocation does.
 | An at-will spell, such as Armor of Shadows | The spell casts with no slot, at its own level. An invocation that limits the spell to the warlock offers only the warlock as a target, and one with no material drops the component. If the spellbook also has the spell, the app first asks **How to cast**: at will, or with a spell slot. The slot cast works as a usual cast, so it can target others and use a higher slot |
 | A once-per-rest spell, such as Thief of Five Fates | The spell casts with a pact slot, and then it refuses until a long rest. The slot picker offers only the pact slot level, and the cast refuses when no pact slot is left. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
 | Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives. A warlock that drops below 2nd level loses the skills, and gets them back at 2nd level |
+| Book of Ancient Secrets | Casts the rituals in the Book of Shadows as rituals. See [Pact of the Tome](#pact-of-the-tome) |
 | Any other invocation, such as Devil's Sight | Text in the rules list only |
 
 The spells that the invocations cast list on the character sheet and in
@@ -1829,10 +1830,33 @@ The app does not enforce these invocation rules, so you enforce them:
   each creature per long rest.
 - The push of Repelling Blast. The board does not move a token by feet,
   so you move the token.
-- The rituals of Book of Ancient Secrets. The app records the Pact of the
-  Tome, but it has no Book of Shadows.
+- The ritual casting of a warlock with Book of Ancient Secrets. The app
+  offers the ritual box for a ritual in the Book of Shadows only, but a
+  ritual that the warlock also knows as a warlock spell casts with a slot.
+- The switch away from the Pact of the Tome. The Book of Shadows cantrips
+  stay in the spellbook and count against the cantrip limit, so forget
+  them in the Spellbook tab.
 - The pact weapon of the Pact of the Blade, and the familiar of the Pact of
   the Chain, with the invocations that use them.
+
+### Pact of the Tome
+
+A warlock with the Pact of the Tome keeps a Book of Shadows. The level-up
+that picks the boon asks for three cantrips from the list of any class,
+and the **Book of Shadows cantrips** row in the Progression block changes
+them. The book cantrips join the spellbook as warlock spells, so they use
+CHA and the warlock save DC. They do not count against the cantrip limit,
+so the Spellbook tab reads, for example, "Cantrips 5/5" for two class
+cantrips and three book cantrips.
+
+The Book of Ancient Secrets invocation adds rituals to the book. The pick
+asks for two 1st-level rituals from the list of any class. To copy more
+rituals later, click **Add ritual** on the **Book rituals** row. The list
+offers rituals up to half the warlock level, rounded up. A ritual in the
+book lists with the other spells on the sheet, and it casts only as a
+ritual, with no slot and ten minutes more. The GM decides when the warlock
+finds a ritual to copy, and the app does not charge the gold or the time
+of the copy.
 
 ### Mystic Arcanum
 

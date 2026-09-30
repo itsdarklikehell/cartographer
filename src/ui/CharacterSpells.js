@@ -4,6 +4,7 @@ import { casterName } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entities/SpellView.js';
 import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { arcanumSpellIds, warlockCast } from '../entities/MysticArcanum.js';
+import { tomeRituals } from '../entities/PactTome.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -22,7 +23,9 @@ const FEATURE_GROUPS = ['Invocations', ARCANUM];
  * shows cantrips plus the leveled spells that the known-rule makes
  * castable, prepared ones under a prepared-rule class, and every known
  * one under a known-rule class. A Wizard's unprepared rituals list too,
- * titled as rituals, because the Wizard casts them from the book. The spells
+ * titled as rituals, because the Wizard casts them from the book. The
+ * rituals in the Book of Shadows of a warlock with Book of Ancient Secrets
+ * list the same way. The spells
  * that a warlock casts through its invocations and not from the book list in
  * a group of their own, and every spell reads as the invocations change it
  * (Agonizing Blast on Eldritch Blast, for example). The Mystic Arcanum spells
@@ -61,7 +64,9 @@ export function buildSpellsSection(character, opts) {
   const fromBook = [
     ...opts.resolveSpells(book.cantrips),
     ...opts.resolveSpells(castableLeveledIds(character)),
-    ...opts.resolveSpells(book.known).filter((spell) => isRitualOnly(character, spell)),
+    ...opts
+      .resolveSpells([...new Set([...book.known, ...tomeRituals(character)])])
+      .filter((spell) => isRitualOnly(character, spell)),
   ];
   const invoked = opts
     .resolveSpells(invocationSpellIds(character))

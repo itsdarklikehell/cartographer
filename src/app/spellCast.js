@@ -10,6 +10,7 @@ import { isRitualOnly } from '../entities/SpellView.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
 import { invokedSpell } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
+import { tomeRituals } from '../entities/PactTome.js';
 import { replaceById } from '../entities/Roster.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
@@ -241,8 +242,12 @@ export function castPlan(app, entity, listed, offered, route = null) {
       : [];
   // A multiclass caster's DC and attack bonus use the class the spell was
   // learned under. Without a recorded source, they fall back to the first
-  // caster class. A cast through an invocation is a warlock cast.
-  const sourceClass = invocation ? 'warlock' : (spellSource(caster, spell.id) ?? undefined);
+  // caster class. A cast through an invocation, or of a ritual in the Book of
+  // Shadows, is a warlock cast.
+  const sourceClass =
+    invocation || tomeRituals(caster).includes(spell.id)
+      ? 'warlock'
+      : (spellSource(caster, spell.id) ?? undefined);
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
   // Both caps read the level the picker starts on: the lowest slot the
   // caster can spend. This is also the level submitted if the GM does not
@@ -277,8 +282,10 @@ export function castPlan(app, entity, listed, offered, route = null) {
         spell,
       );
   // Ritual casting is a class feature. A caster can cast a spell with a
-  // ritual as a ritual only as a bard, cleric, druid, or wizard.
-  const ritualOffered = !free && spell.ritual && spell.level > 0 && hasRitualCasting(caster);
+  // ritual as a ritual only as a bard, cleric, druid, or wizard, or as a
+  // warlock with Book of Ancient Secrets for a ritual in its book.
+  const ritualOffered =
+    !free && spell.ritual && spell.level > 0 && hasRitualCasting(caster, spell.id);
   // The 5e armor proficiency rule stops a cast in armor the caster is not
   // trained for. Only a Character wears tracked gear, so a creature never
   // hits this. The dialog offers a GM opt-out beside the component one.

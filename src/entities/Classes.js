@@ -7,6 +7,7 @@ import { casterDefFor, isCasterRef } from './ClassCasting.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
+import { hasAncientSecrets, tomeCantrips, tomeRituals } from './PactTome.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -156,14 +157,19 @@ export function casterClassRefs(character) {
 
 /**
  * Whether the character can cast rituals: true when any of its caster
- * classes has ritual casting (Bard, Cleric, Druid, Wizard). A ritual spell
+ * classes has ritual casting (Bard, Cleric, Druid, Wizard), or when a
+ * warlock has Book of Ancient Secrets. With `spellId`, the warlock counts
+ * only for a ritual in its Book of Shadows. A ritual spell
  * is castable without a slot only by a caster whose class grants the
  * feature. This gates the cast dialog's ritual option.
  * @param {SpellCaster} character
+ * @param {string} [spellId]
  * @returns {boolean}
  */
-export function hasRitualCasting(character) {
-  return casterClassRefs(character).some((ref) => !!casterDefFor(ref)?.ritual);
+export function hasRitualCasting(character, spellId) {
+  if (casterClassRefs(character).some((ref) => !!casterDefFor(ref)?.ritual)) return true;
+  if (!hasAncientSecrets(character)) return false;
+  return spellId === undefined || tomeRituals(character).includes(spellId);
 }
 
 /**
@@ -258,8 +264,9 @@ function casterProficiency(character) {
 
 /**
  * How many cantrips a character can know: each caster class's cantrip curve
- * read at its own class level, summed. Returns 0 for a non-caster or a
- * classless character.
+ * read at its own class level, summed, plus the Book of Shadows cantrips of
+ * a Pact of the Tome warlock, which do not count against the limit. Returns
+ * 0 for a non-caster or a classless character.
  *
  * This value is memoized on the character, like `preparedLimit`. The
  * spellbook panel asks for both limits once per listed spell, and
@@ -274,7 +281,7 @@ export const cantripLimit = memoizeByIdentity(countCantripsKnown);
 function countCantripsKnown(character) {
   return casterClassRefs(character).reduce(
     (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level, ref.subclass),
-    0,
+    tomeCantrips(character).length,
   );
 }
 

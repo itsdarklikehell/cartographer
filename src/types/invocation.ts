@@ -52,4 +52,8 @@ export interface WarlockPicks {
   swap?: { from: string; to: string } | null;
   /** The new Mystic Arcanum spell ids, keyed by spell level. */
   arcana?: Record<string, string>;
+  /** The Book of Shadows cantrip ids, for a warlock with none picked yet. */
+  tomeCantrips?: string[];
+  /** The rituals copied into the Book of Shadows. */
+  rituals?: import('./spell.js').Spell[];
 }
