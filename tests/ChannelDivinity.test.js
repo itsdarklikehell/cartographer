@@ -192,3 +192,38 @@ test('Turn Resistance loads only as true', async () => {
   assert.deepEqual(attackTraitFields({ turnResistance: true }), { turnResistance: true });
   assert.deepEqual(attackTraitFields({ turnResistance: 'yes' }), {});
 });
+
+test('a legendary undead can use legendary resistance against Turn Undead', async () => {
+  const app = fight();
+  app.state.creatures = app.state.creatures.map((/** @type {any} */ c) =>
+    c.id === 's2' ? { ...c, legendaryResistance: 1 } : c,
+  );
+  const prompt = /** @type {any} */ (async () => ({ targets: 's2' }));
+  /** @type {string[]} */
+  const asked = [];
+  const ask = async (/** @type {string} */ message) => {
+    asked.push(message);
+    return true;
+  };
+  assert.equal(await turnUndead(app, found(app), { prompt, rng: () => 0, ask }), true);
+  assert.deepEqual(asked, [
+    'Skeleton 2 fails the WIS save against Turn Undead (DC 14). Use legendary resistance? 1 left today.',
+  ]);
+  const s2 = app.state.creatures.find((/** @type {any} */ c) => c.id === 's2');
+  assert.equal(s2.legendaryResistanceUsed, 1);
+  assert.equal(s2.conditions.length, 0, 'no Turned chip');
+  assert.ok(app.log.some((l) => /^Skeleton 2 uses legendary resistance/.test(l)));
+  assert.ok(app.log.some((l) => /^Skeleton 2 resists the turning/.test(l)));
+});
+
+test('a legendary undead that lets the save fail is turned', async () => {
+  const app = fight();
+  app.state.creatures = app.state.creatures.map((/** @type {any} */ c) =>
+    c.id === 's2' ? { ...c, legendaryResistance: 1 } : c,
+  );
+  const prompt = /** @type {any} */ (async () => ({ targets: 's2' }));
+  await turnUndead(app, found(app), { prompt, rng: () => 0, ask: async () => false });
+  const s2 = app.state.creatures.find((/** @type {any} */ c) => c.id === 's2');
+  assert.equal(s2.legendaryResistanceUsed, undefined);
+  assert.ok(app.log.some((l) => /^Skeleton 2 is turned/.test(l)));
+});

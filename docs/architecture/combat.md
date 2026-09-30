@@ -479,8 +479,9 @@ because it has no event for the end of a turn apart from **Next turn**.
 `combat/LegendaryResistance.js` is pure. `resistancesLeft` compares the
 per-day count with `legendaryResistanceUsed` on the creature, and
 `spendResistance` and `restoreResistance` write that field. The long rest
-in `partyWiring.js` maps `restoreResistance` over the creatures, and it
-replaces the array only when a creature changed.
+in `partyWiring.js` calls `restoreAllResistance`, which maps
+`restoreResistance` over the creatures and returns the same array when no
+creature changed.
 
 `app/legendaryResistance.js` asks the GM. `resistSpellSaves` runs in
 `resolveCast` after the Shield pause and before the damage reaction pause,
@@ -490,7 +491,8 @@ cast then finishes without waiting. `canResist` skips a target that the
 spell left alone and a target of a spell with no save roll (an HP pool such
 as Sleep). `resistedOutcome` rewrites a failed outcome as a success: half
 damage for a spell that halves on a save, no condition, and no later-turn
-damage. Turn Undead calls `offerResistance` on each failed WIS save. The
+damage. Turn Undead calls `offerResistance` on each failed WIS save, and its `ask`
+option replaces the question dialog in a test. The
 save that a weapon hit forces (`rollHitSave`) does not ask, because that
 path is synchronous inside the attack roll.
 

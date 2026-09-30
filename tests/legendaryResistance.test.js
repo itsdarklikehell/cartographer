@@ -4,6 +4,7 @@ import {
   canResist,
   resistancesLeft,
   resistedOutcome,
+  restoreAllResistance,
   restoreResistance,
   spendResistance,
 } from '../src/combat/LegendaryResistance.js';
@@ -134,4 +135,13 @@ test('resistSpellSaves returns null when nobody can resist', () => {
   assert.equal(resistSpellSaves(a, fear, saved), null);
   const attack = /** @type {any} */ ({ ...fear, effect: { kind: 'attack' } });
   assert.equal(resistSpellSaves(a, attack, { outcomes: [] }), null);
+});
+
+test('restoreAllResistance refills each creature, and keeps a list with nothing spent', () => {
+  const goblin = createCreature('gob', 'Goblin', { disposition: 'hostile', maxHP: 7 });
+  const rested = restoreAllResistance([spendResistance(king), goblin]);
+  assert.equal(resistancesLeft(rested[0]), 2);
+  assert.equal(rested[1], goblin);
+  const fresh = [king, goblin];
+  assert.equal(restoreAllResistance(fresh), fresh, 'no use spent returns the same list');
 });

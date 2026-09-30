@@ -37,10 +37,18 @@ import { splitTrimmedList } from '../util/text.js';
  * Destroy Undead reaches its CR.
  * @param {AppContext} app
  * @param {{ entity: Character, label: string, store: (next: Character) => void }} found
- * @param {{ prompt?: typeof promptModal, rng?: RandomFn }} [opts]
+ * @param {{
+ *   prompt?: typeof promptModal,
+ *   rng?: RandomFn,
+ *   ask?: import('./shieldWard.js').WardAsk,
+ * }} [opts] `ask` is the legendary resistance question (see `offerResistance`).
  * @returns {Promise<boolean>} whether the use went through
  */
-export async function turnUndead(app, found, { prompt = promptModal, rng = Math.random } = {}) {
+export async function turnUndead(
+  app,
+  found,
+  { prompt = promptModal, rng = Math.random, ask } = {},
+) {
   const cleric = found.entity;
   const undead = (app.state.combat?.order ?? [])
     .map((p) => findCombatant(app, p.id))
@@ -98,6 +106,7 @@ export async function turnUndead(app, found, { prompt = promptModal, rng = Math.
         app,
         id,
         `${target.label} fails the WIS save against Turn Undead (DC ${dc}).`,
+        { ask },
       ));
     const cr = target.kind === 'creature' ? target.entity.cr : undefined;
     const verdict = turnVerdict(saved, cr, level);

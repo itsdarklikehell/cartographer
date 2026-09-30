@@ -46,6 +46,19 @@ export function restoreResistance(creature) {
 }
 
 /**
+ * Give back every use of every creature, for a long rest. The list returns
+ * unchanged when no creature spent a use, so the rest does not replace the
+ * creature list and repaint every panel that reads it.
+ * @template {{ legendaryResistanceUsed?: number }} T
+ * @param {T[]} creatures
+ * @returns {T[]}
+ */
+export function restoreAllResistance(creatures) {
+  const rested = creatures.map(restoreResistance);
+  return rested.some((c, i) => c !== creatures[i]) ? rested : creatures;
+}
+
+/**
  * Whether a save outcome of a spell is a failed saving throw that Legendary
  * Resistance can turn. A target that the spell left alone, or that a spell
  * with no save reached (an HP pool such as Sleep), rolled no save to turn.
