@@ -5,6 +5,12 @@ import { advanceWatches } from '../src/time/GameClock.js';
 
 test('gameClock keeps a valid clock and drops a value that is not a record', () => {
   assert.deepEqual(gameClock({ day: 3, watch: 4 }), { day: 3, watch: 4 });
+  assert.deepEqual(gameClock({ day: 3, watch: 4, minutes: 90 }), { day: 3, watch: 4, minutes: 90 });
+  assert.deepEqual(gameClock({ day: 3, watch: 4, minutes: 999 }), {
+    day: 3,
+    watch: 4,
+    minutes: 239,
+  });
   assert.equal(gameClock(null), null);
   assert.equal(gameClock('Day 3'), null);
   assert.equal(gameClock([1, 2]), null);

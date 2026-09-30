@@ -4,9 +4,20 @@ import {
   WATCHES,
   createClock,
   advanceWatches,
+  advanceMinutes,
   advanceToDawn,
   formatClock,
 } from '../src/time/GameClock.js';
+
+test('advanceMinutes adds up inside a watch and rolls over into the next', () => {
+  const half = advanceMinutes(createClock(), 120);
+  assert.deepEqual(half, { day: 1, watch: 0, minutes: 120 });
+  assert.deepEqual(advanceMinutes(half, 120), { day: 1, watch: 1 });
+  assert.deepEqual(advanceMinutes(half, 1570), { day: 2, watch: 1, minutes: 10 });
+  assert.deepEqual(advanceMinutes(half, -5), half);
+  assert.deepEqual(advanceWatches(half, 1), { day: 1, watch: 1, minutes: 120 }, 'keeps minutes');
+  assert.deepEqual(advanceToDawn(half), { day: 2, watch: 0 });
+});
 import {
   withHP,
   getHP,

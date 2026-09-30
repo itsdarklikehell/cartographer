@@ -14,7 +14,7 @@
  */
 
 import { budgetOf } from '../combat/ActionBudget.js';
-import { WATCHES } from '../time/GameClock.js';
+import { MINUTES_PER_WATCH, WATCHES } from '../time/GameClock.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -144,7 +144,9 @@ export function gameClock(value) {
   const clock = record(value);
   if (!clock) return null;
   const watch = clampInt(clock.watch, 0, Infinity, 0);
-  return { day: clampInt(clock.day, 1), watch: watch < WATCHES.length ? watch : 0 };
+  const minutes = clampInt(clock.minutes, 0, MINUTES_PER_WATCH - 1, 0);
+  const coerced = { day: clampInt(clock.day, 1), watch: watch < WATCHES.length ? watch : 0 };
+  return minutes > 0 ? { ...coerced, minutes } : coerced;
 }
 
 /**

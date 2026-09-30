@@ -22,7 +22,42 @@ export function createClock() {
  */
 export function advanceWatches(clock, watches = 1) {
   const total = clock.watch + Math.max(0, Math.floor(watches));
-  return { day: clock.day + Math.floor(total / WATCHES.length), watch: total % WATCHES.length };
+  return withMinutes(
+    { day: clock.day + Math.floor(total / WATCHES.length), watch: total % WATCHES.length },
+    clock.minutes ?? 0,
+  );
+}
+
+/** The length of one watch: six watches make a 24-hour day. */
+export const MINUTES_PER_WATCH = 240;
+
+/**
+ * Advance the clock by a number of minutes. Minutes add up inside the
+ * current watch, so many short walks move the clock the way one long walk
+ * does. The function treats negative values as zero.
+ * @param {GameClock} clock
+ * @param {number} minutes
+ * @returns {GameClock}
+ */
+export function advanceMinutes(clock, minutes) {
+  const total = (clock.minutes ?? 0) + Math.max(0, Math.floor(minutes));
+  const watched = advanceWatches(
+    { day: clock.day, watch: clock.watch },
+    Math.floor(total / MINUTES_PER_WATCH),
+  );
+  return withMinutes(watched, total % MINUTES_PER_WATCH);
+}
+
+/**
+ * A clock with its minute count set. A clock at the start of a watch keeps
+ * no `minutes` field, so a save of a clock that never moved by minutes
+ * stays as it is.
+ * @param {GameClock} clock
+ * @param {number} minutes
+ * @returns {GameClock}
+ */
+function withMinutes(clock, minutes) {
+  return minutes > 0 ? { ...clock, minutes } : clock;
 }
 
 /**
