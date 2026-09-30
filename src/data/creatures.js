@@ -60,14 +60,17 @@ export const DEFAULT_CREATURES = deepFreeze([
     proficiencies: { saves: [], skills: ['perception', 'stealth'] },
     // A natural weapon: no category, because it is neither simple nor
     // martial. Finesse makes the bite roll with DEX, which gives the SRD
-    // +4 to hit and 2d4+2 damage.
+    // +4 to hit and 2d4+2 damage. A target that the bite hits and that fails
+    // a DC 11 Strength save falls prone.
     weapon: {
       name: 'Bite',
       kind: 'melee',
       properties: ['finesse'],
       damage: [{ count: 2, sides: 4, damageType: 'piercing' }],
+      onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' },
     },
     armor: null,
+    packTactics: true,
   },
   {
     id: 'bandit',

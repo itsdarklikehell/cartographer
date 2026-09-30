@@ -131,7 +131,10 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   // A chip from the defender's own spell can slant the swing (Chill Touch on
   // an undead attacker).
   const sourced = sourceSlant(attacker.conditions, defender.id);
-  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced]);
+  // Pack Tactics is the GM's call in the dialog, and it adds one advantage
+  // slant that folds in with the rest.
+  const packSlant = tweaks.pack ? 'advantage' : null;
+  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced, packSlant]);
   // Cover is the GM's call in the dialog, and it raises the AC of this one
   // swing. Nothing on the map says who stands behind what, so no rule here
   // could work it out.
@@ -197,6 +200,7 @@ export function attackLine(setup, roll) {
     modeReasons(conditionQuery),
     longSlant && !picked ? 'long range disadvantage' : '',
     wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
+    tweaks.pack && !picked ? 'Pack Tactics advantage' : '',
   ]
     .filter(Boolean)
     .join(', ');

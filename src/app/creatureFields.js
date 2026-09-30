@@ -24,6 +24,7 @@ import { DAMAGE_TYPES } from '../entities/Equipment.js';
 import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
 import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
 import { MAX_MULTIATTACK, attackTraitFields } from '../entities/CreatureAttacks.js';
+import { normalizeHitSave } from '../combat/HitSave.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
@@ -54,6 +55,7 @@ import { readStats, statFields } from './statFields.js';
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
  *   multiattack?: number,
+ *   packTactics?: boolean,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -234,6 +236,39 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       min: 1,
       max: MAX_MULTIATTACK,
     },
+    {
+      name: 'packTactics',
+      label: 'Pack Tactics',
+      type: 'checkbox',
+      value: seed?.packTactics === true,
+    },
+    // A save the weapon forces on a hit, such as a wolf bite that knocks
+    // the target prone. A blank ability stores no save.
+    {
+      name: 'hitSaveAbility',
+      label: 'On hit: save',
+      type: 'select',
+      newRow: true,
+      value: seed?.weapon?.onHitSave?.ability ?? '',
+      options: [
+        { value: '', label: 'None' },
+        ...ABILITY_SCORES.map((ability) => ({ value: ability, label: ability })),
+      ],
+    },
+    {
+      name: 'hitSaveDC',
+      label: 'On hit: DC',
+      type: 'number',
+      value: seed?.weapon?.onHitSave?.dc ?? 10,
+      min: 1,
+    },
+    {
+      name: 'hitSaveCondition',
+      label: 'On hit: condition on a fail',
+      type: 'select',
+      value: seed?.weapon?.onHitSave?.condition ?? 'Prone',
+      options: CONDITIONS.filter((c) => c !== CONCENTRATING).map((c) => ({ value: c, label: c })),
+    },
     ...(stats
       ? statFields(
           STAT_KEYS,
@@ -320,6 +355,7 @@ function readLevel(raw) {
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
  *   multiattack?: number,
+ *   packTactics?: boolean,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -346,7 +382,10 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
       creatureType: values.creatureType,
       conditionImmunities: splitList(values.conditionImmunities),
     }),
-    ...attackTraitFields({ multiattack: values.multiattack }),
+    ...attackTraitFields({
+      multiattack: values.multiattack,
+      packTactics: values.packTactics === '1',
+    }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),
     role: values.role.trim(),
@@ -354,7 +393,24 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
     ...(level === undefined ? {} : { level, tier: /** @type {EnemyTier} */ (values.tier) }),
     ...(stats ? { stats: readStats(STAT_KEYS, values) } : {}),
-    ...readGear(values.weapon, values.armor, gear),
+    ...withHitSave(readGear(values.weapon, values.armor, gear), values),
     ...readCasterOptions(values),
   };
+}
+
+/**
+ * Put the on-hit save of the form on the read weapon, or take it off. A
+ * blank ability, or a creature with no weapon, stores no save.
+ * @param {{ weapon: import('../types/entities.js').EnemyWeapon | null, armor: import('../types/entities.js').EnemyArmor | null }} read
+ * @param {Record<string, string>} values
+ */
+function withHitSave({ weapon, armor }, values) {
+  if (!weapon) return { weapon, armor };
+  const { onHitSave: _old, ...plain } = weapon;
+  const onHitSave = normalizeHitSave({
+    ability: values.hitSaveAbility,
+    dc: values.hitSaveDC,
+    condition: values.hitSaveCondition,
+  });
+  return { weapon: onHitSave ? { ...plain, onHitSave } : plain, armor };
 }

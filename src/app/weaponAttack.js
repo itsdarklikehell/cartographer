@@ -6,8 +6,16 @@ import { resolveAttack } from '../combat/AttackResolve.js';
 import { SWINGS, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
 import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponSwing.js';
 import { skipsTurn } from '../combat/CombatView.js';
-import { findCombatant, combatantsAsTargets, defendedDamage } from './combatants.js';
-import { applyToTarget } from './combatantWrites.js';
+import {
+  findCombatant,
+  combatantsAsTargets,
+  combatantSaveBonus,
+  defendedDamage,
+  hpOf,
+} from './combatants.js';
+import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
+import { resolveSave } from '../entities/Checks.js';
+import { hitSaveLine, hitSaveOf } from '../combat/HitSave.js';
 import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
 import { offerDamageWard, pendingDamageWard } from './damageWard.js';
@@ -212,6 +220,7 @@ export function rollWeaponAttack(
       // only once.
       applyToTarget(app, defender.id, taken.total, false, { crit });
       app.toasts.show(lines.toast);
+      rollHitSave(app, defender.id, weapon, rng);
     };
     // A defender with a reaction spell that resists a type in the hit gets
     // the question after the damage roll and before the damage lands.
@@ -310,4 +319,37 @@ export async function weaponAttack(
       tweaks,
     });
   }
+}
+
+/**
+ * Roll the save that a weapon forces on a hit (see `combat/HitSave.js`), and
+ * put the condition on a defender that fails. A defender that the hit dropped
+ * rolls nothing. The save reads the defender's own chips, so Bless helps it
+ * and Restrained slants a DEX save.
+ * @param {AppContext} app
+ * @param {string} defenderId
+ * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
+ * @param {() => number} rng
+ */
+export function rollHitSave(app, defenderId, weapon, rng) {
+  const rider = hitSaveOf(weapon);
+  if (!rider) return;
+  const found = findCombatant(app, defenderId);
+  if (!found || (hpOf(found.kind, found.entity)?.current ?? 1) <= 0) return;
+  const save = resolveSave(combatantSaveBonus(found, rider.ability), rider.dc, {
+    ability: rider.ability,
+    conditions: found.entity.conditions,
+    rng,
+  });
+  app.actions.logEvent(
+    'combat',
+    hitSaveLine({
+      defenderName: found.entity.name,
+      weaponName: weapon.name,
+      rider,
+      total: save.total,
+      success: save.success,
+    }),
+  );
+  if (!save.success) applyConditionToTarget(app, defenderId, rider.condition, null);
 }

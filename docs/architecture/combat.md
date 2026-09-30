@@ -528,6 +528,25 @@ Attack. That condition is advantage on the attack, or an ally next to the
 target. The second half needs a map distance that the app does not have, so
 the ticked box is the GM's answer.
 
+### Pack Tactics, on-hit saves, and Multiattack
+
+The attack dialog shows a Pack Tactics box for a creature with
+`packTactics`. A ticked box sets `tweaks.pack`, and `prepareSwing` adds one
+advantage slant beside the chip slants, so a disadvantage chip still cancels
+it. The attack line names it, unless the GM picked a mode.
+
+A creature weapon with an `onHitSave` forces a save on each hit.
+`rollHitSave` in `app/weaponAttack.js` runs after the damage lands. It skips
+a defender at 0 HP, rolls `Checks.resolveSave` with the save bonus and chips
+of the defender, and logs `HitSave.hitSaveLine`. The line names the total and
+not the bonus, so a Player tab reads the same line. A failed save goes
+through `applyConditionToTarget`, which checks condition immunity.
+
+A creature with `multiattack` gets a ticked Multiattack box while its Attack
+action is unspent. `weaponAttack` then calls `rollWeaponAttack` once for each
+swing, and it reads both sides again through `liveAttackSides` before each
+one. A defender that drops ends the loop with no toast.
+
 ### Hit riders and the pact weapon
 
 `WeaponSwing.hitDamage` adds the dice of the hit riders in

@@ -349,6 +349,8 @@ test('the wolves bite with DEX at the SRD +4, and the camp around Snagtooth rate
   const wolves = [creature('gray-wolf-1'), campaign.bestiary.find((t) => t.id === 'gray-wolf')];
   for (const wolf of wolves) {
     assert.ok(wolf?.weapon);
+    assert.equal(wolf.packTactics, true, wolf.name);
+    assert.deepEqual(wolf.weapon.onHitSave, { ability: 'STR', dc: 11, condition: 'Prone' });
     assert.equal(attackAbility(wolf.weapon, wolf.stats), 'DEX', wolf.name);
     assert.equal(abilityModifier(wolf.stats.DEX) + creatureProficiencyBonus(wolf), 4, wolf.name);
   }

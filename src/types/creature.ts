@@ -131,6 +131,9 @@ export interface Creature extends HPBuffFields {
   /** How many times the creature swings its weapon for one Attack action,
    * from 2 up. Absent means one swing. See `entities/CreatureAttacks.js`. */
   multiattack?: number;
+  /** True for a creature with Pack Tactics: the attack dialog offers
+   * advantage when an ally stands next to the target. Absent means none. */
+  packTactics?: boolean;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -181,6 +184,7 @@ export interface CreatureTemplate {
   creatureType?: CreatureType;
   conditionImmunities?: string[];
   multiattack?: number;
+  packTactics?: boolean;
   role?: string;
   notes?: string;
   class?: string;

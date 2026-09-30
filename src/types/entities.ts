@@ -221,6 +221,17 @@ export interface EnemyWeapon {
   /** True when the weapon counts as magical, so resistance to nonmagical
    * weapon damage (Stoneskin) does not apply. Absent means nonmagical. */
   magical?: boolean;
+  /** A save the weapon forces on a hit. Absent means none. See
+   * `combat/HitSave.js`. */
+  onHitSave?: HitSave;
+}
+
+/** A save a weapon forces on each hit: the defender rolls the ability
+ * against the DC, and a failure puts the condition on it. */
+export interface HitSave {
+  ability: string;
+  dc: number;
+  condition: string;
 }
 
 /** An enemy's worn armor: a name, a base AC, and a weight class. The armor

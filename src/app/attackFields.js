@@ -167,6 +167,19 @@ export function attackDialog({
             },
           ]
         : []),
+      // Pack Tactics needs an ally next to the target. The fight has no
+      // positions, so the GM ticks the box.
+      ...(attacker.packTactics === true
+        ? [
+            {
+              name: 'pack',
+              label: 'Pack Tactics (an ally is next to the target)',
+              type: /** @type {const} */ ('checkbox'),
+              value: false,
+              full: true,
+            },
+          ]
+        : []),
       // The Sneak Attack box appears for an attacker that has the feature, has
       // not used it this turn, and swings a finesse or ranged weapon. Whether
       // the rogue earned it, from advantage or from an ally beside the

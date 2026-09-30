@@ -5,6 +5,9 @@
  * swings behind the Attack action the same way Extra Attack does for a
  * character.
  *
+ * Pack Tactics is a flag. The fight has no positions, so the attack dialog
+ * offers the advantage as a box for the GM to tick.
+ *
  * Every function is pure. A creature with no trait stores no key, so an older
  * save loads as a creature with one attack.
  */
@@ -30,12 +33,15 @@ export function coerceMultiattack(value) {
 /**
  * The attack trait fields to spread into a creature or a template. A creature
  * with no trait stores no key.
- * @param {{ multiattack?: unknown } | undefined} value
- * @returns {{ multiattack?: number }}
+ * @param {{ multiattack?: unknown, packTactics?: unknown } | undefined} value
+ * @returns {{ multiattack?: number, packTactics?: true }}
  */
 export function attackTraitFields(value) {
   const multiattack = coerceMultiattack(value?.multiattack);
-  return multiattack ? { multiattack } : {};
+  return {
+    ...(multiattack ? { multiattack } : {}),
+    ...(value?.packTactics === true ? { packTactics: /** @type {const} */ (true) } : {}),
+  };
 }
 
 /**

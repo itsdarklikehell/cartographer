@@ -984,6 +984,8 @@ Build mode, from Play mode, and from the tile menu.
 | Weapon | None (unarmed) | A weapon from the library |
 | Armor | None (unarmored) | Armor from the library |
 | Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
+| Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
+| On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |
 | Resistant to, Vulnerable to, Immune to | None | The damage types that the creature takes half, double, or no damage from |
 | Immune to conditions | None | The conditions that do not land on the creature. The log names the immunity in place of the chip |
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
@@ -1129,6 +1131,7 @@ A weapon button in the action bar opens the attack dialog.
 | Range | Normal | For a ranged or thrown weapon. Long range takes disadvantage |
 | Wield two-handed | Off | For a versatile weapon. Uses the two-handed damage dice |
 | Multiattack (roll all N attacks) | On | For a creature with Multiattack whose Attack action is unspent. Rolls every swing against the same defender, one after another, and stops when the defender drops. Untick it to roll one swing at a time |
+| Pack Tactics (an ally is next to the target) | Off | For a creature with Pack Tactics. Adds one advantage, which the chips can cancel |
 | Sneak Attack (+Nd6) | Off | For an attacker with the feature that has not used it this turn |
 | Ignore action cost | Off | Shows when the turn cannot pay for the swing. Swings anyway |
 | Situational modifiers | Closed | Bonus dice (d4 to d12) and flat bonuses for the attack and the damage |
@@ -1310,6 +1313,20 @@ for the rest of the turn, and it comes back on the next turn of any
 combatant. So a rogue that spent the dice on its own swing can spend them
 again on an opportunity attack, which is the 5e reading of once per turn. A
 miss leaves the box, because Sneak Attack applies only on a hit.
+
+### Pack Tactics and on-hit saves
+
+A creature with Pack Tactics has advantage when an ally of the creature
+stands within 5 feet of the target. The app tracks no positions, so tick the
+Pack Tactics box when the condition is met. The attack line of the log names
+`Pack Tactics advantage`.
+
+A creature weapon can force a save on each hit, such as the DC 11 Strength
+save of a wolf bite. After the damage lands, the target rolls the save with
+its own bonus and chips. The log names the total, the DC, and the result. A
+target that fails gains the condition, and a target that the hit dropped to
+0 HP rolls nothing. A creature immune to the condition keeps its chips, and
+the log says so.
 
 ### Damage riders on hits
 

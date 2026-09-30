@@ -83,6 +83,7 @@ export function fromTemplate(template, id, location = null) {
     creatureType: template.creatureType,
     conditionImmunities: template.conditionImmunities,
     multiattack: template.multiattack,
+    packTactics: template.packTactics,
     ...(template.weapon !== undefined
       ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
       : {}),

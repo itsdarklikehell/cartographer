@@ -288,6 +288,11 @@ paths spread `attackTraitFields`, so an older save loads with one swing.
 `swingsPerAction` takes the higher of `Features.attacksPerAction` and the
 Multiattack count, and the combat code asks it in place of
 `attacksPerAction`.
+A `packTactics` flag stores only `true`. A creature weapon can store an
+`onHitSave` of an ability, a DC, and a condition, which `combat/HitSave.js`
+cleans. `EquipmentPresets.copyEnemyWeapon` keeps a clean rider and drops a
+broken one, and the combat code cleans it again before it rolls, so a
+hand-edited library file cannot roll a save with an unknown ability.
 
 `applyConditionToTarget` in `app/combatantWrites.js` checks the immunity list
 before it writes a chip. A creature immune to the condition keeps its chips,

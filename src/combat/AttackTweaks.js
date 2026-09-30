@@ -23,6 +23,8 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  * `cover` raises the defender's AC for this swing, and `sneak` adds the
  * attacker's Sneak Attack dice to the damage. Both are the GM's call, because
  * nothing here reads a barrel on the map or where the rogue is standing.
+ * `pack` is Pack Tactics: an ally stands next to the defender, so the swing
+ * rolls with advantage. The GM ticks it for the same reason.
  * Every field defaults to nothing, so a plain Enter in the dialog rolls the
  * unmodified attack.
  * @typedef {{
@@ -35,6 +37,7 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  *   reaction?: boolean,
  *   cover?: import('./Cover.js').CoverLevel,
  *   sneak?: boolean,
+ *   pack?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -132,6 +135,7 @@ export function readAttackTweaks(values) {
     freeAction: values['free-action'] === '1',
     cover: /** @type {import('./Cover.js').CoverLevel} */ (values['cover'] || 'none'),
     sneak: values['sneak'] === '1',
+    pack: values['pack'] === '1',
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,

@@ -90,14 +90,15 @@ const SNEAK = {
   armor: enemyArmor('Leather Armor'),
   ...trained([], ['stealth']),
 };
-// The app does not roll Pack Tactics or the knock-down of the bite, so the
-// notes remind the GM of both.
+// A wolf has Pack Tactics, and its bite knocks a target that fails a DC 11
+// Strength save prone.
+const BITE = natural('Bite', 2, 4, 'piercing', ['finesse']);
 const PACK = {
   creatureType: /** @type {const} */ ('beast'),
-  ...natural('Bite', 2, 4, 'piercing', ['finesse']),
+  weapon: { ...BITE.weapon, onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } },
+  armor: null,
+  packTactics: true,
   ...trained([], ['perception', 'stealth']),
-  notes:
-    'Pack Tactics: advantage on an attack roll when an ally stands within 5 feet of the target. A creature hit by the bite passes a DC 11 Strength save or falls prone.',
 };
 const UNDEAD = {
   creatureType: /** @type {const} */ ('undead'),

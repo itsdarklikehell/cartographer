@@ -1,3 +1,4 @@
+import { normalizeHitSave } from '../combat/HitSave.js';
 import { DEFAULT_RANGES, WEAPON_PROPERTIES, clampWeaponRange } from './Weapons.js';
 
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -413,10 +414,12 @@ export function coerceWeapon(raw) {
  * @returns {import('../types/entities.js').EnemyWeapon}
  */
 export function copyEnemyWeapon(weapon) {
+  const hitSave = normalizeHitSave(weapon.onHitSave);
   return {
     name: weapon.name,
     ...coerceWeapon(weapon),
     damage: cloneDamage(weapon.damage),
     ...(weapon.magical === true ? { magical: true } : {}),
+    ...(hitSave ? { onHitSave: hitSave } : {}),
   };
 }
