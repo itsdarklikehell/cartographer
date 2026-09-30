@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 102. Three built-in spells come from
+lists 319 spells, and the app ships 110. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -24,7 +24,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 
 | Level | Spells |
 | ----- | ------ |
-| Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
+| Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Mage Hand, Prestidigitation, Thaumaturgy, Druidcraft, Mending, Message, Minor Illusion, Dancing Lights, Light |
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Charm Person, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
@@ -304,10 +304,12 @@ that the GM removes by hand. Outside a fight the chip lasts one round.
 
 ### Spells described in prose
 
-Seventeen built-in spells have the `utility` effect kind. Their rules exist
-only as text in the description of each spell, and the GM applies them.
-Light and Counterspell are in the list because a GM notices when a spell
-this common is missing.
+Twenty-five built-in spells have the `utility` effect kind. Their rules
+exist only as text in the description of each spell, and the GM applies
+them. Light, Counterspell, and eight cantrips are in the list because a GM
+notices when a spell this common is missing. The cantrips sit in
+`src/data/spells/cantrips.js`: Mage Hand, Prestidigitation, Thaumaturgy,
+Druidcraft, Mending, Message, Minor Illusion, and Dancing Lights.
 
 The other fifteen are in `src/data/spells/utility.js`: Detect Magic,
 Disguise Self, Jump, Silent Image, Speak with Animals, Alter Self,

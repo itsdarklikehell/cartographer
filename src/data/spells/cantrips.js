@@ -268,6 +268,157 @@ export const CANTRIPS = [
     },
   },
   {
+    id: 'mage-hand',
+    name: 'Mage Hand',
+    level: 0,
+    school: 'conjuration',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'A spectral hand appears within range. On each use, an action moves it up to 30 feet ' +
+      'and lets it handle an object, open an unlocked door or container, stow or fetch an ' +
+      'item, or pour out a vial. It cannot attack, activate a magic item, or carry more than ' +
+      '10 pounds, and it vanishes more than 30 feet from the caster or on a new cast.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'prestidigitation',
+    name: 'Prestidigitation',
+    level: 0,
+    school: 'transmutation',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '10 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: false,
+    ritual: false,
+    description:
+      'A minor magical trick: a harmless sensory effect, a candle or small fire lit or put ' +
+      'out, a 1-foot cube of material cleaned or soiled, nonliving material chilled, warmed, ' +
+      'or flavored, a small mark or symbol for an hour, or a trinket or illusory image that ' +
+      'lasts until the end of the next turn. Up to three effects that last can be active.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'thaumaturgy',
+    name: 'Thaumaturgy',
+    level: 0,
+    school: 'transmutation',
+    classes: ['cleric'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: false,
+    ritual: false,
+    description:
+      'A minor wonder: a voice three times as loud, flames that flicker or change color, ' +
+      'harmless tremors, a sound from a point in range, a door or window thrown open or ' +
+      'slammed shut, or eyes that change. Up to three effects that last a minute can be active.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'druidcraft',
+    name: 'Druidcraft',
+    level: 0,
+    school: 'transmutation',
+    classes: ['druid'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'A small nature effect: a sensory cue that predicts the weather for 24 hours, a flower ' +
+      'that blooms or a seed pod that opens, a harmless sensory effect in a 5-foot cube, or a ' +
+      'candle, torch, or small campfire lit or put out.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'mending',
+    name: 'Mending',
+    level: 0,
+    school: 'transmutation',
+    classes: ['bard', 'cleric', 'druid', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'minutes', amount: 1 },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'two lodestones', consumed: false },
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'Repair a single break or tear in an object, such as a broken chain link or a torn ' +
+      'cloak, no larger than 1 foot in any dimension. A magic item can be physically ' +
+      'repaired, but its magic does not return.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'message',
+    name: 'Message',
+    level: 0,
+    school: 'transmutation',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a short piece of copper wire', consumed: false },
+    duration: { kind: 'rounds', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'Whisper a message to a creature in range, and only it hears. It can reply in a ' +
+      'whisper that only the caster hears. The spell passes around corners, and 1 foot of ' +
+      'stone, 1 inch of common metal, a thin sheet of lead, or 3 feet of wood blocks it.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'minor-illusion',
+    name: 'Minor Illusion',
+    level: 0,
+    school: 'illusion',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['S', 'M'],
+    materials: { text: 'a bit of fleece', consumed: false },
+    duration: { kind: 'minutes', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'Create a sound or an image of an object no larger than a 5-foot cube. A creature that ' +
+      'uses its action to study it sees through it with an Intelligence (Investigation) ' +
+      "check against the caster's spell save DC, and physical contact reveals an image. The " +
+      'GM rolls the check.',
+    effect: { kind: 'utility' },
+  },
+  {
+    id: 'dancing-lights',
+    name: 'Dancing Lights',
+    level: 0,
+    school: 'evocation',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a bit of phosphorus or wychwood, or a glowworm', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Up to four torch-sized lights, or one glowing humanoid form, each shed dim light in a ' +
+      '10-foot radius. A bonus action moves the lights up to 60 feet, and a light more than ' +
+      '20 feet from another or out of range winks out.',
+    effect: { kind: 'utility' },
+  },
+  {
     id: 'light',
     name: 'Light',
     level: 0,

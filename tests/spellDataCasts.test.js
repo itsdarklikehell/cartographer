@@ -195,3 +195,24 @@ test('Raise Dead takes an hour and a consumed 500 gp diamond, and passes over un
   assert.equal(result.outcomes[0].unaffectedBy, undefined);
   assert.equal(result.outcomes[1].unaffectedBy, 'undead');
 });
+
+test('the fixed-text cantrips are utility entries with their SRD casting details', () => {
+  const expect = {
+    'mage-hand': ['conjuration', { kind: 'action' }, false],
+    prestidigitation: ['transmutation', { kind: 'action' }, false],
+    thaumaturgy: ['transmutation', { kind: 'action' }, false],
+    druidcraft: ['transmutation', { kind: 'action' }, false],
+    mending: ['transmutation', { kind: 'minutes', amount: 1 }, false],
+    message: ['transmutation', { kind: 'action' }, false],
+    'minor-illusion': ['illusion', { kind: 'action' }, false],
+    'dancing-lights': ['evocation', { kind: 'action' }, true],
+  };
+  for (const [id, [school, castingTime, concentration]] of Object.entries(expect)) {
+    const spell = byId(id);
+    assert.equal(spell.level, 0, id);
+    assert.equal(spell.school, school, id);
+    assert.deepEqual(spell.castingTime, castingTime, id);
+    assert.equal(spell.concentration, concentration, id);
+    assert.deepEqual(spell.effect, { kind: 'utility' }, id);
+  }
+});
