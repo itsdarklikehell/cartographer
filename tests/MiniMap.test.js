@@ -9,6 +9,7 @@ import {
   paintTerrain,
 } from '../src/map/MiniMap.js';
 import { findRegionGroups } from '../src/map/RegionGroups.js';
+import { interiorArt } from '../src/map/TileKinds.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
 
@@ -166,4 +167,18 @@ test('paintTerrain draws a fogged tile in Build mode, and a missing overlay leav
     ctx.fills.map((f) => f[0]),
     [INK.mapBackdrop, INK.missingArt, INK.missingArt],
   );
+});
+
+test('paintTerrain draws the frontier of an interior a lighter fog', () => {
+  const node = createMapNode('keep', 'Keep', 'vale', 2, 1, { kind: 'interior' });
+  const parent = {
+    ...node,
+    tiles: [
+      createTile('0,0', interiorArt('floor-1'), { revealed: true }),
+      createTile('1,0', interiorArt('floor-1')),
+    ],
+  };
+  const ctx = recordingContext();
+  paintTerrain(/** @type {any} */ (ctx), parent, 3, false, loaded);
+  assert.deepEqual(ctx.fills.at(-1), [INK.fogFrontier, 3, 0, 3, 3]);
 });

@@ -899,6 +899,10 @@ party that stands in a doorway sees into the rooms on both sides. A room of
 more than 100 floor tiles, such as a great hall, shows only within the
 sight of the party. The rooms of a dungeon, a cave, or a cellar stay dark.
 
+Inside a building, a fogged tile beside explored floor, a door, or stairs
+draws a lighter fog. The lighter band shows where the explored part ends,
+for example past a door that the party has not opened.
+
 When the party is on a sub-map, the tiles that link to it on each map above
 are revealed too. So the world map shows the region where the party stands.
 

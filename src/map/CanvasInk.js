@@ -34,6 +34,8 @@ export const INK = {
   mapBackdrop: '#171209',
   mapBorder: 'rgba(230, 215, 180, 0.55)',
   fog: '#48412f',
+  /** An unrevealed interior tile beside explored floor: lighter than fog, darker than art. */
+  fogFrontier: '#6e6448',
   /** Stands in for tile art that has not decoded yet, so no tile is a hole. */
   missingArt: '#333',
 

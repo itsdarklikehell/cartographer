@@ -1,8 +1,10 @@
-import { parseCoords } from './MapGeometry.js';
+import { NEIGHBORS4, parseCoords } from './MapGeometry.js';
+import { tileKind } from './TileKinds.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import {
   cellPosition,
   tileAt,
+  tileAtXY,
   tilePosition,
   withNodeTiles,
   withTileReplaced,
@@ -189,3 +191,36 @@ export function revealLinksTo(node, childId) {
   }
   return changed ? withTilesReplaced(node, changed) : node;
 }
+
+/** The tile kinds whose revealed tiles mark the unrevealed tiles beside them. */
+const FRONTIER_KINDS = new Set(['floor', 'door', 'stairs-up', 'stairs-down', 'obstacle']);
+
+/** @type {ReadonlySet<string>} */
+const NO_FRONTIER = new Set();
+
+/**
+ * The ids of the unrevealed tiles of an interior that touch a revealed
+ * floor, door, stairs, or furnished tile on a side. The renderer and the
+ * mini-map draw them a lighter fog, so the GM sees where the explored part
+ * of a castle ends. Every cell of a castle has a tile, and without the mark
+ * unexplored floor and solid wall draw the same fog. A cell with no tile
+ * never gets the mark, so a dungeon does not show which cells exist. An
+ * outdoor map has no frontier. The set is memoized on the node, so it is
+ * built once per reveal and not once per frame.
+ * @type {(node: MapNode) => ReadonlySet<string>}
+ */
+export const frontierIds = memoizeByIdentity((node) => {
+  if (node.kind !== 'interior') return NO_FRONTIER;
+  /** @type {Set<string>} */
+  const ids = new Set();
+  for (const tile of node.tiles) {
+    if (!tile.revealed || !FRONTIER_KINDS.has(tileKind(tile))) continue;
+    const at = parseCoords(tile.id);
+    if (!at) continue;
+    for (const [dx, dy] of NEIGHBORS4) {
+      const next = tileAtXY(node, at.x + dx, at.y + dy);
+      if (next && !next.revealed) ids.add(next.id);
+    }
+  }
+  return ids;
+});

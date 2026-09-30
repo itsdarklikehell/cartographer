@@ -951,6 +951,15 @@ is a set of pure functions over a MapNode that manage the flag:
   party's node, so the world map shows the region where the party stands.
 - `withinRadius(tileId, centerId, radius)` applies the same Euclidean cutoff
   as a standalone predicate. `CreatureMap.creaturesNear` uses it.
+- `frontierIds(node)` gives the ids of the unrevealed tiles of an interior
+  that touch a revealed floor, door, stairs, or furnished tile on a side.
+  `MapRenderer` and the mini-map (`paintTerrain`) fill those tiles with
+  `INK.fogFrontier`, a lighter fog. Every cell of a castle has a tile, so
+  without the mark unexplored floor and solid wall draw the same fog. A
+  dungeon leaves rock cells with no tile, and those cells never get the
+  mark, so it does not show which cells exist. An outdoor map has no
+  frontier, and Build mode draws no fog at all. The set is memoized on the
+  node object, so a reveal builds it once and a frame only reads it.
 - `hideAll(node)` resets a node to fully unrevealed, and `revealedCount(node)`
   counts the revealed tiles. The tests and the benchmarks use them, and no app
   code calls them.

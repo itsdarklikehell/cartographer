@@ -7,6 +7,7 @@ import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { INK } from './CanvasInk.js';
+import { frontierIds } from './FogOfWar.js';
 import { renderRegionOverlays } from './RegionOverlay.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
@@ -292,6 +293,7 @@ export class MapRenderer {
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
     const maxX = Math.min(node.width - 1, Math.floor((view.canvasWidth - view.offsetX) / size));
     const maxY = Math.min(node.height - 1, Math.floor((view.canvasHeight - view.offsetY) / size));
+    const frontier = frontierIds(node);
     // Cell rectangles come from the rounded edges of cellEdge, not from a
     // fractional position and width. Neighboring cells then share each edge
     // pixel exactly, with the grid line of _renderCellGrid on top of it.
@@ -303,7 +305,7 @@ export class MapRenderer {
         if (!tile) continue;
         const sx = cellEdge(x, size, view.offsetX);
         const w = cellEdge(x + 1, size, view.offsetX) - sx;
-        this._renderTile(view, tile, sx, sy, w, h, groupCover);
+        this._renderTile(view, tile, sx, sy, w, h, groupCover, frontier);
       }
     }
   }
@@ -406,14 +408,15 @@ export class MapRenderer {
    * @param {number} w
    * @param {number} h
    * @param {Set<string>} groupCover
+   * @param {ReadonlySet<string>} frontier unrevealed tiles beside explored interior floor
    */
-  _renderTile(view, tile, sx, sy, w, h, groupCover) {
+  _renderTile(view, tile, sx, sy, w, h, groupCover, frontier) {
     const { ctx } = this;
     if (!tile.revealed && !view.revealAll) {
       // This fill is distinctly lighter than the map backdrop and the
       // empty-canvas background, so an unexplored but real tile reads as
       // fog, not void.
-      ctx.fillStyle = INK.fog;
+      ctx.fillStyle = frontier.has(tile.id) ? INK.fogFrontier : INK.fog;
       ctx.fillRect(sx, sy, w, h);
       return;
     }

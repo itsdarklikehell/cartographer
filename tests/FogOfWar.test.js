@@ -10,8 +10,10 @@ import {
   setTileRevealed,
   revealedCount,
   discoveredNodes,
+  frontierIds,
 } from '../src/map/FogOfWar.js';
 import { fillTiles } from './helpers/grid.js';
+import { interiorArt } from '../src/map/TileKinds.js';
 
 function grid5x5() {
   return fillTiles(createMapNode('n', 'Node', null, 5, 5));
@@ -148,4 +150,32 @@ test('withinRadius applies the same Euclidean cutoff as revealAround', () => {
 test('withinRadius is false when either id is not a grid coordinate', () => {
   assert.equal(withinRadius('not-a-tile', '2,2', 10), false);
   assert.equal(withinRadius('2,2', 'not-a-tile', 10), false);
+});
+
+/**
+ * A 4x1 interior row: revealed floor at 0,0, unrevealed floor at 1,0 and
+ * 2,0, and an unrevealed wall at 3,0. Cell 0,1 below is revealed wall.
+ * @param {string} kind
+ */
+function frontierRow(kind = 'interior') {
+  let node = createMapNode('keep', 'Keep', 'vale', 4, 2, { kind });
+  node = setTile(node, createTile('0,0', interiorArt('floor-1'), { revealed: true }));
+  node = setTile(node, createTile('1,0', interiorArt('floor-1')));
+  node = setTile(node, createTile('2,0', interiorArt('floor-1')));
+  node = setTile(node, createTile('3,0', interiorArt('wall-h')));
+  node = setTile(node, createTile('0,1', interiorArt('wall-h'), { revealed: true }));
+  return setTile(node, createTile('bad', interiorArt('floor-1'), { revealed: true }));
+}
+
+test('frontierIds marks unrevealed tiles beside revealed interior floor', () => {
+  const node = frontierRow();
+  assert.deepEqual([...frontierIds(node)], ['1,0']);
+  assert.equal(frontierIds(node), frontierIds(node), 'memoized on the node');
+  // A revealed wall marks nothing: 1,1 is an empty cell and 3,0 is two steps away.
+  const walked = setTileRevealed(node, '1,0', true);
+  assert.deepEqual([...frontierIds(walked)], ['2,0']);
+});
+
+test('frontierIds is empty on an outdoor map', () => {
+  assert.equal(frontierIds(frontierRow('region')).size, 0);
 });

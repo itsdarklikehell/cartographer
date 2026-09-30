@@ -1,4 +1,5 @@
 import { INK } from './CanvasInk.js';
+import { frontierIds } from './FogOfWar.js';
 import { parseCoords } from './MapGeometry.js';
 import { blockFor } from './MapExits.js';
 import { projectBack } from './RegionCrossing.js';
@@ -118,13 +119,14 @@ export function compassArea(cell, width, height) {
 export function paintTerrain(ctx, parent, size, revealAll, source) {
   ctx.fillStyle = INK.mapBackdrop;
   ctx.fillRect(0, 0, parent.width * size, parent.height * size);
+  const frontier = frontierIds(parent);
   for (const tile of parent.tiles) {
     const at = parseCoords(tile.id);
     if (!at) continue;
     const x = at.x * size;
     const y = at.y * size;
     if (!revealAll && !tile.revealed) {
-      ctx.fillStyle = INK.fog;
+      ctx.fillStyle = frontier.has(tile.id) ? INK.fogFrontier : INK.fog;
       ctx.fillRect(x, y, size, size);
       continue;
     }
