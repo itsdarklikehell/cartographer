@@ -303,6 +303,8 @@ export function wireCampaignActions(app) {
     onMerged: () => {
       markDirty();
       flushSoon();
+      // A Player tab move can bring the party onto a hidden handout.
+      app.actions.cueHandouts();
     },
   });
   app.actions.mergeQueuedPatches = patches.mergeQueued;

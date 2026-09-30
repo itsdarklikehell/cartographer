@@ -155,6 +155,8 @@ export interface AppActions {
   // by distance in sight radii, so a change of watch reruns this.
   syncExits(): void;
   syncCreatureMarkers(): void;
+  /** Cue the GM about each hidden handout on the party tile (see handoutCue.js). */
+  cueHandouts(): void;
   // mapWiring: mark placed creatures on the party's tile as met, on GM tabs
   // only, and log each introduction. This runs wherever the party lands
   // somewhere new.
@@ -232,7 +234,12 @@ export interface AppContext {
   grid: TileGrid;
   navigator: MapNavigator;
   partyTracker: PartyTracker;
-  toasts: { show(message: string, options?: { level?: 'status' | 'error' }): void };
+  toasts: {
+    show(
+      message: string,
+      options?: { level?: 'status' | 'error'; action?: { label: string; onClick: () => void } },
+    ): void;
+  };
   state: AppState;
   views: AppViews;
   actions: AppActions;

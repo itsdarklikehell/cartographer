@@ -250,3 +250,32 @@ export function restoreBindings(handouts, bindings) {
     return b ? { ...h, nodeId: b.nodeId, tileId: b.nodeId === null ? null : b.tileId } : h;
   });
 }
+
+/**
+ * The hidden handouts bound to the tile where the party stands. The GM tab
+ * cues each one after a move, so the GM does not have to remember a handout
+ * that waits on a tile. A campaign-wide or node-wide handout has no tile to
+ * stand on, so it never cues.
+ * @param {Handout[]} handouts
+ * @param {{ nodeId: string, tileId: string }} position
+ * @returns {Handout[]}
+ */
+export function handoutsCued(handouts, position) {
+  return handouts.filter(
+    (h) => !h.revealed && h.nodeId === position.nodeId && h.tileId === position.tileId,
+  );
+}
+
+/**
+ * The tiles of one node that have a hidden handout, for the GM's map badge.
+ * @param {Handout[]} handouts
+ * @param {string} nodeId
+ * @returns {string[]}
+ */
+export function hiddenHandoutTiles(handouts, nodeId) {
+  const tiles = new Set();
+  for (const h of handouts) {
+    if (!h.revealed && h.nodeId === nodeId && h.tileId !== null) tiles.add(h.tileId);
+  }
+  return [...tiles];
+}

@@ -62,10 +62,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
    * @param {import('../types/map.js').PartyPosition} [position]
    * @param {string} [subject]
    */
-  app.actions.maybeTriggerEncounter = async (
-    position = app.partyTracker.getPosition(),
-    subject = 'The party',
-  ) => {
+  async function encounterAlert(position = app.partyTracker.getPosition(), subject = 'The party') {
     const here = hostileGroup(state.creatures, position);
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
@@ -87,6 +84,12 @@ export function wireEncounterPanels(app, { onStartCombat }) {
       cancelLabel: 'Not now',
     });
     if (fight) await onStartCombat();
+  }
+
+  // The handout cue waits for the encounter dialog, so the two never stack.
+  app.actions.maybeTriggerEncounter = async (position, subject) => {
+    await encounterAlert(position, subject);
+    app.actions.cueHandouts();
   };
 
   // The two tabs share one numbering of the foes that share a name, so two

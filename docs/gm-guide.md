@@ -688,6 +688,8 @@ the party stands on that tile.
 To put a handout on a tile before the party gets there, select the tile in
 Build mode. Then click **New handout on this tile** in the tile inspector.
 The Handouts panel lists the handout when the party enters that map.
+When the party steps onto the tile, a message names the handout and offers a
+**Reveal** button.
 
 ### Track a quest
 

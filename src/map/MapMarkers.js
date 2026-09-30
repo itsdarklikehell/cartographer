@@ -217,6 +217,46 @@ export class MapMarkers {
   }
 
   /**
+   * Badge the tiles with a hidden handout: a small parchment note at the
+   * bottom center of the tile, between the party dot's lower-left corner
+   * and the exit badge's lower-right one. The wiring lists these tiles only
+   * in a GM tab. The badge ignores range and fog, because the GM plans with
+   * it before the party comes near.
+   * @param {MapView} view
+   */
+  renderHandoutMarkers(view) {
+    const ids = view.handoutTileIds;
+    if (!ids || ids.length === 0 || !view.node) return;
+    const { ctx, tileSize } = this.host;
+    const size = tileSize * view.scale;
+    const w = size * 0.14;
+    const h = size * 0.17;
+    for (const id of ids) {
+      const coords = parseCoords(id);
+      if (!coords) continue;
+      const x = coords.x * size + view.offsetX + size * 0.5 - w / 2;
+      const y = coords.y * size + view.offsetY + size * 0.8 - h / 2;
+      ctx.save();
+      ctx.fillStyle = INK.badgeFill;
+      ctx.strokeStyle = INK.badgeRim;
+      ctx.lineWidth = Math.max(1.5, size * 0.025);
+      ctx.beginPath();
+      ctx.rect(x, y, w, h);
+      ctx.fill();
+      ctx.stroke();
+      // Two ruled lines read as writing on the note.
+      ctx.beginPath();
+      ctx.lineWidth = Math.max(1, size * 0.015);
+      for (const f of [0.38, 0.66]) {
+        ctx.moveTo(x + w * 0.22, y + h * f);
+        ctx.lineTo(x + w * 0.78, y + h * f);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /**
    * Badge the door and stairway tiles the party can leave an interior
    * through. This makes the one authored way out read as usable, not as
    * scenery. Unlike the encounter and NPC markers, this ignores detection

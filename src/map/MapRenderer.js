@@ -53,6 +53,7 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {boolean} [partyInNode] false when partyTileId is the link toward the party on a map above it. That tile is not a marker anchor.
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
+ * @property {string[]} [handoutTileIds] tiles with a hidden handout, badged for the GM at any range
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
  * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. This array is empty in Build mode, where authoring the map is not the same as traveling it.
  * @property {import('./ExitBands.js').Rect[]} [occluders] rects in buffer px that HTML over the canvas covers. Edge exit bands move off them.
@@ -145,6 +146,7 @@ export class MapRenderer {
       this._decorations.renderSelection(view);
       this._markers.renderEncounterMarkers(view);
       this._markers.renderNPCMarkers(view);
+      this._markers.renderHandoutMarkers(view);
       this._markers.renderExitMarkers(view);
       this._markers.renderPartyMarker(view);
       this._markers.renderCharacterTokens(view);

@@ -48,6 +48,7 @@ const ACTION_NAMES = [
   'syncPartyMarker',
   'syncExits',
   'syncCreatureMarkers',
+  'cueHandouts',
   'meetCreatures',
   'refreshMapDescription',
   'resyncMap',

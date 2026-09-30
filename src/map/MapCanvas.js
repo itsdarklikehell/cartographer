@@ -81,6 +81,8 @@ export class MapCanvas {
     this.encounterTileIds = [];
     /** @type {string[]} tile ids in the current node holding a placed NPC */
     this.npcTileIds = [];
+    /** @type {string[]} tile ids in the current node with a hidden handout, set only for the GM */
+    this.handoutTileIds = [];
     /** @type {{ tileId: string, name: string }[]} per-character tokens in the current node */
     this.characterTokens = [];
     /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
@@ -433,6 +435,17 @@ export class MapCanvas {
   }
 
   /**
+   * Set the tile ids in the current node that have a hidden handout. The
+   * wiring passes an empty list to a Player tab, so only the GM sees the
+   * badge.
+   * @param {string[]} tileIds
+   */
+  setHandoutTiles(tileIds) {
+    this.handoutTileIds = tileIds;
+    this.render();
+  }
+
+  /**
    * Whether a tile is close enough to the party or a character token for its
    * markers to draw. Anything that tells the player what sits on a tile reads
    * this, so the hover tooltip says no more than the map already shows.
@@ -593,6 +606,7 @@ export class MapCanvas {
       partyInNode: this.partyInNode,
       encounterTileIds: this.encounterTileIds,
       npcTileIds: this.npcTileIds,
+      handoutTileIds: this.handoutTileIds,
       characterTokens: this.characterTokens,
       exits: this.exits,
       occluders: this.occluders,

@@ -790,6 +790,10 @@ quests, and handouts. The handout part lives in `handoutWiring.js`, which
 `wireStory` calls. That module mounts the panel, builds the handout dialog,
 and registers `addHandoutAt` for the tile inspector's **New handout on this
 tile** button.
+It also calls `wireHandoutCue` (`handoutCue.js`), which registers
+`cueHandouts`. `maybeTriggerEncounter` calls it after the encounter dialog
+closes, and the merge of a Player tab patch calls it too. It toasts each
+hidden handout on the party tile, or on a character tile, once per session.
 
 #### Handout visibility
 

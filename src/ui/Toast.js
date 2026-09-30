@@ -3,7 +3,9 @@ import { el } from './dom.js';
 import { toastPlace } from '../view/ToastPlace.js';
 
 /** @typedef {'status' | 'error'} ToastLevel */
-/** @typedef {{ level?: ToastLevel }} ToastOptions */
+/**
+ * @typedef {{ level?: ToastLevel, action?: { label: string, onClick: () => void } }} ToastOptions
+ */
 
 /**
  * Mount a toast stack: small transient messages that confirm actions, for
@@ -15,7 +17,9 @@ import { toastPlace } from '../view/ToastPlace.js';
  * full storage is announced at once and is not lost behind whatever the
  * reader was saying. An error stays four times as long, and carries a
  * Dismiss button so a keyboard user can close it early. A click on any
- * toast dismisses it early.
+ * toast dismisses it early. A toast with an `action` shows one button that
+ * runs the action and dismisses the toast. It stays as long as an error, so
+ * the GM has time to use the button.
  *
  * `anchor` names the row whose right end the stack lines up with when the
  * first toast of a batch appears. The stack keeps clear of the row's
@@ -64,19 +68,25 @@ export function mountToasts(container, options = {}) {
   function show(message, opts = {}) {
     const first = !root.querySelector('.toast');
     const error = opts.level === 'error';
-    const toast = el('div', error ? 'toast toast--error' : 'toast', message);
+    const kind = error ? ' toast--error' : opts.action ? ' toast--action' : '';
+    const toast = el('div', `toast${kind}`, message);
     const dismiss = () => {
       toast.classList.add('toast--leaving');
       // This matches the CSS fade-out duration. Remove the toast after the fade completes.
       setTimeout(() => toast.remove(), 250);
     };
     toast.addEventListener('click', dismiss);
-    if (error) {
+    const { action } = opts;
+    if (action) {
+      toast.appendChild(
+        bareButton([action.label], action.onClick, { className: 'toast__dismiss' }),
+      );
+    } else if (error) {
       toast.appendChild(bareButton(['Dismiss'], dismiss, { className: 'toast__dismiss' }));
     }
     (error ? alert : status).appendChild(toast);
     if (first) placeStack();
-    setTimeout(dismiss, error ? duration * 4 : duration);
+    setTimeout(dismiss, error || action ? duration * 4 : duration);
   }
 
   return { show };

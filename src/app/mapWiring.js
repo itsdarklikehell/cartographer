@@ -21,6 +21,7 @@ import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM } from '../view/ViewRole.js';
+import { hiddenHandoutTiles } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/mapEnv.js').MapEnv} MapEnv */
@@ -159,7 +160,8 @@ export function wireMapView(app) {
   /** Mark the tiles of the current node that hold a placed creature: the
    * danger marker for a live, undefeated hostile, and the distinct blue
    * marker for everyone else. The map shows both once the party comes
-   * within detection range. One pass covers both layers. It also refreshes
+   * within detection range. The same pass sets the GM's badges for tiles
+   * with a hidden handout. One pass covers every layer. It also refreshes
    * both Build-rail authoring lists, which show the same node scope, but only
    * while Build mode shows them. Play mode fights change creatures many
    * times a round, and a hidden list rebuild on each change is wasted work.
@@ -174,6 +176,7 @@ export function wireMapView(app) {
       placed.filter((c) => c.disposition === 'hostile' && !isDefeated(c)).map(tileOf),
     );
     mapCanvas.setNPCTiles(placed.filter((c) => c.disposition !== 'hostile').map(tileOf));
+    mapCanvas.setHandoutTiles(isGM(state.role) ? hiddenHandoutTiles(state.handouts, nodeId) : []);
     if (state.mode !== 'build') return;
     app.views.buildFoes.update();
     app.views.buildNPCs.update();

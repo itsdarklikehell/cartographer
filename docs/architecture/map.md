@@ -192,7 +192,7 @@ The canvas code is split so that each file owns one concern:
     |
     +-- MapRenderer ......... terrain / fog / grid / region passes
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
-    |     +-- MapMarkers ....... party, encounter, NPC, token markers
+    |     +-- MapMarkers ....... party, encounter, NPC, handout, token markers
     |     +-- MapDecorations ... cursor, selection, POI,
     |                            coordinate chrome
     |
@@ -1015,6 +1015,15 @@ stands on the tile that links down toward the party (see `ancestorMarkerTile`
 below). `MapCanvas.setPartyTile` then gets `inNode` false, and
 `markerAnchors` leaves that tile out, so markers near it stay hidden. A
 split-off character who stands on that map still anchors markers.
+
+The handout badge has no range. `MapMarkers.renderHandoutMarkers` draws a
+parchment note on each tile in `MapView.handoutTileIds`, and
+`syncCreatureMarkers` in `app/mapWiring.js` fills that list from
+`Handouts.hiddenHandoutTiles` in a GM tab only. A Player tab gets an empty
+list, so the map of a Player tab never shows where a hidden handout waits.
+After each move, `app/handoutCue.js` checks `Handouts.handoutsCued` for the
+party tile and each character tile, and shows the GM a toast with a Reveal
+button.
 
 `markerAnchors` and `withinMarkerRange` in `MapMarkers.js` are the pure
 halves of that rule, and `MapCanvas.markerVisible(tileId)` answers it for code

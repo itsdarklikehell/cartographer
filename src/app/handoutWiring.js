@@ -17,6 +17,7 @@ import {
 import { replaceById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { wireEntityList } from './entityList.js';
+import { wireHandoutCue } from './handoutCue.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/handout.js').Handout} Handout */
@@ -108,14 +109,36 @@ export function wireHandouts(app) {
   /** The ids of the rows in the "Revealed earlier" group. @type {Set<string>} */
   let earlierIds = new Set();
 
-  const handoutList = wireEntityList(app, {
-    key: 'handouts',
-    noun: 'handout',
-    fields: (handout) => handoutFields(app, handout, preset),
-    create: (id, title, values) => patchHandout(createHandout(id, title), title, values),
-    patch: patchHandout,
-    editOptions: { submitLabel: 'Save' },
+  /**
+   * Reveal or hide a handout, and log it. The map badge of a hidden handout
+   * follows the change.
+   * @param {Handout} handout
+   */
+  function toggle(handout) {
+    const next = toggleRevealed(handout);
+    state.handouts = replaceById(state.handouts, next);
+    // logEvent saves the change.
+    app.actions.logEvent('note', ...handoutRevealLine(next));
+    app.actions.syncCreatureMarkers();
+  }
+  wireHandoutCue(app, (id) => {
+    const handout = state.handouts.find((h) => h.id === id);
+    if (!handout || handout.revealed) return;
+    toggle(handout);
+    app.views.handoutPanel.update();
   });
+
+  const handoutList = markersAfter(
+    wireEntityList(app, {
+      key: 'handouts',
+      noun: 'handout',
+      fields: (handout) => handoutFields(app, handout, preset),
+      create: (id, title, values) => patchHandout(createHandout(id, title), title, values),
+      patch: patchHandout,
+      editOptions: { submitLabel: 'Save' },
+    }),
+    () => app.actions.syncCreatureMarkers(),
+  );
 
   app.views.handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
     getHandouts: () => {
@@ -132,12 +155,7 @@ export function wireHandouts(app) {
       describeHandout(handout, (id) => state.characters.find((c) => c.id === id)?.name),
     // The notes name characters, which the handout rows do not change with.
     dependsOn: () => state.characters,
-    onToggle: (handout) => {
-      const next = toggleRevealed(handout);
-      state.handouts = replaceById(state.handouts, next);
-      // logEvent saves the change.
-      app.actions.logEvent('note', ...handoutRevealLine(next));
-    },
+    onToggle: toggle,
     ...handoutList,
     getRole: () => state.role,
   });
@@ -160,5 +178,33 @@ export function wireHandouts(app) {
     } finally {
       preset = null;
     }
+  };
+}
+
+/**
+ * The list callbacks, each followed by a redraw of the map badges, because
+ * an add, an edit, or a delete can change which tiles have a hidden handout.
+ * @param {ReturnType<typeof wireEntityList<'handouts'>>} list
+ * @param {() => void} sync
+ */
+function markersAfter(list, sync) {
+  return {
+    onAdd: async () => {
+      const created = await list.onAdd();
+      sync();
+      return created;
+    },
+    /** @param {Handout} handout */
+    onEdit: async (handout) => {
+      const saved = await list.onEdit(handout);
+      sync();
+      return saved;
+    },
+    /** @param {string} id */
+    onDelete: async (id) => {
+      const deleted = await list.onDelete(id);
+      sync();
+      return deleted;
+    },
   };
 }

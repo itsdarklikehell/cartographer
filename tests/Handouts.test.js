@@ -9,6 +9,8 @@ import {
   handoutsAt,
   handoutsFor,
   revealedFor,
+  handoutsCued,
+  hiddenHandoutTiles,
   inAudience,
   unbindFrom,
   bindingsIn,
@@ -303,4 +305,41 @@ test('revealedFor lists the spot first, then every other revealed handout of the
   assert.deepEqual(ids(c2.here), ['other', 'wide']);
   assert.deepEqual(ids(c2.earlier), ['far', 'here']);
   assert.deepEqual(ids(revealedFor(all, party, null).earlier), ['far']);
+});
+
+test('handoutsCued lists the hidden handouts bound to the party tile', () => {
+  const on = (id, extra = {}) => ({
+    ...createHandout(id, id),
+    nodeId: 'world',
+    tileId: '2,2',
+    ...extra,
+  });
+  const all = [
+    on('cue'),
+    on('open', { revealed: true }),
+    on('elsewhere', { tileId: '3,3' }),
+    on('node', { tileId: null }),
+    on('cave', { nodeId: 'cave' }),
+  ];
+  assert.deepEqual(
+    handoutsCued(all, party).map((h) => h.id),
+    ['cue'],
+  );
+});
+
+test('hiddenHandoutTiles lists each tile of the node with a hidden handout once', () => {
+  const on = (id, tileId, extra = {}) => ({
+    ...createHandout(id, id),
+    nodeId: 'world',
+    tileId,
+    ...extra,
+  });
+  const all = [
+    on('a', '1,1'),
+    on('b', '1,1'),
+    on('c', '2,2', { revealed: true }),
+    on('d', null),
+    on('e', '4,4', { nodeId: 'cave' }),
+  ];
+  assert.deepEqual(hiddenHandoutTiles(all, 'world'), ['1,1']);
 });

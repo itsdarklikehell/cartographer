@@ -875,6 +875,7 @@ that you pick. If you cancel, the party stays split.
 | Gold token | A character, while the party is split |
 | Red diamond, upper right of a tile | A live encounter |
 | Blue circle, upper left of a tile | A placed NPC |
+| Parchment note, bottom center of a tile | A hidden handout on the tile. Only the GM sees it, at any range |
 | Gold outline | A revealed point of interest |
 
 | Range | Distance from the party (tiles) | What it sets |
@@ -2484,6 +2485,13 @@ A handout is read-aloud text or lore, with an optional picture.
 
 A handout starts hidden. The eye toggle reveals it to players or hides it
 again.
+
+When the party, or a character on their own tile, steps onto a tile with a
+hidden handout, the GM tab shows a message such as "The party stands on
+'Dorn's Manifest'." with a **Reveal** button. The message comes after
+any encounter dialog. Each handout gives this message once per session. A
+parchment note on the tile marks each hidden handout on the map, and only
+the GM sees it.
 
 The GM sees every handout of the node where the party stands. A line under
 each row names the tile of the handout and the characters who see it.
