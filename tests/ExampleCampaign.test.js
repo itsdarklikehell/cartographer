@@ -165,8 +165,9 @@ test('no hostile creature stands within one tile of the party at the start', () 
     assert.ok(Math.max(Math.abs(x - px), Math.abs(y - py)) >= 2, c.id);
   }
   const farm = nodeOf('briarwick-vale').tiles.find((t) =>
-    String(t.metadata.notes).startsWith('A farmstead hit in the goblin raids'),
+    String(t.metadata.notes).startsWith('A farmstead burned in the goblin raids'),
   );
+  assert.match(farm?.imageRef ?? '', /burned-farm\.svg$/, 'the farm shows the burned-farm art');
   const scout = creature('goblin-scout').location?.tileId ?? '';
   assert.ok(farm && tileDistance(scout, farm.id) <= 2, 'the scout stays near the farm');
 });

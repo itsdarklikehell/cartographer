@@ -284,6 +284,7 @@ const MARKER_TYPES = [
   'mine',
   'port',
   'farm',
+  'burned-farm',
   'graveyard',
   'camp',
   'standing-stones',

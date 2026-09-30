@@ -118,6 +118,7 @@ test('TilePalette ships with single-image POI markers', () => {
     'mine',
     'port',
     'farm',
+    'burned-farm',
     'graveyard',
     'camp',
     'village',

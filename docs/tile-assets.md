@@ -184,9 +184,10 @@ coast and road overlays of its tile. See `stackOverlay` in
 The single-image markers (`MARKER_TYPES`) are `settlement`, `dungeon`,
 `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`,
 `temple`, `shrine`, `wizard-tower`, `academy`, `barracks`, `ruins`,
-`cave-entrance`, `mine`, `port`, `farm`, `graveyard`, `camp`,
-`standing-stones`, `village`, `city`, `oasis`, `lighthouse`, and
-`watchtower`.
+`cave-entrance`, `mine`, `port`, `farm`, `burned-farm`, `graveyard`,
+`camp`, `standing-stones`, `village`, `city`, `oasis`, `lighthouse`, and
+`watchtower`. The `burned-farm` marker uses the footprint, palette, and
+stroke widths of `farm`, so a GM can swap one for the other in place.
 
 Each marker sits on the standard grass background, `#5a9b4a`, with the
 usual mottle ellipses and a dirt clearing under the building. For this
@@ -334,7 +335,7 @@ A tile exists for the app only when its family table names it.
 | `RIVER_KINDS` | `TileCatalog.js` | The fifteen river connector kinds, two bridges, and two fords |
 | `COAST_KINDS` | `TileCatalog.js` | The twelve shoreline pieces |
 | `DOCK_KINDS` | `TileCatalog.js` | The ten pier, pier head, and quay pieces |
-| `MARKER_TYPES` | `TileCatalog.js` | The 26 single-image POI markers |
+| `MARKER_TYPES` | `TileCatalog.js` | The 27 single-image POI markers |
 | `TOWN_BUILDINGS` | `TileCatalog.js` | The 12 span-2 town buildings |
 | `TOWN_WALL_KINDS` | `TileKinds.js` | The ten town wall, gate, and water gate pieces, each with its rule meaning |
 | `INTERIOR_KINDS` | `TileKinds.js` | The 23 interior pieces, each with its rule meaning |

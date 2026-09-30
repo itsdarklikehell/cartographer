@@ -230,8 +230,8 @@ export const REGION_STAGES = {
       gen,
       palette,
       farm,
-      'farm',
-      'A farmstead hit in the goblin raids. The house still stands, but the barn behind it burned to the ground, and its charred door is scored with claw marks far too orderly to be animal.',
+      'burned-farm',
+      'A farmstead burned in the goblin raids. The roof of the house lies in ash on the floor, and only the stone chimney and the blackened walls still stand. The charred door frame is scored with claw marks far too orderly to be animal.',
     );
     put(stage, 'farm', farm);
     // The scout lurks near the farm but out of the party's encounter range
