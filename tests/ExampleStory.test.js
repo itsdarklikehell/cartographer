@@ -211,3 +211,9 @@ test('the quest rewards pay what the story promises and bring the party near lev
     assert.ok(total >= 6300 && total < 7000, `${c.id} reaches ${total} XP before the barrow`);
   }
 });
+
+test('Dorn can join the escort as a companion, but starts at the crossroads', () => {
+  const dorn = creature('caravan-master-dorn');
+  assert.equal(dorn.travelsWithParty, undefined);
+  assert.match(dorn.notes, /Travels with the party/);
+});
