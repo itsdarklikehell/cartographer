@@ -463,6 +463,7 @@ function applySave(app, spell, result, casterId) {
           {
             ...(timing?.expires ? { expires: timing.expires } : {}),
             ...(o.ongoing ? { ongoing: { damage: o.ongoing } } : {}),
+            ...(effect.mods ? { mods: effect.mods } : {}),
           },
         )
       : false;

@@ -11,6 +11,7 @@ import { pactDamage } from '../entities/PactWeapon.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
+import { attackerType } from '../entities/ChipSlants.js';
 import { allowsSneakAttack, hasFreeHandFor } from './AttackOptions.js';
 import { coverBonus, coverNote } from './Cover.js';
 import { offhandDamageModifier } from './TwoWeapon.js';
@@ -113,6 +114,7 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     target: defender.conditions,
     kind: 'attack',
     melee,
+    rollerType: attackerType(attacker),
   });
   // A mode the GM picked in the dialog wins over the chips, and it is always
   // passed on, so a picked `normal` also cancels the tray's standing toggle

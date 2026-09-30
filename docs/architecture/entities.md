@@ -988,6 +988,31 @@ wiring layer passes its write through `app/lethargy.js`: the turn sweep,
 the round tick, the end of a concentration, a replacing cast, and the hand
 edits of the sheet and the creature panels.
 
+### Attack slant chips
+
+`mods.attacks` slants the attack rolls of the holder (Vicious Mockery's
+disadvantage), and `mods.attacksAgainst` slants the attack rolls made
+against the holder (Faerie Fire's advantage, Blur's disadvantage).
+`ChipSlants.chipSlants` reads both, and `ConditionEffects.slantsFor` adds
+them to the slants of the named conditions. The weapon swing and the spell
+attack both ask `rollMode`, so both read these chips, and the 5e rule
+cancels an advantage against a disadvantage as it does for any other slant.
+
+`mods.attackerTypes` limits `attacksAgainst` to attackers of the listed
+creature types (Protection from Evil and Good). The query names the
+attacker's type in `rollerType`, which `ChipSlants.attackerType` reads from
+the entity's `type` field. An attacker with no type matches no list, so a
+party character and a creature with no type get no slant from such a chip.
+
+`mods.once` makes a slant chip end after the first attack roll it applies
+to (Guiding Bolt, Vicious Mockery). `ChipSlants.spentOnce` names the
+one-shot chips of a roll, and `app/riderSpend.spendOnceChips` removes them
+and logs the end. A chip counts as used when the GM picks the mode by hand,
+because the spell ends on the roll. A spell attack spends the chips before
+its outcomes land, so a new Guiding Bolt chip from the same cast stays on
+its target. A save effect and an attack's `onHit` both take `mods`, so a
+failed save or a hit can leave such a chip.
+
 ### Stealth and Strength
 
 Body armor has two more traits, both optional, and each absent trait means

@@ -723,7 +723,7 @@ creature in the current campaign.
 
 ### Add a missing spell
 
-The built-in list has 89 spells. A spell that you write uses the same
+The built-in list has 93 spells. A spell that you write uses the same
 fields as a built-in one, so you do not need to change any code.
 [Curated spells](spells-missing.md) says what the app can and cannot apply
 for you.
@@ -744,6 +744,13 @@ of** for the chips of which it ends one. When the target has more than one
 chip of the second list, the app asks the caster which one to end. The name
 `Exhaustion` ends one level of exhaustion. Leave the healing dice empty for a
 spell that heals no HP, such as Lesser Restoration.
+
+For a `buff` that changes attack rolls, use the attack row of the form.
+**Holder attacks** slants the attack rolls of each target, and **Attacks
+against** slants the attack rolls made against it. To limit the second
+slant to some attackers, type their creature types in **Only by types**,
+split by commas. Tick **One attack only** when the chip ends after the first
+attack roll it slants.
 
 If the rules of the spell need more than the app can apply, make it a
 `utility` spell and write the rules in the description. Then apply the

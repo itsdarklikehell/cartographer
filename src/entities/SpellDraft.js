@@ -63,7 +63,8 @@ import { healTypeRules } from './SpellTypeRules.js';
  *   or a buff's chip
  * @property {{
  *   ac: unknown, acBase: unknown, acMin: unknown, maxHP?: unknown, immune?: string[],
- *   saveAdvantage?: string[], extraAction?: boolean,
+ *   saveAdvantage?: string[], extraAction?: boolean, attacks?: string,
+ *   attacksAgainst?: string, attackerTypes?: string[], once?: boolean,
  * }} [mods]
  *   what a buff's chip changes besides a roll
  * @property {{ maxHP: unknown }} [modsPerStep] how much more HP raise a buff

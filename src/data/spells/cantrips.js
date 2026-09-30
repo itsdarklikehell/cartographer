@@ -116,13 +116,15 @@ export const CANTRIPS = [
     ritual: false,
     description:
       'Stinging words deal 1d4 psychic on a failed WIS save. The target also has ' +
-      'disadvantage on its next attack roll before the end of its next turn, which the ' +
-      'GM rules.',
+      'disadvantage on its next attack roll before the end of its next turn.',
     effect: {
       kind: 'save',
       saveAbility: 'WIS',
       damage: [{ count: 1, sides: 4, damageType: 'psychic' }],
       halfOnSave: false,
+      condition: 'Vicious Mockery',
+      until: 'target-end',
+      mods: { attacks: 'disadvantage', once: true },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'psychic' }] },
   },

@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 89. Three built-in spells come from
+lists 319 spells, and the app ships 93. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -25,10 +25,10 @@ Player's Handbook. The ranger has Hunter's Mark.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
-| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
+| 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
-| 4th | Ice Storm, Blight, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
+| 4th | Ice Storm, Blight, Greater Invisibility, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
 | 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |
@@ -67,6 +67,10 @@ full. The resolver applies these rules:
   only when that save fails.
 - A condition chip that ends at a turn boundary: the start or the end of
   the caster's next turn, or the end of the target's next turn.
+- A chip that gives advantage or disadvantage on the attack rolls of its
+  holder, or on attack rolls against its holder. A one-shot chip ends
+  after the first attack roll it applies to, as Guiding Bolt and Vicious
+  Mockery do.
 - A spell that the caster uses again on each later turn while it lasts,
   with no new slot.
 - A condition chip that ends when its holder takes damage.
@@ -313,9 +317,12 @@ that it can. The description of each entry states the difference:
 - Fear lets a frightened creature retry the save only when it ends its turn
   out of line of sight of the caster. The app has no line of sight, so the
   chip has no automatic retry and the GM rolls it.
-- Vicious Mockery, Guiding Bolt, Ray of Frost, Shocking Grasp, and
-  Thunderwave deal their damage. The GM applies the rest: the disadvantage,
-  the advantage, the lost speed, the lost reactions, and the push.
+- Ray of Frost, Shocking Grasp, and Thunderwave deal their damage. The GM
+  applies the rest: the lost speed, the lost reactions, and the push.
+- Protection from Evil and Good gives disadvantage only to an attacker whose
+  creature type is on its list. The GM rules the charm, fright, and
+  possession clause. Blur does not check for blindsight or truesight, and
+  Faerie Fire does not cancel invisibility, so the GM rules both.
 - Disintegrate turns a target at 0 HP to dust, and Finger of Death raises a
   slain humanoid as a zombie. The GM rules both.
 - Revivify raises only a dead target. The GM checks that the target died
@@ -375,7 +382,8 @@ A rider on a d20 roll works. A chip can add or subtract dice and a flat
 amount on attack rolls, saving throws, and ability checks, as Bless, Bane,
 Guidance, and Resistance do. A chip can also change AC, as Shield and
 Barkskin do, and hit points, as Aid, False Life, and Heroism do. A chip can
-give an extra action, as Haste does. The size of a creature has no rule, so
+give an extra action, as Haste does, and slant attack rolls, as Faerie Fire
+and Blur do. The size of a creature has no rule, so
 a chip can't change it.
 
 ### Summon choice and control

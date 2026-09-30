@@ -1,5 +1,6 @@
 import { spendRiders } from '../entities/Riders.js';
 import { findCombatant } from './combatants.js';
+import { dropOnce, spentOnce } from '../entities/ChipSlants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -22,4 +23,31 @@ export function spendRollRiders(app, id, rider) {
   if (found.kind === 'character') found.store({ ...found.entity, conditions });
   else found.store({ ...found.entity, conditions });
   app.actions.markDirty();
+}
+
+/**
+ * Remove the one-shot chips that an attack roll used up on both sides:
+ * Guiding Bolt's advantage on the target, and Vicious Mockery's disadvantage
+ * on the attacker. Without this write, one Guiding Bolt gives advantage to
+ * every attack against its target until the chip times out.
+ * @param {AppContext} app
+ * @param {string} rollerId
+ * @param {string} targetId
+ * @param {Parameters<typeof spentOnce>[0]} query the chip lists that the roll read
+ */
+export function spendOnceChips(app, rollerId, targetId, query) {
+  const spent = spentOnce(query);
+  for (const [id, names] of /** @type {const} */ ([
+    [rollerId, spent.roller],
+    [targetId, spent.target],
+  ])) {
+    const found = names.length > 0 ? findCombatant(app, id) : null;
+    if (!found) continue;
+    const conditions = dropOnce(found.entity.conditions, names);
+    if (conditions === found.entity.conditions) continue;
+    if (found.kind === 'character') found.store({ ...found.entity, conditions });
+    else found.store({ ...found.entity, conditions });
+    app.actions.markDirty();
+    app.actions.logEvent('combat', `${found.entity.name}'s ${names.join(' and ')} ends.`);
+  }
 }

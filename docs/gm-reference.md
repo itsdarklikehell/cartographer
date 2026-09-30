@@ -1533,6 +1533,18 @@ grant. Heroism grants them at the start of each turn of its target, and it
 ends and blocks Frightened. The temporary hit points of a spell end with its
 chip. See [Hit points and immunity](spells-missing.md#hit-points-and-immunity).
 
+Faerie Fire gives advantage on attack rolls against each creature that
+fails its save, and Blur gives disadvantage on attack rolls against the
+caster. Protection from Evil and Good gives disadvantage only to an attacker
+whose creature type is on its list, so a creature with no type set gets no
+disadvantage. Greater Invisibility leaves an Invisible chip. A hit of
+Guiding Bolt leaves a chip that gives advantage on the next attack roll
+against the target, and a failed save against Vicious Mockery leaves a chip
+that gives disadvantage on the next attack roll of the target. Each of
+these two chips ends on that roll, hit or miss, and the log notes it. A
+weapon attack and a spell attack both read all of these chips, and the log
+line of a weapon attack names each chip that slanted it.
+
 Haste gives its target +2 AC, advantage on DEX saves, and one more weapon
 swing on each of its turns. The combat card counts the extra swing in the
 swings left. When Haste ends by any path, including a chip that you remove
@@ -2129,7 +2141,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 87 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 93 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

@@ -7,7 +7,7 @@ import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponS
 import { skipsTurn } from '../combat/CombatView.js';
 import { findCombatant, combatantsAsTargets, defendedDamage } from './combatants.js';
 import { applyToTarget } from './combatantWrites.js';
-import { spendRollRiders } from './riderSpend.js';
+import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
 import { attackDialog } from './attackFields.js';
 
@@ -173,6 +173,8 @@ export function rollWeaponAttack(
       }),
     );
     spendRollRiders(app, attacker.id, rider);
+    // A one-shot chip such as Guiding Bolt ends on the roll, hit or miss.
+    spendOnceChips(app, attacker.id, defender.id, setup.conditionQuery);
     if (!hit) {
       app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
       return;

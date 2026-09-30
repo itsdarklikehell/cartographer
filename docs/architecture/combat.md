@@ -391,6 +391,18 @@ weapon offers a melee swing, a thrown attack, and a long thrown attack. The
 damage step checks the free hand again, because the equipment can change
 while the dialog is open.
 
+### One-shot chips on an attack
+
+A chip with `mods.once` (Guiding Bolt, Vicious Mockery) ends on the first
+attack roll it slants (see
+[attack slant chips](entities.md#attack-slant-chips)). `app/weaponAttack.js`
+calls `riderSpend.spendOnceChips` after it logs the attack line, on a hit or
+a miss, and after a Shield pause settles. `app/spellCastResolve.js` calls it
+for each target of a spell attack after the cast line and before the
+outcomes land. Both pass the chip lists that decided the mode, and the
+function removes the used chips by name from the live roster entries of the
+attacker and the target.
+
 ### Cover and Sneak Attack
 
 Cover and Sneak Attack are GM calls in the dialog before the roll. The app

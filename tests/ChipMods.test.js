@@ -121,3 +121,36 @@ test('blocks keeps lowercase spell ids, and blockerOf finds the chip', () => {
   assert.equal(blockerOf(undefined, 'magic-missile'), undefined);
   assert.equal(modsSummary(shield.mods), '+5 AC, blocks magic missile');
 });
+
+test('normalizeChipMods keeps attack slants, attacker types, and the one-shot flag', () => {
+  assert.deepEqual(
+    normalizeChipMods({
+      attacksAgainst: 'advantage',
+      once: true,
+      attackerTypes: [' Fiend ', 'fiend'],
+    }),
+    { attacksAgainst: 'advantage', attackerTypes: ['fiend'], once: true },
+  );
+  assert.deepEqual(normalizeChipMods({ attacks: 'disadvantage', once: 'yes' }), {
+    attacks: 'disadvantage',
+  });
+  // A slant word other than the two, a type list with no slant against, and
+  // a one-shot flag with no slant all drop.
+  assert.equal(normalizeChipMods({ attacks: 'double', attackerTypes: ['fey'], once: true }), null);
+});
+
+test('modsSummary states attack slants, one-shot and standing', () => {
+  assert.equal(
+    modsSummary({ attacksAgainst: 'advantage', once: true }),
+    'advantage on the next attack against it',
+  );
+  assert.equal(modsSummary({ attacks: 'disadvantage' }), 'disadvantage on its attack rolls');
+  assert.equal(
+    modsSummary({ attacks: 'disadvantage', once: true }),
+    'disadvantage on its next attack roll',
+  );
+  assert.equal(
+    modsSummary({ attacksAgainst: 'disadvantage', attackerTypes: ['fey', 'undead'] }),
+    'disadvantage on the attacks against it by fey, undead',
+  );
+});

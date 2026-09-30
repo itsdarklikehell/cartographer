@@ -1498,3 +1498,42 @@ test('an attacker with a Chill Touch chip swings at its caster at disadvantage',
   });
   assert.equal(app.rolls[0].selection.mode, 'disadvantage');
 });
+
+test('a one-shot chip slants the swing and ends on it, on both sides', () => {
+  const hero = {
+    ...makeHero({ STR: 16 }),
+    conditions: [
+      { name: 'Vicious Mockery', rounds: 1, mods: { attacks: 'disadvantage', once: true } },
+    ],
+  };
+  const goblin = {
+    ...createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 20,
+      stats: { AC: 10 },
+      location: HERE,
+      level: 1,
+    }),
+    conditions: [
+      { name: 'Guiding Bolt', rounds: 1, mods: { attacksAgainst: 'advantage', once: true } },
+      { name: 'Faerie Fire', rounds: 10, mods: { attacksAgainst: 'advantage' } },
+    ],
+  };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(2)]) });
+  rollWeaponAttack(app, {
+    attacker: /** @type {any} */ (hero),
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: goblin.conditions },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([0]),
+  });
+  // Two advantages and one disadvantage cancel to a straight roll.
+  assert.equal(app.rolls[0].selection.mode, 'normal');
+  assert.match(app.log[0], /Guiding Bolt advantage/);
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.deepEqual(
+    app.state.creatures[0].conditions.map((/** @type {any} */ c) => c.name),
+    ['Faerie Fire'],
+  );
+  assert.ok(app.log.includes("Hero's Vicious Mockery ends."));
+  assert.ok(app.log.includes("Goblin's Guiding Bolt ends."));
+});

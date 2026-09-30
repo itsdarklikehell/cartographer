@@ -190,8 +190,8 @@ export function normalizeHpPool(value) {
 
 /**
  * The later-turn and HP fields a save effect has, from a written effect. A
- * boundary, and an end on damage, mean something only for a chip, so both
- * need a condition.
+ * boundary, an end on damage, and chip mods mean something only for a chip,
+ * so they need a condition.
  * @param {Record<string, unknown>} raw
  * @param {string} condition the condition the save imposes, or empty
  * @returns {Partial<import('../types/spell.js').SpellSaveEffect>}
@@ -200,6 +200,7 @@ export function saveExtras(raw, condition) {
   const until = condition ? normalizeUntil(raw.until) : null;
   const ongoing = normalizeOngoing(raw.ongoing);
   const hpPool = normalizeHpPool(raw.hpPool);
+  const mods = condition ? normalizeChipMods(raw.mods) : null;
   return {
     ...(until ? { until } : {}),
     ...(ongoing ? { ongoing } : {}),
@@ -207,6 +208,7 @@ export function saveExtras(raw, condition) {
     ...(raw.kills === true ? { kills: true } : {}),
     ...(condition && raw.endsOnDamage === true ? { endsOnDamage: true } : {}),
     ...typeRuleFields(raw),
+    ...(mods ? { mods } : {}),
   };
 }
 

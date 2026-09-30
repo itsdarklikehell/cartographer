@@ -172,6 +172,24 @@ export const LEVEL_2 = [
     scaling: { targetsPerLevel: 1 },
   },
   {
+    id: 'blur',
+    name: 'Blur',
+    level: 2,
+    school: 'illusion',
+    classes: ['sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      "The caster's body blurs, and attack rolls against it have disadvantage. An " +
+      'attacker with blindsight or truesight, or one that does not rely on sight, is ' +
+      'immune to this, which the GM rules.',
+    effect: { kind: 'buff', mods: { attacksAgainst: 'disadvantage' } },
+  },
+  {
     id: 'acid-arrow',
     name: 'Acid Arrow',
     level: 2,

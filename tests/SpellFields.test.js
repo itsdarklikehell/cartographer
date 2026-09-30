@@ -163,3 +163,21 @@ test('a save rolls no die with a pool, or with a limit and no repeated save', ()
   assert.equal(rollsNoSave(spellById('hold-person').effect), false);
   assert.equal(rollsNoSave(spellById('magic-missile').effect), false);
 });
+
+test('an on-hit chip and a save chip keep their chip mods', () => {
+  assert.deepEqual(
+    normalizeOnHit({
+      condition: 'Guiding Bolt',
+      mods: { attacksAgainst: 'advantage', once: true },
+    }),
+    { condition: 'Guiding Bolt', mods: { attacksAgainst: 'advantage', once: true } },
+  );
+  assert.deepEqual(normalizeOnHit({ condition: 'Marked', mods: { attacks: 'sideways' } }), {
+    condition: 'Marked',
+  });
+  assert.deepEqual(saveExtras({ mods: { attacks: 'disadvantage' } }, 'Vicious Mockery'), {
+    mods: { attacks: 'disadvantage' },
+  });
+  // Mods with no condition to ride have no chip, so they drop.
+  assert.deepEqual(saveExtras({ mods: { attacks: 'disadvantage' } }, ''), {});
+});

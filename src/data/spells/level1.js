@@ -108,9 +108,43 @@ export const LEVEL_1 = [
     ritual: false,
     description:
       'A flash of light deals 4d6 radiant on a hit. The next attack roll against the ' +
-      "target before the end of the caster's next turn has advantage, which the GM rules.",
-    effect: { kind: 'attack', damage: [{ count: 4, sides: 6, damageType: 'radiant' }] },
+      "target before the end of the caster's next turn has advantage.",
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 4, sides: 6, damageType: 'radiant' }],
+      onHit: {
+        condition: 'Guiding Bolt',
+        until: 'caster-end',
+        mods: { attacksAgainst: 'advantage', once: true },
+      },
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'radiant' }] },
+  },
+  {
+    id: 'faerie-fire',
+    name: 'Faerie Fire',
+    level: 1,
+    school: 'evocation',
+    classes: ['bard', 'druid'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Each creature in a 20-foot cube that fails a DEX save is outlined in light. Attack ' +
+      'rolls against it have advantage, and it gains no benefit from being invisible, ' +
+      'which the GM rules.',
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'DEX',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Faerie Fire',
+      mods: { attacksAgainst: 'advantage' },
+    },
   },
   {
     id: 'bless',
@@ -405,6 +439,31 @@ export const LEVEL_1 = [
     ritual: false,
     description: 'Your weapon hits deal an extra 1d4 radiant damage for the duration.',
     effect: { kind: 'buff', hit: { count: 1, sides: 4, damageType: 'radiant', weaponOnly: true } },
+  },
+  {
+    id: 'protection-from-evil-and-good',
+    name: 'Protection from Evil and Good',
+    level: 1,
+    school: 'abjuration',
+    classes: ['cleric', 'paladin', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'holy water or powdered silver and iron', consumed: true },
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Aberrations, celestials, elementals, fey, fiends, and undead have disadvantage on ' +
+      'attack rolls against the target. The target also cannot be charmed, frightened, ' +
+      'or possessed by them, which the GM rules.',
+    effect: {
+      kind: 'buff',
+      mods: {
+        attacksAgainst: 'disadvantage',
+        attackerTypes: ['aberration', 'celestial', 'elemental', 'fey', 'fiend', 'undead'],
+      },
+    },
   },
   {
     id: 'mage-armor',

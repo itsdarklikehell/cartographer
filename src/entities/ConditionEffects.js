@@ -9,6 +9,8 @@
  * it to whatever throws the d20.
  */
 
+import { chipSlants } from './ChipSlants.js';
+
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('./Riders.js').RiderSource} RiderSource */
 /** @typedef {import('../types/dice.js').RollMode} RollMode */
@@ -174,10 +176,11 @@ function againstSlant(effect, melee) {
  *   kind: 'attack' | 'check' | 'save',
  *   melee?: boolean,
  *   ability?: string,
+ *   rollerType?: string | null,
  * }} query
  * @returns {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]}
  */
-function slantsFor({ roller, target, kind, melee = true, ability }) {
+function slantsFor({ roller, target, kind, melee = true, ability, rollerType }) {
   const key = abilityKey(ability);
   /** @type {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]} */
   const found = [];
@@ -205,6 +208,9 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
     const slant = againstSlant(effect, melee);
     if (slant) found.push({ condition, slant, from: 'target' });
   }
+  // A spell chip such as Faerie Fire or Blur slants attacks through its
+  // mods, and Protection from Evil and Good reads the attacker's type.
+  found.push(...chipSlants({ roller, target, rollerType }));
   return found;
 }
 
@@ -216,7 +222,8 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
  * is being attacked. `melee` decides the prone split and defaults to true,
  * since most attacks are melee and a caller with no weapon in hand is asking
  * about a melee reach. `ability` is the save's ability, which is what
- * restrained needs to know it applies.
+ * restrained needs to know it applies. `rollerType` is the creature type of
+ * the attacker, which a chip with `attackerTypes` checks.
  *
  * `extra` takes slants that come from outside the chips, such as the long
  * range of a ranged attack. They fold in before the count, so one advantage
@@ -227,6 +234,7 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
  *   kind: 'attack' | 'check' | 'save',
  *   melee?: boolean,
  *   ability?: string,
+ *   rollerType?: string | null,
  * }} query
  * @param {(Slant | null)[]} [extra]
  * @returns {RollMode | null}

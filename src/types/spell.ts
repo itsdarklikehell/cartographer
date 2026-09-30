@@ -87,7 +87,8 @@ export interface SpellOnHit {
   /** When the condition ends, as a turn boundary. Absent means the spell's
    * own duration. */
   until?: ChipUntil;
-  /** What the chip changes besides a roll (Chill Touch stops healing). */
+  /** What the chip changes besides a roll (Chill Touch stops healing, and
+   * Guiding Bolt gives one-shot advantage on attacks against the target). */
   mods?: ChipMods;
   /** A second chip that a hit leaves only on a target of one of the listed
    * types, with no save (Chill Touch on undead). */
@@ -175,6 +176,10 @@ export interface SpellSaveEffect {
   /** Creature-type rules: skipped types, disadvantage on the save, and
    * maximum damage. */
   typeRules?: SpellTypeRules;
+  /** What the imposed chip changes besides a roll (Vicious Mockery's one-shot
+   * disadvantage on the target's next attack). Only meaningful alongside a
+   * condition. */
+  mods?: ChipMods;
 }
 
 /** The dice of an HP pool, and how many more dice each scaling increment

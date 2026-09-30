@@ -9,10 +9,12 @@ import { durationInRounds, formatCastingTime } from '../entities/SpellTiming.js'
 import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { applyOutcomes } from './spellOutcomes.js';
+import { attackerType } from '../entities/ChipSlants.js';
+import { spendOnceChips } from './riderSpend.js';
 import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
 import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
-import { findCombatant, hpOf } from './combatants.js';
+import { findCombatant, hpOf, targetConditions } from './combatants.js';
 import { castTypeFields } from '../entities/CreatureType.js';
 import { sourceSlant } from '../entities/SourceSlant.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
@@ -220,7 +222,13 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       attackMode:
         combineModes([
           mode,
-          rollMode({ roller: casterConditions, target: t.conditions, kind: 'attack', melee }),
+          rollMode({
+            roller: casterConditions,
+            target: t.conditions,
+            kind: 'attack',
+            melee,
+            rollerType: attackerType(live),
+          }),
           // A chip that the target's own spell left on the caster (Chill
           // Touch on an undead caster) slants the roll.
           sourceSlant(casterConditions, t.id),
@@ -350,6 +358,18 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     endSpellEffects(app, entity.id, displaced.spellId);
   }
 
+  // A one-shot chip ends on the attack roll, before the outcomes land, so a
+  // new Guiding Bolt chip from this cast stays on its target.
+  if (resolved.effect.kind === 'attack') {
+    for (const t of result.targets) {
+      if (!t.id) continue;
+      spendOnceChips(app, entity.id, t.id, {
+        roller: casterConditions,
+        target: targetConditions(app, t.id),
+        rollerType: attackerType(live),
+      });
+    }
+  }
   /** @param {typeof result} landed */
   const finish = (landed) => {
     applyOutcomes(app, resolved, landed, entity.id, { tracked: holds });

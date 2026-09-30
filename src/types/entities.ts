@@ -109,6 +109,21 @@ export interface ChipMods {
   /** True when the holder attacks the caster who wrote the chip at
    * disadvantage (Chill Touch on an undead target). */
   disadvantageVsSource?: boolean;
+  /** A slant on the holder's own attack rolls (Vicious Mockery's
+   * disadvantage). */
+  attacks?: 'advantage' | 'disadvantage';
+  /** A slant on attack rolls made against the holder (Faerie Fire's
+   * advantage, Blur's disadvantage). */
+  attacksAgainst?: 'advantage' | 'disadvantage';
+  /** The lowercase creature types whose attacks `attacksAgainst` slants
+   * (Protection from Evil and Good). Absent means every attacker. A party
+   * character attacks as a humanoid, and an untyped creature is outside every
+   * list. */
+  attackerTypes?: string[];
+  /** True when the chip ends after the first attack roll that its slant
+   * applies to (Guiding Bolt, Vicious Mockery). Only kept beside `attacks`
+   * or `attacksAgainst`. */
+  once?: boolean;
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

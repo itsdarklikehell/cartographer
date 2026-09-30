@@ -8,7 +8,8 @@ import { ABILITY_SCORES } from './Modifiers.js';
  * `Creature.effectiveStatBlock` for a creature) fold the chips in. The HP
  * fields work through `entities/HPBuffs.js`, and `app/combatants.js` reads
  * the immunities when a chip lands. `ConditionEffects.rollMode` reads the
- * save advantage, and the weapon swing reads the extra action. The chip goes
+ * save advantage and the attack slants (see `ChipSlants.js`), and the weapon
+ * swing reads the extra action. The chip goes
  * away with its spell, so the change ends with it. Every function here is pure.
  */
 
@@ -55,6 +56,15 @@ function abilityList(value) {
 }
 
 /**
+ * A written slant, or undefined for anything but the two words.
+ * @param {unknown} value
+ * @returns {'advantage' | 'disadvantage' | undefined}
+ */
+function slantOf(value) {
+  return value === 'advantage' || value === 'disadvantage' ? value : undefined;
+}
+
+/**
  * A written mods block, or null when it changes nothing. A flat AC bonus can
  * be negative, for a chip that lowers AC. A base AC, a floor, an HP raise,
  * and a temporary HP grant below 1 name nothing, so they drop.
@@ -72,6 +82,9 @@ export function normalizeChipMods(value) {
   const tempHPEachTurn = clampInt(raw.tempHPEachTurn, 0, MAX_TEMP_EACH_TURN);
   const saveAdvantage = abilityList(raw.saveAdvantage);
   const blocks = nameList(raw.blocks).map((id) => id.toLowerCase());
+  const attacks = slantOf(raw.attacks);
+  const attacksAgainst = slantOf(raw.attacksAgainst);
+  const attackerTypes = nameList(raw.attackerTypes).map((t) => t.toLowerCase());
   const mods = {
     ...(ac !== 0 ? { ac } : {}),
     ...(acBase > 0 ? { acBase } : {}),
@@ -84,6 +97,10 @@ export function normalizeChipMods(value) {
     ...(blocks.length > 0 ? { blocks } : {}),
     ...(raw.noHealing === true ? { noHealing: true } : {}),
     ...(raw.disadvantageVsSource === true ? { disadvantageVsSource: true } : {}),
+    ...(attacks ? { attacks } : {}),
+    ...(attacksAgainst ? { attacksAgainst } : {}),
+    ...(attacksAgainst && attackerTypes.length > 0 ? { attackerTypes } : {}),
+    ...((attacks || attacksAgainst) && raw.once === true ? { once: true } : {}),
   };
   return Object.keys(mods).length > 0 ? mods : null;
 }
@@ -184,6 +201,13 @@ export function modsSummary(mods) {
   if (mods.extraAction) parts.push('an extra action for one weapon attack');
   if (mods.blocks)
     parts.push(`blocks ${mods.blocks.map((id) => id.replace(/-/g, ' ')).join(' and ')}`);
+  const next = mods.once ? ' next' : '';
+  const plural = mods.once ? '' : 's';
+  if (mods.attacks) parts.push(`${mods.attacks} on its${next} attack roll${plural}`);
+  if (mods.attacksAgainst) {
+    const from = mods.attackerTypes ? ` by ${mods.attackerTypes.join(', ')}` : '';
+    parts.push(`${mods.attacksAgainst} on the${next} attack${plural} against it${from}`);
+  }
   return parts.join(', ');
 }
 

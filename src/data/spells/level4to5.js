@@ -57,6 +57,24 @@ export const LEVEL_4_TO_5 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
   },
   {
+    id: 'greater-invisibility',
+    name: 'Greater Invisibility',
+    level: 4,
+    school: 'illusion',
+    classes: ['bard', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'The target becomes invisible: it attacks at advantage, and attacks against it are ' +
+      'at disadvantage. Unlike Invisibility, the spell does not end when the target ' +
+      'attacks or casts.',
+    effect: { kind: 'buff', condition: 'Invisible' },
+  },
+  {
     id: 'phantasmal-killer',
     name: 'Phantasmal Killer',
     level: 4,

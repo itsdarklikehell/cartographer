@@ -4,6 +4,7 @@ import { labeled, fieldRow, numberField, checkbox, select } from './formFields.j
 import { CONDITIONS } from '../entities/Conditions.js';
 import { DAMAGE_TYPES, DIE_SIZES } from '../entities/Equipment.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
+import { buildSlantControls } from './SpellFormSlants.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
@@ -27,8 +28,9 @@ function number(value, min, max, tip) {
  * body armor (Mage Armor), a floor under the holder's AC (Barkskin), a raise
  * to the HP maximum (Aid), temporary HP at the cast (False Life) or at the
  * start of each turn (Heroism), a condition the holder can't take, and the
- * save advantage and extra action of Haste, and the damage dice a chip adds
- * to hits (Divine Favor, Hunter's Mark). The immunity select shows the
+ * save advantage and extra action of Haste, the damage dice a chip adds to
+ * hits (Divine Favor, Hunter's Mark), and the attack slants of
+ * `SpellFormSlants.js`. The immunity select shows the
  * first stored condition, and the form keeps any further ones as stored. The
  * form does not show `blocks` (Shield's Magic Missile), and keeps it as stored.
  * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
@@ -143,6 +145,7 @@ export function buildBuffControls(spell) {
     mark.label,
     "The chip goes on a foe, and only the caster's hits against it add the dice, as with Hunter's Mark",
   );
+  const slants = buildSlantControls(mods);
 
   const rows = {
     ac: fieldRow(
@@ -170,6 +173,7 @@ export function buildBuffControls(spell) {
       weaponOnly.label,
       mark.label,
     ),
+    slants: slants.row,
   };
 
   /** @param {string} kind */
@@ -189,6 +193,7 @@ export function buildBuffControls(spell) {
         saveAdvantage: ABILITY_SCORES.filter((_, i) => advantage[i].input.checked),
         blocks: mods.blocks ?? [],
         extraAction: extra.input.checked,
+        ...slants.read(),
       },
       modsPerStep: { maxHP: maxHPPerStep.value },
       tempHP: {
