@@ -255,3 +255,27 @@ test('a character with no HP pool reads as HP unknown', () => {
   resolve(app, plan(app, 'sleep', ['fighter']), { targets: 'fighter', slot: '1' }, five(3));
   assert.ok(app.log.includes('Fighter is affected (HP unknown), Unconscious.'));
 });
+
+test('a Player tab reads the Sleep pool and its targets without an HP number or reason', () => {
+  const app = stubApp([foe('ogre', 40), foe('goblin', 7), foe('kobold', 5)]);
+  const p = plan(app, 'sleep', ['ogre', 'goblin', 'kobold']);
+  resolve(app, p, { targets: 'ogre,goblin,kobold', slot: '1' }, five(3));
+  assert.deepEqual(app.playerLog.slice(-4), [
+    'Sleep rolls an HP pool (5d8).',
+    'Kobold is affected, Unconscious.',
+    'Goblin is affected, Unconscious.',
+    'Ogre is unaffected.',
+  ]);
+});
+
+test('a Player tab reads Power Word Kill without the HP limit', () => {
+  const app = stubApp([foe('troll', 84), foe('giant', 150)]);
+  resolve(app, plan(app, 'power-word-kill', ['troll']), { target: 'troll' }, []);
+  resolve(app, plan(app, 'power-word-kill', ['giant']), { target: 'giant' }, []);
+  assert.ok(app.playerLog.includes('Troll is affected.'));
+  assert.ok(app.playerLog.includes('Giant is unaffected.'));
+  assert.equal(
+    app.playerLog.some((line) => line.includes('100 HP')),
+    false,
+  );
+});

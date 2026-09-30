@@ -125,6 +125,7 @@ test('a hit that fails the save poisons the target until the end of the caster n
   assert.deepEqual(chip.expires, { who: 'mage', at: 'end', count: 2 });
   assert.equal(chip.source.spellId, 'ray-of-sickness');
   assert.ok(app.log.includes('Ogre fails DC 15 (CON +0: 5), Poisoned.'));
+  assert.ok(app.playerLog.includes('Ogre fails DC 15 (CON: 5), Poisoned.'));
 });
 
 test('a made save leaves no chip, and the log says so', () => {

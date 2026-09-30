@@ -354,9 +354,17 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   /** @param {Character | Creature} next */
   const logManual = (next) => {
     if (!opts.manual) return;
+    /** @param {ReturnType<typeof hpOf>} hp */
+    const line = (hp) =>
+      isHeal ? healLine(next.name, amount, hp) : damageLine(next.name, amount, hp);
     const hp = hpOf(found.kind, next);
-    const line = isHeal ? healLine(next.name, amount, hp) : damageLine(next.name, amount, hp);
-    app.actions.logEvent('combat', line);
+    // A Player tab shows a creature's HP only as a band, so the readout of a
+    // creature's HP is GM-only.
+    app.actions.logEvent(
+      'combat',
+      line(hp),
+      found.kind === 'creature' ? { player: line(null) } : {},
+    );
   };
   if (found.kind === 'creature') {
     // A creature follows one rule: 0 HP takes it out of the fight, with no

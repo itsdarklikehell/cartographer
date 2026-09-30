@@ -183,7 +183,9 @@ const LOG_KINDS = new Set(['travel', 'combat', 'note', 'rest', 'roll']);
  * The travelogue as entries the panel can format. The timestamp becomes a
  * finite number or 0, because `toISOString` throws on a date it cannot
  * read. An entry with no id is dropped, since the panel's append-only
- * rendering finds its place in the list by id.
+ * rendering finds its place in the list by id. Any truthy `gm` flag keeps
+ * the entry GM-only, so a flag written as a string still hides the line from
+ * a Player tab. Only a GM-only entry keeps a player line.
  * @param {unknown} value
  * @returns {LogEntry[]}
  */
@@ -192,7 +194,10 @@ export function logEntries(value) {
     const entryId = id(entry.id);
     if (entryId === null) return [];
     const kind = LOG_KINDS.has(entry.kind) ? entry.kind : 'note';
-    return [{ id: entryId, at: number(entry.at, 0), kind, message: string(entry.message, '') }];
+    const base = { id: entryId, at: number(entry.at, 0), kind, message: string(entry.message, '') };
+    if (!entry.gm) return [base];
+    const player = string(entry.player, '');
+    return [{ ...base, gm: true, ...(player ? { player } : {}) }];
   });
 }
 

@@ -54,3 +54,15 @@ test('applyToTarget without manual set writes no amount line', () => {
   applyToTarget(app, 'goblin', 2, true);
   assert.deepEqual(app.log, []);
 });
+
+test('a Player tab reads a manual creature line without the HP readout', () => {
+  const app = appWith({ creatures: [goblin()] });
+  applyToTarget(app, 'goblin', 4, false, { manual: true });
+  assert.deepEqual(app.playerLog, ['Goblin takes 4 damage.']);
+});
+
+test('a manual character line keeps its HP readout for every viewer', () => {
+  const app = appWith({ characters: [withHP(createCharacter('hero', 'Hero'), 10)] });
+  applyToTarget(app, 'hero', 3, false, { manual: true });
+  assert.deepEqual(app.playerLog, ['Hero takes 3 damage (HP 7/10).']);
+});

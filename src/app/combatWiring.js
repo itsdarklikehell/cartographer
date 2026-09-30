@@ -12,6 +12,7 @@ import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
+import { entriesFor } from '../log/LogVisibility.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -209,7 +210,8 @@ export function wireCombatScreen(app) {
     // still shows everything.
     getLogEntries: () => {
       const since = state.combat?.startedAt ?? 0;
-      return state.travelog.filter(
+      // A Player tab reads the player line of a GM-only entry, or nothing.
+      return entriesFor(state.travelog, state.role).filter(
         (entry) => entry.at >= since && (entry.kind === 'combat' || entry.kind === 'roll'),
       );
     },

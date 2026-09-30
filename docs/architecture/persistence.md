@@ -138,6 +138,15 @@ fails at each start. A travelogue entry whose timestamp is not a number is
 one example, because the panel formats every entry during startup and an
 unreadable date throws there.
 
+A travelogue entry can carry `gm: true` and a `player` line (see
+[GM-only lines](combat.md#gm-only-lines)). The coercer keeps any truthy `gm`
+flag as `true`, so a hand-edited flag such as `"yes"` still hides the line
+from a Player tab. It keeps a `player` line only on a GM-only entry. The
+flag goes into the undo deltas and the player patches like any other field of
+an entry, because both diff the travelogue by entry id. A player tab never
+sends back a GM-only line that it adopted from the GM's save, because a patch
+holds only the entries that the player tab added.
+
 A quest from a save with no `objectives` or `links` field loads with empty
 lists. The quest coercer gives each objective a unique id, because the panel
 keys every objective edit by id. It drops a link that names no node or no

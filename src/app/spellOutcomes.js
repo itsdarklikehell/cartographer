@@ -14,6 +14,7 @@ import { spendRollRiders } from './riderSpend.js';
 import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
 import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
+import { paren, poolLine, saveDetail, splitLine, unaffectedLine } from '../combat/SaveLines.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -336,15 +337,21 @@ function applyOnHit(app, spell, o, casterId) {
     app.actions.logEvent('combat', `${name} gains ${cond}.`);
     return;
   }
-  const bonus = `${onHit.saveAbility} ${formatModifier(o.target.saveBonus ?? 0)}`;
-  const rode = hit.rider ? `, ${hit.rider.note}` : '';
-  const detail = hit.autoFailedBy ? hit.autoFailedBy : `${bonus}${rode}: ${hit.save.total}`;
-  app.actions.logEvent(
-    'combat',
+  const detail = saveDetail({
+    bonus: `${onHit.saveAbility} ${formatModifier(o.target.saveBonus ?? 0)}`,
+    ability: onHit.saveAbility,
+    rode: hit.rider ? `, ${hit.rider.note}` : '',
+    total: hit.save?.total,
+    failedBy: hit.autoFailedBy,
+    hpRule: false,
+    secretBonus: isFoe(app, o.target.id),
+  });
+  /** @param {string} text */
+  const line = (text) =>
     hit.saved
-      ? `${name} saves DC ${hit.dc} (${detail}).`
-      : `${name} fails DC ${hit.dc} (${detail}), ${cond}.`,
-  );
+      ? `${name} saves DC ${hit.dc}${paren(text)}.`
+      : `${name} fails DC ${hit.dc}${paren(text)}, ${cond}.`;
+  app.actions.logEvent('combat', ...splitLine(line(detail.gm), line(detail.player)));
   spendRollRiders(app, o.target.id, hit.rider);
 }
 
@@ -367,6 +374,17 @@ function drainTo(app, spell, casterId, drain, dealt) {
 }
 
 /**
+ * Whether a target is a creature, whose save bonus a Player tab does not see.
+ * A party character's bonuses are on its sheet.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {boolean}
+ */
+function isFoe(app, id) {
+  return findCombatant(app, id)?.kind === 'creature';
+}
+
+/**
  * Apply and log a save spell's outcomes.
  * @param {AppContext} app
  * @param {Spell} spell
@@ -386,20 +404,17 @@ function applySave(app, spell, result, casterId) {
   // ahead of the targets it reached.
   const pool = outcomes[0]?.pool;
   if (pool) {
-    app.actions.logEvent(
-      'combat',
-      `${spell.name} rolls a pool of ${pool.total} HP (${pool.dice}: ${pool.rolls.join(', ')}).`,
-    );
+    app.actions.logEvent('combat', ...poolLine(spell.name, pool));
   }
+  // An HP pool and an HP limit each read the target's HP, so the lines they
+  // give reasons in are GM-only.
+  const hpRule = !!pool || effect.hpLimit !== undefined;
   for (const o of outcomes) {
     if (o.unaffectedBy) {
-      app.actions.logEvent('combat', `${o.target.name} is unaffected (${o.unaffectedBy}).`);
+      app.actions.logEvent('combat', ...unaffectedLine(o.target.name, o.unaffectedBy, hpRule));
       continue;
     }
     const verdict = o.saved ? 'saves' : 'fails';
-    // The log names the bonus alongside the roll, the same way an attack
-    // log names the ability and proficiency behind its number.
-    const bonus = `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`;
     // The chip records the cast that wrote it. This lets the app end the
     // effect when the caster stops holding the spell, and lets a repeated
     // save roll against it. The app uses the bonus stamped here only for a
@@ -428,11 +443,22 @@ function applySave(app, spell, result, casterId) {
         )
       : false;
     const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
-    // A rider the target already held changed the roll, so the line states it.
-    const rode = o.rider ? `, ${o.rider.note}` : '';
-    // A chip that fails the save outright threw no die, so the line names
-    // the chip where the roll would have gone.
-    const detail = o.autoFailedBy ? o.autoFailedBy : `${bonus}${rode}: ${o.save.total}`;
+    // The log names the bonus alongside the roll, the same way an attack
+    // log names the ability and proficiency behind its number. A rider the
+    // target already held changed the roll, so the line states it. A chip
+    // that fails the save outright threw no die, so the line names the chip
+    // where the roll would have gone. A spell that rolls no save names the HP
+    // rule that reached the target, and so does an HP limit when no chip
+    // failed the save first.
+    const detail = saveDetail({
+      bonus: `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`,
+      ability,
+      rode: o.rider ? `, ${o.rider.note}` : '',
+      total: o.save?.total,
+      failedBy: o.autoFailedBy,
+      hpRule: hpRule && (o.noRoll || !o.target.autoFailSave),
+      secretBonus: isFoe(app, o.target.id),
+    });
     // A save that negates the damage leaves nothing for the defenses to
     // change. Otherwise they apply per type, after the halving of a save.
     const taken =
@@ -443,12 +469,12 @@ function applySave(app, spell, result, casterId) {
     // A spell that rolls no save states the HP rule that reached the target
     // instead of a verdict, and names damage only when it deals some.
     const takes = `takes ${taken.total} damage${defended}`;
-    app.actions.logEvent(
-      'combat',
+    /** @param {string} text */
+    const line = (text) =>
       o.noRoll
-        ? `${o.target.name} is affected (${o.autoFailedBy})${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
-        : `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — ${takes}${cond}.`,
-    );
+        ? `${o.target.name} is affected${paren(text)}${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
+        : `${o.target.name} ${verdict} DC ${o.dc}${paren(text)} — ${takes}${cond}.`;
+    app.actions.logEvent('combat', ...splitLine(line(detail.gm), line(detail.player)));
     applyToTarget(app, o.target.id, taken.total, false);
     if (effect.kills && !o.saved) slayCombatant(app, o.target.id);
     spendRollRiders(app, o.target.id, o.rider);

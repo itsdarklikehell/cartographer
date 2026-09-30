@@ -113,6 +113,9 @@ export function wireSessionControls(app) {
     app.views.handoutPanel.update();
     app.views.npcPanel.update();
     app.views.questPanel.update();
+    // The two roles read different log lines, so both log lists redraw.
+    app.views.travelogPanel.update();
+    app.views.combatScreen.update();
   }
 
   // Only one tab at a time can hold the GM view. The GM tab keeps a

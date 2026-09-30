@@ -43,8 +43,9 @@ export function rollHpPool(pool, steps, rng) {
  * takes the effect without spending the pool, the same way an HP limit lets
  * it through, so the GM can still apply the spell. Such targets come last.
  *
- * No reason names an HP number. The log reaches a Player tab, and the HP
- * left in the pool after each target would give away that target's exact HP.
+ * Each reason goes on a GM-only log line, and a Player tab reads that line
+ * without the reason (see `combat/SaveLines.js`), because the order of the
+ * walk and the pool total bound each target's HP.
  * @param {CastTarget[]} targets
  * @param {number} total
  * @param {string | undefined} condition the condition the spell imposes

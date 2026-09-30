@@ -195,7 +195,7 @@ export function mountCombatScreen(container, callbacks) {
       group('Foes', foes, selectedId, activeId),
     );
     roveGroup(board, '.combatant-card--selectable', selectedId);
-    log.update(callbacks.getLogEntries());
+    log.update(callbacks.getLogEntries(), gm ? 'gm' : 'player');
     announceTurn(view);
     restoreFocus(inside, previousKey, opened);
   }

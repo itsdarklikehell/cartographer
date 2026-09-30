@@ -58,6 +58,8 @@ src/combat/FocusRestore.js ... pure: names a control so a rebuild can give
                                focus back to its twin, with fallbacks
 src/combat/HPLines.js ........ pure: the log lines for a damage or heal the
                                GM applies from the amount field
+src/combat/SaveLines.js ...... pure: the GM and player versions of a save
+                               spell's log lines
 src/ui/CombatSetup.js ........ the setup dialog: one initiative row per
                                combatant, and the Roll initiative fill
 src/ui/CombatScreen.js ....... the screen: composes the columns, the board,
@@ -564,6 +566,34 @@ the running fight's `startedAt` to `appendEntry`, which then trims only the
 entries older than the fight. The list can grow past 200 during a fight, up to
 `TRAVELOG_FIGHT_LIMIT` (1,000). The first line logged after the fight ends
 trims the list back to 200. The column keeps as many rows as the larger limit.
+
+### GM-only lines
+
+A log line that names what the Player view hides elsewhere is GM-only. The
+caller passes a third argument to `logEvent`: `{ gm: true }` for a line that
+a Player tab never shows, or `{ player: '...' }` for a line with a
+player-safe version. The entry keeps `gm: true` and the `player` text beside
+`message`. `log/LogVisibility.js` builds the list that each role reads. The
+GM reads every `message`. A Player tab reads the `player` text of a GM-only
+entry, or does not see the entry. The ids stay the same, so both log lists
+keep their append-only updates. A role change rebuilds both lists, because
+the two roles read different lines.
+
+These lines are GM-only:
+
+- the total and the rolls of an HP pool (Sleep, Color Spray), which a Player
+  tab reads as the dice alone
+- the reason on each target of an HP pool or an HP limit ("within the pool",
+  "over 100 HP", "150 HP or fewer"), which a Player tab reads with no reason
+- the save bonus of a creature on a save spell or an on-hit save, which a
+  Player tab reads as the ability and the total
+- the HP readout of a creature after a damage or a heal from the amount
+  field, which a Player tab reads without the readout
+
+`combat/SaveLines.js` builds the GM and player versions of the save lines.
+A party character's lines stay open, because the sheet shows the same
+numbers. An AC in an attack line stays open too, because the combatant cards
+show a foe's AC to every viewer.
 
 The dice tray sits under the log. The app has one tray. While combat mode is
 active, the screen moves the whole `#dice-tray-container` card into the column

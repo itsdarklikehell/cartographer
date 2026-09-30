@@ -651,6 +651,8 @@ test('a failed save takes full damage and lands a tracked condition', () => {
     rng: seq([d20(3)]),
   });
   assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+0: 3\) — takes 0 damage, Paralyzed\.$/);
+  // A Player tab reads the total without the foe's bonus.
+  assert.match(app.playerLog[1], /Goblin fails DC 14 \(WIS: 3\) — takes 0 damage, Paralyzed\.$/);
   const chip = app.state.creatures[0].conditions[0];
   assert.equal(chip.name, 'Paralyzed');
   assert.equal(chip.source.spellId, 'hold-person');

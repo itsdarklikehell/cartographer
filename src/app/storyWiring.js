@@ -2,6 +2,7 @@ import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { entriesFor } from '../log/LogVisibility.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import {
   creaturesAt,
@@ -48,14 +49,16 @@ export function wireStory(app) {
    * millisecond never collide, in one tab or across tabs.
    * @param {import('../types/log.js').LogEntryKind} kind
    * @param {string} message
+   * @param {import('../types/log.js').LogOptions} [options] marks a line that
+   *   names something only the GM sees, with the line a Player tab shows
    */
-  app.actions.logEvent = (kind, message) => {
+  app.actions.logEvent = (kind, message, options) => {
     const now = Date.now();
     // The running fight's own lines stay past the usual cap, because the
     // combat log column lists the fight from its start.
     state.travelog = appendEntry(
       state.travelog,
-      createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now),
+      createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now, options),
       TRAVELOG_LIMIT,
       state.combat?.startedAt ?? null,
     );
@@ -69,7 +72,9 @@ export function wireStory(app) {
   };
 
   app.views.travelogPanel = mountTravelogPanel(mustGetElement('travelog-container'), {
-    getEntries: () => state.travelog,
+    // A Player tab reads the player line of a GM-only entry, or nothing.
+    getEntries: () => entriesFor(state.travelog, state.role),
+    getRole: () => state.role,
     onClear: async () => {
       if (state.travelog.length === 0) return false;
       const ok = await confirmModal('Clear the travelogue? Its recorded events are lost.', {

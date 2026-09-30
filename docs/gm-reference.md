@@ -92,6 +92,11 @@ The Player view is a display setting on the same browser data. It hides
 these items from the screen:
 
 - the exact HP of a foe (the view shows a health band instead)
+- the GM-only lines of the travelogue and the combat log: the total of an HP
+  pool, the reason that an HP pool or an HP limit gives for each target, the
+  save bonus of a creature, and the HP readout of a creature after you set
+  its damage by hand. The Player view shows a version of each line without
+  the number
 - the notes on a tile
 - the handouts and quests that you have not revealed
 - the notes, the links, and the GM-only objectives of every quest

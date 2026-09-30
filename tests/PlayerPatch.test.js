@@ -195,3 +195,21 @@ test('a merge that throws does not count as merged', () => {
   }
   assert.equal(gm.merged(), 0);
 });
+
+test('a player patch never sends back a GM-only line it adopted, and keeps the flag of its own', () => {
+  const store = installLocalStorage();
+  installWindow();
+  const { app, patches } = tab('player');
+  const key = () => [...store.keys()].find((k) => k.startsWith(PATCH_KEY_PREFIX)) ?? '';
+  // The GM tab's save brings a GM-only line, and the player tab adopts it.
+  const secret = { id: 'g1', at: 1, kind: 'combat', message: 'Pool of 15 HP.', gm: true };
+  app.state.travelog = [secret];
+  patches.rebase();
+  assert.equal(patches.send(), true);
+  assert.equal(key(), '', 'an adopted line is not an edit');
+  // A line the player tab logs itself goes to the GM tab whole.
+  const own = { ...secret, id: 'p1', player: 'An HP pool.' };
+  app.state.travelog = [secret, own];
+  patches.send();
+  assert.deepEqual(decodePatch(store.get(key()) ?? ''), [{ p: ['travelog', 'p1'], t: own, i: 1 }]);
+});

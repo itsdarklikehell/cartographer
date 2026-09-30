@@ -6,6 +6,8 @@
  * directly.
  */
 
+import { visibilityFields } from './LogVisibility.js';
+
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 /** @typedef {import('../types/log.js').LogEntryKind} LogEntryKind */
 
@@ -25,10 +27,12 @@ export const TRAVELOG_FIGHT_LIMIT = 1000;
  * @param {LogEntryKind} kind
  * @param {string} message
  * @param {number} at Epoch milliseconds.
+ * @param {import('../types/log.js').LogOptions} [options] who may read the line (see
+ *   `LogVisibility.visibilityFields`)
  * @returns {LogEntry}
  */
-export function createEntry(id, kind, message, at) {
-  return { id, kind, message, at };
+export function createEntry(id, kind, message, at, options) {
+  return { id, kind, message, at, ...visibilityFields(options) };
 }
 
 /**

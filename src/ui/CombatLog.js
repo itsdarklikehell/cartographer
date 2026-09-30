@@ -11,10 +11,11 @@ import { entriesAfter, TRAVELOG_FIGHT_LIMIT } from '../log/Travelogue.js';
  * when the rows already read are left alone. `update` therefore adds only
  * the entries logged since the last call, through `entriesAfter`, and
  * rebuilds from scratch only when the log was cleared or replaced. The
- * travelogue panel renders the same way.
+ * travelogue panel renders the same way. A change of `role` also rebuilds
+ * the list, because the two roles read different lines.
  * @returns {{
  *   element: HTMLElement,
- *   update: (entries: LogEntry[]) => void,
+ *   update: (entries: LogEntry[], role?: string) => void,
  *   clear: () => void,
  * }}
  */
@@ -33,9 +34,17 @@ export function mountCombatLog() {
   /** Id of the newest rendered entry. Null when the list renders empty. */
   let newestId = /** @type {string | null} */ (null);
 
-  /** @param {LogEntry[]} entries oldest first, as the travelogue stores them */
-  function update(entries) {
-    const fresh = entriesAfter(entries, newestId);
+  /** The role the rendered rows were written for. */
+  let shownRole = '';
+
+  /**
+   * @param {LogEntry[]} entries oldest first, as the travelogue stores them
+   * @param {string} [role] the viewer role the entries are for
+   */
+  function update(entries, role = '') {
+    const rebuild = role !== shownRole;
+    shownRole = role;
+    const fresh = rebuild ? null : entriesAfter(entries, newestId);
     if (fresh === null) list.textContent = ''; // cleared or replaced, so rebuild
     // Show the list before the rows land. A live region hidden at the moment
     // of the change is not read aloud.

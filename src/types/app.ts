@@ -12,7 +12,7 @@
  */
 import type { Character, EncounterLocation } from './entities.js';
 import type { Creature, CreatureTemplate } from './creature.js';
-import type { LogEntry, LogEntryKind } from './log.js';
+import type { LogEntry, LogEntryKind, LogOptions } from './log.js';
 import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
 import type { Handout } from './handout.js';
@@ -85,7 +85,7 @@ export interface AppActions {
   // campaignActions
   markDirty(): void;
   // storyWiring
-  logEvent(kind: LogEntryKind, message: string): void;
+  logEvent(kind: LogEntryKind, message: string, options?: LogOptions): void;
   // handoutWiring: open the new-handout dialog with one tile of a node as
   // its place. The tile inspector calls this.
   addHandoutAt(nodeId: string, tileId: string): Promise<void>;

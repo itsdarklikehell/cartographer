@@ -20,6 +20,7 @@ import { createClock } from '../../src/time/GameClock.js';
  * @typedef {{
  *   calls: string[],
  *   log: string[],
+ *   playerLog: string[],
  *   refreshes: string[],
  *   dirty: number,
  * }} StubRecords
@@ -104,7 +105,8 @@ function blankState() {
  * `app.calls` next to `app.state`.
  *
  * `calls` holds every action name in the order it was called, `log` the
- * messages passed to `logEvent`, `refreshes` the names of the views that were
+ * messages passed to `logEvent`, `playerLog` the lines a Player tab reads of
+ * them (a GM-only line reads as its player line or not at all), `refreshes` the names of the views that were
  * updated, and `dirty` the number of `markDirty` calls.
  * @param {Partial<AppContext> & Record<string, unknown>} [overrides]
  * @returns {AppContext & StubRecords & Record<string, any>}
@@ -118,6 +120,7 @@ export function stubApp(overrides = {}) {
     state: { ...blankState(), ...state },
     calls: [],
     log: [],
+    playerLog: [],
     refreshes: [],
     dirty: 0,
   });
@@ -139,9 +142,15 @@ export function stubApp(overrides = {}) {
     app.calls.push('markDirty');
     app.dirty += 1;
   };
-  app.actions.logEvent = (/** @type {string} */ _kind, /** @type {string} */ message) => {
+  app.actions.logEvent = (
+    /** @type {string} */ _kind,
+    /** @type {string} */ message,
+    /** @type {import('../../src/types/log.js').LogOptions} */ options = {},
+  ) => {
     app.calls.push('logEvent');
     app.log.push(message);
+    if (!options.gm && !options.player) app.playerLog.push(message);
+    else if (options.player) app.playerLog.push(options.player);
   };
   Object.assign(app.actions, actions);
 

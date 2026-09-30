@@ -41,9 +41,11 @@ export function entryItem(entry) {
  * other thin DOM-wrapper panels. Rendering is append-only. `update`
  * prepends only the entries logged since the last call, through
  * `entriesAfter`, and rebuilds from scratch only when the log was cleared
- * or replaced. A `logEvent` costs one row, not a full rerender.
+ * or replaced. A `logEvent` costs one row, not a full rerender. A change of
+ * `getRole` also rebuilds the list, because the two roles read different
+ * lines (see `LogVisibility.entriesFor`).
  * @param {HTMLElement} container
- * @param {{ getEntries: () => LogEntry[], onClear: () => Promise<boolean> | boolean }} callbacks
+ * @param {{ getEntries: () => LogEntry[], onClear: () => Promise<boolean> | boolean, getRole?: () => string }} callbacks
  * @returns {{ update: () => void }}
  */
 export function mountTravelogPanel(container, callbacks) {
@@ -63,10 +65,15 @@ export function mountTravelogPanel(container, callbacks) {
 
   /** Id of the newest rendered entry. Null when the list renders empty. */
   let newestId = /** @type {string | null} */ (null);
+  /** The role the rendered rows were written for. */
+  let shownRole = callbacks.getRole?.() ?? '';
 
   function update() {
     const entries = callbacks.getEntries();
-    const fresh = entriesAfter(entries, newestId);
+    const role = callbacks.getRole?.() ?? '';
+    const rebuild = role !== shownRole;
+    shownRole = role;
+    const fresh = rebuild ? null : entriesAfter(entries, newestId);
     if (fresh === null) list.textContent = ''; // the log was cleared or replaced, so rebuild
     // The list is newest first. Prepending in oldest-to-newest order
     // leaves the newest row on top.
