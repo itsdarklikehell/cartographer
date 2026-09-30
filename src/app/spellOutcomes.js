@@ -349,10 +349,14 @@ function applyOnHit(app, spell, o, casterId) {
         timing ? timing.rounds : durationInRounds(spell.duration),
         castSource(app, spell, casterId),
         null,
-        timing?.expires ? { expires: timing.expires } : {},
+        {
+          ...(timing?.expires ? { expires: timing.expires } : {}),
+          ...(onHit.mods ? { mods: onHit.mods } : {}),
+        },
       )
     : false;
   const cond = hit.condition ? `${hit.condition}${imposed ? '' : ' (untracked)'}` : '';
+  applyTypedChip(app, spell, onHit, o, casterId);
   if (!onHit.saveAbility) {
     app.actions.logEvent('combat', `${name} gains ${cond}.`);
     return;
@@ -506,4 +510,33 @@ function applySave(app, spell, result, casterId) {
       leaveOngoing(app, spell, casterId, o.target.id, o.ongoing, effect.ongoing?.until);
     }
   }
+}
+
+/**
+ * Put the typed on-hit chip of a spell on a target of one of its types, such
+ * as the chip that Chill Touch leaves on an undead target. The chip has no
+ * save, and it ends at its own turn boundary.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {import('../types/spell.js').SpellOnHit} onHit
+ * @param {any} o the target's attack outcome
+ * @param {string} casterId
+ */
+function applyTypedChip(app, spell, onHit, o, casterId) {
+  const typed = onHit.typed;
+  if (!typed || !typed.types.includes(o.target.creatureType)) return;
+  const timing = typed.until ? timingFor(app, typed.until, casterId, o.target.id) : null;
+  const imposed = applyConditionToTarget(
+    app,
+    o.target.id,
+    typed.condition,
+    timing ? timing.rounds : durationInRounds(spell.duration),
+    castSource(app, spell, casterId),
+    null,
+    {
+      ...(timing?.expires ? { expires: timing.expires } : {}),
+      ...(typed.mods ? { mods: typed.mods } : {}),
+    },
+  );
+  if (imposed) app.actions.logEvent('combat', `${o.target.name} gains ${typed.condition}.`);
 }

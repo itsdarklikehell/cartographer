@@ -2,11 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
-import { applyConditionToTarget } from '../src/app/combatantWrites.js';
+import { applyConditionToTarget, applyToTarget } from '../src/app/combatantWrites.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { createResource } from '../src/entities/Resource.js';
 import { replaceById } from '../src/entities/Roster.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { sourceSlant } from '../src/entities/SourceSlant.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 
 /**
@@ -46,7 +47,7 @@ function character(id, over = {}) {
     inventory: [],
     conditions: [],
     spellbook: {
-      cantrips: [],
+      cantrips: ['chill-touch'],
       known: [],
       prepared: ['sleep', 'cure-wounds'],
     },
@@ -139,4 +140,38 @@ test('a creature immune to a condition does not take its chip, and the log says 
   applyConditionToTarget(app, 'golem', 'Poisoned', 10);
   assert.ok(app.log.includes('Golem is immune to Poisoned.'));
   assert.equal(creature(app, 'golem').conditions.length, 0);
+});
+
+test('a Chill Touch hit stops healing until the start of the caster turn', () => {
+  const app = stubApp([foe('goblin', 20)]);
+  resolve(app, plan(app, 'chill-touch', ['goblin']), { target: 'goblin' }, [0.99]);
+  const chip = creature(app, 'goblin').conditions.find((c) => c.name === 'Chill Touch');
+  assert.deepEqual(chip?.mods, { noHealing: true });
+  const hp = creature(app, 'goblin').currentHP;
+  applyToTarget(app, 'goblin', 5, true);
+  assert.equal(creature(app, 'goblin').currentHP, hp);
+  assert.ok(app.log.includes('Goblin cannot regain hit points (Chill Touch).'));
+  resolve(app, plan(app, 'cure-wounds', ['goblin']), { target: 'goblin', slot: '1' }, []);
+  assert.ok(app.log.includes('Cure Wounds has no effect on Goblin, who cannot regain hit points.'));
+  assert.equal(creature(app, 'goblin').currentHP, hp);
+});
+
+test('a Chill Touch hit on an undead target slants its attacks on the caster', () => {
+  const app = stubApp([foe('skeleton', 20, { creatureType: 'undead' })]);
+  resolve(app, plan(app, 'chill-touch', ['skeleton']), { target: 'skeleton' }, [0.99]);
+  const chips = creature(app, 'skeleton').conditions;
+  const undead = chips.find((c) => c.name === 'Chill Touch (undead)');
+  assert.deepEqual(undead?.mods, { disadvantageVsSource: true });
+  assert.equal(undead?.source?.casterId, 'mage');
+  assert.ok(app.log.includes('Skeleton gains Chill Touch (undead).'));
+  assert.equal(sourceSlant(chips, 'mage'), 'disadvantage');
+  assert.equal(sourceSlant(chips, 'fighter'), null);
+});
+
+test('a Chill Touch hit on a living target leaves no undead chip', () => {
+  const app = stubApp([foe('goblin', 20, { creatureType: 'humanoid' })]);
+  resolve(app, plan(app, 'chill-touch', ['goblin']), { target: 'goblin' }, [0.99]);
+  const names = creature(app, 'goblin').conditions.map((c) => c.name);
+  assert.deepEqual(names, ['Chill Touch']);
+  assert.equal(sourceSlant([], undefined), null);
 });

@@ -14,6 +14,7 @@ import { dropIfHelpless } from '../entities/Concentration.js';
 import { settleConcentration } from '../entities/CreatureHit.js';
 import { immunityTo } from '../entities/ChipMods.js';
 import { isImmuneToCondition } from '../entities/CreatureType.js';
+import { healingBlockedBy } from '../entities/HealTarget.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { settleChips } from './lethargy.js';
@@ -348,6 +349,16 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (amount <= 0) return;
   const found = findCombatant(app, targetId);
   if (!found) return;
+  // A chip that stops healing (Chill Touch) keeps every heal off, and the log
+  // names the chip. Temporary HP takes another path, so it still lands.
+  const chilled = isHeal ? healingBlockedBy(found.entity.conditions) : undefined;
+  if (chilled) {
+    app.actions.logEvent(
+      'combat',
+      `${found.entity.name} cannot regain hit points (${chilled.name}).`,
+    );
+    return;
+  }
   // The damage write of each kind takes off a chip that damage ends (Sleep).
   // The log names the chip here, ahead of the lines the hit writes.
   if (!isHeal) {

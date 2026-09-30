@@ -87,6 +87,19 @@ export interface SpellOnHit {
   /** When the condition ends, as a turn boundary. Absent means the spell's
    * own duration. */
   until?: ChipUntil;
+  /** What the chip changes besides a roll (Chill Touch stops healing). */
+  mods?: ChipMods;
+  /** A second chip that a hit leaves only on a target of one of the listed
+   * types, with no save (Chill Touch on undead). */
+  typed?: SpellOnHitTyped;
+}
+
+/** The chip that a hit leaves on a target of one of `types` only. */
+export interface SpellOnHitTyped {
+  types: CreatureType[];
+  condition: string;
+  until?: ChipUntil;
+  mods?: ChipMods;
 }
 
 /** When a chip that a spell writes ends, as a turn boundary. `caster-start`

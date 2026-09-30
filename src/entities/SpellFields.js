@@ -3,7 +3,7 @@ import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
-import { typeRuleFields } from './SpellTypeRules.js';
+import { normalizeTypeList, typeRuleFields } from './SpellTypeRules.js';
 
 /**
  * Normalizers for the spell fields beyond a single roll: damage that stays on
@@ -121,7 +121,32 @@ export function normalizeOnHit(value) {
     ? /** @type {Ability} */ (raw.saveAbility)
     : null;
   const until = normalizeUntil(raw.until);
-  return { condition, ...(saveAbility ? { saveAbility } : {}), ...(until ? { until } : {}) };
+  const mods = normalizeChipMods(raw.mods);
+  const typed = normalizeTypedChip(raw.typed);
+  return {
+    condition,
+    ...(saveAbility ? { saveAbility } : {}),
+    ...(until ? { until } : {}),
+    ...(mods ? { mods } : {}),
+    ...(typed ? { typed } : {}),
+  };
+}
+
+/**
+ * A written typed on-hit chip, or null when it names no condition or no known
+ * creature type.
+ * @param {unknown} value
+ * @returns {import('../types/spell.js').SpellOnHitTyped | null}
+ */
+export function normalizeTypedChip(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const condition = typeof raw.condition === 'string' ? raw.condition.trim() : '';
+  const types = normalizeTypeList(raw.types);
+  if (!condition || types.length === 0) return null;
+  const until = normalizeUntil(raw.until);
+  const mods = normalizeChipMods(raw.mods);
+  return { types, condition, ...(until ? { until } : {}), ...(mods ? { mods } : {}) };
 }
 
 /**

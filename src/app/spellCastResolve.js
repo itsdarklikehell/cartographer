@@ -14,6 +14,7 @@ import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
 import { findCombatant, hpOf } from './combatants.js';
 import { castTypeFields } from '../entities/CreatureType.js';
+import { sourceSlant } from '../entities/SourceSlant.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
@@ -203,8 +204,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // immunities, as the roster keeps them now.
   if ((effect.kind === 'save' || effect.kind === 'heal') && effect.typeRules) {
     castTargets = castTargets.map((t) => {
-      const found = findCombatant(app, t.id);
-      return found ? { ...t, ...castTypeFields(found.kind, found.entity) } : t;
+      return { ...t, ...castTypeFieldsOf(app, t.id) };
     });
   }
   if (resolved.effect.kind === 'attack') {
@@ -214,10 +214,16 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
     castTargets = castTargets.map((t) => ({
       ...t,
+      // A hit can leave a chip on targets of one type only (Chill Touch on
+      // undead), so each target states its type.
+      ...castTypeFieldsOf(app, t.id),
       attackMode:
         combineModes([
           mode,
           rollMode({ roller: casterConditions, target: t.conditions, kind: 'attack', melee }),
+          // A chip that the target's own spell left on the caster (Chill
+          // Touch on an undead caster) slants the roll.
+          sourceSlant(casterConditions, t.id),
         ]) ?? 'normal',
       // A helpless target turns a melee spell hit into a critical one, the
       // same rule a weapon swing follows.
@@ -406,4 +412,15 @@ function notePush(app, spell, caster, result) {
       `${o.target.name} can be pushed up to ${hits * push.feet} feet (${push.name}).`,
     );
   }
+}
+
+/**
+ * The creature type and condition immunities of a roster entry, for the type
+ * rules of a spell. An id the roster lost gives none.
+ * @param {AppContext} app
+ * @param {string | undefined} id
+ */
+function castTypeFieldsOf(app, id) {
+  const found = findCombatant(app, id ?? '');
+  return found ? castTypeFields(found.kind, found.entity) : {};
 }

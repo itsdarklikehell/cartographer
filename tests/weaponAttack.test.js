@@ -1473,3 +1473,28 @@ test('a two-handed swing with a shield in the other hand rolls the one-handed di
   // The d8 at its maximum plus the STR modifier.
   assert.equal(app.state.creatures[0].currentHP, 40 - 11);
 });
+
+test('an attacker with a Chill Touch chip swings at its caster at disadvantage', () => {
+  const hero = makeHero({ STR: 16 });
+  const skeleton = createCreature('skeleton', 'Skeleton', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const chip = {
+    name: 'Chill Touch (undead)',
+    rounds: null,
+    mods: { disadvantageVsSource: true },
+    source: { spellId: 'chill-touch', spellName: 'Chill Touch', casterId: 'hero' },
+  };
+  const app = stubApp({ characters: [hero], creatures: [skeleton], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: /** @type {any} */ ({ ...skeleton, conditions: [chip] }),
+    defender: { id: hero.id, name: hero.name, ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+});

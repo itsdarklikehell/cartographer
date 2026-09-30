@@ -103,6 +103,12 @@ export interface ChipMods {
   saveAdvantage?: string[];
   extraAction?: boolean;
   blocks?: string[];
+  /** True when the holder regains no hit points while the chip lasts (Chill
+   * Touch). Temporary HP is not healing, so the holder still gains it. */
+  noHealing?: boolean;
+  /** True when the holder attacks the caster who wrote the chip at
+   * disadvantage (Chill Touch on an undead target). */
+  disadvantageVsSource?: boolean;
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

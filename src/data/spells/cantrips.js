@@ -186,8 +186,22 @@ export const CANTRIPS = [
     description:
       'A skeletal hand deals 1d8 necrotic on a hit. The target regains no hit points until ' +
       "the start of the caster's next turn. An undead target also attacks the caster at " +
-      "disadvantage until the end of the caster's next turn. The GM rules both.",
-    effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
+      "disadvantage until the end of the caster's next turn.",
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 1, sides: 8, damageType: 'necrotic' }],
+      onHit: {
+        condition: 'Chill Touch',
+        until: 'caster-start',
+        mods: { noHealing: true },
+        typed: {
+          types: ['undead'],
+          condition: 'Chill Touch (undead)',
+          until: 'caster-end',
+          mods: { disadvantageVsSource: true },
+        },
+      },
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
   },
   {

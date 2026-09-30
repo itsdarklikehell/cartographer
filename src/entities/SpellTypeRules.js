@@ -20,7 +20,7 @@ export const TYPE_RULE_KEYS = /** @type {const} */ (['skip', 'disadvantage', 'ma
  * @param {unknown} value
  * @returns {CreatureType[]}
  */
-function typeList(value) {
+export function normalizeTypeList(value) {
   if (!Array.isArray(value)) return [];
   const known = /** @type {readonly string[]} */ (CREATURE_TYPES);
   const names = value.map((v) => String(v).trim().toLowerCase()).filter((t) => known.includes(t));
@@ -41,7 +41,7 @@ export function typeRuleFields(raw) {
   /** @type {SpellTypeRules} */
   const rules = {};
   for (const key of TYPE_RULE_KEYS) {
-    const list = typeList(source[key]);
+    const list = normalizeTypeList(source[key]);
     if (list.length > 0) rules[key] = list;
   }
   const immune = normalizeConditionImmunities(source.skipImmuneTo);

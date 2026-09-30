@@ -74,7 +74,7 @@ import { healTypeRules } from './SpellTypeRules.js';
  *   modifier as temporary HP each turn
  * @property {{ damage: DamagePart[], perStep: DamagePart[], until: string } | null} [ongoing]
  *   the damage an attack or a save leaves for later turns, null for none
- * @property {{ condition: string, saveAbility: string, until: string } | null} [onHit]
+ * @property {{ condition: string, saveAbility: string, until: string, mods?: Record<string, unknown>, typed?: unknown } | null} [onHit]
  *   the save or chip an attack's hit brings, null for none. An empty
  *   `saveAbility` means no save
  * @property {string} [drain] the share of dealt damage an attack gives back

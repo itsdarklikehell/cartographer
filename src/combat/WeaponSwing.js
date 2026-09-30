@@ -1,3 +1,4 @@
+import { sourceSlant } from '../entities/SourceSlant.js';
 import { attackTweak, rollDamage } from '../dice/DiceRoller.js';
 import { attackAbility, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
@@ -125,7 +126,10 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   const longSlant = tweaks.longRange ? 'disadvantage' : null;
   const badWear = unproficientWear(attacker);
   const wearSlant = badWear.length > 0 ? 'disadvantage' : null;
-  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant]);
+  // A chip from the defender's own spell can slant the swing (Chill Touch on
+  // an undead attacker).
+  const sourced = sourceSlant(attacker.conditions, defender.id);
+  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced]);
   // Cover is the GM's call in the dialog, and it raises the AC of this one
   // swing. Nothing on the map says who stands behind what, so no rule here
   // could work it out.

@@ -82,6 +82,8 @@ export function normalizeChipMods(value) {
     ...(saveAdvantage.length > 0 ? { saveAdvantage } : {}),
     ...(raw.extraAction === true ? { extraAction: true } : {}),
     ...(blocks.length > 0 ? { blocks } : {}),
+    ...(raw.noHealing === true ? { noHealing: true } : {}),
+    ...(raw.disadvantageVsSource === true ? { disadvantageVsSource: true } : {}),
   };
   return Object.keys(mods).length > 0 ? mods : null;
 }

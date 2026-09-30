@@ -21,6 +21,11 @@ export function buildOnHitControls(spell) {
 
   const imposes = checkbox('A hit imposes a condition', !!onHit);
   setTip(imposes.label, 'Ray of Sickness poisons the creature it hits unless it makes a CON save');
+  const noHealing = checkbox('Stops healing', onHit?.mods?.noHealing === true);
+  setTip(
+    noHealing.label,
+    'Chill Touch: the creature it hits regains no hit points while the chip lasts',
+  );
   const stored = onHit?.condition ?? '';
   const condition = select(
     [...(stored && !CONDITIONS.includes(stored) ? [stored] : []), ...CONDITIONS],
@@ -52,7 +57,7 @@ export function buildOnHitControls(spell) {
     drain: fieldRow(drainField),
     imposes: fieldRow(imposes.label),
     onHit: fieldRow(labeled('Condition on a hit', condition), labeled('Save against it', save)),
-    onHitUntil: fieldRow(labeled('Hit condition ends at', until)),
+    onHitUntil: fieldRow(labeled('Hit condition ends at', until), noHealing.label),
   };
 
   /**
@@ -77,7 +82,14 @@ export function buildOnHitControls(spell) {
   function read() {
     return {
       onHit: imposes.input.checked
-        ? { condition: condition.value, saveAbility: save.value, until: until.value }
+        ? {
+            condition: condition.value,
+            saveAbility: save.value,
+            until: until.value,
+            mods: { ...onHit?.mods, noHealing: noHealing.input.checked },
+            // The typed chip has no control, so an edit keeps it as stored.
+            ...(onHit?.typed ? { typed: onHit.typed } : {}),
+          }
         : null,
       drain: drain.value,
     };
