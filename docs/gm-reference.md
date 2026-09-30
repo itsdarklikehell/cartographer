@@ -1354,8 +1354,9 @@ app deals no later-turn damage, so apply it by hand.
 A chip that deals damage on later turns, or that the holder retries a save
 against, stays apart from a chip of the same name from another caster or
 spell. A combatant can therefore show two Acid Arrow chips, and each one
-deals its own damage. Removing a chip by hand removes every chip of that
-name. For other chips, a combatant keeps one chip of each name. A longer
+deals its own damage. Point at such a chip to read which caster and spell
+wrote it. The remove button of a chip removes only that chip, so the other
+cast keeps its chip. For other chips, a combatant keeps one chip of each name. A longer
 chip from another cast stays, and of two casts of one spell with different
 strength, such as Aid at 2nd and at 3rd level, the stronger one stays.
 

@@ -34,6 +34,9 @@ export interface ConditionSource {
   spellId: string;
   spellName: string;
   casterId: string;
+  /** The caster's name when the cast wrote the chip, so a tooltip can tell
+   * two casts of one spell apart. Without it, the tooltip names only the spell. */
+  casterName?: string;
   saveAbility?: string;
   saveDC?: number;
   saveBonus?: number;

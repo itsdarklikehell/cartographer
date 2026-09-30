@@ -94,7 +94,12 @@ export function mountNPCPanel(container, callbacks) {
       if (onUpdate) {
         mountConditionsBar(row, {
           getConditions: () => npc.conditions ?? [],
-          onChange: (next) => onUpdate(settleHPBuffs({ ...npc, conditions: next })),
+          // The bar reads `npc`, the row's copy from before the edit, so the
+          // list repaints its rows to show the stored chips.
+          onChange: (next) => {
+            onUpdate(settleHPBuffs({ ...npc, conditions: next }));
+            ctx.render();
+          },
         });
       }
       const onSetExhaustion = callbacks.onSetExhaustion;

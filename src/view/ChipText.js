@@ -57,3 +57,18 @@ export function chipNotes(condition, nameOf = () => undefined) {
   }
   return lines;
 }
+
+/**
+ * The cast that wrote a chip, for its tooltip and the label of its remove
+ * button: "Ana's Hold Person", or the spell alone when the chip does not
+ * name its caster. A hand-added chip names no cast, and the text comes back
+ * empty. Two casts of a spell that tracks its cast each keep a chip of the
+ * same name (see `Conditions.tracksCast`), and this text tells them apart.
+ * @param {Condition} condition
+ * @returns {string}
+ */
+export function chipOrigin(condition) {
+  const source = condition.source;
+  if (!source?.spellName) return '';
+  return source.casterName ? `${source.casterName}'s ${source.spellName}` : source.spellName;
+}

@@ -197,6 +197,19 @@ export function removeCondition(list, name) {
 }
 
 /**
+ * Remove one chip that a person picked, such as with the remove button of a
+ * conditions bar. It takes off only the chips in the same place as `chip`
+ * (see `sameSlot`), so when two casters' Hold Person each keep a Paralyzed
+ * chip, removing one leaves the other. Returns a new list.
+ * @param {Condition[]} list
+ * @param {Condition} chip
+ * @returns {Condition[]}
+ */
+export function removeChip(list, chip) {
+  return list.filter((c) => !sameSlot(c, chip));
+}
+
+/**
  * Take off the chips that damage ends, such as the Unconscious of Sleep. The
  * damage write paths of both kinds of combatant call this, so a hit from any
  * source wakes the holder. A list with no such chip comes back as the same

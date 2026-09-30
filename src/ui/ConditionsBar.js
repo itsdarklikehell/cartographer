@@ -1,12 +1,23 @@
-import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
+import { CONDITIONS, addCondition, removeChip } from '../entities/Conditions.js';
 import { setTip } from './Tooltip.js';
-import { chipLabel, chipNotes } from '../view/ChipText.js';
+import { chipLabel, chipNotes, chipOrigin } from '../view/ChipText.js';
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
 import { clampInt } from '../util/num.js';
 import { el } from './dom.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
+
+/**
+ * The tooltip of a chip: what it does (see `ChipText.chipNotes`), then the
+ * cast that wrote it, so two chips of one name from two casters read apart.
+ * @param {Condition} condition
+ * @returns {string}
+ */
+function chipTip(condition) {
+  const origin = chipOrigin(condition);
+  return [...chipNotes(condition), ...(origin ? [`From ${origin}`] : [])].join('; ');
+}
 
 /**
  * One chip with no remove button, for a card that only shows conditions. Its
@@ -16,8 +27,8 @@ import { el } from './dom.js';
  */
 export function conditionChip(condition) {
   const element = chip(chipLabel(condition));
-  const notes = chipNotes(condition);
-  if (notes.length > 0) setTip(element, notes.join('; '));
+  const tip = chipTip(condition);
+  if (tip) setTip(element, tip);
   return element;
 }
 
@@ -43,16 +54,17 @@ export function mountConditionsBar(container, callbacks) {
     const label = chipLabel(condition);
     // A rider, later-turn damage, and a turn boundary go in the tooltip, not
     // the label. Chips already carry a round counter and sit in a narrow row.
-    const title = chipNotes(condition).join('; ');
+    const title = chipTip(condition);
+    const origin = chipOrigin(condition);
     const element = !canEdit()
       ? chip(label)
       : removableChip(
           label,
           () => {
-            callbacks.onChange(removeCondition(callbacks.getConditions(), condition.name));
+            callbacks.onChange(removeChip(callbacks.getConditions(), condition));
             render();
           },
-          { removeLabel: condition.name },
+          { removeLabel: origin ? `${condition.name} from ${origin}` : condition.name },
         );
     if (title) setTip(element, title);
     return element;

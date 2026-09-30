@@ -4,6 +4,7 @@ import {
   createCondition,
   addCondition,
   removeCondition,
+  removeChip,
   tickConditions,
   endedLine,
   outlasts,
@@ -124,4 +125,27 @@ test('chips that track their cast keep one place per caster and spell', () => {
   assert.equal(sameSlot(createCondition('Frightened'), pk), false);
   assert.equal(sameSlot(fear, createCondition('frightened ')), true);
   assert.equal(sameSlot(fear, createCondition('Prone')), false);
+});
+
+test('removeChip takes off only the picked cast of a chip that tracks its cast', async () => {
+  const { endedEffects } = await import('../src/entities/Lethargy.js');
+  /** @param {string} casterId */
+  const hold = (casterId) =>
+    createCondition('Paralyzed', 10, {
+      source: { spellId: 'hold-person', spellName: 'Hold Person', casterId, saveEnds: true },
+    });
+  const list = [hold('ana'), hold('bo'), createCondition('Prone')];
+  const next = removeChip(list, list[0]);
+  assert.deepEqual(next, [list[1], list[2]]);
+  // The Haste lethargy check sees only the removed cast as ended.
+  assert.deepEqual(endedEffects(list, next), [list[0]]);
+});
+
+test('removeChip takes off a plain chip by name, and leaves a same-name chip that tracks its cast', () => {
+  const acid = createCondition('Burning', 1, {
+    source: { spellId: 'acid-arrow', spellName: 'Acid Arrow', casterId: 'ana' },
+    ongoing: { damage: [{ dice: { 4: 2 }, bonus: 0, type: 'acid' }] },
+  });
+  const list = [createCondition('burning'), acid, createCondition('Prone')];
+  assert.deepEqual(removeChip(list, createCondition('Burning')), [acid, list[2]]);
 });

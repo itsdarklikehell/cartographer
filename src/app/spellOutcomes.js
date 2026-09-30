@@ -41,6 +41,25 @@ function riderNote(riders) {
 }
 
 /**
+ * The source that a cast stamps on each chip it writes. It names the caster
+ * as well as its id, so the tooltip of a chip can tell two casts of one
+ * spell apart.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {string} casterId
+ * @returns {import('../types/entities.js').ConditionSource}
+ */
+function castSource(app, spell, casterId) {
+  const casterName = findCombatant(app, casterId)?.entity.name;
+  return {
+    spellId: spell.id,
+    spellName: spell.name,
+    casterId,
+    ...(casterName ? { casterName } : {}),
+  };
+}
+
+/**
  * The timing of a chip that ends at a turn boundary, read against the
  * running fight (see `TurnEffects.chipTiming`).
  * @param {AppContext} app
@@ -77,7 +96,7 @@ function leaveOngoing(app, spell, casterId, targetId, damage, until) {
     targetId,
     spell.name,
     timing.rounds,
-    { spellId: spell.id, spellName: spell.name, casterId },
+    castSource(app, spell, casterId),
     null,
     { ...(timing.expires ? { expires: timing.expires } : {}), ongoing: { damage } },
   );
@@ -147,7 +166,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         o.target.id,
         o.condition,
         timing.rounds,
-        { spellId: spell.id, spellName: spell.name, casterId },
+        castSource(app, spell, casterId),
         o.rider,
         {
           ...(timing.expires ? { expires: timing.expires } : {}),
@@ -301,7 +320,7 @@ function applyOnHit(app, spell, o, casterId) {
         o.target.id,
         hit.condition,
         timing ? timing.rounds : durationInRounds(spell.duration),
-        { spellId: spell.id, spellName: spell.name, casterId },
+        castSource(app, spell, casterId),
         null,
         timing?.expires ? { expires: timing.expires } : {},
       )
@@ -388,9 +407,7 @@ function applySave(app, spell, result, casterId) {
           o.condition,
           timing ? timing.rounds : rounds,
           {
-            spellId: spell.id,
-            spellName: spell.name,
-            casterId,
+            ...castSource(app, spell, casterId),
             saveAbility: ability,
             saveDC: o.dc,
             saveBonus: o.target.saveBonus ?? 0,

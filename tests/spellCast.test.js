@@ -656,6 +656,7 @@ test('a failed save takes full damage and lands a tracked condition', () => {
   assert.equal(chip.source.spellId, 'hold-person');
   assert.equal(chip.source.saveEnds, true);
   assert.equal(chip.source.casterId, 'mage');
+  assert.equal(chip.source.casterName, caster.name);
 });
 
 test('a made save logs the roll and no condition', () => {

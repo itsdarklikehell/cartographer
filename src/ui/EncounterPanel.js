@@ -184,7 +184,7 @@ export function mountEncounterPanel(container, callbacks) {
    * The stat block and condition bars below a GM's row.
    * @param {Encounter} encounter
    * @param {HTMLElement} row
-   * @param {{ gm: boolean }} ctx
+   * @param {import('./listPanel.js').RowContext<Encounter>} ctx
    */
   function buildExtras(encounter, row, ctx) {
     if (!ctx.gm) return;
@@ -216,9 +216,14 @@ export function mountEncounterPanel(container, callbacks) {
 
     // A GM tracks an encounter's status conditions, for example poisoned
     // or prone, on its row. An edit writes the whole list back through onUpdate.
+    // The bar reads `encounter`, which is the row's copy from before the
+    // edit, so the list repaints its rows to show the stored chips.
     mountConditionsBar(row, {
       getConditions: () => encounter.conditions ?? [],
-      onChange: (next) => updateOne(encounter, (e) => settleHPBuffs({ ...e, conditions: next })),
+      onChange: (next) => {
+        updateOne(encounter, (e) => settleHPBuffs({ ...e, conditions: next }));
+        ctx.render();
+      },
     });
 
     // Exhaustion has its own callback rather than going through onUpdate,

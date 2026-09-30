@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { chipLabel, chipNotes } from '../src/view/ChipText.js';
+import { chipLabel, chipNotes, chipOrigin } from '../src/view/ChipText.js';
 import { effectSummary, hitLines, laterTurnLines } from '../src/view/SpellEffectText.js';
 import { createCondition } from '../src/entities/Conditions.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
@@ -192,4 +192,14 @@ test('the detail of Haste names its AC, its save advantage, and its extra action
     effectSummary(spellById('haste'), null),
     'Haste — +2 AC, advantage on DEX saves, an extra action for one weapon attack',
   );
+});
+
+test('chipOrigin names the caster and the spell of the cast that wrote a chip', () => {
+  const source = { spellId: 'hold-person', spellName: 'Hold Person', casterId: 'ana' };
+  assert.equal(
+    chipOrigin(createCondition('Paralyzed', 10, { source: { ...source, casterName: 'Ana' } })),
+    "Ana's Hold Person",
+  );
+  assert.equal(chipOrigin(createCondition('Paralyzed', 10, { source })), 'Hold Person');
+  assert.equal(chipOrigin(createCondition('Prone')), '');
 });
