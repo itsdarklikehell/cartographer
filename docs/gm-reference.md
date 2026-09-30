@@ -2423,8 +2423,9 @@ A Player tab lists a handout only when all of these conditions are true:
 
 A Player tab keeps listing a handout after the party leaves its spot. The
 handout moves to a **Read earlier** group below the handouts of the current
-spot. It leaves the group when the GM hides or deletes it. The tab keeps this
-list in memory, so a reload of the Player tab empties the group.
+spot. It leaves the group when the GM hides or deletes it. The browser stores this
+list for each character, so the group is still there after a reload of the
+Player tab. New, Load example, and Import empty it.
 An erase stroke, a smaller node size, or a regeneration of the node can
 remove the tile of a handout. The handout then binds to the whole node. An
 undo of the erase or the regeneration binds it to its tile again.

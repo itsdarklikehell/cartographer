@@ -21,6 +21,7 @@ import {
 } from '../storage/SaveNotices.js';
 import { replaceIsUndoable, saveCampaign } from '../storage/HistoryLog.js';
 import { mirrorActive } from '../storage/AssetMirror.js';
+import { forgetReadHandouts } from '../view/ReadHandouts.js';
 import { confirmShortenedImport } from './shortenedLoadPrompts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -61,6 +62,8 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
     }
     const loss = historyLossMessage(historyLoss(result.history), '');
     queueToastAfterReload([toastMessage, message, loss].filter(Boolean).join(' '));
+    // The Player tabs of this browser list the new handouts as unread.
+    forgetReadHandouts(localStorage);
     setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
     location.reload();
   }

@@ -16,6 +16,7 @@ import {
 } from '../handout/HandoutForm.js';
 import { replaceById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
+import { recordReadHandouts } from '../view/ReadHandouts.js';
 import { wireEntityList } from './entityList.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -105,10 +106,6 @@ export function wireHandouts(app) {
   /** The tile the next new handout starts on, set only while the inspector's
    * dialog is open. @type {HandoutPlace | null} */
   let preset = null;
-  /** The handouts this Player tab has listed. The tab keeps listing them
-   * under "Read earlier" after the party leaves their spot. The set lives in
-   * memory, so a reload of the tab starts it empty. @type {Set<string>} */
-  const seen = new Set();
   /** The ids of the rows in the "Read earlier" group. @type {Set<string>} */
   let readIds = new Set();
 
@@ -130,7 +127,14 @@ export function wireHandouts(app) {
         boundCharacterId,
       });
       if (gm) return here;
-      for (const h of here) seen.add(h.id);
+      // The handouts this viewer listed, kept per browser, list under "Read
+      // earlier" after the party leaves their spot.
+      const seen = recordReadHandouts(
+        localStorage,
+        boundCharacterId,
+        here.map((h) => h.id),
+        new Set(state.handouts.map((h) => h.id)),
+      );
       const read = readHandouts(state.handouts, here, seen, boundCharacterId);
       readIds = new Set(read.map((h) => h.id));
       return [...here, ...read];
