@@ -1073,6 +1073,8 @@ Build mode, from Play mode, and from the tile menu.
 | Multiattack: attack with disadvantage | Blank (none) | The swing of the Multiattack that rolls with disadvantage, such as 2 for the second attack. Blank, or a number past the last swing, stores none |
 | Redirect Attack (reaction: an ally becomes the target) | Off | When an attack targets the creature, the app offers to make an ally the target instead. See [Redirect Attack](#redirect-attack) |
 | Turn Resistance (advantage on saves against Turn Undead) | Off | The creature rolls its WIS save against Turn Undead with advantage. Use it for Turn Resistance and for Turn Defiance |
+| Legendary actions per round | Blank | The legendary actions of the stat block, from 1 to 5. Blank means none. The app stores the count, and the combat screen does not spend it |
+| Legendary resistance per day | Blank | The uses of Legendary Resistance, from 1 to 5. Blank means none. The app stores the count, and the combat screen does not spend it |
 | Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
 | Surprise Attack: dice, Surprise Attack: die | Blank, d6 | Extra damage dice on a hit against a surprised target in round 1. Blank stores none |
 | On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |

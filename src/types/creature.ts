@@ -152,6 +152,12 @@ export interface Creature extends HPBuffFields {
   /** True for an undead with Turn Resistance or Turn Defiance, which rolls its
    * save against Turn Undead with advantage. Absent means none. */
   turnResistance?: boolean;
+  /** The legendary actions the creature takes each round, from 1 to 5.
+   * Absent means none. */
+  legendaryActions?: number;
+  /** The legendary resistances the creature has each day, from 1 to 5.
+   * Absent means none. */
+  legendaryResistance?: number;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -207,6 +213,8 @@ export interface CreatureTemplate {
   multiattackDisadvantage?: number;
   redirectAttack?: boolean;
   turnResistance?: boolean;
+  legendaryActions?: number;
+  legendaryResistance?: number;
   role?: string;
   notes?: string;
   class?: string;

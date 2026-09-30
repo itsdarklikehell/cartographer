@@ -88,6 +88,8 @@ export function fromTemplate(template, id, location = null) {
     multiattackDisadvantage: template.multiattackDisadvantage,
     redirectAttack: template.redirectAttack,
     turnResistance: template.turnResistance,
+    legendaryActions: template.legendaryActions,
+    legendaryResistance: template.legendaryResistance,
     ...(template.weapon !== undefined
       ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
       : {}),

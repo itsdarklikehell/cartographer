@@ -32,6 +32,24 @@ export function coerceMultiattack(value) {
   return Math.min(count, MAX_MULTIATTACK);
 }
 
+/** The most legendary actions per round, or legendary resistances per day,
+ * that a creature can have. */
+export const MAX_LEGENDARY = 5;
+
+/**
+ * Read a legendary count: the legendary actions a creature takes each round,
+ * or the legendary resistances it has each day. A count below 1 or a value
+ * that is not a number reads as none, and a count above `MAX_LEGENDARY`
+ * comes down to it.
+ * @param {unknown} value
+ * @returns {number | undefined}
+ */
+export function coerceLegendary(value) {
+  const count = Math.floor(Number(value));
+  if (!Number.isFinite(count) || count < 1) return undefined;
+  return Math.min(count, MAX_LEGENDARY);
+}
+
 /**
  * Read which swing of a Multiattack rolls with disadvantage. The swing
  * counts from 1 and has to fall inside the Multiattack, so a creature with
@@ -51,13 +69,16 @@ export function coerceWeakSwing(value, multiattack) {
  * with no trait stores no key. Redirect Attack is a reaction to an attack rather
  * than an attack, but it sits here so that every path that copies the attack
  * traits copies it too.
- * @param {{ multiattack?: unknown, packTactics?: unknown, surpriseAttack?: unknown, multiattackDisadvantage?: unknown, redirectAttack?: unknown, turnResistance?: unknown } | undefined} value
- * @returns {{ multiattack?: number, packTactics?: true, surpriseAttack?: import('../types/creature.js').SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: true, turnResistance?: true }}
+ * The legendary counts sit here for the same reason.
+ * @param {{ multiattack?: unknown, packTactics?: unknown, surpriseAttack?: unknown, multiattackDisadvantage?: unknown, redirectAttack?: unknown, turnResistance?: unknown, legendaryActions?: unknown, legendaryResistance?: unknown } | undefined} value
+ * @returns {{ multiattack?: number, packTactics?: true, surpriseAttack?: import('../types/creature.js').SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: true, turnResistance?: true, legendaryActions?: number, legendaryResistance?: number }}
  */
 export function attackTraitFields(value) {
   const multiattack = coerceMultiattack(value?.multiattack);
   const surprise = coerceSurpriseAttack(value?.surpriseAttack);
   const weak = coerceWeakSwing(value?.multiattackDisadvantage, multiattack);
+  const actions = coerceLegendary(value?.legendaryActions);
+  const resistance = coerceLegendary(value?.legendaryResistance);
   return {
     ...(multiattack ? { multiattack } : {}),
     ...(weak ? { multiattackDisadvantage: weak } : {}),
@@ -65,6 +86,8 @@ export function attackTraitFields(value) {
     ...(value?.turnResistance === true ? { turnResistance: /** @type {const} */ (true) } : {}),
     ...(value?.packTactics === true ? { packTactics: /** @type {const} */ (true) } : {}),
     ...(surprise ? { surpriseAttack: surprise } : {}),
+    ...(actions ? { legendaryActions: actions } : {}),
+    ...(resistance ? { legendaryResistance: resistance } : {}),
   };
 }
 

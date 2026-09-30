@@ -23,7 +23,12 @@ import { defenseFields } from '../entities/DamageDefenses.js';
 import { DAMAGE_TYPES } from '../entities/Equipment.js';
 import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
 import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
-import { MAX_MULTIATTACK, SURPRISE_SIDES, attackTraitFields } from '../entities/CreatureAttacks.js';
+import {
+  MAX_LEGENDARY,
+  MAX_MULTIATTACK,
+  SURPRISE_SIDES,
+  attackTraitFields,
+} from '../entities/CreatureAttacks.js';
 import { normalizeHitSave } from '../combat/HitSave.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
@@ -60,6 +65,8 @@ import { readStats, statFields } from './statFields.js';
  *   multiattackDisadvantage?: number,
  *   redirectAttack?: boolean,
  *   turnResistance?: boolean,
+ *   legendaryActions?: number,
+ *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -262,6 +269,24 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       type: 'checkbox',
       value: seed?.turnResistance === true,
     },
+    // Legendary actions per round and legendary resistances per day. A
+    // blank box stores none.
+    {
+      name: 'legendaryActions',
+      label: 'Legendary actions per round',
+      type: 'number',
+      value: seed?.legendaryActions ?? '',
+      min: 1,
+      max: MAX_LEGENDARY,
+    },
+    {
+      name: 'legendaryResistance',
+      label: 'Legendary resistance per day',
+      type: 'number',
+      value: seed?.legendaryResistance ?? '',
+      min: 1,
+      max: MAX_LEGENDARY,
+    },
     {
       name: 'packTactics',
       label: 'Pack Tactics',
@@ -403,6 +428,8 @@ function readLevel(raw) {
  *   multiattackDisadvantage?: number,
  *   redirectAttack?: boolean,
  *   turnResistance?: boolean,
+ *   legendaryActions?: number,
+ *   legendaryResistance?: number,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -434,6 +461,8 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
       multiattackDisadvantage: values.multiattackDisadvantage,
       redirectAttack: values.redirectAttack === '1',
       turnResistance: values.turnResistance === '1',
+      legendaryActions: values.legendaryActions,
+      legendaryResistance: values.legendaryResistance,
       packTactics: values.packTactics === '1',
       surpriseAttack: { count: values.surpriseCount, sides: Number(values.surpriseDie) },
     }),
