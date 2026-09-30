@@ -5,6 +5,7 @@ import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { endOnDamage } from './Conditions.js';
 import { creatureTypeFields } from './CreatureType.js';
+import { attackTraitFields } from './CreatureAttacks.js';
 import { withCasterFields, ensureCasterFields } from './Caster.js';
 import { castsAs, casterDefFor } from './ClassCasting.js';
 import { isCasterPool } from './SpellSlots.js';
@@ -133,7 +134,7 @@ function clampMaxHP(maxHP) {
  * always explicit, so no read path derives gear again.
  * @param {string} id
  * @param {string} name
- * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
+ * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
  * @returns {Creature}
  */
 export function createCreature(id, name, options = {}) {
@@ -159,6 +160,7 @@ export function createCreature(id, name, options = {}) {
     ...creatureProficiencyFields(options.proficiencies),
     ...defenseFields(options.defenses),
     ...creatureTypeFields(options),
+    ...attackTraitFields(options),
     ...(options.role !== undefined ? { role: options.role } : {}),
     ...(options.notes !== undefined ? { notes: options.notes } : {}),
     ...(options.subclass !== undefined ? { subclass: options.subclass } : {}),
@@ -190,6 +192,7 @@ export function withDefaults(creature) {
     defenses: _defenses,
     creatureType: _creatureType,
     conditionImmunities: _conditionImmunities,
+    multiattack: _multiattack,
     resources,
     spellbook,
     ...stripped
@@ -204,6 +207,7 @@ export function withDefaults(creature) {
       ...creatureProficiencyFields(creature.proficiencies),
       ...defenseFields(creature.defenses),
       ...creatureTypeFields(creature),
+      ...attackTraitFields(creature),
       disposition: creature.disposition ?? 'neutral',
       maxHP,
       currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
@@ -289,7 +293,7 @@ export function tickStatModifiers(mods) {
  * removes the level. Clearing both proficiency pickers removes the whole
  * proficiency record.
  * @param {Creature} creature
- * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, proficiencies?: import('../types/creature.js').CreatureProficiencies, defenses?: import('../types/creature.js').DamageDefenses, creatureType?: string, conditionImmunities?: string[], multiattack?: number, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
  * @returns {Creature}
  */
 export function editCreature(creature, edits) {
@@ -305,6 +309,7 @@ export function editCreature(creature, edits) {
     defenses: _defenses,
     creatureType: _creatureType,
     conditionImmunities: _conditionImmunities,
+    multiattack: _multiattack,
     ...unleveled
   } = creature;
   const base = {
@@ -323,6 +328,7 @@ export function editCreature(creature, edits) {
     ...creatureProficiencyFields(edits.proficiencies),
     ...defenseFields(edits.defenses),
     ...creatureTypeFields(edits),
+    ...attackTraitFields(edits),
     ...(edits.role !== undefined ? { role: edits.role } : {}),
     ...(edits.notes !== undefined ? { notes: edits.notes } : {}),
   };

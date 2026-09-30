@@ -45,6 +45,7 @@ import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
 import { defenseFields } from '../entities/DamageDefenses.js';
 import { creatureTypeFields } from '../entities/CreatureType.js';
+import { attackTraitFields } from '../entities/CreatureAttacks.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -685,6 +686,8 @@ export function normalizeLibrary(parsed) {
       ...defenseFields(e.defenses),
       // An unknown type or condition name drops out too.
       ...creatureTypeFields(e),
+      // A Multiattack below 2 reads as none.
+      ...attackTraitFields(e),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),

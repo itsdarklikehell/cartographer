@@ -212,7 +212,8 @@ A participant with no `used` field therefore reads as a whole turn through
 
 `attacksLeft` is the only counter in the budget. Extra Attack gives two
 swings for one action, so the first swing spends the action and banks the
-rest. `spendAttack` draws on the bank before it spends another action, and
+rest. The Multiattack of a creature banks its swings the same way,
+through `CreatureAttacks.swingsPerAction`. `spendAttack` draws on the bank before it spends another action, and
 `attacksAvailable` reports how many swings are left. Only a weapon whose own
 count is two or more draws on the bank (see
 [Hit riders and the pact weapon](#hit-riders-and-the-pact-weapon)). Each swing also sets

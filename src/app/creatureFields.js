@@ -23,6 +23,7 @@ import { defenseFields } from '../entities/DamageDefenses.js';
 import { DAMAGE_TYPES } from '../entities/Equipment.js';
 import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
 import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
+import { MAX_MULTIATTACK, attackTraitFields } from '../entities/CreatureAttacks.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
@@ -52,6 +53,7 @@ import { readStats, statFields } from './statFields.js';
  *   defenses?: import('../types/creature.js').DamageDefenses,
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
+ *   multiattack?: number,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -222,6 +224,16 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
         seed?.armor !== undefined ? (gear.currentArmor?.name ?? '') : (stamp?.armor.name ?? ''),
       options: gear.armorOptions,
     },
+    // A creature has one weapon, so its Multiattack is a count of swings
+    // with it. A blank box or a 1 stores no Multiattack.
+    {
+      name: 'multiattack',
+      label: 'Multiattack (attacks per action)',
+      type: 'number',
+      value: seed?.multiattack ?? '',
+      min: 1,
+      max: MAX_MULTIATTACK,
+    },
     ...(stats
       ? statFields(
           STAT_KEYS,
@@ -307,6 +319,7 @@ function readLevel(raw) {
  *   defenses?: import('../types/creature.js').DamageDefenses,
  *   creatureType?: import('../types/creature.js').CreatureType,
  *   conditionImmunities?: string[],
+ *   multiattack?: number,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -333,6 +346,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
       creatureType: values.creatureType,
       conditionImmunities: splitList(values.conditionImmunities),
     }),
+    ...attackTraitFields({ multiattack: values.multiattack }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),
     role: values.role.trim(),

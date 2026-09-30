@@ -983,6 +983,7 @@ Build mode, from Play mode, and from the tile menu.
 | Skill proficiencies | None | The skills that the creature is trained in |
 | Weapon | None (unarmed) | A weapon from the library |
 | Armor | None (unarmored) | Armor from the library |
+| Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
 | Resistant to, Vulnerable to, Immune to | None | The damage types that the creature takes half, double, or no damage from |
 | Immune to conditions | None | The conditions that do not land on the creature. The log names the immunity in place of the chip |
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
@@ -1127,6 +1128,7 @@ A weapon button in the action bar opens the attack dialog.
 | Target cover | None | None, Half cover (+2 AC), or Three-quarters cover (+5 AC) |
 | Range | Normal | For a ranged or thrown weapon. Long range takes disadvantage |
 | Wield two-handed | Off | For a versatile weapon. Uses the two-handed damage dice |
+| Multiattack (roll all N attacks) | On | For a creature with Multiattack whose Attack action is unspent. Rolls every swing against the same defender, one after another, and stops when the defender drops. Untick it to roll one swing at a time |
 | Sneak Attack (+Nd6) | Off | For an attacker with the feature that has not used it this turn |
 | Ignore action cost | Off | Shows when the turn cannot pay for the swing. Swings anyway |
 | Situational modifiers | Closed | Bonus dice (d4 to d12) and flat bonuses for the attack and the damage |
@@ -1139,7 +1141,7 @@ combatant with Extra Attack also shows how many swings are left.
 
 | What | Cost |
 | --- | --- |
-| A weapon swing | The Attack action. Extra Attack banks the extra swings, so a Fighter of 5th level swings twice for one action |
+| A weapon swing | The Attack action. Extra Attack banks the extra swings, so a Fighter of 5th level swings twice for one action. A creature with Multiattack banks its swings the same way |
 | A cast | What the casting time of the spell names: an action, a bonus action, or a reaction |
 | An off-hand swing | The bonus action |
 | An opportunity attack | The reaction |

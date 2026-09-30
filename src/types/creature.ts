@@ -128,6 +128,9 @@ export interface Creature extends HPBuffFields {
   /** Conditions that do not land on this creature, by name from
    * `Conditions.CONDITIONS`. Absent means none. */
   conditionImmunities?: string[];
+  /** How many times the creature swings its weapon for one Attack action,
+   * from 2 up. Absent means one swing. See `entities/CreatureAttacks.js`. */
+  multiattack?: number;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -177,6 +180,7 @@ export interface CreatureTemplate {
   defenses?: DamageDefenses;
   creatureType?: CreatureType;
   conditionImmunities?: string[];
+  multiattack?: number;
   role?: string;
   notes?: string;
   class?: string;

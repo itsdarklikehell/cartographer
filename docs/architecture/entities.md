@@ -280,6 +280,15 @@ spread `creatureTypeFields`, so a creature with neither stores no field. An
 unknown type or condition name drops out. A party character stores no type
 and counts as humanoid through `creatureTypeOf`.
 
+An optional `multiattack` count says how many times a creature swings its
+weapon for one Attack action. A creature has one weapon, so the count is all
+the trait needs. `entities/CreatureAttacks.js` cleans it: a value below 2
+stores no key, and a value above `MAX_MULTIATTACK` (6) stops there. The same
+paths spread `attackTraitFields`, so an older save loads with one swing.
+`swingsPerAction` takes the higher of `Features.attacksPerAction` and the
+Multiattack count, and the combat code asks it in place of
+`attacksPerAction`.
+
 `applyConditionToTarget` in `app/combatantWrites.js` checks the immunity list
 before it writes a chip. A creature immune to the condition keeps its chips,
 and the log says so. The spell resolver reads the type through the type rules

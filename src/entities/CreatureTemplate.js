@@ -6,6 +6,7 @@ import { casterTemplateFields } from './Caster.js';
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
 import { creatureTypeFields } from './CreatureType.js';
+import { attackTraitFields } from './CreatureAttacks.js';
 import { DISPOSITIONS, createCreature } from './Creature.js';
 
 /**
@@ -41,6 +42,7 @@ export function toTemplate(id, creature) {
     ...creatureProficiencyFields(creature.proficiencies),
     ...defenseFields(creature.defenses),
     ...creatureTypeFields(creature),
+    ...attackTraitFields(creature),
     ...(creature.role !== undefined ? { role: creature.role } : {}),
     ...(creature.notes !== undefined ? { notes: creature.notes } : {}),
     ...casterTemplateFields(creature),
@@ -80,6 +82,7 @@ export function fromTemplate(template, id, location = null) {
     defenses: template.defenses,
     creatureType: template.creatureType,
     conditionImmunities: template.conditionImmunities,
+    multiattack: template.multiattack,
     ...(template.weapon !== undefined
       ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
       : {}),

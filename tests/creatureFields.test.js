@@ -239,3 +239,17 @@ test('the defense pickers show a seed and read back its lists', () => {
   assert.deepEqual(read.defenses, { resist: ['cold'], vulnerable: [], immune: ['poison'] });
   assert.equal('defenses' in readCreatureFields(baseValues(), gearOptions(null)), false);
 });
+
+test('the Multiattack box fills from the seed and stores only a count of 2 or more', () => {
+  assert.equal(
+    field(creatureFields({ multiattack: 2 }, gearOptions(null)), 'multiattack').value,
+    2,
+  );
+  assert.equal(field(creatureFields(null, gearOptions(null)), 'multiattack').value, '');
+  const gear = gearOptions(null);
+  assert.equal(readCreatureFields({ ...baseValues(), multiattack: '3' }, gear).multiattack, 3);
+  assert.equal(
+    'multiattack' in readCreatureFields({ ...baseValues(), multiattack: '1' }, gear),
+    false,
+  );
+});

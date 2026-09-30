@@ -1,5 +1,6 @@
 import { hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
-import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
+import { sneakAttackDice } from '../entities/Features.js';
+import { coerceMultiattack, swingsPerAction } from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
 import { canSpend } from '../combat/ActionBudget.js';
@@ -101,10 +102,17 @@ export function attackDialog({
   const cannotPay = !canSwing(
     participant,
     swingKind({ offhand, reaction }),
-    attacksPerAction(attacker, weapon),
+    swingsPerAction(attacker, weapon),
     hasExtraAction(attacker.conditions),
   );
   const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
+  // A creature with Multiattack can roll every swing of it from one dialog.
+  // The box shows only while the Attack action is unspent, because a spent
+  // action leaves only the banked swings.
+  const volley =
+    !offhand && !reaction && canSpend(participant, 'action')
+      ? coerceMultiattack(attacker.multiattack)
+      : undefined;
   return {
     title: `${swing.title} ${weapon.name}`,
     fields: [
@@ -148,6 +156,17 @@ export function attackDialog({
         options: COVER_LEVELS.map((level) => ({ value: level.value, label: level.label })),
         full: true,
       },
+      ...(volley
+        ? [
+            {
+              name: 'multiattack',
+              label: `Multiattack (roll all ${volley} attacks)`,
+              type: /** @type {const} */ ('checkbox'),
+              value: true,
+              full: true,
+            },
+          ]
+        : []),
       // The Sneak Attack box appears for an attacker that has the feature, has
       // not used it this turn, and swings a finesse or ranged weapon. Whether
       // the rogue earned it, from advantage or from an ally beside the

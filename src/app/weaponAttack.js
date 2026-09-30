@@ -1,6 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
 import { weaponIsMagical } from '../entities/MagicWeapon.js';
-import { attacksPerAction } from '../entities/Features.js';
+import { coerceMultiattack, swingsPerAction } from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
 import { SWINGS, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
@@ -124,7 +124,7 @@ export function rollWeaponAttack(
       swing.cost,
       swing.cost === 'attack'
         ? {
-            attacksPerAction: attacksPerAction(attacker, weapon),
+            attacksPerAction: swingsPerAction(attacker, weapon),
             extraAction: hasExtraAction(attacker.conditions),
           }
         : {},
@@ -291,15 +291,23 @@ export async function weaponAttack(
   });
   const values = await prompt(dialog.title, dialog.fields, dialog.options);
   if (!values) return;
-  const live = liveAttackSides(app, participant, values.target);
-  if ('refusal' in live) {
-    app.toasts.show(live.refusal);
-    return;
+  const tweaks = { ...readAttackTweaks(values), offhand, reaction };
+  // A ticked Multiattack box rolls each swing in turn against the same
+  // target. Each swing reads both sides again, so a defender that drops
+  // stops the rest with no toast of its own, and each swing logs its own
+  // lines.
+  const swings = values.multiattack === '1' ? (coerceMultiattack(attacker.multiattack) ?? 1) : 1;
+  for (let i = 0; i < swings; i++) {
+    const live = liveAttackSides(app, participant, values.target);
+    if ('refusal' in live) {
+      if (i === 0) app.toasts.show(live.refusal);
+      return;
+    }
+    await rollWeaponAttack(app, {
+      attacker: live.attacker,
+      defender: live.defender,
+      weapon,
+      tweaks,
+    });
   }
-  await rollWeaponAttack(app, {
-    attacker: live.attacker,
-    defender: live.defender,
-    weapon,
-    tweaks: { ...readAttackTweaks(values), offhand, reaction },
-  });
 }

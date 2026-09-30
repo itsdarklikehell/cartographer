@@ -249,14 +249,15 @@ function enemies(at) {
     // The Northmarch: the raiders who toppled the wardstone.
     mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, at('raider1'), GOBLIN, SNEAK),
     mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, at('raider2'), GOBLIN, SNEAK),
-    // A goblin boss: a Chain Shirt and a shield give AC 17. The app rolls one
-    // attack for each Attack action, so the notes state his Multiattack.
+    // A goblin boss: a Chain Shirt and a shield give AC 17. His Multiattack
+    // is two scimitar swings.
     legend('snagtooth', 'Chieftain Snagtooth', 21, 3, 1, at('snagtooth'), GOBLIN_BOSS, {
       weapon: SCIMITAR,
+      multiattack: 2,
       armor: enemyArmor('Chain Shirt'),
       ...trained([], ['intimidation', 'stealth']),
       notes:
-        'Multiattack: two scimitar attacks, the second with disadvantage. Redirect Attack: when an attack hits him, he can use his reaction to swap places with a goblin within 5 feet, which takes the hit instead. Paid in pale silver ingots stamped with the thorn of House Vane. He never met his patron. A hooded rider brings the orders and the silver to the camp at each new moon. He surrenders at half hit points and trades the orders for his life.',
+        'The second scimitar attack of his Multiattack rolls with disadvantage. Redirect Attack: when an attack hits him, he can use his reaction to swap places with a goblin within 5 feet, which takes the hit instead. Paid in pale silver ingots stamped with the thorn of House Vane. He never met his patron. A hooded rider brings the orders and the silver to the camp at each new moon. He surrenders at half hit points and trades the orders for his life.',
     }),
     // His camp guard: a bugbear and two goblins. With Snagtooth, the four
     // rate Medium for the level-4 party. Hide and a shield give the
