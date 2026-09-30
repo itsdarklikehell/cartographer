@@ -3,8 +3,7 @@ import { EXIT_SIDES, exitLabel } from './MapExits.js';
 import { edgeExitBand, exitBandGeometry } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel } from './CanvasText.js';
-import { coordLabelLayout } from './CoordLabels.js';
-import { toDisplay } from './TileCoords.js';
+import { coordLabelLayout, visibleCoordLabels } from './CoordLabels.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -41,17 +40,10 @@ export class MapDecorations {
     // A null layout means tiles too small for legible digits.
     const layout = coordLabelLayout(view, this.host.tileSize);
     if (!view.node || !layout) return;
-    const { size, fontSize, colY, rowX, colPinned, rowPinned } = layout;
-    for (let x = 0; x < view.node.width; x++) {
-      const cx = view.offsetX + (x + 0.5) * size;
-      if (cx < 0 || cx > view.canvasWidth) continue;
-      this._drawCoordLabel(String(toDisplay(x)), cx, colY, fontSize, colPinned);
-    }
-    for (let y = 0; y < view.node.height; y++) {
-      const cy = view.offsetY + (y + 0.5) * size;
-      if (cy < 0 || cy > view.canvasHeight) continue;
-      this._drawCoordLabel(String(toDisplay(y)), rowX, cy, fontSize, rowPinned);
-    }
+    const { fontSize, colY, rowX, colPinned, rowPinned } = layout;
+    const { columns, rows } = visibleCoordLabels(view, layout);
+    for (const c of columns) this._drawCoordLabel(c.text, c.x, colY, fontSize, colPinned);
+    for (const r of rows) this._drawCoordLabel(r.text, rowX, r.y, fontSize, rowPinned);
   }
 
   /**

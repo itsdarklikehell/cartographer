@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { labelSize } from '../src/map/CanvasText.js';
-import { COORD_SCALE, coordLabelLayout } from '../src/map/CoordLabels.js';
+import { COORD_SCALE, coordLabelLayout, visibleCoordLabels } from '../src/map/CoordLabels.js';
 import { edgeExitBand, exitBandDepth, exitBandGeometry } from '../src/map/ExitBands.js';
 import { fitSides, fitToExtent } from '../src/map/MapGeometry.js';
 import { createMapNode } from '../src/map/TileGrid.js';
@@ -174,4 +174,62 @@ test('fitSides leaves labelDepth below a wide box at the top', () => {
     labelDepth: 63,
   });
   assert.equal(sides.top, 107);
+});
+
+/** @param {any} v */
+const labelsOf = (v) => visibleCoordLabels(v, /** @type {any} */ (coordLabelLayout(v, 48)));
+
+test('visibleCoordLabels draws every label that fits in an open view', () => {
+  const { columns, rows } = labelsOf({ ...view, node });
+  assert.deepEqual(
+    columns.map((c) => c.text),
+    ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10'],
+  );
+  assert.equal(columns[0].x, 124);
+  assert.equal(rows.length, 12);
+  assert.deepEqual(rows[0], { text: '1', y: 144 });
+  // Labels whose centre is off the canvas are left out.
+  const off = labelsOf({ ...view, node, canvasWidth: 300, canvasHeight: 300 });
+  assert.deepEqual(
+    off.columns.map((c) => c.text),
+    ['1', '2', '3', '4'],
+  );
+  assert.deepEqual(
+    off.rows.map((r) => r.text),
+    ['1', '2', '3', '4'],
+  );
+  assert.deepEqual(
+    visibleCoordLabels(
+      { ...view, node: null },
+      { size: 48, fontSize: 14, colPinned: true, rowPinned: true, columns: null, rows: null },
+    ),
+    { columns: [], rows: [] },
+  );
+});
+
+test('visibleCoordLabels drops row labels above a column run moved below a wide box', () => {
+  // The map starts at the canvas top, so the rows run from y = 24.
+  const toolbar = { x: 400, y: 0, w: 300, h: 50 };
+  const map = { ...view, node, offsetX: 100, offsetY: 0, occluders: [toolbar] };
+  const layout = coordLabelLayout(map, 48);
+  assert.ok(layout?.columns);
+  const { rows } = visibleCoordLabels(map, layout);
+  const strip = layout.columns.y + layout.columns.h;
+  assert.ok(rows.length < 12);
+  for (const r of rows)
+    assert.ok(r.y - layout.fontSize * 0.6 >= strip, `row ${r.text} clears the strip`);
+  assert.equal(rows[0].text, String(12 - rows.length + 1));
+});
+
+test('visibleCoordLabels drops column labels left of a row run moved right of a tall box', () => {
+  const miniMap = { x: 0, y: 200, w: 170, h: 190 };
+  const map = { ...view, node, offsetX: 0, offsetY: 120, occluders: [miniMap] };
+  const layout = coordLabelLayout(map, 48);
+  assert.ok(layout?.rows);
+  const { columns, rows } = visibleCoordLabels(map, layout);
+  const strip = layout.rows.x + layout.rows.w;
+  assert.ok(columns.length < 10);
+  for (const c of columns) assert.ok(c.x > strip, `column ${c.text} clears the strip`);
+  // The columns are not pinned here, so every row label draws.
+  assert.equal(rows.length, 12);
 });

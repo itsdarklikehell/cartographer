@@ -1,4 +1,5 @@
 import { labelSize } from './CanvasText.js';
+import { toDisplay } from './TileCoords.js';
 
 /** @typedef {import('./ExitBands.js').Rect} Rect */
 
@@ -97,4 +98,41 @@ export function coordLabelLayout(view, tileSize) {
   const rows = bottom > top ? { x: rowX - rowHalf, y: top, w: rowHalf * 2, h: bottom - top } : null;
   const strips = [columns, rows].filter((r) => r !== null);
   return { size, fontSize, colY, rowX, colPinned, rowPinned, columns, rows, strips };
+}
+
+/**
+ * The column and row labels to draw from a layout, as display text and the
+ * centre of each plate on the canvas. A label whose centre is off the canvas
+ * is left out. When the column run is pinned, a row label whose plate would
+ * reach up into the column strip is left out, and when the row run is pinned,
+ * a column label whose plate would reach left into the row strip is left out.
+ * Without this rule, a column run moved below the zoom toolbar draws over the
+ * first row labels, and a row run moved right of the mini-map draws over the
+ * first column labels.
+ * @param {CoordView} view
+ * @param {CoordLayout} layout
+ * @returns {{ columns: { text: string, x: number }[], rows: { text: string, y: number }[] }}
+ */
+export function visibleCoordLabels(view, layout) {
+  const { size, fontSize, colPinned, rowPinned } = layout;
+  const width = view.node?.width ?? 0;
+  const height = view.node?.height ?? 0;
+  const half = fontSize * 0.6;
+  const rowTop = colPinned && layout.columns ? layout.columns.y + layout.columns.h : -Infinity;
+  const colLeft = rowPinned && layout.rows ? layout.rows.x + layout.rows.w : -Infinity;
+  const columns = [];
+  for (let i = 0; i < width; i++) {
+    const x = view.offsetX + (i + 0.5) * size;
+    const text = String(toDisplay(i));
+    const plateHalf = (text.length * fontSize * 0.6) / 2 + fontSize * 0.25;
+    if (x < 0 || x > view.canvasWidth || x - plateHalf < colLeft) continue;
+    columns.push({ text, x });
+  }
+  const rows = [];
+  for (let i = 0; i < height; i++) {
+    const y = view.offsetY + (i + 0.5) * size;
+    if (y < 0 || y > view.canvasHeight || y - half < rowTop) continue;
+    rows.push({ text: String(toDisplay(i)), y });
+  }
+  return { columns, rows };
 }
