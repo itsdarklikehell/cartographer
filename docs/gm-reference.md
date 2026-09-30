@@ -219,13 +219,13 @@ furnishings.
 | Part | Contents |
 | --- | --- |
 | World map | The Marches, a 48x48 continent from the world generator, split into nine regions |
-| Map areas | 115 in all. Each region has its own towns, keep, dungeon, and caves |
+| Map areas | 149 in all. Each region has its own towns, keep, dungeon, and caves |
 | Interiors | Furnished buildings in Briarwick and in the port of Saltmere. The Barrow of the Old King has three levels |
 | Party | Four level-4 characters: Ser Aldric, Mirelle, Wren Tallowby, and Brannoc Hollowell |
 | Quests | Seventeen: nine that lead to the barrow and eight side quests |
 | Handouts | Eighteen. Fourteen start hidden, and four are personal letters |
 | People | Eleven NPCs, including a staffed inn, smithy, and temple in Briarwick, and a smuggler and a harbormaster in Saltmere |
-| Foes | Field enemies in every biome, minor bosses, a major boss, and a bestiary of ten reusable templates |
+| Foes | Field enemies in every biome, minor bosses, a major boss, and a bestiary of twelve reusable templates. Two Thornhold guards stay neutral beside the Castellan until she is unmasked |
 
 The party starts in Briarwick Vale, and only that region is revealed on the
 world map. Every land tile of the world map leads into its region. To
@@ -275,7 +275,9 @@ The party shows these character features:
 - a fighter who multiclasses into wizard
 
 The undead and beasts have damage resistances and trained saves. The
-Castellan and one of her cultists cast spells.
+Castellan, one of her cultists, and King Ostrand cast spells. Snagtooth, Skalvyr,
+the Grave Wight, King Ostrand, the Bandit Captain, and the Thornhold guards
+attack more than once a turn with Multiattack.
 
 ## Build mode
 
