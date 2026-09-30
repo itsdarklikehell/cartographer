@@ -25,9 +25,32 @@
   text-decoration: line-through;
 }
 
+/* The name line and, below it, the muted HP and place line. The column can
+   shrink below its text width, so the amount field keeps its room. */
 .encounter-panel__label {
   flex: 1;
+  min-width: 0;
   font-size: var(--text-label);
+}
+
+.encounter-panel__name {
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.encounter-panel__detail {
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+/* The damage or heal amount with its caption above it. */
+.encounter-panel__amount-field {
+  align-items: center;
+  font-size: var(--text-label);
+}
+
+.encounter-panel__amount-caption {
+  color: var(--text-muted);
 }
 
 .encounter-panel__amount {

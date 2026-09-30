@@ -20,7 +20,7 @@ import { describeTile } from '../map/TileCoords.js';
 /**
  * Mount the encounter panel: an Active encounter and Nearby encounters tab
  * pair, always shown, each tab holding one list panel. The Active tab
- * lists the live creatures on the party's tile, hostile or not, and
+ * lists the standing hostile creatures at and around the party's tile, and
  * carries the GM's Start combat button. Gaining an
  * active encounter switches to it. Losing the last one switches back to
  * Nearby, which lists everything else in range. Authoring buttons render
@@ -55,7 +55,7 @@ import { describeTile } from '../map/TileCoords.js';
  *   getDifficulty?: () => string,
  *   getRole?: () => ViewRole,
  * }} callbacks
- * `getDifficulty` gives one line rating the fight on the party's tile, shown
+ * `getDifficulty` gives one line rating the fight where the party stands, shown
  * above the Active rows for the GM alone. An empty string shows nothing.
  * If `onStartCombat` is set, the Active tab's action row gains a Start
  * combat button whenever `canStartCombat` allows it, when no fight is
@@ -104,13 +104,21 @@ export function mountEncounterPanel(container, callbacks) {
     // A bound encounter shows its column and row, counted from 1 as on the
     // map edge. This lets the GM tell two same-named foes apart and see
     // where in the region it is staged.
-    const where = encounter.location ? `, ${describeTile(encounter.location.tileId)}` : '';
-    const label = el(
-      'span',
-      'encounter-panel__label',
-      ctx.gm
-        ? `${encounter.name}, HP ${encounter.currentHP}/${encounter.maxHP}${where}`
-        : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`,
+    // The name has a line of its own, and the HP and place go below it,
+    // muted. Each of the two facts keeps to one line, so a narrow sidebar
+    // breaks between them instead of inside "column 14, row 5".
+    const detail = ctx.gm
+      ? [
+          `HP ${encounter.currentHP}/${encounter.maxHP}`,
+          encounter.location ? describeTile(encounter.location.tileId) : null,
+        ]
+      : [hpBand(encounter.currentHP, encounter.maxHP)];
+    const label = el('span', 'encounter-panel__label u-col');
+    label.append(
+      el('span', 'encounter-panel__name', encounter.name),
+      ...detail.flatMap((text) =>
+        text ? [el('span', 'encounter-panel__detail u-muted', text)] : [],
+      ),
     );
 
     // A player's view stops at the name and its status band. It shows no
@@ -121,11 +129,16 @@ export function mountEncounterPanel(container, callbacks) {
     const amountInput = numberField(1, {
       min: 0,
       className: 'encounter-panel__amount',
-      ariaLabel: `Damage/heal amount for ${encounter.name}`,
+      ariaLabel: `Damage or heal amount for ${encounter.name}`,
     });
     amounts.set(encounter, amountInput);
+    // The visible caption says what the number is for. The input keeps its
+    // own name with the creature in it, so a screen reader tells the rows
+    // apart.
+    const amount = el('label', 'encounter-panel__amount-field u-col');
+    amount.append(el('span', 'encounter-panel__amount-caption', 'Amount'), amountInput);
 
-    return [label, amountInput];
+    return [label, amount];
   }
 
   /**
