@@ -57,6 +57,8 @@ import { readStats, statFields } from './statFields.js';
  *   multiattack?: number,
  *   packTactics?: boolean,
  *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
+ *   multiattackDisadvantage?: number,
+ *   redirectAttack?: boolean,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -237,6 +239,22 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       min: 1,
       max: MAX_MULTIATTACK,
     },
+    // The swing of the Multiattack that rolls with disadvantage, counted
+    // from 1. A blank box, or a number past the last swing, stores none.
+    {
+      name: 'multiattackDisadvantage',
+      label: 'Multiattack: attack with disadvantage',
+      type: 'number',
+      value: seed?.multiattackDisadvantage ?? '',
+      min: 1,
+      max: MAX_MULTIATTACK,
+    },
+    {
+      name: 'redirectAttack',
+      label: 'Redirect Attack (reaction: an ally becomes the target)',
+      type: 'checkbox',
+      value: seed?.redirectAttack === true,
+    },
     {
       name: 'packTactics',
       label: 'Pack Tactics',
@@ -375,6 +393,8 @@ function readLevel(raw) {
  *   multiattack?: number,
  *   packTactics?: boolean,
  *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
+ *   multiattackDisadvantage?: number,
+ *   redirectAttack?: boolean,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -403,6 +423,8 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     }),
     ...attackTraitFields({
       multiattack: values.multiattack,
+      multiattackDisadvantage: values.multiattackDisadvantage,
+      redirectAttack: values.redirectAttack === '1',
       packTactics: values.packTactics === '1',
       surpriseAttack: { count: values.surpriseCount, sides: Number(values.surpriseDie) },
     }),

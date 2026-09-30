@@ -21,6 +21,7 @@ import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
+import { redirectSpellTargets } from './redirectWard.js';
 import { wardSpellDamage } from './damageWard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -60,15 +61,17 @@ import { wardSpellDamage } from './damageWard.js';
  *   writeBack: (next: any) => void,
  *   rng?: () => number,
  *   ask?: import('./shieldWard.js').WardAsk,
+ *   prompt?: import('./redirectWard.js').RedirectPrompt,
  * }} opts
  *   `writeBack` stores the updated entity. `rng` is the
  *   source for every roll the cast makes, injected the way the pure modules
  *   take theirs. `ask` puts the question of a target's ward (Shield, or a
- *   reaction that resists the damage), and a test passes its own answer.
+ *   reaction that resists the damage), `prompt` asks which ally a Redirect
+ *   Attack picks, and a test passes its own answers.
  * @returns {void | Promise<void>} a promise when a target's ward paused the
  *   cast, which settles once the cast has landed
  */
-export function resolveCast(app, plan, values, { writeBack, rng = Math.random, ask }) {
+export function resolveCast(app, plan, values, { writeBack, rng = Math.random, ask, prompt }) {
   const { entity, spell, targets, saveAbility, sourceClass, dc, material, armor } = plan;
   // The plan holds the caster as it was when the dialog opened. The dialog
   // can sit open while a heal lands or another tab adopts a save. The cast
@@ -107,7 +110,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   const resolved = free?.repeat ? repeatedSpell(spell) : spell;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
-  const chosen = chosenTargets(targets, values);
+  let chosen = chosenTargets(targets, values);
   if (!targetFree(resolved.effect.kind) && chosen.length === 0) {
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
@@ -158,241 +161,256 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       return;
     }
   }
-  // The caster view carries no conditions, so the chips come off the real
-  // combatant. A Bless on the caster rides its spell attack rolls, and a
-  // Blinded on it slants them.
-  const casterConditions = live.conditions ?? [];
-  // The GM's dialog choice and the chips on the table are two sources of the
-  // same slant, so they fold together under the cancel rule. Neither one
-  // overrides the other.
-  let castTargets = chosen;
-  // An attack's dialog mode slants the attack roll, so a save that its hit
-  // brings rolls with only the target's own slant.
-  const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
-  if (saveAbility) {
-    castTargets = chosen.map((t) => {
-      // A target's untrained armor slants its STR or DEX save. The slant
-      // folds in with the target's chips, so an advantage chip cancels it.
-      const outcome = saveOutcome(
-        t.conditions,
-        saveAbility,
-        t.armorPenalty ? ['disadvantage'] : [],
-      );
-      return {
-        ...t,
-        // Every live target carries a derived bonus. A target the roster lost
-        // while the dialog sat open carries none and saves on the flat die.
-        saveBonus: t.saveBonus ?? 0,
-        saveMode: combineModes([saveMode, outcome.mode]) ?? 'normal',
-        ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
-      };
-    });
-  }
-  // A spell with an HP limit or an HP pool reads each target's HP as it is
-  // now. A pool also passes over a target by its chips (an Unconscious one),
-  // so it reads those as they are now too.
-  const effect = resolved.effect;
-  if (effect.kind === 'save' && (effect.hpLimit !== undefined || effect.hpPool)) {
-    castTargets = castTargets.map((t) => {
-      const found = findCombatant(app, t.id);
-      const hp = found ? hpOf(found.kind, found.entity) : null;
-      return {
-        ...t,
-        ...(hp ? { hp: hp.current } : {}),
-        ...(found && effect.hpPool ? { conditions: found.entity.conditions } : {}),
-      };
-    });
-  }
-  // The type rules of a spell read each target's creature type and condition
-  // immunities, as the roster keeps them now.
-  if ((effect.kind === 'save' || effect.kind === 'heal') && effect.typeRules) {
-    castTargets = castTargets.map((t) => {
-      return { ...t, ...castTypeFieldsOf(app, t.id) };
-    });
-  }
-  if (resolved.effect.kind === 'attack') {
-    // A melee spell attack says so. Otherwise a touch spell reaches as far as
-    // a melee weapon does, which is the split Prone needs, and every other
-    // range is a ranged attack.
-    const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
-    castTargets = castTargets.map((t) => ({
-      ...t,
-      // A hit can leave a chip on targets of one type only (Chill Touch on
-      // undead), so each target states its type.
-      ...castTypeFieldsOf(app, t.id),
-      attackMode:
-        combineModes([
-          mode,
-          rollMode({
-            roller: casterConditions,
-            target: t.conditions,
-            kind: 'attack',
-            melee,
-            rollerType: attackerType(live),
-          }),
-          // A chip that the target's own spell left on the caster (Chill
-          // Touch on an undead caster) slants the roll.
-          sourceSlant(casterConditions, t.id),
-        ]) ?? 'normal',
-      // A helpless target turns a melee spell hit into a critical one, the
-      // same rule a weapon swing follows.
-      autoCrit: autoCrits(t.conditions, { melee }),
-    }));
-  }
-
-  const result = castSpell(caster, resolved, {
-    slotLevel,
-    casterLevel: caster.level ?? 1,
-    targets: castTargets,
-    spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
-    saveDC,
-    spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
-    attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
-    ritual: asRitual,
-    ...(values['resist-type'] ? { resistPick: values['resist-type'] } : {}),
-    ...(free ? { free: { slotLevel } } : {}),
-    ...(invocation?.oncePerRest && !invocation.free ? { granted: true, pool: 'pact' } : {}),
-    // The caster's feat riders join its chips for the projectile rolls. The
-    // mode folds above keep the plain chip lists on both sides, because the
-    // condition-effect table matches entries by name, and a feat that shares
-    // a condition's name must not slant a roll.
-    casterConditions: riderSources(live),
-    rng,
-  });
-  if (!result.ok) {
-    // A dialog opened with only the ritual box submits with no slot to
-    // spend. Unticking the ritual box is the one way to reach 'no-slot' from here.
-    app.toasts.show(
-      result.reason === 'no-slot'
-        ? `No level ${spell.level}+ slot left for ${spell.name}.`
-        : `Can't cast ${spell.name}.`,
-      { level: 'error' },
-    );
-    return;
-  }
-  if (result.truncated > 0) {
-    app.toasts.show(
-      `${spell.name} reaches ${result.targets.length} at level ${result.slotLevel}; ` +
-        `${result.truncated} dropped.`,
-    );
-  }
-
-  // The code writes the spent slot, the consumed component, and the started
-  // concentration back to the caster before it applies effects. This
-  // prevents any of them from lingering if effect application throws an
-  // error. Each change threads onto the same value and stores once:
-  // `withCasterState` splices the decremented slot pools onto the real
-  // entity, a stack of the material comes off the inventory, and the
-  // concentration state and its chip land beside them.
-  // Holding the material is not the same as spending it. A costed component
-  // must be in hand and stays there.
-  const consumed = enforce && material.consumes && material.item ? material.item : null;
-  // A repeat keeps the concentration of the first cast. Starting it again would
-  // end the spell that the repeat belongs to.
-  const holds = spell.concentration && !free?.repeat;
-  // A once-per-rest invocation is spent until the next long rest.
-  const used = invocation?.oncePerRest ? invocation.invocation.id : null;
-  // A fresh cast of a spell with an open repeat closes the old repeat, so the
-  // new cast opens its own at its own slot level and on its own targets.
-  const stale = !!spell.repeat && !free?.repeat && heldRepeat(live, spell.id) !== null;
-  /** @type {import('../types/entities.js').ConcentrationState | null} */
-  let displaced = null;
-  if (result.spent || consumed || holds || used || stale) {
-    let next = result.spent ? withCasterState(live, result.caster) : live;
-    if (stale) next = dropRepeat(next, spell.id);
-    // Only a Character reaches here with an inventory. `materialCheck`
-    // already requires one.
-    if (consumed) {
-      next = removeItem(
-        /** @type {import('../types/entities.js').Character} */ (next),
-        consumed.id,
-        1,
-      );
-    }
-    if (holds) {
-      const started = beginConcentration(
-        /** @type {import('../types/entities.js').Character} */ (next),
-        spell,
-        result.slotLevel,
-      );
-      next = started.character;
-      displaced = started.dropped;
-    }
-    if (used) {
-      next = markInvocationUsed(
-        /** @type {import('../types/entities.js').Character} */ (next),
-        used,
-      );
-    }
-    writeBack(next);
-    app.actions.markDirty();
-  }
-  if (consumed) {
-    app.actions.logEvent(
-      'note',
-      formatInventoryEvent(caster.name, { verb: 'use', itemName: consumed.name, count: 1 }),
-    );
-  }
-  // The clock counts watches, not minutes. The log states a ritual's extra
-  // ten minutes for the GM to adjudicate, rather than advancing the clock.
-  // A cast at will names no level, because it spends no slot.
-  const at = result.ritual
-    ? ' as a ritual (10 minutes longer)'
-    : result.slotLevel > 0 && !(free && !free.repeat)
-      ? ` at level ${result.slotLevel}`
-      : '';
-  const via = invocation ? ` (${invocation.invocation.name})` : '';
-  app.actions.logEvent(
-    'combat',
-    free?.repeat
-      ? `${caster.name} repeats ${spell.name}.`
-      : `${caster.name} casts ${spell.name}${at}${via}.`,
-  );
-  // A caster holds one spell open at a time, so starting this spell ended
-  // the previous effect. The table needs to know this rules consequence.
-  // The creatures the displaced spell held go free before this cast's own
-  // outcomes land, including when the caster recasts the same spell on someone new.
-  if (displaced) {
-    app.actions.logEvent(
-      'combat',
-      `${caster.name} stops concentrating on ${displaced.spellName} to hold ${spell.name}.`,
-    );
-    endSpellEffects(app, entity.id, displaced.spellId);
-  }
-
-  // A one-shot chip ends on the attack roll, before the outcomes land, so a
-  // new Guiding Bolt chip from this cast stays on its target.
-  if (resolved.effect.kind === 'attack') {
-    for (const t of result.targets) {
-      if (!t.id) continue;
-      spendOnceChips(app, entity.id, t.id, {
-        roller: casterConditions,
-        target: targetConditions(app, t.id),
-        rollerType: attackerType(live),
+  // The rest of the cast rolls against the final targets, after any Redirect
+  // Attack below has swapped one of them for an ally.
+  const rest = () => {
+    // The caster view carries no conditions, so the chips come off the real
+    // combatant. A Bless on the caster rides its spell attack rolls, and a
+    // Blinded on it slants them.
+    const casterConditions = live.conditions ?? [];
+    // The GM's dialog choice and the chips on the table are two sources of the
+    // same slant, so they fold together under the cancel rule. Neither one
+    // overrides the other.
+    let castTargets = chosen;
+    // An attack's dialog mode slants the attack roll, so a save that its hit
+    // brings rolls with only the target's own slant.
+    const saveMode = resolved.effect.kind === 'save' ? mode : 'normal';
+    if (saveAbility) {
+      castTargets = chosen.map((t) => {
+        // A target's untrained armor slants its STR or DEX save. The slant
+        // folds in with the target's chips, so an advantage chip cancels it.
+        const outcome = saveOutcome(
+          t.conditions,
+          saveAbility,
+          t.armorPenalty ? ['disadvantage'] : [],
+        );
+        return {
+          ...t,
+          // Every live target carries a derived bonus. A target the roster lost
+          // while the dialog sat open carries none and saves on the flat die.
+          saveBonus: t.saveBonus ?? 0,
+          saveMode: combineModes([saveMode, outcome.mode]) ?? 'normal',
+          ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
+        };
       });
     }
-  }
-  /** @param {typeof result} landed */
-  const finish = (landed) => {
-    applyOutcomes(app, resolved, landed, entity.id, { tracked: holds });
-    // The chip for a later repeat lands last. The sweep of a displaced spell
-    // above would take it off again, because it names this spell too.
-    if (!free?.repeat) openRepeat(app, spell, landed, entity.id);
-    notePush(app, spell, live, landed);
+    // A spell with an HP limit or an HP pool reads each target's HP as it is
+    // now. A pool also passes over a target by its chips (an Unconscious one),
+    // so it reads those as they are now too.
+    const effect = resolved.effect;
+    if (effect.kind === 'save' && (effect.hpLimit !== undefined || effect.hpPool)) {
+      castTargets = castTargets.map((t) => {
+        const found = findCombatant(app, t.id);
+        const hp = found ? hpOf(found.kind, found.entity) : null;
+        return {
+          ...t,
+          ...(hp ? { hp: hp.current } : {}),
+          ...(found && effect.hpPool ? { conditions: found.entity.conditions } : {}),
+        };
+      });
+    }
+    // The type rules of a spell read each target's creature type and condition
+    // immunities, as the roster keeps them now.
+    if ((effect.kind === 'save' || effect.kind === 'heal') && effect.typeRules) {
+      castTargets = castTargets.map((t) => {
+        return { ...t, ...castTypeFieldsOf(app, t.id) };
+      });
+    }
+    if (resolved.effect.kind === 'attack') {
+      // A melee spell attack says so. Otherwise a touch spell reaches as far as
+      // a melee weapon does, which is the split Prone needs, and every other
+      // range is a ranged attack.
+      const melee = resolved.effect.melee ?? /touch/i.test(spell.range ?? '');
+      castTargets = castTargets.map((t) => ({
+        ...t,
+        // A hit can leave a chip on targets of one type only (Chill Touch on
+        // undead), so each target states its type.
+        ...castTypeFieldsOf(app, t.id),
+        attackMode:
+          combineModes([
+            mode,
+            rollMode({
+              roller: casterConditions,
+              target: t.conditions,
+              kind: 'attack',
+              melee,
+              rollerType: attackerType(live),
+            }),
+            // A chip that the target's own spell left on the caster (Chill
+            // Touch on an undead caster) slants the roll.
+            sourceSlant(casterConditions, t.id),
+          ]) ?? 'normal',
+        // A helpless target turns a melee spell hit into a critical one, the
+        // same rule a weapon swing follows.
+        autoCrit: autoCrits(t.conditions, { melee }),
+      }));
+    }
+
+    const result = castSpell(caster, resolved, {
+      slotLevel,
+      casterLevel: caster.level ?? 1,
+      targets: castTargets,
+      spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
+      saveDC,
+      spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
+      attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
+      ritual: asRitual,
+      ...(values['resist-type'] ? { resistPick: values['resist-type'] } : {}),
+      ...(free ? { free: { slotLevel } } : {}),
+      ...(invocation?.oncePerRest && !invocation.free ? { granted: true, pool: 'pact' } : {}),
+      // The caster's feat riders join its chips for the projectile rolls. The
+      // mode folds above keep the plain chip lists on both sides, because the
+      // condition-effect table matches entries by name, and a feat that shares
+      // a condition's name must not slant a roll.
+      casterConditions: riderSources(live),
+      rng,
+    });
+    if (!result.ok) {
+      // A dialog opened with only the ritual box submits with no slot to
+      // spend. Unticking the ritual box is the one way to reach 'no-slot' from here.
+      app.toasts.show(
+        result.reason === 'no-slot'
+          ? `No level ${spell.level}+ slot left for ${spell.name}.`
+          : `Can't cast ${spell.name}.`,
+        { level: 'error' },
+      );
+      return;
+    }
+    if (result.truncated > 0) {
+      app.toasts.show(
+        `${spell.name} reaches ${result.targets.length} at level ${result.slotLevel}; ` +
+          `${result.truncated} dropped.`,
+      );
+    }
+
+    // The code writes the spent slot, the consumed component, and the started
+    // concentration back to the caster before it applies effects. This
+    // prevents any of them from lingering if effect application throws an
+    // error. Each change threads onto the same value and stores once:
+    // `withCasterState` splices the decremented slot pools onto the real
+    // entity, a stack of the material comes off the inventory, and the
+    // concentration state and its chip land beside them.
+    // Holding the material is not the same as spending it. A costed component
+    // must be in hand and stays there.
+    const consumed = enforce && material.consumes && material.item ? material.item : null;
+    // A repeat keeps the concentration of the first cast. Starting it again would
+    // end the spell that the repeat belongs to.
+    const holds = spell.concentration && !free?.repeat;
+    // A once-per-rest invocation is spent until the next long rest.
+    const used = invocation?.oncePerRest ? invocation.invocation.id : null;
+    // A fresh cast of a spell with an open repeat closes the old repeat, so the
+    // new cast opens its own at its own slot level and on its own targets.
+    const stale = !!spell.repeat && !free?.repeat && heldRepeat(live, spell.id) !== null;
+    /** @type {import('../types/entities.js').ConcentrationState | null} */
+    let displaced = null;
+    if (result.spent || consumed || holds || used || stale) {
+      let next = result.spent ? withCasterState(live, result.caster) : live;
+      if (stale) next = dropRepeat(next, spell.id);
+      // Only a Character reaches here with an inventory. `materialCheck`
+      // already requires one.
+      if (consumed) {
+        next = removeItem(
+          /** @type {import('../types/entities.js').Character} */ (next),
+          consumed.id,
+          1,
+        );
+      }
+      if (holds) {
+        const started = beginConcentration(
+          /** @type {import('../types/entities.js').Character} */ (next),
+          spell,
+          result.slotLevel,
+        );
+        next = started.character;
+        displaced = started.dropped;
+      }
+      if (used) {
+        next = markInvocationUsed(
+          /** @type {import('../types/entities.js').Character} */ (next),
+          used,
+        );
+      }
+      writeBack(next);
+      app.actions.markDirty();
+    }
+    if (consumed) {
+      app.actions.logEvent(
+        'note',
+        formatInventoryEvent(caster.name, { verb: 'use', itemName: consumed.name, count: 1 }),
+      );
+    }
+    // The clock counts watches, not minutes. The log states a ritual's extra
+    // ten minutes for the GM to adjudicate, rather than advancing the clock.
+    // A cast at will names no level, because it spends no slot.
+    const at = result.ritual
+      ? ' as a ritual (10 minutes longer)'
+      : result.slotLevel > 0 && !(free && !free.repeat)
+        ? ` at level ${result.slotLevel}`
+        : '';
+    const via = invocation ? ` (${invocation.invocation.name})` : '';
+    app.actions.logEvent(
+      'combat',
+      free?.repeat
+        ? `${caster.name} repeats ${spell.name}.`
+        : `${caster.name} casts ${spell.name}${at}${via}.`,
+    );
+    // A caster holds one spell open at a time, so starting this spell ended
+    // the previous effect. The table needs to know this rules consequence.
+    // The creatures the displaced spell held go free before this cast's own
+    // outcomes land, including when the caster recasts the same spell on someone new.
+    if (displaced) {
+      app.actions.logEvent(
+        'combat',
+        `${caster.name} stops concentrating on ${displaced.spellName} to hold ${spell.name}.`,
+      );
+      endSpellEffects(app, entity.id, displaced.spellId);
+    }
+
+    // A one-shot chip ends on the attack roll, before the outcomes land, so a
+    // new Guiding Bolt chip from this cast stays on its target.
+    if (resolved.effect.kind === 'attack') {
+      for (const t of result.targets) {
+        if (!t.id) continue;
+        spendOnceChips(app, entity.id, t.id, {
+          roller: casterConditions,
+          target: targetConditions(app, t.id),
+          rollerType: attackerType(live),
+        });
+      }
+    }
+    /** @param {typeof result} landed */
+    const finish = (landed) => {
+      applyOutcomes(app, resolved, landed, entity.id, { tracked: holds });
+      // The chip for a later repeat lands last. The sweep of a displaced spell
+      // above would take it off again, because it names this spell too.
+      if (!free?.repeat) openRepeat(app, spell, landed, entity.id);
+      notePush(app, spell, live, landed);
+    };
+    // A target that can raise its AC with a reaction (Shield) gets the chance
+    // after the attack rolls and before its damage lands. A target that can
+    // resist the damage with a reaction (Absorb Elements) gets its chance
+    // next, on the damage that remains. With neither, the cast finishes here,
+    // without waiting.
+    /** @param {typeof result} checked */
+    const guard = (checked) => {
+      const guarding = wardSpellDamage(app, resolved, checked, entity.id, { ask });
+      return guarding ? guarding.then(finish) : finish(checked);
+    };
+    const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
+    if (warding) return warding.then(guard);
+    return guard(result);
   };
-  // A target that can raise its AC with a reaction (Shield) gets the chance
-  // after the attack rolls and before its damage lands. A target that can
-  // resist the damage with a reaction (Absorb Elements) gets its chance
-  // next, on the damage that remains. With neither, the cast finishes here,
-  // without waiting.
-  /** @param {typeof result} checked */
-  const guard = (checked) => {
-    const guarding = wardSpellDamage(app, resolved, checked, entity.id, { ask });
-    return guarding ? guarding.then(finish) : finish(checked);
-  };
-  const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
-  if (warding) return warding.then(guard);
-  return guard(result);
+  // An attack spell aimed at a creature with Redirect Attack asks first, after
+  // the cast pays and before the attack roll (see `redirectWard.js`).
+  const redirecting =
+    resolved.effect.kind === 'attack'
+      ? redirectSpellTargets(app, resolved.name, chosen, entity.id, targets, { prompt })
+      : null;
+  if (!redirecting) return rest();
+  return redirecting.then((next) => {
+    chosen = next;
+    return rest();
+  });
 }
 
 /**

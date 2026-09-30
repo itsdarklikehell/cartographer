@@ -143,7 +143,11 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   // Pack Tactics is the GM's call in the dialog, and it adds one advantage
   // slant that folds in with the rest.
   const packSlant = tweaks.pack ? 'advantage' : null;
-  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced, packSlant]);
+  // The weak swing of a Multiattack, such as the second scimitar attack of a
+  // goblin boss, adds one disadvantage slant.
+  const weakSlant = tweaks.weak ? 'disadvantage' : null;
+  const mode =
+    picked ?? rollMode(conditionQuery, [longSlant, wearSlant, sourced, packSlant, weakSlant]);
   // Cover is the GM's call in the dialog, and it raises the AC of this one
   // swing. Nothing on the map says who stands behind what, so no rule here
   // could work it out.
@@ -211,6 +215,7 @@ export function attackLine(setup, roll) {
     longSlant && !picked ? 'long range disadvantage' : '',
     wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
     tweaks.pack && !picked ? 'Pack Tactics advantage' : '',
+    tweaks.weak && !picked ? 'Multiattack disadvantage' : '',
   ]
     .filter(Boolean)
     .join(', ');

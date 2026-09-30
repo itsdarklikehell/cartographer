@@ -7,7 +7,7 @@ import {
 } from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
-import { SWINGS, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
+import { SWINGS, isWeakSwing, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
 import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponSwing.js';
 import { skipsTurn } from '../combat/CombatView.js';
 import {
@@ -23,6 +23,7 @@ import { hitSaveLine, hitSaveOf } from '../combat/HitSave.js';
 import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
 import { offerDamageWard, pendingDamageWard } from './damageWard.js';
+import { offerRedirect, pendingRedirect } from './redirectWard.js';
 import { attackDialog } from './attackFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -100,10 +101,15 @@ export function liveAttackSides(app, participant, defenderId) {
  * reaction ready that raises its AC, such as Shield (see `shieldWard.js`).
  * A yes casts the spell, and the roll is checked again against the new AC.
  *
+ * An attack on a creature with Redirect Attack pauses after the swing pays
+ * and before the roll, and the GM can make one of its allies the target
+ * (see `redirectWard.js`).
+ *
  * The attack roll goes through the dice tray, which owns its own randomness.
  * `rng` is the source for the damage roll and for the rider dice, injected
  * the way the pure modules take theirs. `ask` puts the question of the
- * defender's reaction, and a test passes its own answer.
+ * defender's reaction, `prompt` asks which ally becomes the target of a
+ * redirected attack, and a test passes its own answers.
  * @param {AppContext} app
  * @param {{
  *   attacker: any,
@@ -112,14 +118,18 @@ export function liveAttackSides(app, participant, defenderId) {
  *   tweaks?: AttackTweaks,
  *   rng?: () => number,
  *   ask?: import('./shieldWard.js').WardAsk,
+ *   prompt?: typeof promptModal,
  * }} attack
  * @returns {void | Promise<void>} a promise when the defender's reaction
  *   paused the attack, which settles once the attack has landed
  */
 export function rollWeaponAttack(
   app,
-  { attacker, defender, weapon, tweaks = {}, rng = Math.random, ask },
+  { attacker, defender, weapon, tweaks: picked = {}, rng = Math.random, ask, prompt },
 ) {
+  // The weak swing of a Multiattack reads the budget before this swing pays.
+  const self = app.state.combat?.order.find((p) => p.id === attacker.id);
+  const tweaks = { ...picked, weak: isWeakSwing(attacker, self, picked) };
   // The swing pays first, so a turn with nothing left rolls no dice. A main-hand
   // swing spends the Attack action and banks whatever Extra Attack adds, and
   // each later swing draws on that bank. An off-hand swing spends the bonus
@@ -146,6 +156,34 @@ export function rollWeaponAttack(
       return;
     }
   }
+  // A defender with Redirect Attack can swap places with an ally once the
+  // attack targets it, before the roll. The whole swing then rolls against
+  // the ally.
+  const attack = { attacker, weapon, tweaks, rng, ask, swing };
+  const redirect = pendingRedirect(app, defender.id, attacker.id);
+  if (!redirect) return swingAt(app, { ...attack, defender });
+  const message = `${attacker.name} attacks ${defender.name} with ${weapon.name}.`;
+  return offerRedirect(app, redirect, message, { prompt }).then((ally) =>
+    swingAt(app, { ...attack, defender: ally ?? defender }),
+  );
+}
+
+/**
+ * Roll one paid swing against its final defender, then log and apply what
+ * it did. `rollWeaponAttack` describes the steps.
+ * @param {AppContext} app
+ * @param {{
+ *   attacker: any,
+ *   defender: CombatTarget,
+ *   weapon: import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon,
+ *   tweaks: AttackTweaks,
+ *   rng: () => number,
+ *   ask?: import('./shieldWard.js').WardAsk,
+ *   swing: (typeof SWINGS)[keyof typeof SWINGS],
+ * }} attack
+ * @returns {void | Promise<void>}
+ */
+function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
   const setup = prepareSwing({ attacker, defender, weapon, tweaks, rng });
   const { ac, autoCrit, rider } = setup;
   const { result } = app.actions.rollDice(
@@ -322,6 +360,7 @@ export async function weaponAttack(
       defender: live.defender,
       weapon,
       tweaks,
+      prompt,
     });
   }
 }

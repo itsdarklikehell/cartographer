@@ -361,6 +361,10 @@ test('the wolves bite with DEX at the SRD +4, and the camp around Snagtooth rate
 
   assert.deepEqual(creature('camp-bugbear').surpriseAttack, { count: 2, sides: 6 });
   const boss = creature('snagtooth');
+  assert.equal(boss.multiattack, 2);
+  assert.equal(boss.multiattackDisadvantage, 2);
+  assert.equal(boss.redirectAttack, true);
+  assert.doesNotMatch(boss.notes ?? '', /disadvantage|use his reaction/);
   const camp = ['camp-bugbear', 'camp-goblin1', 'camp-goblin2'].map(creature);
   for (const guard of camp) assert.deepEqual(guard.location, boss.location, guard.id);
   assert.match(difficultyLine(campaign.characters, [boss, ...camp]), /^Medium: 1000 XP/);

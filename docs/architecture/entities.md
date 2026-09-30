@@ -288,6 +288,13 @@ paths spread `attackTraitFields`, so an older save loads with one swing.
 `swingsPerAction` takes the higher of `Features.attacksPerAction` and the
 Multiattack count, and the combat code asks it in place of
 `attacksPerAction`.
+An optional `multiattackDisadvantage` names the swing of the Multiattack that
+rolls with disadvantage, counted from 1. `coerceWeakSwing` drops a number
+below 1 or past the last swing, and a creature with no Multiattack stores no
+key. A `redirectAttack` flag stores only `true` and marks the reaction that
+makes an ally the target of an attack (see the Redirect Attack pause in
+[Combat](combat.md)). It is not an attack trait, but `attackTraitFields`
+cleans it, so the creature, template, and library paths all copy it.
 A `packTactics` flag stores only `true`. A `surpriseAttack` stores a dice count and a
 die size (d4 to d12), and `coerceSurpriseAttack` drops any other value. A creature weapon can store an
 `onHitSave` of an ability, a DC, and a condition, which `combat/HitSave.js`

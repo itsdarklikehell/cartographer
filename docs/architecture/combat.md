@@ -465,6 +465,33 @@ A fight that ends while the question is open does not stop the damage, on
 either path. The cast of the reaction still goes ahead on a yes, and the
 damage then lands the same way it lands outside a fight.
 
+### The Redirect Attack pause
+
+A creature with `redirectAttack`, such as a goblin boss, can spend its
+reaction when an attack targets it. It swaps places with an ally, and the
+ally becomes the target. The 5e trait of a goblin boss asks for another
+goblin within 5 feet, and the fight tracks no positions, so
+`src/app/redirectWard.js` offers every ally on the creature's side that is
+not down, and the GM judges who qualifies from the notes. `pendingRedirect`
+needs a running fight, a defender that can act and still has its reaction,
+and a viewer who may act for it (`mayActOn`), so a Player tab never pauses
+on a foe. `offerRedirect` opens a dialog with the allies and a choice to
+stay the target. A pick spends the reaction, logs the swap, and returns the
+ally.
+
+The question comes after the attack pays and before the attack roll.
+`rollWeaponAttack` asks once the swing has spent its budget, and then
+`swingAt` rolls the whole swing against the ally: its AC, cover, the chip
+slants, the damage, its defenses, the on-hit save, and the Shield and
+damage reaction pauses. With the Multiattack box ticked, each swing asks
+again, so only the first swing can redirect, because the redirect spends
+the reaction. `resolveCast` asks through `redirectSpellTargets` for an
+attack spell, after the cast pays and before `castSpell` rolls. It asks for
+each target in order and swaps a redirected target for the ally. The ally
+comes from the plan's own target list when it is there, so it keeps the
+fields that the spell reads. A save spell does not offer the redirect,
+because it makes no attack roll.
+
 ### Weapon options in the attack dialog
 
 `src/combat/AttackOptions.js` decides which per-swing options a weapon
@@ -545,6 +572,18 @@ through `applyConditionToTarget`, which checks condition immunity.
 A creature with `multiattack` gets a ticked Multiattack box while its Attack
 action is unspent. `weaponAttack` then calls `rollWeaponAttack` once for each
 swing, and it reads both sides again through `liveAttackSides` before each
+swing.
+
+A creature can mark one swing of its Multiattack with
+`multiattackDisadvantage`, counted from 1, and `CreatureAttacks.coerceWeakSwing`
+drops a number past the last swing. `rollWeaponAttack` asks
+`AttackTweaks.isWeakSwing` before the swing pays. It reads the swing number
+from the participant's budget: an unspent Attack action makes it swing 1, and
+each banked swing that the creature has used adds one. The answer goes in as
+`tweaks.weak`, and `prepareSwing` adds one disadvantage slant, so an
+advantage chip still cancels it. The attack line names
+`Multiattack disadvantage`, unless the GM picked a mode. A swing with the
+free-action box ticked spends no budget, so each such swing reads as swing 1.
 
 A creature with `surpriseAttack` adds its dice on a hit. `rollWeaponAttack`
 asks `CreatureAttacks.surpriseDiceFor`, which gives the dice only in round 1

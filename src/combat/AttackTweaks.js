@@ -1,4 +1,5 @@
-import { attacksAvailable, canSpend } from './ActionBudget.js';
+import { attacksAvailable, budgetOf, canSpend } from './ActionBudget.js';
+import { coerceMultiattack } from '../entities/CreatureAttacks.js';
 
 /**
  * The answers of the weapon attack dialog, read into the overrides that one
@@ -25,8 +26,9 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  * nothing here reads a barrel on the map or where the rogue is standing.
  * `pack` is Pack Tactics: an ally stands next to the defender, so the swing
  * rolls with advantage. The GM ticks it for the same reason.
- * `surprise` is the Surprise Attack dice of the attacker. The attack code
- * sets it from the fight, never from the dialog.
+ * `surprise` is the Surprise Attack dice of the attacker, and `weak` marks
+ * the swing of a Multiattack that rolls with disadvantage. The attack code
+ * sets both from the fight, never from the dialog.
  * Every field defaults to nothing, so a plain Enter in the dialog rolls the
  * unmodified attack.
  * @typedef {{
@@ -41,6 +43,7 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  *   sneak?: boolean,
  *   pack?: boolean,
  *   surprise?: import("../types/creature.js").SurpriseAttack | null,
+ *   weak?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -146,4 +149,25 @@ export function readAttackTweaks(values) {
     damageDie: /** @type {import('../types/dice.js').DieType} */ (values['dmg-die']),
     damageFlat: Number(values['dmg-flat']) || 0,
   };
+}
+
+/**
+ * Whether this swing is the one of the attacker's Multiattack that rolls with
+ * disadvantage (`multiattackDisadvantage`). Only a main-hand swing counts.
+ * The swing number comes from the participant's budget before the swing
+ * pays. An unspent Attack action makes it swing 1, and each banked swing
+ * that the creature has used moves it on by one. A swing outside a fight has
+ * no budget and reads as swing 1.
+ * @param {any} attacker
+ * @param {import('../types/combat.js').Participant | null | undefined} participant
+ * @param {AttackTweaks} tweaks
+ * @returns {boolean}
+ */
+export function isWeakSwing(attacker, participant, tweaks) {
+  const weak = attacker?.multiattackDisadvantage;
+  const count = coerceMultiattack(attacker?.multiattack);
+  if (!weak || !count || swingKind(tweaks) !== 'main') return false;
+  const used = budgetOf(participant?.used);
+  const swing = used.action && used.attacksLeft > 0 ? count - used.attacksLeft + 1 : 1;
+  return swing === weak;
 }

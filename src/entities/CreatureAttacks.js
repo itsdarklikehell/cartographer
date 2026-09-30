@@ -33,16 +33,35 @@ export function coerceMultiattack(value) {
 }
 
 /**
+ * Read which swing of a Multiattack rolls with disadvantage. The swing
+ * counts from 1 and has to fall inside the Multiattack, so a creature with
+ * no Multiattack, or a number past its last swing, reads as none.
+ * @param {unknown} value
+ * @param {number | undefined} multiattack the coerced Multiattack count
+ * @returns {number | undefined}
+ */
+export function coerceWeakSwing(value, multiattack) {
+  const swing = Math.floor(Number(value));
+  if (!multiattack || !(swing >= 1) || swing > multiattack) return undefined;
+  return swing;
+}
+
+/**
  * The attack trait fields to spread into a creature or a template. A creature
- * with no trait stores no key.
- * @param {{ multiattack?: unknown, packTactics?: unknown, surpriseAttack?: unknown } | undefined} value
- * @returns {{ multiattack?: number, packTactics?: true, surpriseAttack?: import('../types/creature.js').SurpriseAttack }}
+ * with no trait stores no key. Redirect Attack is a reaction to an attack rather
+ * than an attack, but it sits here so that every path that copies the attack
+ * traits copies it too.
+ * @param {{ multiattack?: unknown, packTactics?: unknown, surpriseAttack?: unknown, multiattackDisadvantage?: unknown, redirectAttack?: unknown } | undefined} value
+ * @returns {{ multiattack?: number, packTactics?: true, surpriseAttack?: import('../types/creature.js').SurpriseAttack, multiattackDisadvantage?: number, redirectAttack?: true }}
  */
 export function attackTraitFields(value) {
   const multiattack = coerceMultiattack(value?.multiattack);
   const surprise = coerceSurpriseAttack(value?.surpriseAttack);
+  const weak = coerceWeakSwing(value?.multiattackDisadvantage, multiattack);
   return {
     ...(multiattack ? { multiattack } : {}),
+    ...(weak ? { multiattackDisadvantage: weak } : {}),
+    ...(value?.redirectAttack === true ? { redirectAttack: /** @type {const} */ (true) } : {}),
     ...(value?.packTactics === true ? { packTactics: /** @type {const} */ (true) } : {}),
     ...(surprise ? { surpriseAttack: surprise } : {}),
   };

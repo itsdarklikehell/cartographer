@@ -137,6 +137,15 @@ export interface Creature extends HPBuffFields {
   /** Extra damage dice on a hit against a surprised target in round 1.
    * Absent means none. */
   surpriseAttack?: SurpriseAttack;
+  /** The swing of its Multiattack that rolls with disadvantage, counted
+   * from 1, such as 2 for the second scimitar attack of a goblin boss.
+   * Absent means none. See `entities/CreatureAttacks.js`. */
+  multiattackDisadvantage?: number;
+  /** True for a creature that can use its reaction to make an ally in the
+   * fight the target of an attack aimed at it, as the Redirect Attack of a
+   * goblin boss does.
+   * Absent means none. See `app/redirectWard.js`. */
+  redirectAttack?: boolean;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -189,6 +198,8 @@ export interface CreatureTemplate {
   multiattack?: number;
   packTactics?: boolean;
   surpriseAttack?: SurpriseAttack;
+  multiattackDisadvantage?: number;
+  redirectAttack?: boolean;
   role?: string;
   notes?: string;
   class?: string;

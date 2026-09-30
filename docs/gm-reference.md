@@ -986,6 +986,8 @@ Build mode, from Play mode, and from the tile menu.
 | Weapon | None (unarmed) | A weapon from the library |
 | Armor | None (unarmored) | Armor from the library |
 | Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
+| Multiattack: attack with disadvantage | Blank (none) | The swing of the Multiattack that rolls with disadvantage, such as 2 for the second attack. Blank, or a number past the last swing, stores none |
+| Redirect Attack (reaction: an ally becomes the target) | Off | When an attack targets the creature, the app offers to make an ally the target instead. See [Redirect Attack](#redirect-attack) |
 | Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
 | Surprise Attack: dice, Surprise Attack: die | Blank, d6 | Extra damage dice on a hit against a surprised target in round 1. Blank stores none |
 | On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |
@@ -1284,10 +1286,10 @@ of these conditions are true:
 The row has one button per melee weapon for an opportunity attack. It also
 has one button per spell that casts as a reaction, such as Shield.
 
-Apart from a hit on a Shield caster (see below), the app does not watch
-for a trigger. It tracks no distance between tokens, so it cannot see a
-creature leave the reach of another. You call the
-trigger at the table and press the button.
+Apart from a hit on a Shield caster or an attack on a creature with
+Redirect Attack (see below), the app does not watch for a trigger. It
+tracks no distance between tokens, so it cannot see a creature leave the
+reach of another. You call the trigger at the table and press the button.
 
 An opportunity attack rolls like a normal swing and keeps its ability bonus
 on damage. It spends the reaction, and the log marks it "opportunity
@@ -1340,6 +1342,26 @@ casts Shield has no reaction left, so it gets no second dialog. If the
 fight ends while a dialog is open, your answer still counts and the damage
 still lands.
 
+### Redirect Attack
+
+A creature with Redirect Attack, such as a goblin boss, can use its reaction
+when an attack targets it. It swaps places with an ally, and the ally
+becomes the target. A goblin boss can pick only another goblin within 5
+feet, and its notes say so. The app tracks no positions, so before the
+attack roll a **Redirect Attack** dialog lists every ally of the creature
+in the fight that is not down. Pick an ally that qualifies, or pick the
+creature itself to stay the target, and press **Confirm**. **Cancel** also
+keeps the creature as the target.
+
+The dialog opens for a weapon attack and for an attack spell, such as Fire
+Bolt, but not for a save spell. It opens only while the creature has its
+reaction and can act, and only in the GM tab. When a player attacks the
+creature from a Player tab, the attack does not pause. A redirect spends
+the reaction, and the log names the swap. The attack roll then uses the AC
+of the ally, and the damage, the resistances, and any save that the attack
+forces apply to the ally. When **Multiattack** is ticked, only the first
+swing can redirect, because the redirect spends the reaction.
+
 ### Cover and Sneak Attack
 
 You decide both of these in the attack dialog. The app tracks no distance
@@ -1372,7 +1394,7 @@ combatant. So a rogue that spent the dice on its own swing can spend them
 again on an opportunity attack, which is the 5e reading of once per turn. A
 miss leaves the box, because Sneak Attack applies only on a hit.
 
-### Pack Tactics, on-hit saves, and Surprise Attack
+### Pack Tactics, on-hit saves, Surprise Attack, and Multiattack
 
 A creature with Pack Tactics has advantage when an ally of the creature
 stands within 5 feet of the target. The app tracks no positions, so tick the
@@ -1391,6 +1413,13 @@ target is still surprised, which lasts until the end of the first turn of
 the target. The app applies the dice without a box. They take the damage
 type of the weapon, a critical hit doubles them, and the damage line of the
 log names them.
+
+A creature can have one attack of its Multiattack that rolls with
+disadvantage, such as the second scimitar attack of a goblin boss. The app
+counts the swings of the Attack action and adds the disadvantage to that
+swing, and the attack line of the log names `Multiattack disadvantage`. An
+advantage chip cancels it, and a roll mode that you pick in the dialog
+replaces it.
 
 ### Damage riders on hits
 
