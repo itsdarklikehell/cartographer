@@ -134,3 +134,14 @@ test('every river town gets a watermill, and three towns in five get a graveyard
     assert.ok(rate > 0.5 && rate < 0.72, `size ${size}: graveyards ${rate}`);
   }
 });
+
+test('a generated town places no burned building', () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const arts = planTown(40, mulberry32(seed)).buildings.map((b) => b.art);
+    assert.deepEqual(
+      arts.filter((a) => a.startsWith('burned-')),
+      [],
+      `seed ${seed}`,
+    );
+  }
+});

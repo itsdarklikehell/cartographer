@@ -134,7 +134,8 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   const TOWN = ['house', 'cottage', 'market', 'well', 'fountain',
     'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables',
     'windmill', 'watermill', 'burned-house', 'burned-windmill',
-    'burned-town-hall', 'burned-guildhall'];
+    'burned-town-hall', 'burned-guildhall', 'burned-cottage', 'burned-market',
+    'burned-bakery', 'burned-warehouse', 'burned-stables', 'burned-watermill'];
   document.getElementById('town').innerHTML = TOWN.map((b) => img(`town/${b}`)).join('');
 
   // A 14x8 block of grass split by two crossing streets. Each building is a

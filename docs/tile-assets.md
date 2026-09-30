@@ -191,10 +191,10 @@ The single-image markers (`MARKER_TYPES`) are `settlement`, `dungeon`,
 
 The `burned-` and `ruined-` markers show a building after an attack. Each
 one uses the footprint, palette, and stroke widths of its intact marker, so
-a GM can swap the intact tile for the destroyed one in the same place. The
-town buildings `burned-house`, `burned-town-hall`, `burned-guildhall`, and
-`burned-windmill` follow the same rule. For a destroyed temple, use
-`ruins`.
+a GM can swap the intact tile for the destroyed one in the same place.
+Each town building except `well` and `fountain` has a `burned-` version
+that follows the same rule. `burned-market` shows a square after looters
+have wrecked and burned the stalls. For a destroyed temple, use `ruins`.
 
 Each marker sits on the standard grass background, `#5a9b4a`, with the
 usual mottle ellipses and a dirt clearing under the building. For this
@@ -218,9 +218,11 @@ would remove this limit. The catalog has no such set.
 ## Town pieces
 
 `town/` contains the town buildings (`TOWN_BUILDINGS`): `house`,
-`burned-house`, `cottage`, `market`, `well`, `fountain`, `town-hall`,
-`burned-town-hall`, `guildhall`, `burned-guildhall`, `bakery`, `warehouse`,
-`stables`, `windmill`, `burned-windmill`, and `watermill`. The town
+`burned-house`, `cottage`, `burned-cottage`, `market`, `burned-market`,
+`well`, `fountain`, `town-hall`, `burned-town-hall`, `guildhall`,
+`burned-guildhall`, `bakery`, `burned-bakery`, `warehouse`,
+`burned-warehouse`, `stables`, `burned-stables`, `windmill`,
+`burned-windmill`, `watermill`, and `burned-watermill`. The town
 generator places only the intact buildings. Each building is a marker on
 the grass background. Its art stretches over a 2x2 block, and the town
 generator paints it at span 2.
@@ -345,7 +347,7 @@ A tile exists for the app only when its family table names it.
 | `COAST_KINDS` | `TileCatalog.js` | The twelve shoreline pieces |
 | `DOCK_KINDS` | `TileCatalog.js` | The ten pier, pier head, and quay pieces |
 | `MARKER_TYPES` | `TileCatalog.js` | The 34 single-image POI markers |
-| `TOWN_BUILDINGS` | `TileCatalog.js` | The 16 span-2 town buildings |
+| `TOWN_BUILDINGS` | `TileCatalog.js` | The 22 span-2 town buildings |
 | `TOWN_WALL_KINDS` | `TileKinds.js` | The ten town wall, gate, and water gate pieces, each with its rule meaning |
 | `INTERIOR_KINDS` | `TileKinds.js` | The 23 interior pieces, each with its rule meaning |
 | `FURNISHING_KINDS` | `TileKinds.js` | The 12 furnishings, each with its rule meaning |

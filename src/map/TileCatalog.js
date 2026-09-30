@@ -250,7 +250,9 @@ const TOWN_BUILDINGS = [
   'house',
   'burned-house',
   'cottage',
+  'burned-cottage',
   'market',
+  'burned-market',
   'well',
   'fountain',
   'town-hall',
@@ -258,11 +260,15 @@ const TOWN_BUILDINGS = [
   'guildhall',
   'burned-guildhall',
   'bakery',
+  'burned-bakery',
   'warehouse',
+  'burned-warehouse',
   'stables',
+  'burned-stables',
   'windmill',
   'burned-windmill',
   'watermill',
+  'burned-watermill',
 ];
 
 /**

@@ -262,6 +262,12 @@ test('TilePalette ships with span-2 town buildings and town wall pieces', () => 
     'burned-windmill',
     'burned-town-hall',
     'burned-guildhall',
+    'burned-cottage',
+    'burned-market',
+    'burned-bakery',
+    'burned-warehouse',
+    'burned-stables',
+    'burned-watermill',
   ]) {
     assert.equal(palette.get(type)?.imageRef, `assets/tiles/town/${type}.svg`);
   }
