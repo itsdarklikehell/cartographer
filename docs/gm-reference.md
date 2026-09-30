@@ -1104,10 +1104,10 @@ numbers it. The log and the stored name keep the plain name.
 | --- | --- |
 | Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
 | Roll initiative | Rolls for every row at once |
-| Who sneaks | Picks the side that sneaks for the Stealth contest: **No one**, **The party**, or **The foes**. See [Stealth contest](#stealth-contest) |
-| Roll Stealth | Rolls a Dexterity (Stealth) check for each row of the sneaking side. It shows only when a side sneaks |
+| Who sneaks | Picks who sneaks for the Stealth contest: **No one**, **The party**, **The foes**, or **Both sides**. See [Stealth contest](#stealth-contest) |
+| Roll Stealth | Rolls a Dexterity (Stealth) check for each row of each sneaking side. It shows only when a side sneaks |
 | Stealth total | The Stealth total of a sneaker row. Roll Stealth fills it, and you can type your own value |
-| PP | The passive Perception of a watcher row |
+| PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
 | Parley | Closes the dialog with no fight, and logs a line such as "The party settles the encounter with Goblin Scout 1 and Goblin Scout 2 without a fight." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
@@ -1134,7 +1134,8 @@ overrule a spent pip, press it to mark it free.
 The contest is optional. With **Who sneaks** at **No one**, the dialog
 shows no Stealth controls. Pick the side that sneaks, and each row of that
 side shows a Stealth total. Each row of the other side shows its passive
-Perception (PP).
+Perception (PP). Pick **Both sides** when each side tries to sneak up on
+the other. Then every row shows a Stealth total and its PP.
 
 **Roll Stealth** rolls d20 plus the Stealth bonus for each sneaker. A
 character uses its sheet bonus, and a creature uses its stat block. The
@@ -1152,11 +1153,15 @@ notices no one, and it clears the box on each watcher that notices. The
 boxes of the sneaking side do not change. The outcome line under the picker
 names every total and each surprised combatant.
 
+With **Both sides**, the app runs one contest for each side. The foes'
+passive Perception is compared with the party's totals, and the party's
+passive Perception with the foes' totals. A sneaker still watches the other
+side, because surprise is decided for each creature, so a sneaker can be
+surprised too. Each side has its own outcome line.
+
 You can change any **Surprised** box after the contest. When you press
-Start combat, the travelogue records the outcome line, such as "The party
+Start combat, the travelogue records each outcome line, such as "The party
 sneaks (Stealth Ayla 16, Bren 11). Goblin 1 and Goblin 2 are surprised."
-The contest covers one sneaking side at a time. If both sides sneak, run
-the check for the second side yourself and tick its boxes by hand.
 
 ### Parley
 

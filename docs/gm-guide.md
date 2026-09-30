@@ -448,7 +448,7 @@ still open stays until you end the fight. To bring the foes back, click
    the foes. A friendly or neutral creature on the tile of the party joins
    the party.
    - If one side sneaks up on the other, set **Who sneaks** to that side,
-     and click **Roll Stealth** or type each Stealth total. The app ticks
+     or to **Both sides** when each side sneaks, and click **Roll Stealth** or type each Stealth total. The app ticks
      **Surprised** on each watcher whose passive Perception notices no one.
      See [Stealth contest](gm-reference.md#stealth-contest).
    - If the party talks its way out, click **Parley** instead. No fight

@@ -6,6 +6,8 @@ import {
   parleyLine,
   passivePerceptionOf,
   rollStealth,
+  sideContests,
+  sneakingSides,
   stealthContest,
   stealthLine,
 } from '../src/combat/Stealth.js';
@@ -95,4 +97,48 @@ test('rollStealth and passivePerceptionOf read a creature from its stat block', 
   );
   assert.equal(passivePerceptionOf(wolf, 'creature'), 11);
   assert.equal(passivePerceptionOf(createCharacter('c', 'C', { WIS: 8 }), 'character'), 9);
+});
+
+test('sneakingSides lists the sides for each picker choice, party first', () => {
+  assert.deepEqual(sneakingSides(''), []);
+  assert.deepEqual(sneakingSides('party'), ['party']);
+  assert.deepEqual(sneakingSides('foe'), ['foe']);
+  assert.deepEqual(sneakingSides('both'), ['party', 'foe']);
+});
+
+test('sideContests runs one contest per sneaking side, and a sneaker still watches', () => {
+  const rows = [
+    { id: 'ayla', side: /** @type {const} */ ('party'), total: 16, passive: 12 },
+    { id: 'bren', side: /** @type {const} */ ('party'), total: null, passive: 15 },
+    { id: 'gob', side: /** @type {const} */ ('foe'), total: 13, passive: 10 },
+    { id: 'wolf', side: /** @type {const} */ ('foe'), total: 11, passive: 17 },
+  ];
+  assert.deepEqual(sideContests(rows, 'both'), [
+    { side: 'party', surprised: ['gob'], noticed: ['wolf'], rolled: [{ id: 'ayla', total: 16 }] },
+    {
+      side: 'foe',
+      surprised: [],
+      noticed: ['ayla', 'bren'],
+      rolled: [
+        { id: 'gob', total: 13 },
+        { id: 'wolf', total: 11 },
+      ],
+    },
+  ]);
+  assert.deepEqual(
+    sideContests(rows, 'foe').map((r) => r.side),
+    ['foe'],
+  );
+  assert.deepEqual(sideContests(rows, ''), []);
+});
+
+test('sideContests with no totals on a side decides nothing for it', () => {
+  const rows = [
+    { id: 'a', side: /** @type {const} */ ('party'), total: null, passive: 10 },
+    { id: 'g', side: /** @type {const} */ ('foe'), total: 20, passive: 10 },
+  ];
+  assert.deepEqual(sideContests(rows, 'both'), [
+    { side: 'party', surprised: [], noticed: [], rolled: [] },
+    { side: 'foe', surprised: ['a'], noticed: [], rolled: [{ id: 'g', total: 20 }] },
+  ]);
 });

@@ -1,4 +1,4 @@
-import { stealthContest, stealthLine } from '../combat/Stealth.js';
+import { sideContests, sneakingSides, stealthLine } from '../combat/Stealth.js';
 import { setTip } from './Tooltip.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
@@ -16,13 +16,14 @@ import { labeled, numberField, select } from './formFields.js';
 
 /**
  * The optional Stealth contest of the combat setup dialog. A picker names the
- * side that sneaks. Each row of that side then shows a Stealth total, which
- * Roll Stealth fills and the GM can type over. Each row of the other side
- * shows its passive Perception. Every change to a total runs the contest
- * again. The contest ticks the Surprised box of each watcher that notices no
- * one and clears it on each watcher that notices, and the outcome line under
- * the picker says who is surprised. The GM can still change any Surprised box
- * by hand afterward.
+ * side that sneaks, or both sides. Each row of a sneaking side shows a Stealth
+ * total, which Roll Stealth fills and the GM can type over. Each row that
+ * watches a sneaking side shows its passive Perception. When both sides sneak,
+ * every row shows both. Every change to a total runs the contests again. Each
+ * contest ticks the Surprised box of each watcher that notices no one and
+ * clears it on each watcher that notices, and one outcome line per sneaking
+ * side under the picker says who is surprised. The GM can still change any
+ * Surprised box by hand afterward.
  * @param {Participant[]} roster
  * @param {(participant: Participant) => { name: string, side: Side }} describe
  * @param {Map<string, HTMLInputElement>} surprised the Surprised box of each row
@@ -35,6 +36,8 @@ export function stealthStep(roster, describe, surprised, hooks) {
   const cells = new Map();
   /** @type {Map<string, HTMLElement>} */
   const passives = new Map();
+  /** @type {Map<string, HTMLElement>} */
+  const groups = new Map();
   /** @type {Map<string, number>} */
   const passiveOf = new Map();
   const side = select(
@@ -42,54 +45,62 @@ export function stealthStep(roster, describe, surprised, hooks) {
       { value: '', label: 'No one' },
       { value: 'party', label: 'The party' },
       { value: 'foe', label: 'The foes' },
+      { value: 'both', label: 'Both sides' },
     ],
     '',
   );
-  const outcome = el('p', 'combat-setup__stealth-outcome u-muted');
+  const outcome = el('div', 'combat-setup__stealth-outcome u-muted');
   outcome.setAttribute('aria-live', 'polite');
-  let line = '';
+  /** @type {string[]} */
+  let lines = [];
 
-  const sneaking = () => /** @type {Side | ''} */ (side.value);
+  const choice = () => /** @type {Side | 'both' | ''} */ (side.value);
+  const sneaks = (/** @type {Participant} */ p) =>
+    sneakingSides(choice()).includes(describe(p).side);
   const valueOf = (/** @type {Participant} */ p) => {
     const raw = totals.get(p.id)?.value ?? '';
     return raw === '' || Number.isNaN(Number(raw)) ? null : Number(raw);
   };
 
-  // Show a total on each sneaker row and a passive score on each watcher row,
-  // or neither when no one sneaks.
+  // Show a total on each sneaker row and a passive score on each row that
+  // watches a sneaking side. A row can show both, or neither when no one
+  // sneaks.
   const layout = () => {
-    const by = sneaking();
+    const sides = sneakingSides(choice());
     for (const p of roster) {
-      const mine = describe(p).side === by;
-      /** @type {HTMLElement} */ (cells.get(p.id)).hidden = by === '' || !mine;
-      /** @type {HTMLElement} */ (passives.get(p.id)).hidden = by === '' || mine;
+      const own = describe(p).side;
+      /** @type {HTMLElement} */ (cells.get(p.id)).hidden = !sides.includes(own);
+      /** @type {HTMLElement} */ (passives.get(p.id)).hidden = !sides.some((s) => s !== own);
+      /** @type {HTMLElement} */ (groups.get(p.id)).hidden = sides.length === 0;
     }
-    roll.hidden = by === '';
+    roll.hidden = sides.length === 0;
   };
 
   const judge = () => {
-    const by = sneaking();
-    const sneakers = roster.filter((p) => describe(p).side === by);
-    const watchers = roster.filter((p) => by !== '' && describe(p).side !== by);
-    const result = stealthContest(
-      sneakers.map((p) => ({ id: p.id, total: valueOf(p) })),
-      watchers.map((p) => ({ id: p.id, passive: /** @type {number} */ (passiveOf.get(p.id)) })),
+    const results = sideContests(
+      roster.map((p) => ({
+        id: p.id,
+        side: describe(p).side,
+        total: valueOf(p),
+        passive: /** @type {number} */ (passiveOf.get(p.id)),
+      })),
+      choice(),
     );
-    for (const id of result.surprised) setBox(id, true);
-    for (const id of result.noticed) setBox(id, false);
-    const rolled = sneakers.flatMap((p) => {
-      const total = valueOf(p);
-      return total === null ? [] : [{ name: describe(p).name, total }];
-    });
-    line =
-      by === '' || rolled.length === 0
-        ? ''
-        : stealthLine(
-            by,
-            rolled,
-            result.surprised.map((id) => describe(byId(id)).name),
-          );
-    outcome.textContent = line;
+    const nameOf = (/** @type {string} */ id) => describe(byId(id)).name;
+    lines = [];
+    for (const result of results) {
+      for (const id of result.surprised) setBox(id, true);
+      for (const id of result.noticed) setBox(id, false);
+      if (result.rolled.length === 0) continue;
+      lines.push(
+        stealthLine(
+          result.side,
+          result.rolled.map((r) => ({ name: nameOf(r.id), total: r.total })),
+          result.surprised.map(nameOf),
+        ),
+      );
+    }
+    outcome.replaceChildren(...lines.map((line) => el('p', '', line)));
   };
 
   const byId = (/** @type {string} */ id) =>
@@ -102,7 +113,7 @@ export function stealthStep(roster, describe, surprised, hooks) {
   const roll = textButton(
     'Roll Stealth',
     () => {
-      for (const p of roster.filter((q) => describe(q).side === sneaking())) {
+      for (const p of roster.filter(sneaks)) {
         /** @type {HTMLInputElement} */ (totals.get(p.id)).value = String(hooks.rollStealth(p));
       }
       judge();
@@ -122,10 +133,11 @@ export function stealthStep(roster, describe, surprised, hooks) {
       outcome,
     ),
     /**
-     * The Stealth total and passive Perception cells of one row. Only one of
-     * them shows at a time.
+     * The Stealth total and passive Perception cells of one row, in one
+     * group that wraps below the row on a narrow screen. Either, both, or
+     * neither show, to match the picker.
      * @param {Participant} participant
-     * @returns {HTMLElement[]}
+     * @returns {HTMLElement}
      */
     cells(participant) {
       const name = describe(participant).name;
@@ -148,13 +160,15 @@ export function stealthStep(roster, describe, surprised, hooks) {
       const passive = hooks.passivePerception(participant);
       passiveOf.set(participant.id, passive);
       const shown = el('span', 'combat-setup__passive u-muted', `PP ${passive}`);
-      setTip(shown, 'Passive Perception, compared with each Stealth total');
+      setTip(shown, 'Passive Perception, compared with each Stealth total of the other side');
       passives.set(participant.id, shown);
-      return [cell, shown];
+      const group = el('span', 'combat-setup__sneak u-row u-g2', cell, shown);
+      groups.set(participant.id, group);
+      return group;
     },
     /** Hide the cells to match the picker. Call once the rows exist. */
     layout,
-    /** The outcome line of the contest, or '' when none ran. */
-    line: () => line,
+    /** The outcome line of each contest that ran, party first. */
+    lines: () => lines,
   };
 }

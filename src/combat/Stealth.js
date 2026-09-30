@@ -1,12 +1,15 @@
 /**
  * The Stealth contest before a fight, and the log lines of the setup dialog.
  *
- * One side sneaks. Each sneaker rolls Dexterity (Stealth), and the GM can type
- * a total in place of the roll. Each creature on the other side compares its
- * passive Perception with those totals. It notices the threat when its passive
- * score beats at least one total. A watcher that notices no sneaker is
- * surprised. A sneaker with no total yet takes no part, so the GM can fill the
- * rows one at a time.
+ * The party, the foes, or both sides can sneak. Each sneaker rolls Dexterity
+ * (Stealth), and the GM can type a total in place of the roll. Each creature
+ * on the other side compares its passive Perception with those totals. It
+ * notices the threat when its passive score beats at least one total. A
+ * watcher that notices no sneaker is surprised. When both sides sneak, each
+ * side runs its own contest. A sneaker still watches the other side, because
+ * in 5e surprise is decided per creature, so a sneaker can be surprised too.
+ * A sneaker with no total yet takes no part, so the GM can fill the rows one
+ * at a time.
  */
 
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
@@ -32,7 +35,7 @@ export function isSurprised(totals, passive) {
 }
 
 /**
- * Run the contest for one sneaking side.
+ * Run the contest for one sneaking side against the rows of the other side.
  * @param {{ id: string, total: number | null }[]} sneakers
  * @param {{ id: string, passive: number }[]} watchers
  * @returns {{ surprised: string[], noticed: string[] }} watcher ids, in the
@@ -47,6 +50,37 @@ export function stealthContest(sneakers, watchers) {
   const noticed = [];
   for (const w of watchers) (isSurprised(totals, w.passive) ? surprised : noticed).push(w.id);
   return { surprised, noticed };
+}
+
+/**
+ * The sides that sneak for one choice of the setup picker, party first.
+ * @param {Side | 'both' | ''} by
+ * @returns {Side[]}
+ */
+export function sneakingSides(by) {
+  if (by === 'both') return ['party', 'foe'];
+  return by === '' ? [] : [by];
+}
+
+/**
+ * Run one contest for each sneaking side. The sneakers of a side are its
+ * rows, and the watchers are every row of the other side, sneakers included.
+ * @param {{ id: string, side: Side, total: number | null, passive: number }[]} rows
+ * @param {Side | 'both' | ''} by the choice of the setup picker
+ * @returns {{ side: Side, surprised: string[], noticed: string[],
+ *   rolled: { id: string, total: number }[] }[]} one entry per sneaking
+ *   side, party first; `rolled` lists the sneakers that have a total
+ */
+export function sideContests(rows, by) {
+  return sneakingSides(by).map((side) => {
+    const sneakers = rows.filter((r) => r.side === side);
+    const watchers = rows.filter((r) => r.side !== side);
+    return {
+      side,
+      ...stealthContest(sneakers, watchers),
+      rolled: sneakers.flatMap((s) => (s.total === null ? [] : [{ id: s.id, total: s.total }])),
+    };
+  });
 }
 
 /**

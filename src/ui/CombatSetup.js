@@ -22,7 +22,7 @@ import { stealthStep } from './CombatSetupStealth.js';
  * combatant that the other side caught unaware.
  *
  * With `stealth` hooks, an optional Stealth contest above the rows ticks the
- * Surprised boxes (see CombatSetupStealth.js), and Start passes its outcome
+ * Surprised boxes (see CombatSetupStealth.js), and Start passes each outcome
  * line to `onStealth`. With `onParley`, a Parley button closes the dialog
  * with no fight. The dialog then calls `onParley` and resolves to null.
  *
@@ -112,12 +112,12 @@ export function combatSetupModal(roster, callbacks = {}) {
         body.push(
           el(
             'div',
-            `initiative-panel__row u-row u-g2 initiative-panel__row--${view.side}`,
+            `initiative-panel__row combat-setup__row u-row u-g2 initiative-panel__row--${view.side}`,
             el('span', 'initiative-panel__name', view.name),
             modifier,
             input,
             surprise.label,
-            ...(stealth?.cells(participant) ?? []),
+            ...(stealth ? [stealth.cells(participant)] : []),
           ),
         );
       }
@@ -175,8 +175,7 @@ export function combatSetupModal(roster, callbacks = {}) {
     result: (returnValue) => {
       if (returnValue === 'parley') callbacks.onParley?.();
       if (returnValue !== 'start') return null;
-      const contest = stealth?.line();
-      if (contest) callbacks.onStealth?.(contest);
+      for (const line of stealth?.lines() ?? []) callbacks.onStealth?.(line);
       // A row the GM neither rolled nor typed still shows the placeholder of
       // 10 plus the modifier. Start rolls those rows, and logs them the same
       // way a press of Roll initiative does.
