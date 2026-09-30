@@ -22,45 +22,11 @@ import { MAX_TARGET_COUNT } from '../entities/SpellNormalize.js';
 import { activeCreatures } from '../library/Library.js';
 import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';
-import { RIDER_ROLLS, DEFAULT_RIDER_DIE } from '../entities/Riders.js';
-import {
-  CASTING_TIME_KINDS,
-  DURATION_KINDS,
-  TIMED_CASTING_KINDS,
-  TIMED_DURATION_KINDS,
-  parseCastingTime,
-  parseDuration,
-} from '../entities/SpellTiming.js';
+import { buildTimingControls, setCaption } from './SpellFormTiming.js';
+import { buildRiderControls } from './SpellFormRider.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
-
-/** How each casting-time kind reads in the picker. A counted kind also serves
- * as the caption over the amount field beside it. @type {Record<string, string>} */
-const CASTING_TIME_LABELS = {
-  action: 'Action',
-  bonus: 'Bonus action',
-  reaction: 'Reaction',
-  minutes: 'Minutes',
-  hours: 'Hours',
-  special: 'Special',
-};
-
-/** The same map for durations. @type {Record<string, string>} */
-const DURATION_LABELS = {
-  instantaneous: 'Instantaneous',
-  rounds: 'Rounds',
-  minutes: 'Minutes',
-  hours: 'Hours',
-  days: 'Days',
-  'until-dispelled': 'Until dispelled',
-  special: 'Special',
-};
-
-/** The dice a rider can use. Every rider in the SRD is a d4, and the rest are
- * here so a homebrew spell is not stuck with one. The normalizer accepts any
- * die; this is only what the picker offers. */
-const RIDER_DICE = ['d4', 'd6', 'd8', 'd10', 'd12'];
 
 /** The component letters a spell can require, with their 5e meanings. */
 const COMPONENTS = [
@@ -114,37 +80,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
 
   const rangeInput = textField(spell?.range ?? 'Self', { placeholder: '60 feet' });
-
-  // --- Casting time: a kind, plus whatever fields that kind carries --------
-  const castingTime = parseCastingTime(spell?.castingTime ?? '1 action');
-  const timeKindSelect = select(
-    kindOptions(CASTING_TIME_KINDS, CASTING_TIME_LABELS),
-    castingTime.kind,
-  );
-  const timeAmountInput = numberField(castingTime.amount ?? 1, {
-    min: 1,
-    className: 'form__number',
-  });
-  const timeAmountField = labeled('Minutes', timeAmountInput);
-  const triggerInput = textField(castingTime.trigger ?? '', {
-    placeholder: 'which you take when ...',
-  });
-  const triggerField = labeled('Reaction to', triggerInput);
-  const timeTextInput = textField(castingTime.text ?? '', { placeholder: 'as written' });
-  const timeTextField = labeled('Casting time text', timeTextInput);
-
-  // --- Duration: the same shape, plus the "up to" distinction --------------
-  const duration = parseDuration(spell?.duration ?? 'Instantaneous');
-  const durationKindSelect = select(kindOptions(DURATION_KINDS, DURATION_LABELS), duration.kind);
-  const durationAmountInput = numberField(duration.amount ?? 1, {
-    min: 1,
-    className: 'form__number',
-  });
-  const durationAmountField = labeled('Rounds', durationAmountInput);
-  const upTo = checkbox('Up to', duration.upTo ?? false);
-  setTip(upTo.label, 'The caster may end the spell before the time runs out');
-  const durationTextInput = textField(duration.text ?? '', { placeholder: 'as written' });
-  const durationTextField = labeled('Duration text', durationTextInput);
+  const timing = buildTimingControls(spell);
 
   const componentChecks = COMPONENTS.map(({ letter, title }) => {
     const check = checkbox(letter, spell?.components.includes(letter) ?? false);
@@ -190,8 +126,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // --- Effect section: swaps controls by kind -----------------------------
   const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
   const saveEffect = spell?.effect.kind === 'save' ? spell.effect : null;
-  // The two kinds that put a chip on a creature. Both carry a condition name
-  // and a rider, so both fill the same two controls.
+  // The two kinds that put a chip on a creature. Both keep a condition name,
+  // so both fill the same condition picker.
   const chipEffect =
     spell?.effect.kind === 'save' || spell?.effect.kind === 'buff' ? spell.effect : null;
   const abilitySelect = select([...SPELL_ABILITIES], saveEffect?.saveAbility ?? 'DEX');
@@ -234,6 +170,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const onHit = buildOnHitControls(spell);
   const hp = buildHPControls(spell);
   const buff = buildBuffControls(spell);
+  const rider = buildRiderControls(spell);
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
@@ -243,29 +180,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   const abilityField = labeled('Save', abilitySelect);
   const conditionField = labeled('Condition', conditionSelect);
-
-  // --- Rider: what the imposed chip adds to the target's later rolls -------
-  const storedRider = chipEffect?.rider ?? null;
-  const riderDiceInput = numberField(storedRider?.dice ?? 0, {
-    className: 'form__number',
-  });
-  setTip(riderDiceInput, 'Negative for a penalty die, as with Bane');
-  const riderDiceField = labeled('Rider dice', riderDiceInput);
-  const riderDieSelect = select([...RIDER_DICE], storedRider?.die ?? DEFAULT_RIDER_DIE);
-  const riderDieField = labeled('Die', riderDieSelect);
-  const riderFlatInput = numberField(storedRider?.flat ?? 0, {
-    className: 'form__number',
-  });
-  const riderFlatField = labeled('Flat', riderFlatInput);
-  const riderRollChecks = RIDER_ROLLS.map((roll) =>
-    checkbox(roll, storedRider?.rolls.includes(roll) ?? false),
-  );
-  const riderRollsField = labeled(
-    'Applies to',
-    el('div', 'u-row u-wrap u-g2', ...riderRollChecks.map((c) => c.label)),
-  );
-  const riderOnce = checkbox('One roll only', storedRider?.once === true);
-  setTip(riderOnce.label, 'The first roll the rider changes uses up the chip, as with Guidance');
 
   // --- Projectiles: several separately-rolled attacks from one cast -------
   const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
@@ -344,19 +258,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
   const levelsPerStepField = labeled('Levels per step', levelsPerStepInput);
 
-  const castingRow = fieldRow(
-    labeled('Casting time', timeKindSelect),
-    timeAmountField,
-    timeTextField,
-  );
-  const triggerRow = fieldRow(triggerField);
-  const durationRow = fieldRow(
-    labeled('Duration', durationKindSelect),
-    durationAmountField,
-    upTo.label,
-    durationTextField,
-  );
-
   const materialRow = fieldRow(materialField, materialCostField, consumed.label);
 
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
@@ -368,9 +269,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const conditionRow = fieldRow(conditionField);
   const saveEndsRow = fieldRow(saveEnds.label);
   const healTogglesRow = fieldRow(addsModifier.label, revives.label);
-  const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
-  const riderRollsRow = fieldRow(riderRollsField);
-  const riderOnceRow = fieldRow(riderOnce.label);
   const scalingRow = fieldRow(scales.label);
   // Keep the multi-line dice editor and the lone targets number on separate
   // rows. A shared flex row leaves the small number field floating beside the
@@ -389,12 +287,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     conditionRow.hidden = !chips;
     // A repeated save ends a condition, so it shows once a save names one.
     saveEndsRow.hidden = kind !== 'save' || conditionSelect.value === '';
-    // A rider rides a chip. A save keeps one only once it names a condition;
-    // a buff always has a chip to carry it.
-    const rides = chips && (kind === 'buff' || conditionSelect.value !== '');
-    riderRow.hidden = !rides;
-    riderRollsRow.hidden = !rides;
-    riderOnceRow.hidden = !rides;
+    rider.sync(kind, conditionSelect.value !== '');
     // Only an attack fires projectiles. Their count fields matter only once
     // the attack does.
     projectilesRow.hidden = kind !== 'attack';
@@ -435,29 +328,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   }
   materialCheck.input.addEventListener('change', syncComponents);
 
-  // Each timing kind shows only what it carries: an amount for a counted
-  // kind, a trigger clause for a reaction, or the original text for `special`.
-  function syncTiming() {
-    const timeKind = timeKindSelect.value;
-    const timed = TIMED_CASTING_KINDS.includes(
-      /** @type {import('../types/spell.js').CastingTime['kind']} */ (timeKind),
-    );
-    timeAmountField.hidden = !timed;
-    if (timed) setCaption(timeAmountField, CASTING_TIME_LABELS[timeKind]);
-    triggerRow.hidden = timeKind !== 'reaction';
-    timeTextField.hidden = timeKind !== 'special';
-
-    const durationKind = durationKindSelect.value;
-    const durationTimed = TIMED_DURATION_KINDS.includes(
-      /** @type {import('../types/spell.js').SpellDuration['kind']} */ (durationKind),
-    );
-    durationAmountField.hidden = !durationTimed;
-    upTo.label.hidden = !durationTimed;
-    if (durationTimed) setCaption(durationAmountField, DURATION_LABELS[durationKind]);
-    durationTextField.hidden = durationKind !== 'special';
-  }
-  timeKindSelect.addEventListener('change', syncTiming);
-  durationKindSelect.addEventListener('change', syncTiming);
   dealsDamage.input.addEventListener('change', syncEffectFields);
   fires.input.addEventListener('change', syncEffectFields);
   conditionSelect.addEventListener('change', syncEffectFields);
@@ -472,30 +342,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   }
   scales.input.addEventListener('change', syncScaling);
 
-  // Both readers hand their raw control values to the parser instead of
-  // validating here. This keeps the form and an imported file in agreement
-  // on what a timing value can hold.
-  /** @returns {import('../types/spell.js').CastingTime} */
-  function readCastingTime() {
-    const kind = timeKindSelect.value;
-    return parseCastingTime({
-      kind,
-      amount: timeAmountInput.value,
-      trigger: triggerInput.value.trim(),
-      text: timeTextInput.value.trim(),
-    });
-  }
-
-  /** @returns {import('../types/spell.js').SpellDuration} */
-  function readDuration() {
-    return parseDuration({
-      kind: durationKindSelect.value,
-      amount: durationAmountInput.value,
-      upTo: upTo.input.checked,
-      text: durationTextInput.value.trim(),
-    });
-  }
-
   // Reading the controls is this file's job. Deciding what the values mean is
   // SpellDraft's job. The whole submitted form gathers as plain values and
   // hands over in one piece.
@@ -507,8 +353,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       level: levelSelect.value,
       school: schoolSelect.value,
       classes: classChecks.filter((c) => c.input.checked).map((c) => c.input.value),
-      castingTime: readCastingTime(),
-      duration: readDuration(),
+      ...timing.read(),
       range: rangeInput.value,
       components: COMPONENTS.filter((_, i) => componentChecks[i].input.checked).map(
         (c) => c.letter,
@@ -534,13 +379,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         revives: revives.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
-        rider: {
-          rolls: RIDER_ROLLS.filter((_, i) => riderRollChecks[i].input.checked),
-          dice: riderDiceInput.value,
-          die: riderDieSelect.value,
-          flat: riderFlatInput.value,
-          once: riderOnce.input.checked,
-        },
+        rider: rider.read(),
         fires: fires.input.checked,
         projectiles: {
           count: shotCountInput.value,
@@ -573,9 +412,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     rows: [
       fieldRow(labeled('Level', levelSelect), labeled('School', schoolSelect)),
       classesField,
-      castingRow,
-      triggerRow,
-      durationRow,
+      timing.rows.casting,
+      timing.rows.trigger,
+      timing.rows.duration,
       fieldRow(labeled('Range', rangeInput), componentsField),
       materialRow,
       fieldRow(targetCountField),
@@ -603,9 +442,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       buff.rows.hp,
       buff.rows.temp,
       buff.rows.turn,
-      riderRow,
-      riderRollsRow,
-      riderOnceRow,
+      rider.rows.dice,
+      rider.rows.rolls,
+      rider.rows.once,
       damageField,
       healField,
       healTogglesRow,
@@ -628,26 +467,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
 
   syncEffectFields();
-  syncTiming();
   syncScaling();
   syncComponents();
   return form;
-}
-
-/** The kind picker's options: each kind paired with its human label.
- * @param {readonly string[]} kinds
- * @param {Record<string, string>} labels
- * @returns {{ value: string, label: string }[]} */
-function kindOptions(kinds, labels) {
-  return kinds.map((kind) => ({ value: kind, label: labels[kind] }));
-}
-
-/** Rewrite a captioned field's caption. This lets one amount input name
- * itself 'Minutes' or 'Hours' as the kind beside it changes.
- * @param {HTMLElement} field @param {string} caption */
-function setCaption(field, caption) {
-  const span = field.querySelector('span');
-  if (span) span.textContent = caption;
 }
 
 /** Wrap a set of checkbox labels into a group: inline by default, or a
