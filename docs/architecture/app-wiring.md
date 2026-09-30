@@ -639,7 +639,7 @@ functions in `src/combat/`, which have the unit tests:
 
 #### Target caps
 
-The spell decides how many creatures a cast can name. `Casting.maxTargets`
+The spell decides how many creatures a cast can name. `CastScaling.maxTargets`
 reads the spell's `targetCount` value. An absent value means one target,
 plus one target for each scaling step. A `targetCount` of 0 marks an area
 spell with no cap.

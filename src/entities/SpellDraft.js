@@ -3,7 +3,7 @@ import {
   normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
-} from './Casting.js';
+} from './SpellNormalize.js';
 import { normalizeRider } from './Riders.js';
 import {
   attackExtras,

@@ -34,7 +34,7 @@ export interface CastPlan {
   ritualOnly?: boolean;
   sourceClass: string | undefined;
   dc: number;
-  material: ReturnType<typeof import('../entities/Casting.js').materialCheck>;
+  material: ReturnType<typeof import('../entities/MaterialCheck.js').materialCheck>;
   armor: string[];
   actionCost?: ActionCost | null;
   actionBlocked?: boolean;

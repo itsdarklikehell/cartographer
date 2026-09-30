@@ -1,5 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
-import { canCast, materialCheck } from '../entities/Casting.js';
+import { canCast } from '../entities/Casting.js';
+import { materialCheck } from '../entities/MaterialCheck.js';
 import { spellSource } from '../entities/Character.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { spellSaveDC, hasRitualCasting } from '../entities/Classes.js';

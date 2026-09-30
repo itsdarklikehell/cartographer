@@ -18,7 +18,7 @@ import {
   select,
   buildInlineForm,
 } from './formFields.js';
-import { MAX_TARGET_COUNT } from '../entities/Casting.js';
+import { MAX_TARGET_COUNT } from '../entities/SpellNormalize.js';
 import { activeCreatures } from '../library/Library.js';
 import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';

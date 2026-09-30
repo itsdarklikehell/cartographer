@@ -1020,7 +1020,8 @@ present, the effect's `damage` is what one projectile deals, not what the
 whole cast deals. An effect without the field rolls once, like every other
 attack spell, so a spell without the field needs no migration.
 
-`entities/Casting.js` owns these rules:
+`entities/CastScaling.js` counts the projectiles, and `entities/Casting.js`
+resolves the cast. These rules apply:
 
 - `projectileCount(effect, steps)` returns `count` plus `perStep` for each
   scaling step. The steps are the same as for damage scaling: each slot level
@@ -1059,7 +1060,7 @@ describes it in `materials: { text, costGP?, consumed }`. Most spells have no
 such block, so the field is optional. Revivify names its diamonds, and Fire
 Bolt has nothing to name.
 
-`Casting.materialCheck(caster, spell)` applies the rule and returns
+`MaterialCheck.materialCheck(caster, spell)` applies the rule and returns
 `{ required, satisfied, item, consumes }`. These fields say whether the caster
 has to hold the material, whether a stack of it is there, which stack it is,
 and whether the cast spends it.
@@ -1644,7 +1645,7 @@ the spellcasting modifier to each hit, which a critical hit does not
 double. `melee` marks a melee spell attack whose range is not Touch, such
 as Spiritual Weapon, so Prone and an automatic critical hit read it as
 melee. `scaling.levelsPerStep` counts one scaling increment per that many
-slot levels, inside `Casting.scalingSteps`, so the damage, the target cap,
+slot levels, inside `CastScaling.scalingSteps`, so the damage, the target cap,
 and the projectile count agree.
 
 ### Repeats
@@ -1733,7 +1734,7 @@ which is the same record that `Condition.source` keeps. One sweep therefore
 ends both the chips and the summons of a spell. A creature that the GM placed
 has no such field.
 
-- `summonCount(effect, steps)`, in `Casting.js`, is the base `count` plus
+- `summonCount(effect, steps)`, in `CastScaling.js`, is the base `count` plus
   `countPerStep` for each scaling step. The spell's `scaling.levelsPerStep`
   sets how many slot levels make one step, so Conjure Animals (count 8,
   `countPerStep` 8, `levelsPerStep` 2) brings 8, 16, 24, or 32 wolves.

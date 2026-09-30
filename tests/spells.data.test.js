@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { DEFAULT_CREATURES } from '../src/data/creatures.js';
-import { maxTargets } from '../src/entities/Casting.js';
+import { maxTargets } from '../src/entities/CastScaling.js';
 import { CLASS_LIST } from '../src/entities/Classes.js';
 import { activeCreatureByName, normalizeLibrary } from '../src/library/Library.js';
 

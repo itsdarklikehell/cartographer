@@ -10,7 +10,7 @@ import {
   normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
-} from '../entities/Casting.js';
+} from '../entities/SpellNormalize.js';
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import { normalizeRider } from '../entities/Riders.js';
 import {

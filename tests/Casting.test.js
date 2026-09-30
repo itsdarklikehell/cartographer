@@ -1,20 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { buffCondition, canCast, castSpell } from '../src/entities/Casting.js';
+import {
+  allocateProjectiles,
+  cantripStep,
+  maxTargets,
+  projectileCount,
+  summonCount,
+} from '../src/entities/CastScaling.js';
+import { materialCheck } from '../src/entities/MaterialCheck.js';
 import {
   MAX_TARGET_COUNT,
-  allocateProjectiles,
-  buffCondition,
-  canCast,
-  cantripStep,
-  castSpell,
-  materialCheck,
-  maxTargets,
   normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
-  projectileCount,
-  summonCount,
-} from '../src/entities/Casting.js';
+} from '../src/entities/SpellNormalize.js';
 import { createResource } from '../src/entities/Resource.js';
 
 /**

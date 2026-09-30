@@ -1,4 +1,4 @@
-import { maxTargets, scalingSteps } from '../entities/Casting.js';
+import { maxTargets, scalingSteps } from '../entities/CastScaling.js';
 import { helps, targetFree, targetLabel } from './spellTargets.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
 

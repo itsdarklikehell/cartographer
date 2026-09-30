@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
-import { scalingSteps, summonCount } from '../src/entities/Casting.js';
+import { scalingSteps, summonCount } from '../src/entities/CastScaling.js';
 import { normalizeLibrary } from '../src/library/Library.js';
 import { assembleEffect } from '../src/entities/SpellDraft.js';
 

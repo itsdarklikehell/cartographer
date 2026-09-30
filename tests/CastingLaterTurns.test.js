@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castSpell, scalingSteps } from '../src/entities/Casting.js';
+import { castSpell } from '../src/entities/Casting.js';
+import { scalingSteps } from '../src/entities/CastScaling.js';
 import { createResource } from '../src/entities/Resource.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
