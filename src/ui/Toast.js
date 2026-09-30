@@ -1,5 +1,6 @@
 import { bareButton } from './buttons.js';
 import { el } from './dom.js';
+import { toastPlace } from '../view/ToastPlace.js';
 
 /** @typedef {'status' | 'error'} ToastLevel */
 /** @typedef {{ level?: ToastLevel }} ToastOptions */
@@ -15,8 +16,12 @@ import { el } from './dom.js';
  * reader was saying. An error stays four times as long, and carries a
  * Dismiss button so a keyboard user can close it early. A click on any
  * toast dismisses it early.
+ *
+ * `anchor` names the element whose right end the stack lines up with when
+ * the first toast of a batch appears. Without it, or while it is out of
+ * view, the stack stays in its CSS place.
  * @param {HTMLElement} container
- * @param {{ duration?: number }} [options]
+ * @param {{ duration?: number, anchor?: () => Element | null }} [options]
  * @returns {{ show: (message: string, options?: ToastOptions) => void }}
  */
 export function mountToasts(container, options = {}) {
@@ -31,11 +36,20 @@ export function mountToasts(container, options = {}) {
   root.append(status, alert);
   container.appendChild(root);
 
+  /** Line the stack up with the anchor, or give it back to the stylesheet. */
+  function placeStack() {
+    const box = options.anchor?.()?.getBoundingClientRect();
+    const place = box ? toastPlace(box, window.innerWidth, window.innerHeight) : null;
+    root.style.top = place ? `${place.top}px` : '';
+    root.style.right = place ? `${place.right}px` : '';
+  }
+
   /**
    * @param {string} message
    * @param {ToastOptions} [opts]
    */
   function show(message, opts = {}) {
+    if (!root.querySelector('.toast')) placeStack();
     const error = opts.level === 'error';
     const toast = el('div', error ? 'toast toast--error' : 'toast', message);
     const dismiss = () => {
