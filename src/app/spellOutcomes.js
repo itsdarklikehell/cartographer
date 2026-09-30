@@ -503,7 +503,12 @@ function applySave(app, spell, result, casterId) {
     // A type that takes the maximum damage says so, because its number is
     // not the rolled one.
     const top = o.maxDamage ? ' (maximum dice)' : '';
-    const takes = `takes ${taken.total} damage${top}${defended}`;
+    // The line names each damage type, the same way a weapon hit does.
+    /** @type {import('../dice/DiceRoller.js').DamageGroup[]} */
+    const groups = o.damage?.byType ?? [];
+    const types = [...new Set(groups.map((g) => g.damageType).filter(Boolean))];
+    const typed = types.length > 0 ? ` ${types.join(' and ')}` : '';
+    const takes = `takes ${taken.total}${typed} damage${top}${defended}`;
     /** @param {string} text */
     const line = (text) =>
       o.noRoll

@@ -4,6 +4,7 @@ import {
   castCap,
   castFields,
   effectiveSlot,
+  rangeText,
   startingSlotLevel,
 } from '../src/app/spellCastFields.js';
 import { prefillTarget } from '../src/app/spellTargets.js';
@@ -264,4 +265,40 @@ test('the components opt-out says when the caster does not carry the component',
   assert.equal(label({ material: true }), 'Ignore components');
   assert.equal(label({ material: true, materialMissing: true }), 'Ignore components (not carried)');
   assert.equal(label({}), undefined);
+});
+
+test('a target caption names the range of the spell', () => {
+  assert.equal(rangeText('60 feet'), 'range 60 feet');
+  assert.equal(rangeText('Touch'), 'touch');
+  assert.equal(rangeText('Self (15-foot cone)'), '', 'a self spell picks no other creature');
+  assert.equal(rangeText(undefined), '');
+  const single = castFields({ ...fireBolt, range: '120 feet' }, targets, [], 13, 1);
+  assert.equal(single.find((f) => f.name === 'target').label, 'Target (range 120 feet)');
+  const touch = castFields({ ...fireBolt, range: 'Touch' }, targets, [], 13, 1);
+  assert.equal(touch.find((f) => f.name === 'target').label, 'Target (touch)');
+  const ray = castFields({ ...scorchingRay, range: '120 feet' }, targets, [2], 13, 3);
+  assert.equal(
+    ray.find((f) => f.name === 'allocation').label,
+    'Targets (3 to allocate, range 120 feet)',
+  );
+});
+
+test('an area or capped group caption adds the range after its count', () => {
+  /** @type {any} */
+  const blast = {
+    id: 'blast',
+    name: 'Blast',
+    level: 1,
+    range: '150 feet',
+    effect: { kind: 'save', ability: 'DEX', damage: [] },
+  };
+  const area = castFields(blast, targets, [1], 13, Infinity);
+  assert.equal(
+    area.find((f) => f.name === 'targets').label,
+    'Targets in the area (range 150 feet)',
+  );
+  const capped = castFields(blast, targets, [1], 13, 2);
+  assert.equal(capped.find((f) => f.name === 'targets').label, 'Targets (up to 2, range 150 feet)');
+  const near = castFields({ ...blast, range: 'Self' }, targets, [1], 13, Infinity);
+  assert.equal(near.find((f) => f.name === 'targets').label, 'Targets in the area');
 });

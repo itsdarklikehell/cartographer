@@ -495,7 +495,7 @@ test('upcasting a projectile spell restates the grid total and its caption', () 
   const form = formStub({ slot: '3' });
   onChange('slot', /** @type {any} */ (form));
   assert.equal(form.totals.allocation, 4, 'the third-level slot fires a fourth ray');
-  assert.equal(form.labels.allocation, 'Targets (4 to allocate)');
+  assert.equal(form.labels.allocation, 'Targets (4 to allocate, range 120 ft)');
 });
 
 test('upcasting a spell that scales its targets raises the target cap', () => {
@@ -517,7 +517,7 @@ test('upcasting a spell that scales its targets raises the target cap', () => {
   const form = formStub({ slot: '2' });
   castChangeHandler(plan)('slot', /** @type {any} */ (form));
   assert.equal(form.maxes.targets, 2);
-  assert.equal(form.labels.targets, 'Targets (up to 2)');
+  assert.equal(form.labels.targets, 'Targets (up to 2, range 120 ft)');
   assert.deepEqual(form.totals, {}, 'a target group has no grid total');
 });
 
@@ -677,7 +677,7 @@ test('a made save logs the roll and no condition', () => {
     // A save spell rolls its damage first, then each target's save against it.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(20)]),
   });
-  assert.match(app.log[1], /Goblin saves DC 14 .* takes 9 damage\.$/, 'half of 18 on a save');
+  assert.match(app.log[1], /Goblin saves DC 14 .* takes 9 fire damage\.$/, 'half of 18 on a save');
   assert.equal(app.state.creatures[0].currentHP, 1);
 });
 
@@ -752,7 +752,7 @@ test('a paralyzed target fails a body save with no roll', () => {
     // Only the damage dice are drawn. A paralyzed target never reaches a d20.
     rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 damage\.$/);
+  assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 fire damage\.$/);
   assert.equal(app.state.creatures[0].currentHP, 0);
 });
 
@@ -776,7 +776,7 @@ test('a restrained target rolls its Dexterity save at disadvantage', () => {
     // have cleared.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(18), d20(2)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\) — takes 18 damage\.$/);
+  assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\) — takes 18 fire damage\.$/);
 });
 
 test('a utility cast logs the spell and says only that it was cast', () => {
@@ -2037,7 +2037,7 @@ test('a saved half comes before the resistance of the target', () => {
     }),
     'mage',
   );
-  assert.match(app.log[0], /takes 2 damage \(resists fire\)\.$/);
+  assert.match(app.log[0], /takes 2 fire damage \(resists fire\)\.$/);
   assert.equal(app.state.creatures[0].currentHP, 28);
 });
 

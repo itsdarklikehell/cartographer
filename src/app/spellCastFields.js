@@ -21,9 +21,27 @@ import { rollsNoSave } from '../entities/SpellFields.js';
 
 /** The allocation grid caption. The app restates it when the slot level
  * changes the number of projectiles a cast fires.
- * @param {number} total @returns {string} */
-function allocationLabel(total) {
-  return `Targets (${total} to allocate)`;
+ * @param {number} total @param {string} [range] @returns {string} */
+function allocationLabel(total, range) {
+  return `Targets (${joinNotes(`${total} to allocate`, rangeText(range))})`;
+}
+
+/**
+ * The range of a spell as it reads in a target caption, so the GM sees how
+ * far the cast reaches while picking who it reaches. A self spell picks no
+ * other creature, and an empty range says nothing, so both give ''.
+ * @param {string | undefined} range for example '60 feet' or 'Touch'
+ * @returns {string} for example 'range 60 feet' or 'touch'
+ */
+export function rangeText(range) {
+  const text = (range ?? '').trim();
+  if (!text || /^self\b/i.test(text)) return '';
+  return /^touch$/i.test(text) ? 'touch' : `range ${text}`;
+}
+
+/** @param {...string} notes @returns {string} the non-empty notes, comma-joined */
+function joinNotes(...notes) {
+  return notes.filter(Boolean).join(', ');
 }
 
 /**
@@ -72,11 +90,14 @@ export function castCap(spell, slotLevel, casterLevel) {
  * The label of the target checkbox group at a cap.
  * @param {Spell['effect']['kind']} kind
  * @param {number} cap
+ * @param {string} [range]
  * @returns {string}
  */
-function targetsLabel(kind, cap) {
+function targetsLabel(kind, cap, range) {
   const noun = helps(kind) ? 'Recipient' : 'Target';
-  return Number.isFinite(cap) ? `${noun}s (up to ${cap})` : `${noun}s in the area`;
+  const reach = rangeText(range);
+  if (!Number.isFinite(cap)) return `${noun}s in the area${reach ? ` (${reach})` : ''}`;
+  return `${noun}s (${joinNotes(`up to ${cap}`, reach)})`;
 }
 
 /**
@@ -171,7 +192,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
     if (projectiles && cap > 1) {
       fields.push({
         name: 'allocation',
-        label: allocationLabel(cap),
+        label: allocationLabel(cap, spell.range),
         type: 'allocation',
         full: true,
         total: cap,
@@ -182,11 +203,17 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
         value: `${options[0].value}:${cap}`,
       });
     } else if (Math.max(cap, maxCap) <= 1) {
-      fields.push({ name: 'target', label: noun, type: 'select', full: true, options });
+      fields.push({
+        name: 'target',
+        label: rangeText(spell.range) ? `${noun} (${rangeText(spell.range)})` : noun,
+        type: 'select',
+        full: true,
+        options,
+      });
     } else {
       fields.push({
         name: 'targets',
-        label: targetsLabel(kind, cap),
+        label: targetsLabel(kind, cap, spell.range),
         type: 'multiselect',
         full: true,
         options,
@@ -314,10 +341,10 @@ export function castChangeHandler(plan) {
     );
     if (group) {
       form.setOptions('targets', group.options ?? [], total);
-      form.setLabel('targets', targetsLabel(spell.effect.kind, total));
+      form.setLabel('targets', targetsLabel(spell.effect.kind, total, spell.range));
       return;
     }
     form.setTotal('allocation', total);
-    form.setLabel('allocation', allocationLabel(total));
+    form.setLabel('allocation', allocationLabel(total, spell.range));
   };
 }

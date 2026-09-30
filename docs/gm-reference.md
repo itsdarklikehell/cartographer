@@ -1548,8 +1548,8 @@ but no actions.
 | --- | --- | --- |
 | Cast at level | A leveled spell | The slot level to spend. Only levels with an unspent slot show |
 | Cast as ritual (10 minutes longer) | A ritual spell, for a Bard, Cleric, Druid, or Wizard | Casts at the spell level and spends no slot. The slot picker hides while the box is ticked |
-| Target or Recipient | A spell with one target | The creature that the spell affects |
-| Targets | A spell with more than one target | Up to the cap of the spell. An upcast spell such as Hold Person reaches one more creature per level |
+| Target or Recipient | A spell with one target | The creature that the spell affects. The caption names the range of the spell, such as "Recipient (range 60 feet)" or "Target (touch)". The app does not check the distance |
+| Targets | A spell with more than one target | Up to the cap of the spell. An upcast spell such as Hold Person reaches one more creature per level. The caption names the range too |
 | Projectile allocation | A spell with several projectiles | How many projectiles go to each target. The total follows the slot level |
 | Resist | A buff with a list of damage types, such as Protection from Energy | The damage type that the chip resists |
 | Attack roll | An attack spell | Normal, Advantage, or Disadvantage |
