@@ -26,15 +26,17 @@ import { chipSlants } from './ChipSlants.js';
  * the attacker.
  *
  * `saves` names the abilities whose saving throws the holder rolls at
- * disadvantage. `autoFailSaves` names the abilities that fail with no roll at
- * all, which is what being unable to move does to a Strength or Dexterity
- * save. `noActions` takes every action away, and `noTurn` takes only the
+ * disadvantage, and `saveAdvantage` names the ones it rolls at advantage.
+ * `autoFailSaves` names the abilities that fail with no roll at all, which
+ * is what being unable to move does to a Strength or Dexterity save.
+ * `noActions` takes every action away, and `noTurn` takes only the
  * turn.
  * @typedef {{
  *   attacks?: Slant,
  *   attacksAgainst?: Slant | { melee: Slant, ranged: Slant },
  *   checks?: Slant,
  *   saves?: string[],
+ *   saveAdvantage?: string[],
  *   autoFailSaves?: string[],
  *   meleeAutoCrit?: boolean,
  *   noActions?: boolean,
@@ -61,8 +63,8 @@ const BODY_SAVES = ['STR', 'DEX'];
 export const CONDITION_EFFECTS = {
   blinded: { attacks: 'disadvantage', attacksAgainst: 'advantage' },
   // The Dodge action leaves this chip until the start of the holder's next
-  // turn. Its advantage on Dexterity saves is not modeled.
-  dodging: { attacksAgainst: 'disadvantage' },
+  // turn.
+  dodging: { attacksAgainst: 'disadvantage', saveAdvantage: ['DEX'] },
   frightened: { attacks: 'disadvantage', checks: 'disadvantage' },
   incapacitated: { noActions: true },
   // Haste leaves this chip when it ends (see `Lethargy.js`). The holder
@@ -193,6 +195,7 @@ function slantsFor({ roller, target, kind, melee = true, ability, rollerType }) 
     if (kind === 'attack') slant = effect.attacks;
     else if (kind === 'check') slant = effect.checks;
     else if (key && effect.saves?.includes(key)) slant = 'disadvantage';
+    else if (key && effect.saveAdvantage?.includes(key)) slant = 'advantage';
     if (slant) found.push({ condition, slant, from: 'roller' });
   }
   // A buff chip such as Haste gives advantage on some saves. It is not a

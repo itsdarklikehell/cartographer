@@ -324,7 +324,8 @@ levels of a character for Cunning Action, and a creature gets the standard
 actions only. `takeTurnAction` spends the cost through `spendBudget`, logs
 the line from `turnActionLine`, and for Dodge puts a Dodging chip on the
 combatant that ends at the start of its next turn. `ConditionEffects.js`
-gives attacks against a Dodging creature disadvantage. An entry with a
+gives attacks against a Dodging creature disadvantage, and its
+`saveAdvantage` entry gives the Dodging creature advantage on DEX saves. An entry with a
 `poolId` checks that the pool has a use left before it spends anything.
 Second Wind then spends the bonus action and heals through `applyToTarget`.
 Action Surge calls the `surgeBudget` action of encounterWiring, which runs

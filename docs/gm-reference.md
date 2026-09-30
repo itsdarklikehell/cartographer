@@ -1168,8 +1168,9 @@ standard action. A button spends the action and writes a log line, such as
 "Ser Aldric takes the Dash action." The app does not move tokens or track
 hidden creatures, so the GM resolves the rest. **Dodge** also puts a
 Dodging chip on the combatant until the start of its next turn, and attack
-rolls against a Dodging creature roll at disadvantage. The app does not
-give the Dodging creature advantage on its Dexterity saves. A Rogue of 2nd
+rolls against a Dodging creature roll at disadvantage. The Dodging
+creature rolls its Dexterity saves at advantage, both for a spell save in
+the cast dialog and for a save from the character sheet. A Rogue of 2nd
 level or higher also gets a **Cunning Action (bonus action)** group with
 Dash, Disengage, and Hide, which spend the bonus action instead. A button
 whose cost the turn already spent shows a toast and does nothing, so press

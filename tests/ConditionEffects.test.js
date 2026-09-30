@@ -96,6 +96,16 @@ test('a Dodging target hinders whoever swings at it, and not its own attacks', (
   assert.equal(rollMode({ roller: chips('Dodging'), kind: 'attack' }), null);
 });
 
+test('a Dodging creature rolls its Dexterity saves at advantage, and no other save', () => {
+  assert.equal(saveOutcome(chips('Dodging'), 'dex').mode, 'advantage');
+  assert.equal(saveOutcome(chips('Dodging'), 'WIS').mode, null);
+  assert.equal(saveOutcome(chips('Dodging', 'Restrained'), 'DEX').mode, 'normal');
+  assert.equal(
+    modeReasons({ roller: chips('Dodging'), kind: 'save', ability: 'DEX' }),
+    'Dodging advantage',
+  );
+});
+
 test('a check reads the roller only', () => {
   assert.equal(rollMode({ roller: chips('Frightened'), kind: 'check' }), 'disadvantage');
   assert.equal(rollMode({ roller: chips('Blinded'), kind: 'check' }), null);

@@ -46,7 +46,8 @@ export const STANDARD_ACTIONS = Object.freeze([
   {
     id: 'dodge',
     name: 'Dodge',
-    effect: 'makes attacks against it roll at disadvantage until its next turn',
+    effect:
+      'makes attacks against it roll at disadvantage and its DEX saves at advantage until its next turn',
   },
   { id: 'help', name: 'Help', effect: 'gives an ally advantage on its next check or attack' },
   { id: 'hide', name: 'Hide', effect: 'rolls Dexterity (Stealth) to hide' },
