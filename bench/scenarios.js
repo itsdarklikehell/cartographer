@@ -246,7 +246,11 @@ export const SCENARIOS = [
       await page.clickText(CONFIRM_BUTTON, 'Roll initiative');
       const confirmed = await page.clickText(CONFIRM_BUTTON, 'Start combat');
       if (!confirmed) return { skipped: 'no Start combat control in the setup dialog' };
-      await page.waitFor("document.querySelector('#combat-screen').children.length > 0");
+      // The screen can have children before its turn ribbon renders, so the
+      // wait is for the Next turn button itself.
+      await page.waitFor(
+        "[...document.querySelectorAll('#combat-screen button')].some((b) => b.textContent.trim() === 'Next turn')",
+      );
       let turns = 0;
       for (let i = 0; i < 20; i++) {
         const advanced = await page.clickText('#combat-screen button', 'Next turn');
