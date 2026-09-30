@@ -39,6 +39,7 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { availableFeats, buildStamp } from '../entities/FeatChoices.js';
 import { featOptions } from '../entities/FeatRequirement.js';
 import { gatherEffectPicks } from './EffectPicks.js';
+import { buildInvocationRows } from './InvocationPicker.js';
 import { activeFeats } from '../library/Library.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
@@ -51,7 +52,8 @@ import { splitList } from '../util/text.js';
  * class list, the pending-level assignment flow (a multiclass character's
  * XP levels wait here until spent), pending ability-score improvements
  * (apply an increase, take a feat, undo the last choice), pending class
- * feature grants with their prompted picks, the GM's expertise grant, the
+ * feature grants with their prompted picks, the warlock's pact boon and
+ * invocations (see InvocationPicker.js), the GM's expertise grant, the
  * unlocked class features, and the hit-dice pools with their short-rest
  * spend. All rule logic lives in the entity modules LevelAssign, LevelUp,
  * FeatureGrants, HitDice, and Proficiencies. This file is DOM wiring over
@@ -413,6 +415,8 @@ export function buildProgressSection(getCharacter, opts) {
       );
     }
   }
+
+  section.append(...buildInvocationRows(getCharacter, opts));
 
   // Expertise doubles a skill proficiency. The Bard and Rogue features grant
   // it through the pending-grant flow above. This row is the GM's hand grant

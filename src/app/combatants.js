@@ -18,6 +18,7 @@ import { immunityTo } from '../entities/ChipMods.js';
 import { applyDefenses, defensesOf } from '../entities/DamageDefenses.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
+import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
@@ -312,8 +313,9 @@ export function weaponsOf(app, id) {
 /**
  * spellsOf gives a combatant's castable spells, resolved from the spellbook
  * ids through the merged library's memoized index. A party character lists
- * its cantrips plus what its classes' known-rule makes castable. A prepared
- * caster's unprepared spells stay off the list. A creature lists its whole
+ * its cantrips plus what its classes' known-rule makes castable, and the
+ * spells its warlock invocations cast, each as the invocations change it. A
+ * prepared caster's unprepared spells stay off the list. A creature lists its whole
  * spellbook, because its authoring dialog marks every picked spell as
  * castable. A non-caster's empty spellbook lists nothing.
  * @param {AppContext} app
@@ -324,8 +326,14 @@ export function spellsOf(app, id) {
   const found = findCombatant(app, id);
   if (!found) return [];
   if (found.kind === 'character') {
-    const book = getSpellbook(found.entity);
-    return resolveSpellIds([...book.cantrips, ...castableLeveledIds(found.entity)]);
+    const character = found.entity;
+    const book = getSpellbook(character);
+    const ids = [
+      ...book.cantrips,
+      ...castableLeveledIds(character),
+      ...invocationSpellIds(character),
+    ];
+    return resolveSpellIds([...new Set(ids)]).map((spell) => invokedSpell(character, spell));
   }
   const book = getSpellbook(found.entity);
   return resolveSpellIds(spellbookIds(book));

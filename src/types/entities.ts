@@ -535,6 +535,13 @@ export interface Character extends HPBuffFields {
   /** Class-feature grants already applied (see FeatureGrants.js). Absent on
    * older saves, which load as none applied. */
   featureChoices?: FeatureChoices;
+  /** The ids of the eldritch invocations a warlock picked (see
+   * Invocations.js). Absent reads as none. */
+  invocations?: string[];
+  /** The once-per-rest invocations spent since the last long rest. */
+  invocationUses?: string[];
+  /** The pact boon a warlock picked at 3rd level. Absent reads as none. */
+  pactBoon?: import('./invocation.js').PactBoon;
   level: number;
   xp: number;
   stats: Record<string, number>;

@@ -1747,6 +1747,59 @@ The app does not enforce these subclass rules, so you enforce them:
   limit in the app.
 - Mage Hand as one of the Arcane Trickster cantrips.
 
+### Eldritch invocations
+
+A warlock picks its eldritch invocations and its pact boon in the
+Progression block. Only the GM can pick either one. The Invocations row
+shows how many invocations the warlock has and how many its level allows.
+Its Choose button lists only the invocations that the warlock qualifies
+for. An invocation qualifies when the warlock level is high enough, the
+warlock knows the cantrip that it names, and the warlock has the pact boon
+that it names. The Pact boon row appears from warlock level 3. The
+Invocation rules list under the rows shows what each picked invocation does.
+
+| Warlock level | Invocations |
+| --- | --- |
+| 2 to 4 | 2 |
+| 5 to 6 | 3 |
+| 7 to 8 | 4 |
+| 9 to 11 | 5 |
+| 12 to 14 | 6 |
+| 15 to 17 | 7 |
+| 18 to 20 | 8 |
+
+| Invocation | Effect in the app |
+| --- | --- |
+| Agonizing Blast | Adds the CHA modifier to the damage of each Eldritch Blast beam that hits |
+| Eldritch Spear | Sets the range of Eldritch Blast to 300 feet |
+| Repelling Blast | Adds a log line for each creature that an Eldritch Blast hits, with how far it can be pushed |
+| An at-will spell, such as Armor of Shadows | The spell casts with no slot, at its own level. An invocation that limits the spell to the warlock offers only the warlock as a target, and one with no material drops the component |
+| A once-per-rest spell, such as Thief of Five Fates | The spell casts with a slot, and then it refuses until a long rest. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
+| Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives |
+| Any other invocation, such as Devil's Sight | Text in the rules list only |
+
+The spells that the invocations cast list on the character sheet and in
+combat. A spell that the spellbook does not have goes in its own
+Invocations group on the sheet. A cast through an invocation uses the
+warlock save DC and attack bonus, and the log names the invocation, as in
+"Wren casts Mage Armor (Armor of Shadows)."
+
+The app does not enforce these invocation rules, so you enforce them:
+
+- The creature types of Chains of Carceri, and its limit of one cast on
+  each creature per long rest.
+- The size limit of Repelling Blast. The board does not move a token by
+  feet, so you move the token.
+- The rituals of Book of Ancient Secrets. The app records the Pact of the
+  Tome, but it has no Book of Shadows.
+- The pact weapon of the Pact of the Blade, and the familiar of the Pact of
+  the Chain, with the invocations that use them.
+- The warlock slot of a once-per-rest cast. The slot picker offers every
+  slot, so a multiclass warlock can spend a slot from another class.
+- An upcast of an at-will spell. An at-will spell always casts at its own
+  level, also when the spellbook has it, so False Life from Fiendish Vigor
+  cannot use a higher slot.
+
 ### Inventory and equipment
 
 The Equipment tab has nine slots: Helmet, Armor, Gloves, Greaves, Main

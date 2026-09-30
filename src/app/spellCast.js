@@ -1,5 +1,5 @@
 import { promptModal } from '../ui/Modal.js';
-import { materialCheck } from '../entities/Casting.js';
+import { canCast, materialCheck } from '../entities/Casting.js';
 import { spellSource } from '../entities/Character.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { spellSaveDC, hasRitualCasting } from '../entities/Classes.js';
@@ -7,6 +7,7 @@ import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster } from '../entities/Caster.js';
 import { isRitualOnly } from '../entities/SpellView.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
+import { invocationCast, invokedSpell } from '../entities/Invocations.js';
 import { replaceById } from '../entities/Roster.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
@@ -99,13 +100,16 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * resolve the same way.
  * A caster from a class with ritual casting is offered the ritual box, which
  * trades the slot for extra time.
+ * A spell that a warlock casts through an invocation reads as the invocation
+ * changes it (see `Invocations.invokedSpell`), and it needs no spellbook entry.
  * @param {AppContext} app
  * @param {any} entity the real combatant that casts the spell
- * @param {Spell} spell
+ * @param {Spell} listed the spell as the spell list offers it
  * @param {import('./combatants.js').CombatTarget[]} offered
  * @returns {CastPlan | CastRefused}
  */
-export function castPlan(app, entity, spell, offered) {
+export function castPlan(app, entity, listed, offered) {
+  const spell = invokedSpell(entity, listed);
   // The pure spell helper functions take a `SpellCaster`: a caster's class,
   // level, stats, resources, and spellbook. This is exactly what `toCaster`
   // returns. The helpers read this view, and the code writes back only to
@@ -123,8 +127,22 @@ export function castPlan(app, entity, spell, offered) {
   if (locked && reachable.length === 0) {
     return { ok: false, message: `${spell.name} has lost its target.` };
   }
+  // An invocation casts its spell at will with no slot, or once per long rest
+  // with a slot. A once-per-rest spell that the spellbook also has casts the
+  // usual way, which keeps the use for later. A spent one with no spellbook
+  // entry refuses until a long rest.
+  let invocation = hold ? null : invocationCast(entity, spell.id);
+  if (invocation?.oncePerRest && canCast(caster, spell)) invocation = null;
+  if (invocation?.spent) {
+    return { ok: false, message: `${invocation.invocation.name} is spent until a long rest.` };
+  }
   /** @type {import('../types/cast.js').CastFree | null} */
-  const free = hold ? { slotLevel: hold.slotLevel, repeat: true } : null;
+  const free = hold
+    ? { slotLevel: hold.slotLevel, repeat: true }
+    : invocation && !invocation.oncePerRest
+      ? { slotLevel: spell.level }
+      : null;
+  const repeat = !!free?.repeat;
   // A summons is only as good as the template it names. The check runs here so
   // a spell whose template was renamed or removed refuses before the dialog
   // opens, which is before a slot is spent.
@@ -185,8 +203,8 @@ export function castPlan(app, entity, spell, offered) {
     spell.level > 0 && !ritualOnly && !free ? castableSlotLevels(caster, spell.level) : [];
   // A multiclass caster's DC and attack bonus use the class the spell was
   // learned under. Without a recorded source, they fall back to the first
-  // caster class.
-  const sourceClass = spellSource(caster, spell.id) ?? undefined;
+  // caster class. A cast through an invocation is a warlock cast.
+  const sourceClass = invocation ? 'warlock' : (spellSource(caster, spell.id) ?? undefined);
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
   // Both caps read the level the picker starts on: the lowest slot the
   // caster can spend. This is also the level submitted if the GM does not
@@ -212,7 +230,7 @@ export function castPlan(app, entity, spell, offered) {
   // asked for a component. Only a Character has an inventory. The check's
   // contract is that an entity without one needs nothing, so all three
   // combatant shapes go through the same check.
-  const material = free
+  const material = repeat
     ? { required: false, satisfied: true, item: null, consumes: false }
     : materialCheck(
         /** @type {{ inventory?: import('../types/entities.js').InventoryItem[] }} */ (
@@ -226,7 +244,7 @@ export function castPlan(app, entity, spell, offered) {
   // The 5e armor proficiency rule stops a cast in armor the caster is not
   // trained for. Only a Character wears tracked gear, so a creature never
   // hits this. The dialog offers a GM opt-out beside the component one.
-  const armor = free ? [] : unproficientWear(entity);
+  const armor = repeat ? [] : unproficientWear(entity);
   // A cast spends part of the caster's turn while a fight runs. The participant
   // holds the budget, so a caster outside the running order, casting from the
   // sheet, spends nothing. An entry with no casting time reads as an action,
@@ -237,7 +255,7 @@ export function castPlan(app, entity, spell, offered) {
     : /** @type {import('../types/spell.js').CastingTime} */ ({ kind: 'action' });
   // A repeat costs what the spell says it costs on later turns, which is the
   // casting time's cost unless the spell names another.
-  const cost = free ? (spell.repeat?.cost ?? castingCost(castingTime)) : castingCost(castingTime);
+  const cost = repeat ? (spell.repeat?.cost ?? castingCost(castingTime)) : castingCost(castingTime);
   // What this cast takes off the turn. There is nothing to take outside a
   // fight, and nothing a turn can pay toward a ten-minute casting time.
   const actionCost = participant ? cost : null;
@@ -277,6 +295,7 @@ export function castPlan(app, entity, spell, offered) {
     actionBlocked,
     castingTime,
     free,
+    invocation,
     fields,
   };
 }

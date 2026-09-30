@@ -2,6 +2,7 @@ import { getSpellbook } from '../entities/Character.js';
 import { casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
 import { casterName } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entities/SpellView.js';
+import { invocationCast, invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -15,7 +16,10 @@ import { promptSpellDetail } from './SpellDetail.js';
  * shows cantrips plus the leveled spells that the known-rule makes
  * castable, prepared ones under a prepared-rule class, and every known
  * one under a known-rule class. A Wizard's unprepared rituals list too,
- * titled as rituals, because the Wizard casts them from the book. A click
+ * titled as rituals, because the Wizard casts them from the book. The spells
+ * that a warlock casts through its invocations and not from the book list in
+ * a group of their own, and every spell reads as the invocations change it
+ * (Agonizing Blast on Eldritch Blast, for example). A click
  * on a spell opens its detail, which offers Cast, in play, and Close.
  * Learning, preparing, and
  * forgetting a spell live in the Spellbook tab, not here. A character
@@ -47,11 +51,20 @@ export function buildSpellsSection(character, opts) {
   // ascending order: cantrips first, then each level with something
   // castable. The heading tells a caster with a wide spread which slot
   // level a spell costs.
-  const groups = groupSpellsByLevel([
+  const fromBook = [
     ...opts.resolveSpells(book.cantrips),
     ...opts.resolveSpells(castableLeveledIds(character)),
     ...opts.resolveSpells(book.known).filter((spell) => isRitualOnly(character, spell)),
-  ]);
+  ];
+  const invoked = opts
+    .resolveSpells(invocationSpellIds(character))
+    .filter((spell) => !fromBook.some((s) => s.id === spell.id));
+  const groups = [
+    ...groupSpellsByLevel(fromBook.map((spell) => invokedSpell(character, spell))),
+    ...(invoked.length > 0
+      ? [{ label: 'Invocations', spells: invoked.map((spell) => invokedSpell(character, spell)) }]
+      : []),
+  ];
   if (groups.length === 0) {
     section.appendChild(emptyState('Nothing castable'));
     return section;
@@ -95,10 +108,25 @@ function buildGroup(character, title, spells, opts) {
           className: 'character-sheet__spell-chip',
           title: `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`}${
             isRitualOnly(character, spell) ? ', ritual only' : ''
-          })`,
+          }${viaText(character, spell, title)})`,
         },
       ),
     );
   }
   return el('div', 'u-col u-g1', sectionLabel(title), list);
+}
+
+/**
+ * How a spell in the Invocations group is cast, for its chip tooltip, for
+ * example ", Armor of Shadows, at will". A spell in a level group reads as an
+ * empty string.
+ * @param {Character} character
+ * @param {Spell} spell
+ * @param {string} group the group title
+ * @returns {string}
+ */
+function viaText(character, spell, group) {
+  const via = group === 'Invocations' ? invocationCast(character, spell.id) : null;
+  if (!via) return '';
+  return `, ${via.invocation.name}, ${via.oncePerRest ? 'once per long rest' : 'at will'}`;
 }

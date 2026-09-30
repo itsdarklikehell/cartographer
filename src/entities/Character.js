@@ -567,7 +567,7 @@ export function restAll(character, fraction) {
 
 /**
  * A long rest: fully restore HP, spell slots, and every resource pool. It also
- * eases one level of exhaustion.
+ * eases one level of exhaustion and gives back the once-per-rest invocations.
  *
  * A dead character keeps its level. The Time panel rests every character at
  * once and does not ask who is still alive, so the guard belongs here rather
@@ -577,8 +577,8 @@ export function restAll(character, fraction) {
  * @returns {Character}
  */
 export function longRest(character) {
-  const rested = restAll(character, 1);
-  return isDead(rested) ? rested : easeExhaustion(rested);
+  const { invocationUses: _uses, ...rest } = restAll(character, 1);
+  return isDead(rest) ? rest : easeExhaustion(rest);
 }
 
 /**

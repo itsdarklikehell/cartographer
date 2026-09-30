@@ -42,12 +42,17 @@ export interface CastPlan {
   /** Present for a cast that spends no slot because an earlier turn paid for
    * it: a repeat of a spell the caster still keeps open. */
   free?: CastFree | null;
+  /** Present for a cast through a warlock invocation: at will with no slot,
+   * or once per long rest with a slot. */
+  invocation?: import('./invocation.js').InvocationCast | null;
   fields: ModalField[];
 }
 
 /** A cast that costs no slot. It resolves at `slotLevel`, the level the first
  * cast used. `repeat` marks a repeat of a spell still open from an earlier
- * turn, which needs no concentration of its own. */
+ * turn, which needs no concentration of its own and no component. A cast at
+ * will through an invocation has no `repeat` and resolves at the spell's own
+ * level. */
 export interface CastFree {
   slotLevel: number;
   repeat?: boolean;

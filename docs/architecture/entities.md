@@ -623,6 +623,32 @@ A structured effect models a grant made once. A value that scales with the
 class level stays a name match, because the app derives it on each read. A
 homebrew class that uses the same names gets the same rules.
 
+### Eldritch invocations
+
+`entities/Invocations.js` defines the rules of the warlock's eldritch
+invocations and pact boon, and `data/invocations.js` lists the SRD
+invocations. A character stores its picked ids in `invocations`, its boon
+in `pactBoon`, and the once-per-rest invocations it spent in
+`invocationUses`, which `Character.longRest` clears. `getInvocations`
+keeps only the stored picks that the character still qualifies for, up to
+the count of its warlock level. A warlock that loses a level or changes its
+boon loses the invocations that no longer apply, and no writer has to prune
+the list. `setInvocations` writes the list through the same filter.
+
+Beguiling Influence grants two skills through the grant ledger. Its record
+sits in `featureChoices` under the key `warlock 2 Beguiling Influence`, so
+`GrantLedger.rebuildGrants` treats it like a claimed class feature. An undo
+of the invocation keeps a skill that a feat also grants.
+
+`invokedSpell` returns a spell as the invocations change it: Eldritch Blast
+with `addsModifier` or a new range, and an at-will spell with a Self range
+or with no material. `app/combatants.spellsOf` and the sheet spell list map
+their spells through it, and `castPlan` in `app/spellCast.js` maps its spell
+again. `invocationCast` tells `castPlan` how the cast is paid. An at-will
+cast is a free cast at the spell's own level. A once-per-rest cast spends a
+slot and passes `granted` to `castSpell`, which skips the spellbook check,
+and `resolveCast` then marks the use with `markInvocationUsed`.
+
 ### Load-time defaults
 
 `Character.withDefaults` runs on every character that the app loads, and

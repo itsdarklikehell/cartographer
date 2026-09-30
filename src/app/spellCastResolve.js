@@ -10,6 +10,7 @@ import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { applyOutcomes } from './spellOutcomes.js';
 import { opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
+import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
 import { findCombatant, hpOf, applyConditionToTarget, endSpellEffects } from './combatants.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
@@ -76,6 +77,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // An unprepared Wizard ritual has no slot to fall back to, so it casts as
   // a ritual even if the box was unticked.
   const free = plan.free ?? null;
+  const invocation = plan.invocation ?? null;
   const asRitual = !free && (values.ritual === '1' || plan.ritualOnly === true);
   const slotLevel = free
     ? free.slotLevel
@@ -211,6 +213,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
     ...(free ? { free: { slotLevel } } : {}),
+    ...(invocation?.oncePerRest ? { granted: true } : {}),
     // The caster's feat riders join its chips for the projectile rolls. The
     // mode folds above keep the plain chip lists on both sides, because the
     // condition-effect table matches entries by name, and a feat that shares
@@ -248,10 +251,12 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   const consumed = enforce && material.consumes && material.item ? material.item : null;
   // A repeat keeps the concentration of the first cast. Starting it again would
   // end the spell that the repeat belongs to.
-  const holds = spell.concentration && !free;
+  const holds = spell.concentration && !free?.repeat;
+  // A once-per-rest invocation is spent until the next long rest.
+  const used = invocation?.oncePerRest ? invocation.invocation.id : null;
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
-  if (result.spent || consumed || holds) {
+  if (result.spent || consumed || holds || used) {
     let next = result.spent ? withCasterState(live, result.caster) : live;
     // Only a Character reaches here with an inventory. `materialCheck`
     // already requires one.
@@ -271,6 +276,12 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       next = started.character;
       displaced = started.dropped;
     }
+    if (used) {
+      next = markInvocationUsed(
+        /** @type {import('../types/entities.js').Character} */ (next),
+        used,
+      );
+    }
     writeBack(next);
     app.actions.markDirty();
   }
@@ -282,16 +293,18 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   }
   // The clock counts watches, not minutes. The log states a ritual's extra
   // ten minutes for the GM to adjudicate, rather than advancing the clock.
+  // A cast at will names no level, because it spends no slot.
   const at = result.ritual
     ? ' as a ritual (10 minutes longer)'
-    : result.slotLevel > 0
+    : result.slotLevel > 0 && !(free && !free.repeat)
       ? ` at level ${result.slotLevel}`
       : '';
+  const via = invocation ? ` (${invocation.invocation.name})` : '';
   app.actions.logEvent(
     'combat',
     free?.repeat
       ? `${caster.name} repeats ${spell.name}.`
-      : `${caster.name} casts ${spell.name}${at}.`,
+      : `${caster.name} casts ${spell.name}${at}${via}.`,
   );
   // A caster holds one spell open at a time, so starting this spell ended
   // the previous effect. The table needs to know this rules consequence.
@@ -310,7 +323,8 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     applyOutcomes(app, resolved, landed, entity.id, { tracked: holds });
     // The chip for a later repeat lands last. The sweep of a displaced spell
     // above would take it off again, because it names this spell too.
-    if (!free) openRepeat(app, spell, landed, entity.id);
+    if (!free?.repeat) openRepeat(app, spell, landed, entity.id);
+    notePush(app, spell, live, landed);
   };
   // A target that can raise its AC with a reaction (Shield) gets the chance
   // after the attack rolls and before its damage lands. With no such target
@@ -343,4 +357,27 @@ function openRepeat(app, spell, result, casterId) {
     casterId,
     repeat: { slotLevel: result.slotLevel, ...(spell.repeat.damage ? { targetIds: hitIds } : {}) },
   });
+}
+
+/**
+ * Log how far each creature that an Eldritch Blast hit can be pushed, for a
+ * warlock with Repelling Blast. Each beam that hits pushes once. The GM moves
+ * the token, because the board does not move a token by feet.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {any} caster the live caster
+ * @param {{ outcomes: object[] }} result
+ */
+function notePush(app, spell, caster, result) {
+  if (spell.id !== 'eldritch-blast') return;
+  const push = blastPush(caster);
+  if (!push) return;
+  for (const o of /** @type {any[]} */ (result.outcomes)) {
+    const hits = o.hits ?? (o.hit ? 1 : 0);
+    if (hits === 0) continue;
+    app.actions.logEvent(
+      'combat',
+      `${o.target.name} can be pushed up to ${hits * push.feet} feet, if Large or smaller (${push.name}).`,
+    );
+  }
 }

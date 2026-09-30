@@ -382,7 +382,9 @@ function slotPoolToSpend(caster, slotLevel) {
  * A `free` cast spends no slot and skips the spellbook check, because the
  * caster already paid for it: a repeat of a spell still open from an earlier
  * turn, for example. It resolves at `free.slotLevel`, the level the first
- * cast used.
+ * cast used. A `granted` cast spends a slot as usual but skips the spellbook
+ * check, because a feature grants the spell: a warlock invocation, for
+ * example.
  *
  * @template {SpellCaster} T
  * @param {T} caster
@@ -398,6 +400,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   ritual?: boolean,
  *   casterConditions?: import('./Riders.js').RiderSource[],
  *   free?: { slotLevel: number },
+ *   granted?: boolean,
  *   rng?: RandomFn,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
@@ -422,10 +425,13 @@ export function castSpell(caster, spell, options = {}) {
     ritual = false,
     casterConditions = [],
     free = null,
+    granted = false,
     rng = Math.random,
   } = options;
 
-  const paid = free ? freeCast(caster, free) : payForCast(caster, spell, slotLevel, ritual);
+  const paid = free
+    ? freeCast(caster, free)
+    : payForCast(caster, spell, slotLevel, ritual, granted);
   if (!paid.ok) return paid;
   const steps = scalingSteps(spell, paid.slotLevel, casterLevel);
 
@@ -480,14 +486,16 @@ function freeCast(caster, free) {
  * @param {Spell} spell
  * @param {number} slotLevel
  * @param {boolean} ritual
+ * @param {boolean} granted true when a feature grants the spell, which skips
+ *   the spellbook check
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
  *   { ok: true, caster: T, slotLevel: number, spent: boolean, ritual: boolean }
  * )}
  */
-function payForCast(caster, spell, slotLevel, ritual) {
+function payForCast(caster, spell, slotLevel, ritual, granted) {
   // A Wizard's unprepared ritual passes as a ritual cast and nothing else.
-  if (!canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
+  if (!granted && !canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
     return { ok: false, reason: 'not-known' };
   }
 

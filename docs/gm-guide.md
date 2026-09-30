@@ -554,6 +554,22 @@ that.
 5. If the list marked the subclass "casts spells", open the **Spellbook**
    tab and learn the cantrips and spells of the character.
 
+### Choose eldritch invocations
+
+1. Open the sheet of a warlock of level 2 or higher, and find the
+   Progression block.
+2. From warlock level 3, click **Choose** beside the pact boon row, pick a
+   boon, and click **Choose**. Pick the boon first, because some
+   invocations need it.
+3. Click **Choose** beside the **Invocations** row.
+4. Tick the invocations, up to the number in the row, and click **Choose**.
+   The list offers only the invocations that the warlock qualifies for.
+5. Open **Invocation rules** under the row to read what each pick does.
+
+The spells that the invocations cast appear with the other spells of the
+warlock. The [GM reference](gm-reference.md#eldritch-invocations) lists
+what the app does for each invocation.
+
 ### Equip and carry items
 
 Only the GM adds items. A player uses, gives away, and discards what their

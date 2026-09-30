@@ -321,10 +321,14 @@ spells of this group by hand with the least work of any group.
 
 ### Eldritch invocations
 
-The app does not model eldritch invocations. The built-in list includes
-Eldritch Blast, but no entries that depend on invocations. Pact magic is
-modeled, so a warlock casts from its own pact pool and not from the standard slot
-table.
+The app models the SRD eldritch invocations of the warlock. The ones that
+change Eldritch Blast, cast a spell, or grant skills have rules in the app,
+and the rest, such as Devil's Sight, are text for the GM. The
+[GM reference](gm-reference.md#eldritch-invocations) lists each effect and
+the rules that the GM enforces. The app records the pact boon, but it does
+not model the Book of Shadows, the pact weapon, or the familiar of a boon.
+Pact magic is modeled, so a warlock casts from its own pact pool and not
+from the standard slot table.
 
 ## Adding a spell by hand
 
