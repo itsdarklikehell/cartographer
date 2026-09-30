@@ -261,20 +261,22 @@ export function resolveAttack(effect, ctx) {
  * An attack spell's outcome for one target after the target raised its AC
  * by `raised` with a reaction (Shield). A roll that no longer meets the new
  * AC misses, unless its d20 showed a natural 20. A projectile that hits
- * automatically (Magic Missile) is blocked outright. A single attack that
+ * automatically (Magic Missile) is stopped only when `blocks` is true, which
+ * the caller sets when the ward chip names the spell (Shield). A single attack that
  * turns into a miss keeps its rolled dice as the splash of a spell with
  * `halfOnMiss`. A target that no hit reaches any more loses the chip and the
  * dice for later turns that the hit brought.
  * @param {SpellAttackEffect} effect
  * @param {any} outcome one entry of `resolveAttack`
  * @param {number} raised how much the target's AC went up
+ * @param {boolean} [blocks] whether the ward stops this spell outright
  * @returns {any}
  */
-export function wardedOutcome(effect, outcome, raised) {
-  if (!outcome.hit || raised <= 0) return outcome;
+export function wardedOutcome(effect, outcome, raised, blocks = false) {
+  if (!outcome.hit || (raised <= 0 && !blocks)) return outcome;
   const ac = outcome.ac + raised;
   const turned = (/** @type {any} */ s) =>
-    s.hit && s.natural !== 20 && (s.attack === null || s.attack.total < ac);
+    s.hit && (s.attack === null ? blocks : s.natural !== 20 && s.attack.total < ac);
   const { ongoing: _ongoing, onHit: _onHit, ...plain } = outcome;
   if (!outcome.shots) {
     if (!turned(outcome)) return { ...outcome, ac };
@@ -311,9 +313,10 @@ export function wardedOutcome(effect, outcome, raised) {
  * @param {SpellAttackEffect} effect
  * @param {any} outcome
  * @param {number} bonus
+ * @param {boolean} [blocks] whether the ward stops this spell outright
  * @returns {boolean}
  */
-export function wardTurns(effect, outcome, bonus) {
-  const warded = wardedOutcome(effect, outcome, bonus);
+export function wardTurns(effect, outcome, bonus, blocks = false) {
+  const warded = wardedOutcome(effect, outcome, bonus, blocks);
   return outcome.shots ? warded.hits < outcome.hits : outcome.hit && !warded.hit;
 }

@@ -4,7 +4,13 @@ import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/C
 import { armorClass, unproficientWear } from '../entities/Armor.js';
 import { equippedWeapons } from '../entities/Equipment.js';
 import { getHP, getSpellbook } from '../entities/Character.js';
-import { addCondition, createCondition, endedLine, outlasts } from '../entities/Conditions.js';
+import {
+  addCondition,
+  createCondition,
+  endedLine,
+  outlasts,
+  sameSlot,
+} from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
@@ -403,8 +409,9 @@ export function logDefeatTransition(app, prev, next) {
  * `more` contains the turn boundary that ends the chip and the damage it deals
  * on later turns.
  *
- * A chip of the same name from another cast that lasts longer stays in place
- * (see `Conditions.outlasts`). The target is still under the condition, so
+ * A chip in the same place from another cast that lasts longer, or a
+ * stronger chip of the same spell, stays in place (see `Conditions.outlasts`
+ * and `Conditions.sameSlot`). The target is still under the condition, so
  * the function reports that the chip landed.
  *
  * A target with a chip that makes it immune to the condition (Heroism's
@@ -433,14 +440,14 @@ export function applyConditionToTarget(
   const found = findCombatant(app, targetId);
   if (!found) return false;
   const extras = { source, ...(rider ? { rider } : {}), ...more };
-  const key = name.trim().toLowerCase();
-  const held = found.entity.conditions.find((c) => c.name.toLowerCase() === key);
+  const chip = createCondition(name, rounds, extras);
+  const held = found.entity.conditions.find((c) => sameSlot(c, chip));
   const guard = immunityTo(found.entity.conditions, name);
   if (guard) {
     app.actions.logEvent('combat', `${found.entity.name} is immune to ${name} (${guard.name}).`);
     return true;
   }
-  if (outlasts(held, createCondition(name, rounds, extras))) return true;
+  if (outlasts(held, chip)) return true;
   const ended = (more.mods?.immune ?? []).flatMap((n) =>
     found.entity.conditions.filter((c) => c.name.toLowerCase() === n.toLowerCase()),
   );

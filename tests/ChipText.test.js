@@ -155,7 +155,7 @@ test('a spell that reads HP names its rule in place of the save', () => {
 test('the effect summary and the chip notes name an AC change', () => {
   assert.equal(
     effectSummary(spellById('shield'), null),
-    "Shield — +5 AC until the start of the caster's next turn",
+    "Shield — +5 AC, blocks magic missile until the start of the caster's next turn",
   );
   assert.equal(effectSummary(spellById('barkskin'), null), 'Barkskin — AC at least 16');
   const bless = spellById('bless');

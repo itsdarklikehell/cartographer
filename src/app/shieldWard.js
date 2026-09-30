@@ -4,6 +4,8 @@ import { canSpend } from '../combat/ActionBudget.js';
 import { acOf, isDowned, mayActOn } from '../combat/CombatView.js';
 import { canAct } from '../entities/ConditionEffects.js';
 import { buffCondition } from '../entities/Casting.js';
+import { blockerOf } from '../entities/ChipMods.js';
+import { createCondition } from '../entities/Conditions.js';
 import { wardTurns, wardedOutcome } from '../entities/CastRolls.js';
 import { isGM } from '../view/ViewRole.js';
 import { findCombatant, spellsOf } from './combatants.js';
@@ -39,13 +41,15 @@ import { resolveCast } from './spellCastResolve.js';
  */
 
 /**
- * One defender's ready reaction: the spell, the AC it adds, and the cast
- * plan that would cast it on the defender.
+ * One defender's ready reaction: the spell, the AC it adds once its chip
+ * joins the defender's other chips, whether it stops the attacking spell
+ * outright, and the cast plan that would cast it on the defender.
  * @typedef {{
  *   id: string,
  *   name: string,
  *   spell: Spell,
  *   bonus: number,
+ *   blocks: boolean,
  *   plan: CastPlan,
  *   store: (next: any) => void,
  * }} Ward
@@ -61,18 +65,47 @@ function acBonus(spell) {
 }
 
 /**
+ * The chip that a buff spell lays on its target, with only its mods.
+ * @param {Spell} spell
+ * @returns {import('../types/entities.js').Condition}
+ */
+function buffChip(spell) {
+  const mods = spell.effect.kind === 'buff' ? spell.effect.mods : undefined;
+  return createCondition(buffCondition(spell), null, mods ? { mods } : {});
+}
+
+/**
+ * How much the defender's AC goes up once the spell's chip joins its other
+ * chips. A floor such as Barkskin's 16 can take up part of a flat bonus, so
+ * Shield on a defender with a base AC of 12 and Barkskin raises the AC from
+ * 16 to 17, which is 1 and not 5.
+ * @param {import('../combat/CombatView.js').ResolvedCombatant} found
+ * @param {Spell} spell
+ * @returns {number}
+ */
+export function wardRaise(found, spell) {
+  const conditions = [...(found.entity.conditions ?? []), buffChip(spell)];
+  const next = /** @type {any} */ ({ ...found, entity: { ...found.entity, conditions } });
+  return (acOf(next) ?? 0) - (acOf(found) ?? 0);
+}
+
+/**
  * The reaction that the defender could cast against an attack from
  * `attackerId`, or null when it has none. The defender needs to be able to
  * act, have its reaction unspent while a fight runs, know a reaction spell
  * whose chip adds AC and that it does not already hold, and have what the
- * cast costs: a slot, the components, and armor it is trained in. When it
- * knows more than one such spell, the one that adds the most AC wins.
+ * cast costs: a slot, the components, and armor it is trained in. The spell
+ * has to raise the defender's real AC (see `wardRaise`), or stop the
+ * attacking spell outright when `attackSpellId` names one that its chip
+ * blocks. When it knows more than one such spell, the one that adds the
+ * most AC wins.
  * @param {AppContext} app
  * @param {string} defenderId
  * @param {string} attackerId
+ * @param {string} [attackSpellId] the id of the attacking spell, if any
  * @returns {Ward | null}
  */
-export function pendingWard(app, defenderId, attackerId) {
+export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
   if (defenderId === attackerId) return null;
   const found = findCombatant(app, defenderId);
   if (!found || isDowned(found) || !canAct(found.entity.conditions ?? [])) return null;
@@ -85,10 +118,16 @@ export function pendingWard(app, defenderId, attackerId) {
   const participant = combat?.order.find((p) => p.id === defenderId) ?? null;
   if (combat && (!participant || !canSpend(participant, 'reaction'))) return null;
   const held = new Set((found.entity.conditions ?? []).map((c) => c.name));
-  const spells = reactionSpells(spellsOf(app, defenderId))
+  const choices = reactionSpells(spellsOf(app, defenderId))
     .filter((spell) => acBonus(spell) > 0 && !held.has(buffCondition(spell)))
-    .sort((a, b) => acBonus(b) - acBonus(a));
-  for (const spell of spells) {
+    .map((spell) => ({
+      spell,
+      bonus: wardRaise(found, spell),
+      blocks: Boolean(attackSpellId && blockerOf([buffChip(spell)], attackSpellId)),
+    }))
+    .filter((c) => c.bonus > 0 || c.blocks)
+    .sort((a, b) => b.bonus - a.bonus);
+  for (const { spell, bonus, blocks } of choices) {
     const offered =
       combat && participant
         ? combatTargets(app, combat, participant, spell)
@@ -101,7 +140,8 @@ export function pendingWard(app, defenderId, attackerId) {
       id: defenderId,
       name: found.entity.name,
       spell,
-      bonus: acBonus(spell),
+      bonus,
+      blocks,
       plan,
       store: /** @type {(next: any) => void} */ (found.store),
     };
@@ -121,7 +161,11 @@ export function pendingWard(app, defenderId, attackerId) {
  */
 export async function offerWard(app, ward, message, { ask = confirmModal } = {}) {
   const name = ward.spell.name;
-  const yes = await ask(`${message} Cast ${name} as a reaction (+${ward.bonus} AC)?`, {
+  const gain = [
+    ...(ward.bonus > 0 ? [`+${ward.bonus} AC`] : []),
+    ...(ward.blocks ? ['blocks the spell'] : []),
+  ].join(', ');
+  const yes = await ask(`${message} Cast ${name} as a reaction (${gain})?`, {
     title: 'Reaction',
     confirmLabel: `Cast ${name}`,
     cancelLabel: 'Take the hit',
@@ -157,8 +201,11 @@ function spellHitMessage(spell, o) {
 /**
  * Offer a ward to each target of an attack spell that a higher AC would
  * save from a hit, in target order, and return the cast result with each
- * warded outcome checked again. The return is null when no target has a
- * ward worth offering, so the caller applies the result without waiting.
+ * warded outcome checked again. A target that already holds a chip that
+ * blocks the spell (Shield against Magic Missile) takes none of its
+ * automatic hits, with no question. The return is null when no target has a
+ * ward worth offering and no target blocks the spell, so the caller applies
+ * the result without waiting.
  * @template {{ outcomes: object[] }} R
  * @param {AppContext} app
  * @param {Spell} spell
@@ -170,18 +217,24 @@ function spellHitMessage(spell, o) {
 export function wardSpellAttack(app, spell, result, casterId, opts = {}) {
   const effect = spell.effect;
   if (effect.kind !== 'attack') return null;
-  const outcomes = /** @type {any[]} */ (result.outcomes);
+  const blocked = (/** @type {any} */ o) =>
+    Boolean(o.target.id && blockerOf(findCombatant(app, o.target.id)?.entity.conditions, spell.id));
+  const given = /** @type {any[]} */ (result.outcomes);
+  const outcomes = given.map((o) => (blocked(o) ? wardedOutcome(effect, o, 0, true) : o));
   const wards = outcomes.map((o) => {
-    const ward = o.target.id ? pendingWard(app, o.target.id, casterId) : null;
-    return ward && wardTurns(effect, o, ward.bonus) ? ward : null;
+    const ward = o.target.id ? pendingWard(app, o.target.id, casterId, spell.id) : null;
+    return ward && wardTurns(effect, o, ward.bonus, ward.blocks) ? ward : null;
   });
-  if (!wards.some(Boolean)) return null;
+  if (!wards.some(Boolean)) {
+    const same = outcomes.every((o, i) => o === given[i]);
+    return same ? null : Promise.resolve({ ...result, outcomes });
+  }
   return (async () => {
     const checked = [];
     for (const [i, o] of outcomes.entries()) {
       const ward = wards[i];
       const raised = ward ? await offerWard(app, ward, spellHitMessage(spell, o), opts) : 0;
-      checked.push(wardedOutcome(effect, o, raised));
+      checked.push(ward ? wardedOutcome(effect, o, raised, blocked(o)) : o);
     }
     return { ...result, outcomes: checked };
   })();

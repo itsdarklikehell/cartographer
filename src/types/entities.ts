@@ -87,7 +87,9 @@ export interface OngoingDamage {
  * caster's spell modifier at the cast. `saveAdvantage` names the abilities
  * whose saves the holder rolls with advantage (Haste's DEX). `extraAction`
  * gives the holder one more action on each of its turns, good for one weapon
- * attack only (Haste). */
+ * attack only (Haste). `blocks` names the ids of the spells that the chip
+ * stops outright, so their automatic hits skip the holder (Shield names
+ * Magic Missile). */
 export interface ChipMods {
   ac?: number;
   acBase?: number;
@@ -97,6 +99,7 @@ export interface ChipMods {
   tempHPEachTurn?: number;
   saveAdvantage?: string[];
   extraAction?: boolean;
+  blocks?: string[];
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

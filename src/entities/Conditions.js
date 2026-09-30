@@ -97,13 +97,59 @@ export function chipLength(condition) {
 }
 
 /**
- * Whether a chip that one cast wrote keeps its place against a new chip of the
- * same name from another cast. A creature keeps one chip per name, so a
- * one-round Blinded from Color Spray would replace the one-minute Blinded of
- * Blindness/Deafness, and the target would see again after one round. The
- * longer chip stays instead. A hand-added chip names no cast, so the new chip
- * always replaces it, and a recast of the same spell by the same caster
- * always refreshes its own chip.
+ * Whether a chip deals ongoing damage (Acid Arrow) or lets its holder retry
+ * a save against it (Phantasmal Killer).
+ * Two casts of such a chip each keep their own chip, so each one rolls its
+ * damage and its save. The condition that the name states still applies once,
+ * because every reader asks whether some chip has the name.
+ * @param {Condition} chip
+ * @returns {boolean}
+ */
+export function tracksCast(chip) {
+  return Boolean(chip.ongoing || chip.source?.saveEnds);
+}
+
+/**
+ * Whether two chips fill the same place on a creature, so that a new one
+ * replaces the old one. Chips of the same name share a place. When either
+ * chip tracks its cast (see `tracksCast`), they share a place only when the
+ * same caster cast the same spell, and a hand-added chip shares none with it.
+ * @param {Condition} a
+ * @param {Condition} b
+ * @returns {boolean}
+ */
+export function sameSlot(a, b) {
+  if (a.name.trim().toLowerCase() !== b.name.trim().toLowerCase()) return false;
+  if (!tracksCast(a) && !tracksCast(b)) return true;
+  const x = a.source;
+  const y = b.source;
+  return Boolean(x && y && x.spellId === y.spellId && x.casterId === y.casterId);
+}
+
+/**
+ * How strong a chip's mods are, for comparing two casts of one spell. The
+ * sum of the number fields works because one spell writes the same fields at
+ * every slot level, and only the size changes (Aid's +5 at 2nd level and +10
+ * at 3rd).
+ * @param {import('../types/entities.js').ChipMods | undefined} mods
+ * @returns {number}
+ */
+function potency(mods) {
+  if (!mods) return 0;
+  return (mods.maxHP ?? 0) + (mods.ac ?? 0) + (mods.acMin ?? 0) + (mods.tempHPEachTurn ?? 0);
+}
+
+/**
+ * Whether a chip that one cast wrote keeps its place against a new chip in
+ * the same place from another cast (see `sameSlot`). A one-round Blinded from
+ * Color Spray would otherwise replace the one-minute Blinded of
+ * Blindness/Deafness, and the target would see again after one round, so the
+ * longer chip stays. Two casts of one spell with different mods follow the
+ * 5e rule for overlapping effects of one spell, and the stronger chip stays
+ * whatever its length: a 2nd-level Aid does not replace a 3rd-level Aid, even
+ * from the same caster. A hand-added chip names no cast, so the new chip
+ * always replaces it, and a recast of the same spell by the same caster with
+ * equal mods always refreshes its own chip.
  * @param {Condition | undefined} held the chip the creature has now
  * @param {Condition} incoming the chip a cast wants to write
  * @returns {boolean}
@@ -112,16 +158,21 @@ export function outlasts(held, incoming) {
   const a = held?.source;
   const b = incoming.source;
   if (!held || !a || !b) return false;
-  if (a.spellId === b.spellId && a.casterId === b.casterId) return false;
+  if (a.spellId === b.spellId) {
+    const diff = potency(held.mods) - potency(incoming.mods);
+    if (diff !== 0) return diff > 0;
+    if (a.casterId === b.casterId) return false;
+  }
   return chipLength(held) > chipLength(incoming);
 }
 
 /**
- * Add a condition, or update its duration if present. The match is
- * case-insensitive by name, so "Poisoned" does not stack with "poisoned".
- * Returns a new list. A replaced chip's source and rider go with it: the new
- * cast owns the condition now, and a hand-added replacement means the GM owns
- * it instead.
+ * Add a condition, or update its duration if present. The chip replaces any
+ * chip in the same place (see `sameSlot`), and the name match is
+ * case-insensitive, so "Poisoned" does not stack with "poisoned". Returns a
+ * new list. A replaced chip's source and rider go with it: the new cast owns
+ * the condition now, and a hand-added replacement means the GM owns it
+ * instead.
  * @param {Condition[]} list
  * @param {string} name
  * @param {number | null} [rounds]
@@ -129,10 +180,9 @@ export function outlasts(held, incoming) {
  * @returns {Condition[]}
  */
 export function addCondition(list, name, rounds = null, extras = {}) {
-  const key = name.trim().toLowerCase();
-  if (!key) return list;
-  const without = list.filter((c) => c.name.toLowerCase() !== key);
-  return [...without, createCondition(name.trim(), rounds, extras)];
+  if (!name.trim()) return list;
+  const chip = createCondition(name.trim(), rounds, extras);
+  return [...list.filter((c) => !sameSlot(c, chip)), chip];
 }
 
 /**

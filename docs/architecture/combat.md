@@ -349,16 +349,24 @@ An attack roll that hits is a trigger that the app does see, and
 adds AC (`mods.ac`), and whose `castPlan` the defender can pay for without
 an opt-out. The defender also needs an unspent reaction, the ability to
 act, no chip of that spell already, and a viewer who may act for it
-(`CombatView.mayActOn`). `offerWard` asks the question and casts the spell
-through `resolveCast` at the lowest slot. It returns how far the AC of the
-defender went up, which it reads with `acOf` before and after the cast.
+(`CombatView.mayActOn`). `wardRaise` measures how far the AC would go up by
+reading `acOf` with and without the candidate chip, so a floor such as
+Barkskin's 16 counts. Shield on a base AC of 12 under Barkskin raises the AC
+from 16 to 17, and the ward offers +1 and only against a roll of 16. A spell
+with no real raise is offered only when its chip blocks the attacking spell.
+`offerWard` asks the question and casts the spell through `resolveCast` at
+the lowest slot. It returns how far the AC of the defender went up, which it
+reads with `acOf` before and after the cast.
 
 `rollWeaponAttack` asks after the d20 rolls and before the log line, so the
 line states the AC that the roll answered to in the end. `resolveCast` asks
 through `wardSpellAttack`, after `castSpell` rolls and before
 `applyOutcomes` writes anything. The pure `CastRolls.wardedOutcome` then
-checks each outcome again against the raised AC. It blocks a projectile
-that hits automatically, which is the Magic Missile rule of Shield.
+checks each outcome again against the raised AC. It stops a projectile that
+hits automatically only when the ward chip names the spell in `mods.blocks`,
+which is the Magic Missile rule of Shield. A target that already holds such
+a chip takes none of the automatic hits, and `wardSpellAttack` applies that
+with no question.
 
 Both functions return a promise only while a question is open. A call with
 no ward in reach finishes before it returns, so a suite that calls one

@@ -96,8 +96,12 @@ test('each projectile under the raised AC misses, and the damage adds up again',
   assert.equal(wardTurns(effect, volley([19, 20]), 5), false);
 });
 
-test('projectiles that hit automatically are blocked outright', () => {
-  const warded = wardedOutcome(effect, volley([null, null, null]), 5);
+test('projectiles that hit automatically are blocked only by a ward that names the spell', () => {
+  const darts = volley([null, null, null]);
+  assert.equal(wardedOutcome(effect, darts, 5).hits, 3);
+  assert.equal(wardTurns(effect, darts, 5), false);
+  assert.equal(wardTurns(effect, darts, 0, true), true);
+  const warded = wardedOutcome(effect, darts, 0, true);
   assert.equal(warded.hits, 0);
   assert.equal(warded.hit, false);
   assert.equal(warded.damage, null);

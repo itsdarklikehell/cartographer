@@ -1099,14 +1099,18 @@ instead of the action.
 
 When an attack roll hits a combatant whose reaction spell raises its AC,
 such as Shield, a Reaction dialog opens before the damage. The dialog names
-the roll and the AC. It opens only when the higher AC would turn the hit
-into a miss, so it never opens on a natural 20, which hits whatever the AC.
+the roll and the AC, and the AC that the spell really adds. A floor such as
+Barkskin can take up part of the bonus, so Shield on a combatant at AC 16
+from Barkskin over a base of 12 adds only +1. The dialog opens only when the
+higher AC would turn the hit into a miss, so it never opens on a natural 20,
+which hits whatever the AC.
 
 Press **Cast Shield** to cast the spell at the lowest slot that the
 combatant can spend. The cast spends the reaction, and the attack then
 rolls against the new AC. The log line of the attack names the spell
 beside the AC. Press **Take the hit** to let the attack land as rolled.
-Against Magic Missile, the spell blocks every dart.
+Against Magic Missile, the spell blocks every dart. A combatant that
+already has Shield takes no Magic Missile darts, and no dialog opens.
 
 The dialog opens only in a tab that can act for the defender: the GM tab,
 or the Player tab bound to that character. When a player attacks a foe
@@ -1337,6 +1341,14 @@ read what it does and when it ends. A dying character still takes this
 damage, and each hit costs it a failed death save. When the fight ends,
 the damage that such a chip still owes lands at once. Outside a fight the
 app deals no later-turn damage, so apply it by hand.
+
+A chip that deals damage on later turns, or that the holder retries a save
+against, stays apart from a chip of the same name from another caster or
+spell. A combatant can therefore show two Acid Arrow chips, and each one
+deals its own damage. Removing a chip by hand removes every chip of that
+name. For other chips, a combatant keeps one chip of each name. A longer
+chip from another cast stays, and of two casts of one spell with different
+strength, such as Aid at 2nd and at 3rd level, the stronger one stays.
 
 A combatant that loses its turn keeps its place in the initiative order.
 **Next turn** steps past it without a message. A save that fails at once

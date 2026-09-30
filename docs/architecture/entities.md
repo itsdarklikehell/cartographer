@@ -830,7 +830,10 @@ A buff spell can write `mods` onto its chip (see `ChipMods.js`). `ac` is a
 flat bonus, `acBase` is a base AC for a holder without body armor, and
 `acMin` is a floor under the finished AC. `ChipMods.heldMods` combines the
 chips of one holder. The flat bonuses add up, because Shield and Shield of
-Faith stack, and the highest base and the highest floor win.
+Faith stack, and the highest base and the highest floor win. `blocks` names
+the ids of spells that the chip stops outright, and Shield names
+`magic-missile`. `ChipMods.heldBoost` takes the highest `maxHP` of each
+spell and adds the results across spells, so two casts of Aid count once.
 
 `armorClass` uses the higher of `baseAC` and the chip base in its unarmored
 branch, so body armor ignores Mage Armor. `ChipMods.withChipAC` then adds
@@ -1590,9 +1593,20 @@ Both return the list that they received when nothing matched. The wiring
 sweep runs on every turn of a fight, and a new object per entity per turn
 misses the pack cache of the save.
 
-A creature keeps one chip per name. `Conditions.outlasts` keeps a longer
-chip from another cast in place, so the one-round Blinded of Sunbeam does
-not replace the one-minute Blinded of Blindness/Deafness.
+A creature keeps one chip per place, and `Conditions.sameSlot` decides the
+place. Chips of one name share a place, except when a chip deals ongoing
+damage or allows a repeated save (`Conditions.tracksCast`). Such a chip
+shares a place only with a chip from the same caster and spell, so two
+casters' Acid Arrow each roll their own damage, and Phantasmal Killer lands
+its own chip beside a longer Frightened from another spell. The condition
+that the name states still applies once, because the readers ask whether
+some chip has the name. Inside one place, `Conditions.outlasts` keeps a
+longer chip from another cast, so the one-round Blinded of Sunbeam does not
+replace the one-minute Blinded of Blindness/Deafness. Two casts of one spell
+with different mods keep the stronger chip whatever its length, so a
+2nd-level Aid does not replace a 3rd-level Aid. The weaker chip is dropped
+and not kept for later, so the +5 of the weaker Aid does not return when the
+stronger Aid ends first.
 
 ### Damage on later turns
 
@@ -1908,9 +1922,9 @@ uses the spell's own name when the effect names none. The chip has the same
 off every recipient when the caster stops concentrating.
 
 Two riders on one creature both apply, so Bless and Bane cancel out on average
-and neither one wins. Two chips of the same name cannot exist together.
-`addCondition` matches names without case, and the newer chip replaces the
-older one with its source and its rider.
+and neither one wins. `addCondition` matches names without case, and the
+newer chip replaces the older one in the same place (see `sameSlot`) with its
+source and its rider.
 
 The hand-add dialog in `ui/ConditionsBar.js` takes only a name and a duration.
 A chip that a GM adds by hand has no rider, so a chip named `Bless` by hand

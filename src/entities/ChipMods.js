@@ -71,6 +71,7 @@ export function normalizeChipMods(value) {
   const immune = nameList(raw.immune);
   const tempHPEachTurn = clampInt(raw.tempHPEachTurn, 0, MAX_TEMP_EACH_TURN);
   const saveAdvantage = abilityList(raw.saveAdvantage);
+  const blocks = nameList(raw.blocks).map((id) => id.toLowerCase());
   const mods = {
     ...(ac !== 0 ? { ac } : {}),
     ...(acBase > 0 ? { acBase } : {}),
@@ -80,19 +81,28 @@ export function normalizeChipMods(value) {
     ...(tempHPEachTurn > 0 ? { tempHPEachTurn } : {}),
     ...(saveAdvantage.length > 0 ? { saveAdvantage } : {}),
     ...(raw.extraAction === true ? { extraAction: true } : {}),
+    ...(blocks.length > 0 ? { blocks } : {}),
   };
   return Object.keys(mods).length > 0 ? mods : null;
 }
 
 /**
- * The HP maximum raise of a holder's chips. Aid from two casts does not
- * stack, so the highest one wins.
+ * The HP maximum raise of a holder's chips. Two casts of one spell do not
+ * stack, so the highest raise of each spell counts, keyed by the spell id
+ * (or the chip name for a hand-written chip). Raises from different spells
+ * add up.
  * @param {Condition[] | undefined} conditions
  * @returns {number}
  */
 export function heldBoost(conditions) {
+  /** @type {Map<string, number>} */
+  const best = new Map();
+  for (const chip of conditions ?? []) {
+    const key = chip.source?.spellId ?? chip.name.toLowerCase();
+    best.set(key, Math.max(best.get(key) ?? 0, chip.mods?.maxHP ?? 0));
+  }
   let boost = 0;
-  for (const chip of conditions ?? []) boost = Math.max(boost, chip.mods?.maxHP ?? 0);
+  for (const raise of best.values()) boost += raise;
   return boost;
 }
 
@@ -170,5 +180,19 @@ export function modsSummary(mods) {
   if (mods.tempHPEachTurn) parts.push(`${mods.tempHPEachTurn} temp HP each turn`);
   if (mods.saveAdvantage) parts.push(`advantage on ${mods.saveAdvantage.join(' and ')} saves`);
   if (mods.extraAction) parts.push('an extra action for one weapon attack');
+  if (mods.blocks)
+    parts.push(`blocks ${mods.blocks.map((id) => id.replace(/-/g, ' ')).join(' and ')}`);
   return parts.join(', ');
+}
+
+/**
+ * The chip on a holder that stops a spell outright, or undefined. Shield
+ * names Magic Missile, so the darts of a Magic Missile skip a holder of
+ * Shield even though they hit without an attack roll.
+ * @param {Condition[] | undefined} conditions
+ * @param {string} spellId
+ * @returns {Condition | undefined}
+ */
+export function blockerOf(conditions, spellId) {
+  return (conditions ?? []).find((chip) => chip.mods?.blocks?.includes(spellId));
 }

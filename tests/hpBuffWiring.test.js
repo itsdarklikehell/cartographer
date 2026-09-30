@@ -192,3 +192,13 @@ test('grantTempTo reaches a creature and skips a missing combatant', () => {
   assert.equal(grantTempTo(app, 'nobody', 6, 'False Life'), false);
   assert.equal(grantTempTo(app, 'goblin', 0, 'False Life'), false);
 });
+
+test('a weaker Aid from a second caster leaves the stronger Aid in place', () => {
+  const app = stubApp();
+  const src = (casterId) => ({ spellId: 'aid', spellName: 'Aid', casterId });
+  applyConditionToTarget(app, 'fighter', 'Aid', 4700, src('A'), null, { mods: { maxHP: 10 } });
+  assert.deepEqual([hp(app, 'fighter').current, hp(app, 'fighter').max], [40, 40]);
+  applyConditionToTarget(app, 'fighter', 'Aid', 4800, src('B'), null, { mods: { maxHP: 5 } });
+  assert.deepEqual([hp(app, 'fighter').current, hp(app, 'fighter').max], [40, 40]);
+  assert.equal(pc(app, 'fighter').conditions[0].source.casterId, 'A');
+});

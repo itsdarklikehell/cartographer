@@ -66,12 +66,15 @@ test('normalizeChipMods keeps the HP fields and the immunities', () => {
   assert.deepEqual(normalizeChipMods({ maxHP: 500 }), { maxHP: 100 });
 });
 
-test('heldBoost keeps the highest raise, and immunityTo finds the chip', () => {
-  const aid = createCondition('Aid', 10, { mods: { maxHP: 5 } });
-  const big = createCondition('Aid II', 10, { mods: { maxHP: 10 } });
+test('heldBoost keeps the highest raise of each spell, and immunityTo finds the chip', () => {
+  const src = (casterId) => ({ spellId: 'aid', spellName: 'Aid', casterId });
+  const aid = createCondition('Aid', 10, { source: src('a'), mods: { maxHP: 5 } });
+  const big = createCondition('Aid', 10, { source: src('b'), mods: { maxHP: 10 } });
+  const other = createCondition('Blessing', 10, { mods: { maxHP: 3 } });
   const hero = createCondition('Heroism', 10, { mods: { immune: ['Frightened'] } });
   assert.equal(heldBoost(undefined), 0);
   assert.equal(heldBoost([aid, big, hero]), 10);
+  assert.equal(heldBoost([aid, big, other]), 13);
   assert.equal(immunityTo([aid, hero], 'frightened'), hero);
   assert.equal(immunityTo([aid], 'Frightened'), undefined);
   assert.equal(immunityTo(undefined, 'Frightened'), undefined);

@@ -6,6 +6,9 @@ import {
   removeCondition,
   tickConditions,
   endedLine,
+  outlasts,
+  sameSlot,
+  tracksCast,
 } from '../src/entities/Conditions.js';
 
 test('addCondition appends a new condition', () => {
@@ -76,4 +79,49 @@ test('endedLine keeps a standard condition as an adjective and names any other c
   assert.equal(endedLine('Goblin', 'Paralyzed'), 'Goblin is no longer Paralyzed');
   assert.equal(endedLine('Goblin', 'prone'), 'Goblin is no longer prone');
   assert.equal(endedLine('Brannoc', 'Haste'), 'Brannoc is no longer affected by Haste');
+});
+
+const cast = (spellId, casterId, more = {}) => ({
+  source: { spellId, spellName: spellId, casterId, ...more },
+});
+
+test('outlasts keeps the stronger chip of one spell whatever its length', () => {
+  const big = createCondition('Aid', 4700, { ...cast('aid', 'A'), mods: { maxHP: 10 } });
+  const small = createCondition('Aid', 4800, { ...cast('aid', 'B'), mods: { maxHP: 5 } });
+  assert.equal(outlasts(big, small), true);
+  assert.equal(outlasts(small, big), false);
+  const sameCaster = createCondition('Aid', 4800, { ...cast('aid', 'A'), mods: { maxHP: 5 } });
+  assert.equal(outlasts(big, sameCaster), true);
+  const refresh = createCondition('Aid', 4800, { ...cast('aid', 'A'), mods: { maxHP: 10 } });
+  assert.equal(outlasts(big, refresh), false);
+});
+
+test('outlasts keeps the longer chip from another cast, and never a hand-added one', () => {
+  const long = createCondition('Blinded', 10, cast('blindness', 'A'));
+  const short = createCondition('Blinded', 1, cast('color-spray', 'B'));
+  assert.equal(outlasts(long, short), true);
+  assert.equal(outlasts(short, long), false);
+  assert.equal(outlasts(createCondition('Blinded', 10), short), false);
+  assert.equal(outlasts(undefined, short), false);
+  const other = createCondition('Blinded', 1, cast('blindness', 'B'));
+  assert.equal(outlasts(long, other), true);
+});
+
+test('chips that track their cast keep one place per caster and spell', () => {
+  const ongoing = { damage: [{ count: 2, sides: 4, type: 'acid' }] };
+  const one = { ...cast('acid-arrow', 'A'), ongoing };
+  const two = { ...cast('acid-arrow', 'B'), ongoing };
+  let list = addCondition([], 'Acid Arrow', 1, one);
+  list = addCondition(list, 'Acid Arrow', 1, two);
+  assert.equal(list.length, 2);
+  list = addCondition(list, 'Acid Arrow', 1, one);
+  assert.equal(list.length, 2);
+  const pk = createCondition('Frightened', 10, cast('pk', 'A', { saveEnds: true }));
+  const fear = createCondition('Frightened', 10, cast('fear', 'B'));
+  assert.equal(tracksCast(pk), true);
+  assert.equal(tracksCast(fear), false);
+  assert.equal(sameSlot(fear, pk), false);
+  assert.equal(sameSlot(createCondition('Frightened'), pk), false);
+  assert.equal(sameSlot(fear, createCondition('frightened ')), true);
+  assert.equal(sameSlot(fear, createCondition('Prone')), false);
 });

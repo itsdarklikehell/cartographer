@@ -338,7 +338,7 @@ export const LEVEL_1 = [
     description:
       'An invisible barrier gives the caster +5 AC until the start of its next turn, ' +
       'including against the triggering attack, and it takes no damage from magic missile.',
-    effect: { kind: 'buff', mods: { ac: 5 }, until: 'caster-start' },
+    effect: { kind: 'buff', mods: { ac: 5, blocks: ['magic-missile'] }, until: 'caster-start' },
   },
   {
     id: 'shield-of-faith',

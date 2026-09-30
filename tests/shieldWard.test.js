@@ -257,7 +257,7 @@ test('Shield blocks every Magic Missile dart', async () => {
   const { asked, ask } = answer(true);
   await castAt(app, 'magic-missile', { slot: '1', allocation: 'mage:3' }, () => 0.5, ask);
   assert.deepEqual(asked, [
-    'Magic Missile: 3 of 3 hit Mage automatically. Cast Shield as a reaction (+5 AC)?',
+    'Magic Missile: 3 of 3 hit Mage automatically. Cast Shield as a reaction (+5 AC, blocks the spell)?',
   ]);
   assert.equal(hpOf(app, 'mage'), 30);
   assert.ok(app.log.includes('Magic Missile: 0 of 3 hit Mage (AC 17).'), app.log.join('\n'));
@@ -295,4 +295,52 @@ test('Shield turns aside each Scorching Ray that misses the raised AC', async ()
     app.log.some((l) => l.startsWith('Scorching Ray: 1 of 3 hit Mage for')),
     app.log.join('\n'),
   );
+});
+
+test('Magic Missile skips a target that already holds Shield, with no question', async () => {
+  const held = createCondition('Shield', 1, { mods: { ac: 5, blocks: ['magic-missile'] } });
+  const app = stubApp({ mage: { ...wizard('mage', ['shield']), conditions: [held] } });
+  await castAt(app, 'magic-missile', { slot: '1', allocation: 'mage:3' }, () => 0.5, never);
+  assert.equal(hpOf(app, 'mage'), 30);
+});
+
+test('Shield of Faith does not stop Magic Missile, so no ward is offered', () => {
+  const app = stubApp({ mage: wizard('mage', []) });
+  const out = castAt(app, 'magic-missile', { slot: '1', allocation: 'mage:3' }, () => 0.5, never);
+  assert.equal(out, undefined);
+  assert.ok(hpOf(app, 'mage') < 30);
+});
+
+test('the ward offers the real raise when a floor takes up part of the bonus', async () => {
+  const bark = createCondition('Barkskin', 10, { mods: { acMin: 16 } });
+  const mage = { ...wizard('mage', ['shield']), conditions: [bark] };
+  // AC 12 with Barkskin reads 16, and Shield makes it 17, so the raise is 1.
+  const app = stubApp({ mage, rng: scripted([d20(13), 0.5]) });
+  fight(app);
+  assert.equal(pendingWard(app, 'mage', 'hero')?.bonus, 1);
+  const defender = { ...target(app, 'mage'), ac: 16 };
+  const { asked, ask } = answer(true);
+  // 13 + 3 is 16, which hits AC 16 and misses AC 17.
+  await rollWeaponAttack(app, {
+    attacker: pc(app, 'hero'),
+    defender,
+    weapon: SWORD,
+    tweaks: { freeAction: true },
+    ask,
+  });
+  assert.deepEqual(asked, [
+    'Hero hits Mage with Sword (16 vs AC 16). Cast Shield as a reaction (+1 AC)?',
+  ]);
+  assert.equal(hpOf(app, 'mage'), 30);
+  // An 18 beats AC 17, so the ward asks nothing.
+  const high = stubApp({ mage, rng: scripted([d20(15), 0.5]) });
+  fight(high);
+  await rollWeaponAttack(high, {
+    attacker: pc(high, 'hero'),
+    defender: { ...target(high, 'mage'), ac: 16 },
+    weapon: SWORD,
+    tweaks: { freeAction: true },
+    ask: never,
+  });
+  assert.ok(hpOf(high, 'mage') < 30);
 });

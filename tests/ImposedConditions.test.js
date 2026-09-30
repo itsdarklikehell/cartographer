@@ -154,11 +154,19 @@ test('several retries in one turn each roll their own die', () => {
 test('addCondition carries a source through, and a replacement takes over the chip', () => {
   const first = addCondition([], 'Paralyzed', 10, { source: source() });
   assert.equal(first[0].source?.spellId, 'hold-person');
-  // A second cast replaces the chip, and owns it from then on.
+  // A chip with a repeated save keeps one place per cast, so a second caster
+  // adds its own chip, and a recast by the same caster replaces its own.
   const second = addCondition(first, 'paralyzed', 4, { source: source({ casterId: 'c2' }) });
-  assert.equal(second.length, 1);
-  assert.equal(second[0].source?.casterId, 'c2');
-  assert.equal(second[0].rounds, 4);
+  assert.equal(second.length, 2);
+  assert.equal(second[1].source?.casterId, 'c2');
+  const again = addCondition(second, 'Paralyzed', 3, { source: source() });
+  assert.deepEqual(
+    again.map((c) => [c.source?.casterId, c.rounds]),
+    [
+      ['c2', 4],
+      [source().casterId, 3],
+    ],
+  );
   // A hand-added chip stores no source key at all.
   assert.deepEqual(addCondition([], 'Prone'), [{ name: 'Prone', rounds: null }]);
 });

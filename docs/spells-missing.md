@@ -97,7 +97,10 @@ concentrating.
 Acid Arrow and Phantasmal Killer leave a chip on the target. The chip deals
 its damage at the end of the turns of that creature, and it ends at the
 boundary that the spell names. Phantasmal Killer deals its damage only when
-the repeated save fails, and a success ends the spell.
+the repeated save fails, and a success ends the spell. Each caster's cast
+keeps its own chip, so two Acid Arrows on one ogre both deal their later
+damage, and a target that is already Frightened still takes the chip of
+Phantasmal Killer.
 
 Witch Bolt, Spiritual Weapon, and Sunbeam leave a chip on the caster, named
 after the spell. While the caster has that chip, a cast of the same spell
@@ -157,11 +160,12 @@ as a death from exhaustion, and keeps the HP that the GM tracks.
 Shield of Faith gives its target +2 AC while the caster concentrates. Shield
 gives its caster +5 AC until the start of the caster's next turn. Its range
 is Self, so the cast dialog offers only the caster as the target. When an
-attack roll hits a caster who has Shield ready, and +5 AC would turn the
-hit into a miss, the app pauses before the damage and asks whether the
+attack roll hits a caster who has Shield ready, and the AC that Shield
+really adds would turn the hit into a miss, the app pauses before the damage and asks whether the
 caster casts it. A yes spends the reaction and the slot, and the app checks
 the roll again against the new AC. A weapon swing and an attack spell both
-pause, and Shield blocks every dart of Magic Missile. The question goes
+pause, and Shield blocks every dart of Magic Missile, also when the target
+already has Shield. The question goes
 only to a tab that may act for the caster, so an attack that a player tab
 rolls against a foe does not pause. The GM then casts the foe's Shield from
 the reaction control of the combat screen, and undoes the damage by hand.
