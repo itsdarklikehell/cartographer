@@ -13,7 +13,7 @@ import {
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestRevealed, toggleQuestStatus } from '../quest/Quests.js';
-import { questDetailCallbacks } from './questDetail.js';
+import { completeQuest, questDetailCallbacks } from './questDetail.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
@@ -186,6 +186,8 @@ export function wireStory(app) {
   app.views.questPanel = mountQuestPanel(mustGetElement('quest-container'), {
     getQuests: () => state.quests,
     onToggle: (quest) => {
+      // Completing writes a toast and a travelogue line. Reopening is quiet.
+      if (quest.status === 'active' && completeQuest(app, quest)) return;
       state.quests = replaceById(state.quests, toggleQuestStatus(quest));
       app.actions.markDirty();
     },

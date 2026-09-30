@@ -382,7 +382,9 @@ The helper owns the root element, the clear and rebuild, the row loop, the
 group headings, and the handler contract below. It also keeps keyboard
 focus across a rebuild: `captureFocus` and `restoreFocus`
 (`src/ui/focusMemory.js`) find the rebuilt control by its tag, type, class,
-and accessible name.
+and accessible name. A root that scrolls itself, such as the quest log,
+keeps its scroll position across a rebuild too. Without that, the clear
+scrolls the root back to the top, and the row under the pointer changes.
 
 **The helper awaits every handler, and redraws unless the handler reports
 that nothing happened.** A handler reports this by returning `false` or

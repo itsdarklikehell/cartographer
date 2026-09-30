@@ -681,16 +681,22 @@ The Handouts panel lists the handout when the party enters that map.
    Player view then lists the quest with its title and status, without the
    notes.
 4. When the party finishes the quest, click the complete button in front of
-   the title. The plus changes to a checkmark.
+   the title. The ring changes to a checkmark, a toast confirms, and the
+   travelogue gets a line.
+5. To edit or delete the quest, click the chevron, and then click **Edit**
+   or **Delete** at the bottom of the details.
 
 ### Add objectives and links to a quest
 
 1. Click the chevron on the quest row to show its details.
 2. Click **Objective**, type the step, and submit. To keep the step off the
    Player view, select **GM only (players do not see it)**.
-3. To mark a step done, click the ring in front of it.
+3. To mark a step done, click the ring in front of it. The ring is also on
+   the collapsed row, so you do not need to open the details. For a GM-only
+   step of a revealed quest, a dialog asks whether to reveal the step to
+   players. After the last step, a dialog offers to complete the quest.
 4. To change the text of a step, click the text.
-5. To hide or show one step, click the eye button on its row.
+5. To hide or reveal one step, click the eye button on its row.
 6. To reorder the steps, use the up and down arrows. To delete a step,
    click its remove button.
 7. To link a map, click **Link place**. To link the whole map, leave the

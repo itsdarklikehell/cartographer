@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createQuest } from '../src/quest/Quests.js';
 import {
   addObjective,
+  allObjectivesDone,
   editObjective,
   moveObjective,
   nextObjectiveId,
@@ -93,4 +94,13 @@ test('objectiveProgress counts the done objectives', () => {
   const quest = toggleObjectiveDone(questOfThree(), 'o3');
   assert.deepEqual(objectiveProgress(quest.objectives), { done: 1, total: 3 });
   assert.deepEqual(objectiveProgress([]), { done: 0, total: 0 });
+});
+
+test('allObjectivesDone needs at least one objective and every one done', () => {
+  let quest = questOfThree();
+  assert.equal(allObjectivesDone([]), false);
+  assert.equal(allObjectivesDone(quest.objectives), false);
+  for (const id of ['o1', 'o2']) quest = toggleObjectiveDone(quest, id);
+  assert.equal(allObjectivesDone(quest.objectives), false);
+  assert.equal(allObjectivesDone(toggleObjectiveDone(quest, 'o3').objectives), true);
 });

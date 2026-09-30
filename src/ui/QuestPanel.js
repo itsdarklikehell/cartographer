@@ -4,14 +4,14 @@ import { objectiveProgress } from '../quest/Objectives.js';
 import { icon } from './icons.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
-import { gmQuestDetail, playerObjectives } from './QuestDetail.js';
+import { gmObjectiveChecks, gmQuestDetail, playerObjectives } from './QuestDetail.js';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the quest/session log: active quests first, then completed quests
- * below, each with a toggle-complete, reveal, edit, and delete control, plus
+ * below, each with a toggle-complete, a reveal, and a details control, plus
  * a "New quest" control. The panel owns no state. `getQuests` supplies the
  * rows, and every mutation flows back through a callback, matching the other
  * panels. Modals for add, edit, and confirm live in the wiring modules.
@@ -24,8 +24,9 @@ import { gmQuestDetail, playerObjectives } from './QuestDetail.js';
  *
  * In a GM tab, a quest's details start hidden behind a per-row toggle, and
  * the panel scrolls once the list outgrows its room. The details are the
- * notes, the objectives with their controls, and the links (see
- * `QuestDetail.js`). A long-running campaign collects dozens of quests with
+ * notes, the objectives with their controls, the links, and the edit and
+ * delete buttons (see `QuestDetail.js`). A collapsed active row lists its
+ * objectives with only their check-off toggles. A long-running campaign collects dozens of quests with
  * a paragraph each, and with every quest open the list pushes the rest of
  * the rail off the screen. The set of expanded rows lives in this closure,
  * not in the campaign, so it is per browser and resets with a reload.
@@ -93,17 +94,21 @@ export function mountQuestPanel(container, callbacks) {
         quest,
       );
 
+      // A collapsed active quest lists its objectives with their check-off
+      // toggles. The open details list them with every control, and a
+      // completed quest shows only the count.
+      const open = expanded.has(quest.id);
       const { done: checked, total } = objectiveProgress(quest.objectives);
       const body = el(
         'div',
         'quest-panel__body u-col u-g1',
         title,
-        total > 0 ? el('span', 'u-muted', `${checked} of ${total} objectives done`) : null,
+        done && total > 0 ? el('span', 'u-muted', `${checked} of ${total} objectives done`) : null,
+        !done && !open ? gmObjectiveChecks(quest, ctx, callbacks) : null,
       );
 
-      // The details hold the add controls, so every GM row gets the toggle,
-      // even a quest with no notes or objectives yet.
-      const open = expanded.has(quest.id);
+      // The details hold the add, edit, and delete controls, so every GM row
+      // gets the toggle, even a quest with no notes or objectives yet.
       const detailsToggle = ctx.action(
         {
           icon: 'chevron',
@@ -131,13 +136,6 @@ export function mountQuestPanel(container, callbacks) {
                 : `Reveal ${quest.title} to players`,
               pressed: quest.revealed,
               onClick: () => callbacks.onToggleRevealed(quest),
-            },
-            { icon: 'edit', label: `Edit ${quest.title}`, onClick: () => callbacks.onEdit(quest) },
-            {
-              icon: 'remove',
-              label: `Delete ${quest.title}`,
-              variant: 'danger',
-              onClick: () => callbacks.onDelete(quest.id),
             },
           ]
         : [],

@@ -247,6 +247,10 @@ export function mountListPanel(container, options) {
     // Clearing the root drops focus to the document body. Note where it
     // was, and put it back once the rows exist again.
     const memo = captureFocus(root, document.activeElement);
+    // A root that scrolls itself, such as the quest log, drops back to the
+    // top when it is cleared. Without the restore, the row the GM just
+    // clicked jumps away from the pointer.
+    const { scrollTop } = root;
     root.innerHTML = '';
     /** @type {RowContext<T>} */
     const ctx = { gm, render, action };
@@ -295,6 +299,7 @@ export function mountListPanel(container, options) {
     }
 
     restoreFocus(root, memo);
+    root.scrollTop = scrollTop;
   }
 
   function render() {

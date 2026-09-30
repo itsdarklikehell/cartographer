@@ -117,3 +117,14 @@ export function removeObjective(quest, id) {
 export function objectiveProgress(objectives) {
   return { done: objectives.filter((o) => o.done).length, total: objectives.length };
 }
+
+/**
+ * Whether a quest has objectives and every one of them is done. A quest with
+ * no objectives returns false, so checking the last box of a list is the
+ * only event that offers to complete a quest.
+ * @param {QuestObjective[]} objectives
+ * @returns {boolean}
+ */
+export function allObjectivesDone(objectives) {
+  return objectives.length > 0 && objectives.every((o) => o.done);
+}

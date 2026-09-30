@@ -5,9 +5,16 @@
  * DOM, the same as `entityList.js`.
  */
 
-import { promptModal } from '../ui/Modal.js';
-import { applyFresh } from '../entities/Roster.js';
-import { addObjective, editObjective } from '../quest/Objectives.js';
+import { confirmModal, promptModal } from '../ui/Modal.js';
+import { applyFresh, replaceById } from '../entities/Roster.js';
+import {
+  addObjective,
+  allObjectivesDone,
+  editObjective,
+  toggleObjectiveDone,
+  toggleObjectiveHidden,
+} from '../quest/Objectives.js';
+import { setQuestStatus } from '../quest/Quests.js';
 import { addLink, creatureLink, linkKey, liveLinks, placeLink } from '../quest/QuestLinks.js';
 import { displayCoords, tileIdFromDisplay } from '../map/TileCoords.js';
 import { tileIdAt } from '../map/MapGeometry.js';
@@ -39,12 +46,76 @@ export function readPlaceLink(node, values) {
 }
 
 /**
+ * Mark a quest completed, show a toast, and write a travelogue line. The
+ * line names the quest, so the line of a quest that players cannot see is
+ * GM-only, and a Player tab leaves it out. `logEvent` saves the change.
  * @param {AppContext} app
- * @param {{ prompt?: typeof promptModal }} [options]
+ * @param {Quest} quest
+ * @returns {boolean} false when the quest is gone or already completed
+ */
+export function completeQuest(app, quest) {
+  const { state } = app;
+  const current = state.quests.find((q) => q.id === quest.id);
+  if (!current || current.status === 'completed') return false;
+  state.quests = replaceById(state.quests, setQuestStatus(current, 'completed'));
+  app.toasts.show(`Completed ${current.title}.`);
+  app.actions.logEvent(
+    'note',
+    `The party completes the quest ${current.title}.`,
+    current.revealed ? undefined : { gm: true },
+  );
+  return true;
+}
+
+/**
+ * @param {AppContext} app
+ * @param {{ prompt?: typeof promptModal, confirm?: typeof confirmModal }} [options]
  * @returns {import('../ui/QuestDetail.js').QuestDetailCallbacks & { linkTargets: () => unknown }}
  */
-export function questDetailCallbacks(app, { prompt = promptModal } = {}) {
+export function questDetailCallbacks(app, { prompt = promptModal, confirm = confirmModal } = {}) {
   const { state } = app;
+
+  /** The current copy of a quest, or undefined once it is gone. @param {string} id */
+  const current = (id) => state.quests.find((q) => q.id === id);
+
+  /**
+   * The questions that follow a checked objective. A GM-only objective of a
+   * revealed quest can be revealed now, because the party usually learns a
+   * step when it finishes it. The last open objective offers to complete the
+   * quest. Each question reads the quest again, since the dialog before it
+   * waits on the GM while another tab can save.
+   * @param {Quest} quest
+   * @param {string} id
+   */
+  async function afterDone(quest, id) {
+    const objective = quest.objectives.find((o) => o.id === id);
+    if (!objective?.done) return;
+    if (
+      quest.revealed &&
+      objective.hidden &&
+      (await confirm(`Players do not see "${objective.text}". Reveal it to them now?`, {
+        title: 'Objective done',
+        confirmLabel: 'Reveal to players',
+        cancelLabel: 'Keep GM only',
+      }))
+    ) {
+      write(quest, (q) =>
+        q.objectives.find((o) => o.id === id)?.hidden ? toggleObjectiveHidden(q, id) : q,
+      );
+    }
+    const latest = current(quest.id);
+    if (
+      latest?.status === 'active' &&
+      allObjectivesDone(latest.objectives) &&
+      (await confirm(`Every objective of ${latest.title} is done. Complete the quest?`, {
+        title: 'Quest done',
+        confirmLabel: 'Complete quest',
+        cancelLabel: 'Not yet',
+      }))
+    ) {
+      completeQuest(app, latest);
+    }
+  }
 
   /**
    * Apply `change` to the current copy of a quest. The copy the row drew
@@ -153,6 +224,12 @@ export function questDetailCallbacks(app, { prompt = promptModal } = {}) {
 
   return {
     onChange: (quest, change) => write(quest, change),
+    onToggleObjective: async (quest, id) => {
+      if (!write(quest, (q) => toggleObjectiveDone(q, id))) return false;
+      const fresh = /** @type {Quest} */ (current(quest.id));
+      await afterDone(fresh, id);
+      return true;
+    },
     onAddObjective: async (quest) => {
       const values = await prompt(`New objective for ${quest.title}`, objectiveFields(null));
       const text = values?.text.trim();

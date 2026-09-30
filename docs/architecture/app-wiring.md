@@ -810,6 +810,14 @@ These callbacks add, edit, check off, reorder, and remove objectives, and
 add and remove links. Each edit reads the quest again by id before it
 writes, because another tab can change the quest while a dialog is open.
 
+`onToggleObjective` checks an objective off and then can ask up to two
+questions. For a GM-only objective of a revealed quest, it offers to reveal
+the objective. When every objective is done, it offers to complete the
+quest. Completion goes through `completeQuest`, which the complete button of
+the row in `storyWiring.js` also uses. It sets the status, shows a toast,
+and logs a travelogue line through `logEvent`. The line is GM-only while
+the quest is hidden from players.
+
 A place link opens through `centerOnLocation`, and a link to a whole map
 centers on the middle tile of that map. A creature link opens on the tile of
 the creature, and a creature that is on no map has no open action. The

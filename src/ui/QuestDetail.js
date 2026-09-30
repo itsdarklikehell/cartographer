@@ -1,12 +1,7 @@
 import { badge, bareButton, removableChip, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import {
-  moveObjective,
-  removeObjective,
-  toggleObjectiveDone,
-  toggleObjectiveHidden,
-} from '../quest/Objectives.js';
+import { moveObjective, removeObjective, toggleObjectiveHidden } from '../quest/Objectives.js';
 import { removeLink } from '../quest/QuestLinks.js';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
@@ -20,12 +15,15 @@ import { removeLink } from '../quest/QuestLinks.js';
  */
 
 /**
- * The quest edits that the expanded GM row makes. `onChange` applies a pure
- * transform to the current copy of the quest. The other callbacks open a
- * dialog first. Each resolves to false when the GM cancels, so the panel
- * skips the repaint.
+ * The quest edits that the GM row makes. `onChange` applies a pure
+ * transform to the current copy of the quest. `onToggleObjective` checks
+ * off an objective or clears its check, and can then ask whether to reveal
+ * the objective or complete the quest. The other callbacks open a dialog
+ * first. Each resolves to false when the GM cancels, so the panel skips the
+ * repaint.
  * @typedef {{
  *   onChange: (quest: Quest, change: (quest: Quest) => Quest) => unknown,
+ *   onToggleObjective: (quest: Quest, id: string) => Promise<boolean>,
  *   onAddObjective: (quest: Quest) => Promise<boolean>,
  *   onEditObjective: (quest: Quest, objective: QuestObjective) => Promise<boolean>,
  *   onAddLink: (quest: Quest, kind: 'place' | 'creature') => Promise<boolean>,
@@ -38,16 +36,17 @@ import { removeLink } from '../quest/QuestLinks.js';
  * the handler reports that nothing changed.
  * @param {string} label
  * @param {string} ariaLabel
- * @param {() => Promise<boolean>} run
+ * @param {() => Promise<boolean> | boolean} run
  * @param {RowContext} ctx
+ * @param {{ icon?: import('./icons.js').IconName, variant?: import('./buttons.js').ButtonVariant }} [opts]
  */
-function addButton(label, ariaLabel, run, ctx) {
+function addButton(label, ariaLabel, run, ctx, { icon: glyph = 'add', variant } = {}) {
   return textButton(
     label,
     async () => {
       if (await run()) ctx.render();
     },
-    { icon: 'add', className: 'quest-detail__add', ariaLabel },
+    { icon: glyph, variant, className: 'quest-detail__add', ariaLabel },
   );
 }
 
@@ -69,6 +68,55 @@ export function playerObjectives(quest) {
         o.done ? 'quest-objective quest-objective--done' : 'quest-objective',
         el('span', 'quest-objective__status', icon(o.done ? 'check' : 'circle', { size: 14 })),
         el('span', 'quest-objective__text', o.text),
+      ),
+    ),
+  );
+}
+
+/**
+ * The check-off toggle of one objective.
+ * @param {Quest} quest
+ * @param {QuestObjective} objective
+ * @param {RowContext} ctx
+ * @param {QuestDetailCallbacks} callbacks
+ */
+function doneToggle(quest, { id, text, done }, ctx, callbacks) {
+  return ctx.action(
+    {
+      icon: done ? 'check' : 'circle',
+      label: done ? `Mark ${text} not done` : `Mark ${text} done`,
+      pressed: done,
+      onClick: () => callbacks.onToggleObjective(quest, id),
+    },
+    quest,
+  );
+}
+
+/**
+ * The objectives of a collapsed GM row: each one with its check-off toggle
+ * and its text, so the GM ticks a step off without opening the details.
+ * The other objective controls stay in the details.
+ * @param {Quest} quest
+ * @param {RowContext} ctx
+ * @param {QuestDetailCallbacks} callbacks
+ * @returns {HTMLElement | null}
+ */
+export function gmObjectiveChecks(quest, ctx, callbacks) {
+  if (quest.objectives.length === 0) return null;
+  return el(
+    'ul',
+    'quest-detail__objectives quest-detail__objectives--compact',
+    ...quest.objectives.map((o) =>
+      el(
+        'li',
+        o.done ? 'quest-objective quest-objective--done' : 'quest-objective',
+        doneToggle(quest, o, ctx, callbacks),
+        el(
+          'span',
+          'quest-objective__text',
+          el('span', '', o.text || '(no text)'),
+          o.hidden && badge('GM only', { variant: 'neutral' }),
+        ),
       ),
     ),
   );
@@ -98,20 +146,12 @@ function gmObjective(quest, objective, index, ctx, callbacks) {
   return el(
     'li',
     done ? 'quest-objective quest-objective--done' : 'quest-objective',
-    ctx.action(
-      {
-        icon: done ? 'check' : 'circle',
-        label: done ? `Mark ${text} not done` : `Mark ${text} done`,
-        pressed: done,
-        onClick: change((q) => toggleObjectiveDone(q, id)),
-      },
-      quest,
-    ),
+    doneToggle(quest, objective, ctx, callbacks),
     edit,
     ctx.action(
       {
         icon: hidden ? 'eye-off' : 'eye',
-        label: hidden ? `Show ${text} to players` : `Hide ${text} from players`,
+        label: hidden ? `Reveal ${text} to players` : `Hide ${text} from players`,
         pressed: !hidden,
         onClick: change((q) => toggleObjectiveHidden(q, id)),
       },
@@ -170,10 +210,15 @@ function linkChip(quest, chip, ctx, callbacks) {
 
 /**
  * The expanded GM part of a quest row: the notes, the objectives with their
- * controls, and the links, each with its add controls.
+ * controls, the links, and a row of buttons. The buttons add an objective or
+ * a link, and edit or delete the quest. Edit and Delete sit here and not on
+ * the row head, so the head keeps room for the title on a narrow rail.
  * @param {Quest} quest
  * @param {RowContext} ctx
- * @param {QuestDetailCallbacks} callbacks
+ * @param {QuestDetailCallbacks & {
+ *   onEdit: (quest: Quest) => Promise<boolean> | boolean,
+ *   onDelete: (id: string) => Promise<boolean> | boolean,
+ * }} callbacks
  * @returns {HTMLElement}
  */
 export function gmQuestDetail(quest, ctx, callbacks) {
@@ -217,6 +262,17 @@ export function gmQuestDetail(quest, ctx, callbacks) {
         () => callbacks.onAddLink(quest, 'creature'),
         ctx,
       ),
+    ),
+    el(
+      'div',
+      'quest-detail__adds u-row u-g1',
+      addButton('Edit', `Edit ${quest.title}`, () => callbacks.onEdit(quest), ctx, {
+        icon: 'edit',
+      }),
+      addButton('Delete', `Delete ${quest.title}`, () => callbacks.onDelete(quest.id), ctx, {
+        icon: 'remove',
+        variant: 'danger',
+      }),
     ),
   );
 }

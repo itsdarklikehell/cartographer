@@ -2134,15 +2134,27 @@ The Quests panel in the Story tab lists active and completed quests.
 | New quest | Opens the quest dialog, with Title and Notes |
 | Status mark | Completes or reopens the quest |
 | Eye | Reveals the quest to players, or hides it again |
-| Chevron | Shows or hides the notes, the objectives, and the links |
-| Edit, Delete | Edits or deletes the quest |
+| Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
 | Objective | Adds an objective |
 | Link place | Links the quest to a map place |
 | Link creature | Links the quest to a creature |
+| Edit, Delete | Edits or deletes the quest |
 
-Each objective has controls to mark it done, to hide it from players or
-show it, to move it up or down, and to remove it. A click on a link chip
-shows the linked place on the map.
+A collapsed active quest lists its objectives, each with the ring that
+marks it done. In the details, each objective also has controls to hide it
+from players or reveal it, to move it up or down, and to remove it. A
+completed quest shows how many of its objectives are done. A click on a
+link chip shows the linked place on the map.
+
+When you mark a GM-only objective of a revealed quest done, a dialog asks
+whether to reveal the objective to players. When you mark the last open
+objective done, a dialog offers to complete the quest. Completing a quest
+shows a toast and writes a travelogue line. The line of a quest that
+players cannot see is GM-only. Reopening a quest writes no line.
+
+The Quests panel scrolls once its list is taller than most of the window.
+A click on a control keeps the scroll position of the list, and a revealed
+or hidden quest keeps its place in the order.
 
 The Player view lists only revealed quests. It shows the objectives that
 are not hidden, and it hides the notes and the links.
