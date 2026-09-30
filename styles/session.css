@@ -208,12 +208,20 @@ body.role-player .npc-scope {
 }
 
 .combat-setup__stealth-total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  width: 8rem;
+}
+
+.combat-setup__stealth-field {
   width: 4.5rem;
   text-align: center;
 }
 
 .combat-setup__passive {
-  min-width: 4.5rem;
+  min-width: 8rem;
   font-family: var(--font-mono);
   text-align: center;
 }

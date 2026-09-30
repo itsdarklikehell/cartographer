@@ -32,6 +32,8 @@ export function stealthStep(roster, describe, surprised, hooks) {
   /** @type {Map<string, HTMLInputElement>} */
   const totals = new Map();
   /** @type {Map<string, HTMLElement>} */
+  const cells = new Map();
+  /** @type {Map<string, HTMLElement>} */
   const passives = new Map();
   /** @type {Map<string, number>} */
   const passiveOf = new Map();
@@ -59,7 +61,7 @@ export function stealthStep(roster, describe, surprised, hooks) {
     const by = sneaking();
     for (const p of roster) {
       const mine = describe(p).side === by;
-      /** @type {HTMLInputElement} */ (totals.get(p.id)).hidden = by === '' || !mine;
+      /** @type {HTMLElement} */ (cells.get(p.id)).hidden = by === '' || !mine;
       /** @type {HTMLElement} */ (passives.get(p.id)).hidden = by === '' || mine;
     }
     roll.hidden = by === '';
@@ -128,18 +130,27 @@ export function stealthStep(roster, describe, surprised, hooks) {
     cells(participant) {
       const name = describe(participant).name;
       const total = numberField('', {
-        className: 'combat-setup__stealth-total',
+        className: 'combat-setup__stealth-field',
         ariaLabel: `Stealth total for ${name}`,
         placeholder: 'Stealth',
       });
       total.addEventListener('input', judge);
       totals.set(participant.id, total);
+      // A visible word names the box, because a filled box loses its
+      // placeholder and looks like a second initiative box.
+      const cell = el(
+        'label',
+        'combat-setup__stealth-total',
+        el('span', 'u-muted', 'Stealth'),
+        total,
+      );
+      cells.set(participant.id, cell);
       const passive = hooks.passivePerception(participant);
       passiveOf.set(participant.id, passive);
       const shown = el('span', 'combat-setup__passive u-muted', `PP ${passive}`);
       setTip(shown, 'Passive Perception, compared with each Stealth total');
       passives.set(participant.id, shown);
-      return [total, shown];
+      return [cell, shown];
     },
     /** Hide the cells to match the picker. Call once the rows exist. */
     layout,
