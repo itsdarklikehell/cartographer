@@ -194,7 +194,9 @@ the wheel zooms.
 1. Open the node in the World tree.
 2. In the **Paint** tab, click **Generate map...** in the **Generate** card.
 3. Pick an **Archetype** and a **Size**. The dialog shows a preview of the
-   exact layout.
+   exact layout. When tiles of the parent map link to the node, **Size**
+   starts on the size that fits those tiles, and an outdoor map follows
+   the land that they show.
 4. Click **Reroll** until you like the preview. Each reroll picks a new
    **Seed**.
 5. For a dungeon with more than one level, set **Levels**. Each level

@@ -413,6 +413,16 @@ example world pass `site.guide` to `generateNodeTiles`, and the wild
 archetypes hand it to `wildTerrain`. The town and the interior archetypes
 ignore a guide.
 
+A regeneration from the Generate dialog builds its guide from the parent
+map. `RegenerateNode.reshapeParent` stamps a link when no parent tile leads
+to the node, and repaints the linked block for a climate archetype. It then
+reads the finished block with `terrainGuide`, and the dialog passes the
+guide to `expandTree` as `TreeRoot.guide`. The preview and the accepted
+regeneration both call `reshapeParent` with an RNG seeded from the dialog
+seed. The random repaint then gives both the same block, so the preview
+matches the map that the GM gets. `RegenerateNode.blockSize` gives the
+dialog its first size, with the `guideSize` rule below.
+
 With a guide, `guidedField` builds the three climate fields in place of
 `terrainField`. Each cell of the sub-map maps to a point in the box with the
 projection of `RegionCrossing.projectAlong`. A party that enters from a

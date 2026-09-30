@@ -1,6 +1,9 @@
 import { collectSubtreeIds } from './WorldTree.js';
-import { relandedTile } from './NodeEdits.js';
+import { ENTRANCE_ART, entranceArtFor, relandedTile } from './NodeEdits.js';
 import { stairwayTo } from './MapExits.js';
+import { ensureChildLink } from './TilePaint.js';
+import { repaintRegionBlock } from './RegionRepaint.js';
+import { guideSize, terrainGuide } from './GeneratorGuide.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -9,6 +12,8 @@ import { stairwayTo } from './MapExits.js';
 /** @typedef {import('../types/entities.js').CreaturePlacement} CreaturePlacement */
 /** @typedef {import('../types/handout.js').HandoutBinding} HandoutBinding */
 /** @typedef {import('./EntryMemory.js').EntryMemory} EntryMemory */
+/** @typedef {import('../types/map.js').TerrainGuide} TerrainGuide */
+/** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 
 /**
  * What a regeneration does beyond the node's own tiles. A generated layout
@@ -91,6 +96,64 @@ const STACK_LABEL = / \((level \d+|upper floor|dungeons|cellar)\)$/;
  */
 export function stackBase(name) {
   return name.replace(STACK_LABEL, '');
+}
+
+/**
+ * The size preset that fits the block of parent tiles linking to a node
+ * (`GeneratorGuide.guideSize`), or undefined when no parent tile links to
+ * it. The Generate dialog starts on this size, so a regenerated region map
+ * has as many cells per parent cell as a region map from world generation.
+ * @param {MapNode} parent
+ * @param {string} nodeId
+ * @returns {string | undefined}
+ */
+export function blockSize(parent, nodeId) {
+  const block = parent.tiles.filter((t) => t.childNodeId === nodeId).map((t) => t.id);
+  return block.length ? guideSize(terrainGuide(parent.tiles, block)) : undefined;
+}
+
+/**
+ * The parent of a regenerated node as the regeneration leaves it, and the
+ * terrain guide of the new map. When no parent tile links to the node,
+ * `TilePaint.ensureChildLink` stamps a link near the middle of the parent,
+ * and `tileId` names that tile. An existing link keeps its tiles, and its
+ * marker follows the new archetype. The linked block then takes the ground
+ * of a new climate archetype (`RegionRepaint.repaintRegionBlock`).
+ *
+ * `guide` reads the finished block (`GeneratorGuide.terrainGuide`), so an
+ * open-terrain map draws the land, the coasts, and the rivers of its block
+ * at a larger scale, the same as a region map from world generation. It is
+ * undefined when the parent has no room for a link. The town, world, and
+ * interior archetypes ignore it.
+ *
+ * The Generate preview and the accepted regeneration both call this with an
+ * RNG seeded from the dialog seed. A random repaint then gives the preview
+ * the same block, and so the same map, that the GM accepts.
+ * @param {{
+ *   parent: MapNode,
+ *   nodeId: string,
+ *   archetype: string,
+ *   palette: TilePalette,
+ *   rng: () => number,
+ * }} opts
+ * @returns {{ node: MapNode, tileId: string | null, guide?: TerrainGuide }}
+ */
+export function reshapeParent({ parent, nodeId, archetype, palette, rng }) {
+  const art = entranceArtFor(archetype);
+  const linked = ensureChildLink(parent, nodeId, {
+    // A wilderness gets no marker. Its link uses the terrain tile, or a new
+    // grass tile, and shows as a region outline once discovered.
+    markerRef: art ? (palette.get(art.marker)?.imageRef ?? null) : null,
+    createRef: palette.pickVariant('grass', rng).imageRef,
+    poiType: art ? art.poi : null,
+    genericRefs: new Set(
+      Object.values(ENTRANCE_ART).map((entry) => palette.get(entry.marker)?.imageRef ?? ''),
+    ),
+  });
+  const node = repaintRegionBlock(linked.node, nodeId, archetype, palette, rng);
+  const block = node.tiles.filter((t) => t.childNodeId === nodeId).map((t) => t.id);
+  if (!block.length) return { node, tileId: linked.tileId };
+  return { node, tileId: linked.tileId, guide: terrainGuide(node.tiles, block) };
 }
 
 /**

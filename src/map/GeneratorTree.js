@@ -48,11 +48,13 @@ export const SUBMAP_BUDGET = 300;
  *   levels?: number,
  *   level?: number,
  *   base?: string,
+ *   guide?: import('../types/map.js').TerrainGuide,
  * }} TreeRoot
  * The node being generated and the choice for it. `level` is the number of
  * the node in its stack of levels (see `generateNodeTiles`). `base` is the
  * name that the forced sub-maps of the node add their labels to, and it
- * defaults to `name`.
+ * defaults to `name`. `guide` is the parent terrain under the node, which
+ * an open-terrain map follows (see `RegenerateNode.reshapeParent`).
  */
 
 /**
@@ -146,6 +148,7 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
     levels: root.levels,
     level: root.level,
     environ: root.environ ?? undefined,
+    guide: root.guide,
   };
   const top = generateNodeTiles(palette, spec, rng);
   const queue = [

@@ -402,7 +402,7 @@ dialog shows a preview of the exact layout before it changes anything.
 | Field | Default | Values |
 | --- | --- | --- |
 | Archetype | The first in the list | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
-| Size | medium | small (8x8), medium (14x14), large (22x22), huge (32x32), or vast (48x48) |
+| Size | The size that fits the parent tiles that link to the node, or medium when none do | small (8x8), medium (14x14), large (22x22), huge (32x32), or vast (48x48) |
 | Levels | 1 | For a dungeon or a cave only: 1 to 10. A stack has at most 10 levels, so a deeper level allows fewer |
 | Sub-maps | None | For a region archetype only: None, One level down, or Every level |
 | Seed | A random number | The number that reproduces the layout. **Reroll** picks a new seed |
@@ -614,9 +614,17 @@ blank. A coast keeps its sea out to the edge of the map. A larger block gets a l
 across. An edge exit arrow shows when the party is near the edge of the
 painted land, not only near the border of the grid.
 
-A region map that you generate again from the Generate dialog does not
-follow its block, because the dialog builds the map from its archetype
-alone.
+A map that you generate again from the Generate dialog follows its block in
+the same way. This applies to each open-terrain archetype (wilderness,
+highlands, frontier, desert, wetlands, and island) under any parent map. A
+wilderness that links from a few tiles of a hand-painted map then draws the
+land of those tiles. A climate archetype first repaints the block (see
+[Parent tiles after regeneration](#parent-tiles-after-regeneration)), and
+the new map follows the repainted block. A region regenerated as a desert
+then draws desert inside the coasts of its block. An island follows the
+block too, so an island on a block of inland tiles has no sea around it. A
+town and a world do not follow the block. The Size field starts on the size
+that fits the block, and the preview shows the map that follows it.
 
 The terrain of a block sets the archetype of its region map.
 

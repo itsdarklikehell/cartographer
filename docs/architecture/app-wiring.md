@@ -379,6 +379,10 @@ The decisions are pure functions in `src/map/RegenerateNode.js`:
   character or a placed creature), because the new layout can turn its tile
   into wall or void.
 - `regenerateSnapshot` builds the undo record.
+- `reshapeParent` gives the parent as the regeneration leaves it, with its
+  entrance link and repainted block, and the terrain guide that the new
+  map follows (see [Guided terrain](map.md#guided-terrain)).
+- `blockSize` gives the size preset that the Size field starts on.
 
 Every other location inside the removed levels is emptied, with the same
 answers that the delete path gives. A location left on a node that no longer
@@ -394,8 +398,10 @@ exists hides its owner from every panel.
 
 The snapshot keeps the removed quest links with their positions in
 `questLinks`, and the undo puts them back with `QuestLinks.restoreLinks`.
-The random number generator that draws the new map also picks the entrance
-art on the parent, so one seed gives one result.
+A second random number generator, seeded from the same dialog seed, picks
+the entrance art and the repaint on the parent. The preview builds the
+parent with it too, so one seed gives one result, and the preview draws
+the map that follows that parent.
 
 #### The edit snapshot
 
@@ -437,8 +443,8 @@ The decisions that node edits share are pure functions in
 - `entranceArtFor` names the marker that a generated map's entrance gets on
   its parent.
 
-`TilePaint.ensureChildLink` stamps that marker when no parent tile links to
-the node. When a link exists, `refreshChildMarker` changes a marker whose
+`TilePaint.ensureChildLink`, which `reshapeParent` calls, stamps that
+marker when no parent tile links to the node. When a link exists, `refreshChildMarker` changes a marker whose
 point-of-interest type differs from the new archetype, or one that shows the
 generic marker of another archetype. It leaves stairs and doors alone.
 

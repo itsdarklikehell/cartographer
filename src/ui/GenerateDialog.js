@@ -44,6 +44,9 @@ const SUBMAP_DEPTHS = [
  * drawn. Without it the first preview of a large wilderness redraws once
  * per distinct ref as each SVG arrives.
  *
+ * `size` is the preset that the Size field starts on, and it defaults to
+ * medium.
+ *
  * `returnFocus` is the element that takes focus back when the dialog closes.
  * The Generate button passes itself: Safari does not focus a button on
  * click, so without this the dismissal lands wherever focus was before the
@@ -51,6 +54,7 @@ const SUBMAP_DEPTHS = [
  * @param {{
  *   archetypes: { value: string, label: string }[],
  *   sizes: { value: string, label: string }[],
+ *   size?: string,
  *   stacked?: string[],
  *   maxLevels?: number,
  *   nested?: string[],
@@ -87,7 +91,7 @@ export function generateDialog(options) {
         select(options.archetypes, options.archetypes[0]?.value ?? ''),
       );
 
-      const sizeSelect = field('Size', select(options.sizes, 'medium'));
+      const sizeSelect = field('Size', select(options.sizes, options.size ?? 'medium'));
 
       // Only the archetypes in `stacked`, such as a dungeon, stack levels, so
       // the field shows for those alone. A region lists none of them, so

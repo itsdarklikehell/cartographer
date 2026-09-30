@@ -10,15 +10,15 @@ import {
 } from '../map/MapGenerator.js';
 import { expandTree } from '../map/GeneratorTree.js';
 import { renamedFor } from '../map/GeneratorNames.js';
-import { repaintRegionBlock } from '../map/RegionRepaint.js';
-import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
-import { ENTRANCE_ART, entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
+import { freshNodeId } from '../map/NodeEdits.js';
 import {
+  blockSize,
   linkedDescendants,
   regenerateLanding,
   regenerateSnapshot,
   regenerateTokenMoves,
+  reshapeParent,
   stackBase,
   stackPlace,
 } from '../map/RegenerateNode.js';
@@ -85,6 +85,26 @@ export function wireGenerateAction(app, env) {
     // number in the stack.
     const stack = stackPlace(node, (n) => grid.getParent(n));
     const archetypes = archetypesFor(node.kind, stack?.back ?? null);
+    const parent = grid.getParent(node);
+
+    /**
+     * The parent as the choice leaves it, with the guide of the new map
+     * (`RegenerateNode.reshapeParent`), or null for the root node. It reads
+     * the parent from the grid on each call, so the accepted regeneration
+     * starts from the parent as it stands when the dialog closes.
+     * @param {GenerateChoice} choice
+     */
+    const reshapeFor = (choice) => {
+      const current = grid.getParent(node);
+      if (!current) return null;
+      return reshapeParent({
+        parent: current,
+        nodeId: node.id,
+        archetype: choice.archetype,
+        palette,
+        rng: mulberry32(choice.seed),
+      });
+    };
 
     /**
      * The spec of the top map for a dialog choice. The preview and the
@@ -95,7 +115,8 @@ export function wireGenerateAction(app, env) {
      * level below. A generated name follows the new archetype
      * (`GeneratorNames.renamedFor`), so the label of a world region names
      * its new climate. A level of a stack keeps its name, because its name
-     * comes from the top of the stack.
+     * comes from the top of the stack. An open-terrain map follows the
+     * parent block under the node.
      * @param {GenerateChoice} choice
      * @returns {TreeRoot}
      */
@@ -111,6 +132,7 @@ export function wireGenerateAction(app, env) {
         size: choice.size,
         levels: choice.levels,
         level: stack?.level,
+        guide: reshapeFor(choice)?.guide,
       };
     };
     /** @type {{ key: string, gen: Layout } | null} */
@@ -129,6 +151,7 @@ export function wireGenerateAction(app, env) {
     const values = await generateDialog({
       archetypes,
       sizes: SIZE_OPTIONS,
+      size: parent ? blockSize(parent, node.id) : undefined,
       stacked: STACKED_ARCHETYPES,
       maxLevels: levelsLeft(stack?.level ?? 1),
       nested: NESTED_ARCHETYPES,
@@ -209,26 +232,15 @@ export function wireGenerateAction(app, env) {
     // so the GM can move it. An existing link keeps its tile, and its marker
     // changes to match the new archetype. The ground of the linked block, such
     // as a region on a world map, changes to the climate of the new archetype
-    // (`RegionRepaint.repaintRegionBlock`). The snapshot above records the
+    // (`RegionRepaint.repaintRegionBlock`). The new map follows that block
+    // (`RegenerateNode.reshapeParent`). The snapshot above records the
     // parent, so undo restores both.
-    const parent = grid.getParent(node);
-    if (parent) {
-      const artFor = entranceArtFor(values.archetype);
-      const linked = ensureChildLink(parent, node.id, {
-        // Wilderness gets no marker. The link rides the existing terrain tile
-        // (or a fresh grass tile) and shows as a region outline once discovered.
-        markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
-        createRef: palette.pickVariant('grass', tree.rng).imageRef,
-        poiType: artFor ? artFor.poi : null,
-        genericRefs: new Set(
-          Object.values(ENTRANCE_ART).map((art) => palette.get(art.marker)?.imageRef ?? ''),
-        ),
-      });
-      const painted = repaintRegionBlock(linked.node, node.id, values.archetype, palette, tree.rng);
-      if (painted !== parent) grid.updateNode(painted);
+    const linked = reshapeFor(values);
+    if (linked) {
+      if (linked.node !== grid.getParent(node)) grid.updateNode(linked.node);
       if (linked.tileId) {
         alertModal(
-          `Linked "${gen.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
+          `Linked "${gen.name}" from ${linked.node.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
           { title: 'Entrance placed', label: 'OK' },
         );
       }
