@@ -39,6 +39,7 @@ export function freshBudget() {
     sneak: false,
     extra: false,
     surged: false,
+    spare: false,
   };
 }
 
@@ -65,6 +66,7 @@ export function budgetOf(value) {
     sneak: used.sneak === true,
     extra: used.extra === true,
     surged: used.surged === true,
+    spare: used.surged === true && used.spare === true,
   };
 }
 
@@ -96,7 +98,7 @@ export function canSpend(participant, cost) {
 export function spend(participant, cost) {
   const used = budgetOf(participant.used);
   if (used[cost]) return participant;
-  return { ...participant, used: { ...used, [cost]: true } };
+  return { ...participant, used: settle({ ...used, [cost]: true }) };
 }
 
 /**
@@ -147,7 +149,7 @@ export function spendAttack(participant, attacksPerAction = 1, extraAction = fal
   const banked = Math.max(0, Math.floor(attacksPerAction) - 1);
   return {
     ...participant,
-    used: { ...used, action: true, attacksLeft: banked, attacked: true },
+    used: settle({ ...used, action: true, attacksLeft: banked, attacked: true }),
   };
 }
 
@@ -182,7 +184,8 @@ export function isFresh(participant) {
     !used.attacked &&
     !used.sneak &&
     !used.extra &&
-    !used.surged
+    !used.surged &&
+    !used.spare
   );
 }
 
@@ -216,32 +219,43 @@ export function resetSneak(participant) {
 }
 
 /**
- * Whether Action Surge can give the turn another action: the action is
- * spent and the turn has not surged yet. The budget keeps one action at a
- * time, so a surge before the first action has nothing to give back, and
- * the app asks for the surge after the action.
+ * Spend the spare action of Action Surge in place of the turn's action. A
+ * budget that marks the action spent while a spare waits gets the action
+ * back free and loses the spare, and the swings that the Attack action
+ * banked stay banked. Any other budget returns unchanged.
+ * @param {ActionBudget} used
+ * @returns {ActionBudget}
+ */
+function settle(used) {
+  return used.action && used.spare ? { ...used, action: false, spare: false } : used;
+}
+
+/**
+ * Whether Action Surge can give the turn another action. 5e allows one
+ * surge per turn, before or after the first action.
  * @param {Participant} participant
  * @returns {boolean}
  */
 export function canSurge(participant) {
-  const used = budgetOf(participant.used);
-  return used.action && !used.surged;
+  return !budgetOf(participant.used).surged;
 }
 
 /**
- * Take Action Surge: the spent action comes back for one more full action.
+ * Take Action Surge, which gives the turn one more full action. With the
+ * action spent, the action comes back free. With the action free, a spare
+ * action waits behind it, and the first spend of the action uses the spare
+ * instead (see `settle`). Either way the turn has two actions in all.
  * Swings still banked from the first Attack action stay banked, and an
  * Attack action taken with the new action banks its own Extra Attack
- * swings. A turn that cannot surge returns the participant unchanged.
+ * swings. A turn that already surged returns the participant unchanged.
  * @param {Participant} participant
  * @returns {Participant}
  */
 export function surge(participant) {
   if (!canSurge(participant)) return participant;
-  return {
-    ...participant,
-    used: { ...budgetOf(participant.used), action: false, surged: true },
-  };
+  const used = budgetOf(participant.used);
+  const next = used.action ? { action: false } : { spare: true };
+  return { ...participant, used: { ...used, ...next, surged: true } };
 }
 
 /**

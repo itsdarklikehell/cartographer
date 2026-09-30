@@ -1146,7 +1146,7 @@ combatant with Extra Attack also shows how many swings are left.
 | A standard action (Dash, Disengage, Dodge, Help, Hide, Ready) | The action |
 | Dash, Disengage, or Hide under **Cunning Action** | The bonus action, for a Rogue of 2nd level or higher |
 | **Second Wind** | The bonus action and one use of the Second Wind pool |
-| **Action Surge** | One use of the Action Surge pool. It gives the spent action back |
+| **Action Surge** | One use of the Action Surge pool. It gives the turn one more action |
 
 The whole turn comes back when the turn of that combatant starts again. The
 reaction comes back at the same time, not at the top of the round. A
@@ -1181,11 +1181,14 @@ The button title shows the uses left. **Second Wind** spends the bonus
 action and one use, and the fighter regains 1d10 plus the fighter level in
 HP. The log line shows the roll, such as "Ser Aldric uses Second Wind and
 regains 9 HP (d10 5 + 4)." **Action Surge** costs no part of the turn.
-Press it after the action is spent, and the Action pip becomes free for one
-more full action. An Attack action with the new action gets its Extra
-Attack swings again. The app allows one surge per turn, as 5e does, even
-for a fighter with two uses. A button with no use left, or a surge before
-the action or a second surge in one turn, shows a toast and spends nothing.
+Press it at any point in the turn for one more full action. After the
+action is spent, the Action pip becomes free again. Before the action, a
+"+1 action (Action Surge)" pip shows next to the Action pip, and the first
+action spends that pip instead, so the Action pip stays free for the
+second. An Attack action with the new action gets its Extra Attack swings
+again. The app allows one surge per turn, as 5e does, even for a fighter
+with two uses. A button with no use left, or a second surge in one turn,
+shows a toast and spends nothing.
 
 A casting time longer than a turn, such as a ten-minute ritual, is refused
 in a fight in the same way, and it offers the same box.

@@ -140,8 +140,8 @@ export interface AppActions {
   // when the cost is spent afterward, and null when the id is not in a
   // running fight.
   toggleBudget?(id: string, cost: ActionCost): boolean | null;
-  // encounterWiring: give one combatant's spent action back for Action
-  // Surge. False when the action is unspent or the turn already surged.
+  // encounterWiring: give one combatant one more action for Action Surge.
+  // False when the turn already surged.
   surgeBudget?(id: string): boolean;
   // encounterWiring: drop the running fight when nothing is staged on the
   // party's tile any more, because the party walked off or the last

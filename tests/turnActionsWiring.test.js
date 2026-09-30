@@ -194,17 +194,25 @@ test('Second Wind with no use left, or no bonus action, refuses and keeps the us
   assert.deepEqual(busy.toasts, ['Aldric has no bonus action left this turn.']);
 });
 
-test('Action Surge needs the spent action, gives it back, and spends a use', () => {
-  const { app, toasts } = fighterFight();
-  const surgeEntry = entry(app, 'action-surge');
-  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), false, 'the action is not spent yet');
-  assert.match(toasts[0], /once per turn, after the action/);
-  assert.equal(poolOf(app, 'action-surge'), 1);
+test('Action Surge gives a spent action back, and spends a use', () => {
+  const { app } = fighterFight();
   app.actions.spendBudget('aldric', 'action');
-  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), true);
+  assert.equal(takeTurnAction(app, 'aldric', entry(app, 'action-surge')), true);
   assert.equal(usedOf(app, 'aldric').action, false);
   assert.equal(poolOf(app, 'action-surge'), 0);
   assert.deepEqual(app.log, ['Aldric uses Action Surge and takes one more action this turn.']);
+});
+
+test('Action Surge before the action gives two actions, once per turn', () => {
+  const { app, toasts } = fighterFight(2);
+  const surgeEntry = entry(app, 'action-surge');
+  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), true);
+  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), false, 'one surge per turn');
+  assert.deepEqual(toasts, ['Aldric already used Action Surge this turn.']);
+  assert.equal(poolOf(app, 'action-surge'), 1);
+  assert.equal(app.actions.spendBudget('aldric', 'action'), true);
+  assert.equal(app.actions.spendBudget('aldric', 'action'), true);
+  assert.equal(app.actions.spendBudget('aldric', 'action'), false, 'two actions in all');
 });
 
 test('a creature cannot use a class action', () => {

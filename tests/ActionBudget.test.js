@@ -46,6 +46,7 @@ test('freshBudget spends nothing', () => {
     sneak: false,
     extra: false,
     surged: false,
+    spare: false,
   });
 });
 
@@ -74,6 +75,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       sneak: false,
       extra: false,
       surged: false,
+      spare: false,
     },
   );
 });
@@ -254,10 +256,29 @@ test('unspend frees one cost, and freeing the action drops its banked swings', (
   assert.equal(budgetOf(reacted.used).attacksLeft, 1, 'only the action gives its bank back');
 });
 
+test('surge before the action leaves a spare that the first action spends', () => {
+  const fresh = { id: 'a', initiative: 10, modifier: 0 };
+  assert.equal(canSurge(fresh), true);
+  const surged = surge(fresh);
+  assert.deepEqual(surged.used, { ...freshBudget(), surged: true, spare: true });
+  assert.equal(canSurge(surged), false, 'one surge per turn');
+  assert.equal(surge(surged), surged);
+  const dashed = spend(surged, 'action');
+  assert.equal(canSpend(dashed, 'action'), true, 'the spare paid for the first action');
+  assert.equal(dashed.used?.spare, false);
+  assert.equal(canSpend(spend(dashed, 'action'), 'action'), false, 'two actions in all');
+  const swung = spendAttack(surged, 2);
+  assert.deepEqual(swung.used, { ...freshBudget(), surged: true, attacksLeft: 1, attacked: true });
+  assert.equal(attacksAvailable(swung, 2), 1, 'the banked swing comes first');
+  const third = spendAttack(spendAttack(swung, 2), 2);
+  assert.equal(third.used?.action, true);
+  assert.equal(third.used?.attacksLeft, 1, 'the second Attack action banks its own swing');
+  assert.equal(budgetOf({ spare: true }).spare, false, 'a spare needs the surge');
+  assert.equal(isFresh({ ...fresh, used: { ...freshBudget(), surged: true, spare: true } }), false);
+});
+
 test('surge gives a spent action back once per turn and keeps the swing bank', () => {
   const fresh = { id: 'a', initiative: 10, modifier: 0 };
-  assert.equal(canSurge(fresh), false, 'nothing to give back before the first action');
-  assert.equal(surge(fresh), fresh);
   const swung = spendAttack(fresh, 2);
   const surged = surge(swung);
   assert.equal(canSurge(surged), false, 'one surge per turn');

@@ -65,6 +65,12 @@ export interface ActionBudget {
    * one surge per turn, even for a fighter with two uses.
    */
   surged: boolean;
+  /**
+   * Whether Action Surge, taken before the turn's action, left a second
+   * action waiting. The first spend of the action uses this one instead, so
+   * the action stays free for one more full action.
+   */
+  spare: boolean;
 }
 
 /** How a participant is presented, derived from the entity holding its id. */

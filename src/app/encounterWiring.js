@@ -162,7 +162,7 @@ export function wireEncounters(app) {
   };
 
   /**
-   * Give one combatant's spent action back for Action Surge.
+   * Give one combatant one more action this turn for Action Surge.
    * @param {string} id
    * @returns {boolean} false when the turn cannot surge; true with no fight
    *   running, where there is no budget to track

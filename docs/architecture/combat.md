@@ -328,9 +328,13 @@ gives attacks against a Dodging creature disadvantage. An entry with a
 `poolId` checks that the pool has a use left before it spends anything.
 Second Wind then spends the bonus action and heals through `applyToTarget`.
 Action Surge calls the `surgeBudget` action of encounterWiring, which runs
-`ActionBudget.surge`: the spent action becomes free, the `surged` flag
-blocks a second surge on the same turn, and the swings that Extra Attack
-banked stay banked.
+`ActionBudget.surge`. The `surged` flag blocks a second surge on the same
+turn. With the action spent, the action becomes free, and the swings that
+Extra Attack banked stay banked. With the action free, the surge sets the
+`spare` flag instead. The next spend of the action, through `spend` or
+`spendAttack`, clears `spare` and leaves the action free, so the turn has
+two actions in all. The action bar shows a "+1 action (Action Surge)" pip
+while `spare` is set.
 
 ### Two-weapon fighting
 

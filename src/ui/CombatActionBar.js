@@ -194,6 +194,11 @@ function budgetRow(budget, onToggle) {
     pip.appendChild(el('span', 'sr-only', spent ? ': used' : ': available'));
     return pip;
   });
+  // An Action Surge taken before the action leaves a second action behind
+  // the free Action pip, which the pip alone cannot show.
+  if (budget.used.spare) {
+    pips.push(el('span', 'combat-action-bar__pip', '+1 action (Action Surge)'));
+  }
   // The count shows only where it says something the pips do not: a second
   // swing this turn, from Extra Attack.
   if (budget.attacksLeft > 1) {

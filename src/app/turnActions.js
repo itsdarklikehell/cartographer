@@ -24,8 +24,8 @@ import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
  * lives in `combat/TurnActions.js`. This module finds out which features a
  * combatant has, spends the cost through `spendBudget`, and writes the log
  * line and the Dodging chip. A class action also spends one use of its
- * pool: Second Wind heals the fighter, and Action Surge gives the spent
- * action back through the `surgeBudget` action of encounterWiring.
+ * pool: Second Wind heals the fighter, and Action Surge gives the turn one
+ * more action through the `surgeBudget` action of encounterWiring.
  */
 
 /**
@@ -126,9 +126,7 @@ function useClassAction(app, found, action, rng) {
   }
   if (poolId === ACTION_SURGE_ID) {
     if (app.actions.surgeBudget && !app.actions.surgeBudget(entity.id)) {
-      app.toasts.show(
-        `${entity.name} can use Action Surge once per turn, after the action is spent.`,
-      );
+      app.toasts.show(`${entity.name} already used Action Surge this turn.`);
       return false;
     }
   } else if (

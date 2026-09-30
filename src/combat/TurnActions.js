@@ -125,7 +125,7 @@ export function turnActions({ cunningAction = false, secondWind, actionSurge } =
       name: 'Action Surge',
       cost: null,
       group: FIGHTER_GROUP,
-      title: `Use Action Surge after the action: take one more action this turn (${usesLeft(actionSurge)})`,
+      title: `Use Action Surge: take one more action this turn (${usesLeft(actionSurge)})`,
       ariaLabel: 'Use Action Surge',
       poolId: ACTION_SURGE_ID,
     });
