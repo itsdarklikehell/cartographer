@@ -101,7 +101,7 @@ export function attackDialog({
   const cannotPay = !canSwing(
     participant,
     swingKind({ offhand, reaction }),
-    attacksPerAction(attacker),
+    attacksPerAction(attacker, weapon),
     hasExtraAction(attacker.conditions),
   );
   const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;

@@ -124,7 +124,7 @@ export function rollWeaponAttack(
       swing.cost,
       swing.cost === 'attack'
         ? {
-            attacksPerAction: attacksPerAction(attacker),
+            attacksPerAction: attacksPerAction(attacker, weapon),
             extraAction: hasExtraAction(attacker.conditions),
           }
         : {},

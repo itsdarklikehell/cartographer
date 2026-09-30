@@ -207,7 +207,9 @@ A participant with no `used` field therefore reads as a whole turn through
 `attacksLeft` is the only counter in the budget. Extra Attack gives two
 swings for one action, so the first swing spends the action and banks the
 rest. `spendAttack` draws on the bank before it spends another action, and
-`attacksAvailable` reports how many swings are left. Each swing also sets
+`attacksAvailable` reports how many swings are left. Only a weapon whose own
+count is two or more draws on the bank (see
+[Hit riders and the pact weapon](#hit-riders-and-the-pact-weapon)). Each swing also sets
 `attacked`, because a cast spends the `action` flag too, and two-weapon
 fighting needs to know that the action went to the Attack action.
 
@@ -465,8 +467,13 @@ Hunter's Mark +1d6.` The defender's resistances then apply per damage type,
 the same as for the weapon's own dice.
 
 Thirsting Blade works through `Features.attacksPerAction`, which the budget
-reads as the swings of one Attack action. The count does not know which
-weapon swings, so the second swing works with any weapon.
+reads as the swings of one Attack action. The weapon swing passes its weapon,
+so the count is 2 only for a swing with the pact weapon. A first swing with
+another weapon banks nothing, and a swing with another weapon cannot draw on
+a bank that the pact weapon left, because `spendAttack` and
+`attacksAvailable` use the bank only for a weapon that buys two or more
+swings. The combat screen calls `attacksPerAction` with no weapon, so its
+count of swings left is the best case.
 
 ### Creature-type rules and caster slants
 

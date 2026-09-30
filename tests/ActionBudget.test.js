@@ -158,6 +158,21 @@ test('attacksAvailable reports the bank once the action is spent', () => {
   assert.equal(attacksAvailable(at({ action: true }), 2), 0);
 });
 
+test('a weapon that buys one swing per action cannot draw on the bank', () => {
+  // Thirsting Blade banks a swing for the pact weapon alone.
+  const banked = at({ action: true, attacksLeft: 1, attacked: true });
+  assert.equal(attacksAvailable(banked, 1), 0);
+  assert.equal(attacksAvailable(banked, 1, true), 1);
+  // Haste still gives its one swing, and the bank waits for the pact weapon.
+  assert.deepEqual(spendAttack(banked, 1, true).used, {
+    ...freshBudget(),
+    action: true,
+    attacksLeft: 1,
+    attacked: true,
+    extra: true,
+  });
+});
+
 test('an extra action buys one swing after the action and its bank', () => {
   // A fighter with Extra Attack and Haste swings three times: two for the
   // Attack action and one for the extra action.

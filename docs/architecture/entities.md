@@ -659,7 +659,9 @@ Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
 Fighter features that follow it. It takes the best count across the class
 list, because Extra Attack does not stack in 5e. It also takes the higher of that count and
 `PactWeapon.pactAttacks`, so a warlock with Thirsting Blade swings twice, and
-a fighter 5 / warlock 5 with the invocation still swings twice. `sneakAttackDice` gives the
+a fighter 5 / warlock 5 with the invocation still swings twice. The optional
+`weapon` argument names the weapon of the swing, and Thirsting Blade counts
+only when that weapon is the pact weapon. `sneakAttackDice` gives the
 number of d6 that Sneak Attack adds, from the level in the class that granted
 it. `hasFeature` and `featureSource` are the exact-name lookups under both.
 
@@ -763,7 +765,8 @@ the Blade boon and still carries a weapon or bow with that id.
 `CharacterInventory.removeItem` clears the id when the stack leaves, so a
 given or discarded weapon never keeps the mark. `pactAttacks` gives 2 for a
 warlock with Thirsting Blade (the `pactAttack` effect) and a marked pact
-weapon. `pactDamage` gives the flat necrotic term of Lifedrinker (the
+weapon. With a weapon passed, it gives 2 only when that weapon is the pact
+weapon, and 1 for any other. `pactDamage` gives the flat necrotic term of Lifedrinker (the
 `pactDamage` effect), equal to the CHA modifier with a minimum of 1, for a hit
 with the pact weapon. The weapon swing adds that term after the crit
 doubling, because a crit doubles only dice. `MagicWeapon.weaponIsMagical`

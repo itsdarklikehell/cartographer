@@ -75,14 +75,19 @@ function invoked(character, kind) {
 
 /**
  * How many swings one Attack action buys through Thirsting Blade: 2 for a
- * warlock with the invocation and a pact weapon, else 1. Extra Attack
- * features do not stack in 5e, so `Features.attacksPerAction` takes the
- * higher of this and the class count.
+ * warlock with the invocation and a pact weapon, else 1. The invocation
+ * covers only swings with the pact weapon, so with a `weapon` given the
+ * count is 2 only when that weapon is the pact weapon. Without a weapon the
+ * count is the best case, which the combat screen shows as the swings left.
+ * Extra Attack features do not stack in 5e, so `Features.attacksPerAction`
+ * takes the higher of this and the class count.
  * @param {Partial<Character>} character
+ * @param {object} [weapon] the weapon of the swing
  * @returns {number}
  */
-export function pactAttacks(character) {
-  return invoked(character, 'pactAttack') && pactWeapon(character) ? 2 : 1;
+export function pactAttacks(character, weapon) {
+  if (!invoked(character, 'pactAttack') || !pactWeapon(character)) return 1;
+  return !weapon || isPactWeapon(character, weapon) ? 2 : 1;
 }
 
 /**

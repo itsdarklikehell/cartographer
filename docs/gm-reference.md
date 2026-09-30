@@ -1888,7 +1888,7 @@ Invocation rules list under the rows shows what each picked invocation does.
 | A once-per-rest spell, such as Thief of Five Fates | The spell casts with a pact slot, and then it refuses until a long rest. The slot picker offers only the pact slot level, and the cast refuses when no pact slot is left. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
 | Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives. A warlock that drops below 2nd level loses the skills, and gets them back at 2nd level |
 | Book of Ancient Secrets | Casts the rituals in the Book of Shadows as rituals. See [Pact of the Tome](#pact-of-the-tome) |
-| Thirsting Blade | One Attack action buys two swings, when the warlock has marked a pact weapon. It does not add to Extra Attack from another class, so a fighter 5 / warlock 5 still swings twice. The second swing works with any weapon, so you check that it is the pact weapon |
+| Thirsting Blade | One Attack action buys two swings with the marked pact weapon. A first swing with another weapon ends the Attack action, and the second swing refuses any weapon but the pact weapon. It does not add to Extra Attack from another class, so a fighter 5 / warlock 5 still swings twice with any weapon |
 | Lifedrinker | Each hit with the pact weapon adds necrotic damage equal to the CHA modifier, at least 1. A critical hit does not double it. The damage line of the log names it, as in `, Lifedrinker +4 necrotic` |
 | Any other invocation, such as Devil's Sight | Text in the rules list only |
 

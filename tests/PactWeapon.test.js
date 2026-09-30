@@ -11,6 +11,7 @@ import { attacksPerAction } from '../src/entities/Features.js';
 import { removeItem, settlePactWeapon } from '../src/entities/CharacterInventory.js';
 import { hitDamage, hitLines, prepareSwing } from '../src/combat/WeaponSwing.js';
 import { createCharacter } from '../src/entities/Character.js';
+import { attacksAvailable, spendAttack } from '../src/combat/ActionBudget.js';
 
 const BLADE = {
   id: 'blade',
@@ -84,6 +85,39 @@ test('Thirsting Blade grants a second swing that does not stack with Extra Attac
     level: 10,
   });
   assert.equal(attacksPerAction(multi), 2);
+});
+
+test('Thirsting Blade grants its second swing only to the pact weapon', () => {
+  const w = warlock(5, ['thirsting-blade']);
+  assert.equal(pactAttacks(w, BLADE), 2);
+  assert.equal(pactAttacks(w, BOW), 1);
+  assert.equal(attacksPerAction(w, BLADE), 2);
+  assert.equal(attacksPerAction(w, BOW), 1);
+  assert.equal(attacksPerAction(w, { name: 'Claw' }), 1);
+  // Extra Attack from a fighter level covers every weapon, and the two do not add up.
+  const multi = warlock(5, ['thirsting-blade'], {
+    classes: [
+      { classId: 'warlock', level: 5 },
+      { classId: 'fighter', level: 5 },
+    ],
+    level: 10,
+  });
+  assert.equal(attacksPerAction(multi, BOW), 2);
+  assert.equal(attacksPerAction(multi, BLADE), 2);
+});
+
+test('a warlock who swings a bow first gets no Thirsting Blade swing', () => {
+  const w = warlock(5, ['thirsting-blade']);
+  const turn = { id: 'w', initiative: 10, used: undefined };
+  const afterBow = spendAttack(turn, attacksPerAction(w, BOW));
+  assert.equal(afterBow.used?.attacksLeft, 0);
+  assert.equal(attacksAvailable(afterBow, attacksPerAction(w, BLADE)), 0);
+  // A pact weapon swing banks one more, which only the pact weapon can spend.
+  const afterBlade = spendAttack(turn, attacksPerAction(w, BLADE));
+  assert.equal(afterBlade.used?.attacksLeft, 1);
+  assert.equal(attacksAvailable(afterBlade, attacksPerAction(w, BOW)), 0);
+  assert.equal(attacksAvailable(afterBlade, attacksPerAction(w, BLADE)), 1);
+  assert.equal(spendAttack(afterBlade, attacksPerAction(w, BLADE)).used?.attacksLeft, 0);
 });
 
 test('Lifedrinker adds the CHA modifier as necrotic to pact weapon hits', () => {

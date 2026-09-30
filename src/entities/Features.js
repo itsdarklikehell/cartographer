@@ -75,11 +75,14 @@ export function featureSource(character, name) {
  * Extra Attack does not stack across classes in 5e, so a multiclass character
  * takes the best count rather than the sum, which reading the highest
  * numbered feature does on its own. The warlock's Thirsting Blade counts
- * as one more such feature.
+ * as one more such feature, but only for a swing with the pact weapon. A
+ * `weapon` names the weapon of the swing, and without one the count is the
+ * best case over all weapons.
  * @param {Featured} character
+ * @param {object} [weapon] the weapon of the swing
  * @returns {number} at least 1
  */
-export function attacksPerAction(character) {
+export function attacksPerAction(character, weapon) {
   let extra = 0;
   for (const feature of unlockedFeatures(asCharacter(character))) {
     if (feature.name === EXTRA_ATTACK) extra = Math.max(extra, 1);
@@ -89,7 +92,7 @@ export function attacksPerAction(character) {
     }
   }
   // Thirsting Blade is an Extra Attack of its own, so the two do not add up.
-  return Math.max(1 + extra, pactAttacks(asCharacter(character)));
+  return Math.max(1 + extra, pactAttacks(asCharacter(character), weapon));
 }
 
 /**

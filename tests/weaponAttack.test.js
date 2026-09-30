@@ -1172,6 +1172,33 @@ test('a swing spends the attack and banks the extra swings of Extra Attack', () 
   assert.equal(app.rolls.length, 1, 'the swing went through');
 });
 
+test('Thirsting Blade banks a second swing only for a pact weapon swing', () => {
+  const { app, hero, spends } = budgetApp();
+  const dagger = { ...SWORD, id: 'dagger', name: 'Dagger' };
+  const warlock = {
+    ...hero,
+    classes: [{ classId: 'warlock', level: 5 }],
+    level: 5,
+    pactBoon: 'blade',
+    invocations: ['thirsting-blade'],
+    inventory: [SWORD, dagger],
+    pactWeapon: 'sword',
+  };
+  const defender = { id: 'goblin', name: 'Goblin', ac: 10 };
+  for (const weapon of [dagger, SWORD]) {
+    rollWeaponAttack(app, {
+      attacker: warlock,
+      defender,
+      weapon: /** @type {any} */ (weapon),
+      rng: scripted([4 / 8]),
+    });
+  }
+  assert.deepEqual(
+    spends.map((s) => s.attacksPerAction),
+    [1, 2],
+  );
+});
+
 test('a swing a turn cannot pay for rolls nothing and says so', () => {
   const { app, hero, spends } = budgetApp({ allow: false });
   rollWeaponAttack(app, {
@@ -1393,7 +1420,8 @@ test('canSwing asks the attack bank for a main swing and the pips for the other 
   assert.equal(canSwing(fresh, 'main', 1), true);
   assert.equal(canSwing(spent, 'main', 1), false, 'the action is gone and nothing is banked');
   const banked = /** @type {any} */ ({ id: 'hero', used: { action: true, attacksLeft: 1 } });
-  assert.equal(canSwing(banked, 'main', 1), true, 'Extra Attack banked the second swing');
+  assert.equal(canSwing(banked, 'main', 2), true, 'Extra Attack banked the second swing');
+  assert.equal(canSwing(banked, 'main', 1), false, 'a one-swing weapon cannot spend the bank');
   assert.equal(canSwing(spent, 'offhand', 1), true, 'the bonus action is untouched');
   assert.equal(canSwing(spent, 'reaction', 1), true);
   const drained = /** @type {any} */ ({ id: 'hero', used: { bonus: true, reaction: true } });

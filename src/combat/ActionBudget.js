@@ -100,7 +100,10 @@ export function spend(participant, cost) {
 /**
  * Spend one weapon swing. The first swing of a turn costs the action and banks
  * the rest of the attacks the combatant's Extra Attack grants. Each later
- * swing draws on that bank and costs nothing. With the action and the bank
+ * swing draws on that bank and costs nothing. Only a weapon that buys two or
+ * more swings per action draws on the bank. Thirsting Blade grants its second
+ * swing to the pact weapon alone, so a warlock who banks a swing with the
+ * pact weapon cannot spend it on a dagger. With the action and the bank
  * both spent, a combatant with an extra action (Haste) spends that for one
  * more swing, and nothing banks behind it. A swing past all of these spends
  * another Attack action; the app's write path refuses before that, so only a
@@ -115,7 +118,7 @@ export function spend(participant, cost) {
  */
 export function spendAttack(participant, attacksPerAction = 1, extraAction = false) {
   const used = budgetOf(participant.used);
-  if (used.attacksLeft > 0) {
+  if (used.attacksLeft > 0 && attacksPerAction >= 2) {
     return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1, attacked: true } };
   }
   if (used.action && extraAction && !used.extra) {
@@ -131,7 +134,7 @@ export function spendAttack(participant, attacksPerAction = 1, extraAction = fal
 /**
  * How many swings the combatant can still take without a fresh Attack action,
  * counting the ones the action itself buys and the one of an unspent extra
- * action.
+ * action. The bank counts only for a weapon that buys two or more swings.
  * @param {Participant} participant
  * @param {number} [attacksPerAction]
  * @param {boolean} [extraAction] whether the combatant has an extra action
@@ -140,7 +143,7 @@ export function spendAttack(participant, attacksPerAction = 1, extraAction = fal
 export function attacksAvailable(participant, attacksPerAction = 1, extraAction = false) {
   const used = budgetOf(participant.used);
   const extra = extraAction && !used.extra ? 1 : 0;
-  if (used.attacksLeft > 0) return used.attacksLeft + extra;
+  if (used.attacksLeft > 0) return (attacksPerAction >= 2 ? used.attacksLeft : 0) + extra;
   return (used.action ? 0 : Math.max(1, Math.floor(attacksPerAction))) + extra;
 }
 
