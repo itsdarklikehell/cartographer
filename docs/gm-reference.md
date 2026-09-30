@@ -1031,9 +1031,17 @@ A click on a ribbon chip inspects that combatant without a change of turn.
 | Back to map | Everyone | Leaves the screen without an end to the fight. The Initiative card in the sidebar shows the round and has **Open combat** |
 | End combat | GM only | Ends the fight. While a hostile creature still stands, the app asks first |
 
-After a victory, End combat offers the XP of the defeated foes. The XP is
-split evenly among the living characters and rounded down. A foe with no
-challenge rating is worth nothing. You can change the amount or cancel.
+Unless the party lost, End combat offers the XP of the defeated foes. The
+XP is split evenly among the living characters and rounded down, and the
+dialog states any XP that the split leaves over. A foe with no challenge
+rating is worth nothing. You can change the amount or cancel.
+
+Each hostile creature that still stands gets a box that counts it as overcome,
+for a foe that surrendered, fled, or was captured. A ticked box adds the
+XP of that foe to the split. On **Award**, each ticked foe becomes neutral,
+so the Encounter alert does not fire again when the party steps onto its
+tile. To make it a foe again, set its disposition back to hostile in the
+creature dialog.
 
 A fight also ends when no creature of the fight is left on the tile of the
 party or on the eight tiles around it. A walk away from the fight ends it,

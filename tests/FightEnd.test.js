@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightEnd } from '../src/combat/FightEnd.js';
+import { fightEnd, splitCaption, xpSplit } from '../src/combat/FightEnd.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage } from '../src/entities/Creature.js';
 
@@ -70,4 +70,33 @@ test('fightEnd shares nothing when no character is left alive', () => {
   );
   assert.deepEqual(end.earners, []);
   assert.equal(end.share, 0);
+});
+
+test('fightEnd lists the foes still standing with their worth', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 12);
+  const end = fightEnd(
+    combatOf(['hero', 'ogre', 'imp', 'rat']),
+    resolver({
+      hero: { kind: 'character', entity: hero },
+      ogre: { kind: 'creature', entity: applyDamage(foe('ogre', 2), 99) },
+      imp: { kind: 'creature', entity: foe('imp', 1) },
+      rat: { kind: 'creature', entity: foe('rat') },
+    }),
+  );
+  assert.deepEqual(end.standingFoes, [
+    { id: 'imp', name: 'imp', xp: 200 },
+    { id: 'rat', name: 'rat', xp: 0 },
+  ]);
+});
+
+test('xpSplit rounds each share down and reports what is left over', () => {
+  assert.deepEqual(xpSplit(50, 4), { share: 12, remainder: 2 });
+  assert.deepEqual(xpSplit(100, 4), { share: 25, remainder: 0 });
+  assert.deepEqual(xpSplit(30, 0), { share: 0, remainder: 30 });
+  assert.deepEqual(xpSplit(-5, 2), { share: 0, remainder: 0 });
+});
+
+test('splitCaption names the split and any left over', () => {
+  assert.equal(splitCaption(250, 4), '250 XP split 4 ways, 2 XP left over');
+  assert.equal(splitCaption(200, 1), '200 XP split 1 way');
 });

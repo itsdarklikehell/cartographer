@@ -457,8 +457,9 @@ still open stays until you end the fight. To bring the foes back, click
 10. Click **Next turn** to go to the next combatant. Timed conditions count
     down each round.
 11. When the fight is over, click **End combat**.
-12. After a victory, check the value in the **Award XP for the fight**
-    dialog, and click **Award**. Each character gets that amount.
+12. In the **Award XP for the fight** dialog, tick the overcome box for
+    each foe that surrendered, fled, or was captured. Check the value, and
+    click **Award**. Each character gets that amount.
 
 When the last foe drops, a banner announces the victory and the fight stays
 open. The party can heal, and everyone can read the log before you end it.

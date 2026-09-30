@@ -6,9 +6,16 @@ import { isDead } from '../entities/DeathSaves.js';
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 
 /**
+ * A hostile creature still up when the fight ends, with the points it is
+ * worth if the GM counts it as overcome.
+ * @typedef {{ id: string, name: string, xp: number }} StandingFoe
+ */
+
+/**
  * @typedef {{
  *   outcome: 'victory' | 'defeat' | null,
  *   standing: number,
+ *   standingFoes: StandingFoe[],
  *   xp: number,
  *   earners: string[],
  *   share: number,
@@ -16,8 +23,8 @@ import { isDead } from '../entities/DeathSaves.js';
  */
 
 /**
- * What the End combat control needs to know about a fight: its outcome, how
- * many hostile creatures still stand, and the experience points that the
+ * What the End combat control needs to know about a fight: its outcome, the
+ * hostile creatures that still stand, and the experience points that the
  * defeated ones are worth. The points go to the characters in the order who
  * are still alive, a dying one included, split evenly and rounded down. A
  * foe with no challenge rating is worth nothing.
@@ -29,9 +36,14 @@ export function fightEnd(combat, resolve) {
   const view = buildCombatView(combat, resolve, { gm: true });
   const foes = view.rows.filter((row) => row.side === 'foe' && row.counted);
   let xp = 0;
+  /** @type {StandingFoe[]} */
+  const standingFoes = [];
   for (const row of foes) {
     const found = resolve(row.id);
-    if (row.defeated && found?.kind === 'creature') xp += crXP(found.entity.cr ?? -1);
+    if (found?.kind !== 'creature') continue;
+    const worth = crXP(found.entity.cr ?? -1);
+    if (row.defeated) xp += worth;
+    else standingFoes.push({ id: row.id, name: found.entity.name, xp: worth });
   }
   const earners = view.rows.flatMap((row) => {
     const found = resolve(row.id);
@@ -40,8 +52,39 @@ export function fightEnd(combat, resolve) {
   return {
     outcome: fightOutcome(view),
     standing: foes.filter((row) => !row.defeated).length,
+    standingFoes,
     xp,
     earners,
-    share: earners.length > 0 ? Math.floor(xp / earners.length) : 0,
+    share: xpSplit(xp, earners.length).share,
   };
+}
+
+/**
+ * Split a total of experience points evenly among `count` characters. Each
+ * gets the rounded-down share, and `remainder` is what the split leaves
+ * over. With no characters, nobody gets a share and the whole total is left
+ * over.
+ * @param {number} total
+ * @param {number} count
+ * @returns {{ share: number, remainder: number }}
+ */
+export function xpSplit(total, count) {
+  const whole = Math.max(0, Math.floor(total));
+  if (count <= 0) return { share: 0, remainder: whole };
+  const share = Math.floor(whole / count);
+  return { share, remainder: whole - share * count };
+}
+
+/**
+ * The words that explain a split: "250 XP split 4 ways, 2 XP left over".
+ * The left-over part appears only when the split leaves some.
+ * @param {number} total
+ * @param {number} count
+ * @returns {string}
+ */
+export function splitCaption(total, count) {
+  const { remainder } = xpSplit(total, count);
+  const ways = `${count} ${count === 1 ? 'way' : 'ways'}`;
+  const left = remainder > 0 ? `, ${remainder} XP left over` : '';
+  return `${Math.max(0, Math.floor(total))} XP split ${ways}${left}`;
 }

@@ -1,8 +1,8 @@
 import { confirmModal, promptModal } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
-import { fightEnd } from '../combat/FightEnd.js';
+import { fightEnd, splitCaption, xpSplit } from '../combat/FightEnd.js';
 import { clampInt } from '../util/num.js';
-import { findCombatant } from './combatants.js';
+import { commitCreatures, findCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../combat/FightEnd.js').FightEnd} FightEnd */
@@ -29,32 +29,71 @@ export async function confirmFightEnd(app) {
   return ok && app.state.combat ? end : null;
 }
 
+/** The field name of the overcome box for one standing foe. */
+const overcomeField = (/** @type {string} */ id) => `overcome:${id}`;
+
 /**
- * After a victory, offer the experience points of the defeated foes to the
- * characters still alive. The GM can change the amount or cancel. Each
- * earner gets the amount through addXP, so a new level becomes pending the
- * usual way.
+ * When a fight ends with no defeat of the party, offer the experience points
+ * of the defeated foes to the characters still alive. A foe that still
+ * stands gets a box to count it as overcome, because in 5e a foe that
+ * surrenders, flees, or is captured is worth its points too. Each ticked box
+ * adds that foe's points and restates the per-character amount. The GM can
+ * still change the amount or cancel. Each earner gets the amount through
+ * addXP, so a new level becomes pending the usual way.
+ *
+ * A foe counted as overcome turns neutral. The Encounter alert fires only
+ * for hostile creatures, so a captive does not start a new encounter each
+ * time the party steps onto its tile. The GM can make it hostile again in
+ * the creature dialog.
  * @param {AppContext} app
  * @param {FightEnd} end
  */
 export async function offerFightXP(app, end) {
-  if (end.outcome !== 'victory' || end.share <= 0) return;
   const count = end.earners.length;
+  if (end.outcome === 'defeat' || count === 0) return;
+  const foes = end.standingFoes.filter((foe) => foe.xp > 0);
+  if (end.xp <= 0 && foes.length === 0) return;
+  /** @param {(name: string) => string} get */
+  const totalOf = (get) =>
+    end.xp + foes.reduce((sum, foe) => sum + (get(overcomeField(foe.id)) ? foe.xp : 0), 0);
+  const caption = (/** @type {number} */ total) =>
+    `XP per character (${splitCaption(total, count)})`;
   const values = await promptModal(
     'Award XP for the fight',
     [
+      ...foes.map((foe) => ({
+        name: overcomeField(foe.id),
+        label: `Count ${foe.name} as overcome (surrendered, fled, or captured), ${foe.xp} XP`,
+        type: /** @type {const} */ ('checkbox'),
+      })),
       {
         name: 'amount',
-        label: `XP per character (${end.xp} XP split ${count} ${count === 1 ? 'way' : 'ways'})`,
+        label: caption(end.xp),
         type: 'number',
         value: end.share,
-        min: 1,
+        min: 0,
       },
     ],
-    { submitLabel: 'Award' },
+    {
+      submitLabel: 'Award',
+      onChange: (name, form) => {
+        if (name === 'amount') return;
+        const total = totalOf(form.get);
+        form.setLabel('amount', caption(total));
+        form.set('amount', xpSplit(total, count).share);
+      },
+    },
   );
-  const amount = clampInt(values?.amount, 0);
-  if (!values || amount <= 0) return;
+  if (!values) return;
+  const overcome = new Set(foes.filter((foe) => values[overcomeField(foe.id)]).map((f) => f.id));
+  if (overcome.size > 0) {
+    app.state.creatures = app.state.creatures.map((c) =>
+      overcome.has(c.id) ? { ...c, disposition: 'neutral', met: true } : c,
+    );
+    commitCreatures(app);
+  }
+  const amount = clampInt(values.amount, 0);
+  if (amount <= 0) return;
   const earners = new Set(end.earners);
   app.state.characters = app.state.characters.map((c) =>
     earners.has(c.id) ? addXP(c, amount) : c,
