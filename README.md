@@ -36,6 +36,7 @@ A hosted build runs at <https://cartographer.tbmh.org>. The hosted build can be 
 - Paint a tiled map with the built-in tile art, or generate a map with the procedural generator and then edit it.
 - Nest maps in a hierarchy. A world contains regions, a region contains towns and dungeons, and a building contains its floors.
 - Link a tile to a child map, so the party can zoom from a region into a town.
+- Lock a map behind a key item. The party stops at the way in until a character carries the key or the GM unlocks it.
 - Mark points of interest. Each tile has notes that only the GM sees.
 - Get a warning in Build mode when a map has no way in or out.
 - Export any map as a PNG image.
@@ -45,12 +46,16 @@ The data model accepts custom tile images, but the app has no control that adds 
 ### Sessions
 
 - Move the party across the map. The fog of war hides every area that the party has not seen, and it clears as the party walks.
+- Light the rooms of a building, so the whole room shows when the party walks in.
 - Leave a sub-region from any side that touches the map above it. Where two regions share a border, the party walks straight across into the next region.
 - Take stairs and doors between the floors of a building.
 - Split the party into more than one group on the map.
 - See a mini-map in the corner inside a sub-region. It shows where the party stands on the map one level up.
-- Advance an in-game clock of six watches per day, and take short and long rests.
+- Advance an in-game clock of six watches per day, and take short and long rests. A walk tells the GM how much time it took, and asks before it runs into the night.
 - Keep a quest log, a list of NPCs, handouts with pictures, and a travelogue of what happened.
+- Let a finished quest reveal the quests it leads to, and pay out its gold and experience points to the party.
+- Get a prompt when the party stands on the tile of a hidden handout.
+- Bring an NPC along, so it travels with the party.
 
 ### Combat
 
@@ -58,6 +63,8 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Pick a target from the combatant cards. Each card shows armor, weapons, and spell slots.
 - Attack or cast with one click on the turn of the active combatant, and read the result in the combat log.
 - Check the difficulty of a fight before it starts. The Encounters panel shows the experience-point value of the foes against the budget for the party's levels, and only the GM sees it.
+- Add foes that stand nearby to a fight, before it starts or while it runs.
+- Give a boss legendary actions and legendary resistance, and spend them from its combatant card.
 - Keep a fight open after the last enemy falls, until the GM ends it.
 
 ### Characters and creatures
@@ -66,6 +73,7 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Level up one class level at a time, with multiclassing, subclasses, and a choice of an ability score improvement or a feat.
 - Pick the choices of a class feature at level-up, such as the Expertise of the Rogue.
 - Track items, spell slots, and other resources that a character uses up.
+- Drink a healing potion, or any item that has heal dice, from the inventory.
 - Keep every creature in one list, from major enemies with hit points to friendly and neutral NPCs. A creature has a challenge rating and its trained saving throws and skills, and the app works out each bonus.
 - Roll any combination of dice in the dice tray.
 
