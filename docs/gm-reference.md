@@ -1273,6 +1273,7 @@ combatant with Extra Attack also shows how many swings are left.
 | Dash, Disengage, or Hide under **Cunning Action** | The bonus action, for a Rogue of 2nd level or higher |
 | **Second Wind** | The bonus action and one use of the Second Wind pool |
 | **Action Surge** | One use of the Action Surge pool. It gives the turn one more action |
+| **Turn Undead** or **Preserve Life** | The action and one use of the Channel Divinity pool, spent only when the GM confirms the dialog |
 
 The whole turn comes back when the turn of that combatant starts again. The
 reaction comes back at the same time, not at the top of the round. A
@@ -1316,6 +1317,24 @@ second. An Attack action with the new action gets its Extra Attack swings
 again. The app allows one surge per turn, as 5e does, even for a fighter
 with two uses. A button with no use left, or a second surge in one turn,
 shows a toast and spends nothing.
+
+A Cleric of 2nd level or higher gets a **Channel Divinity** group. Each
+button opens a dialog first, and a cancel keeps the use and the action.
+
+- **Turn Undead** lists every undead in the fight, all ticked. Untick the
+  ones that are out of range (30 feet) or cannot see or hear the cleric.
+  Each ticked undead rolls a Wisdom save against the spell save DC of the
+  cleric. On a failure, it gets a Turned chip for 1 minute. Damage ends
+  the chip, and a Turned creature takes no reactions. It keeps its turns,
+  and the GM moves it away or has it take the Dodge action. From cleric
+  level 5, Destroy Undead destroys an undead of a low enough CR instead
+  (CR 1/2 at level 5, 1 at 8, 2 at 11, 3 at 14, 4 at 17). An unrated
+  undead is only turned.
+- **Preserve Life** (Life Domain) shares out 5 times the cleric level in HP
+  among the allies in the fight. The dialog has one amount per ally below
+  half its max HP, and each amount stops at half the max HP. Undead and
+  constructs get no row. A share-out over a limit shows a toast and
+  spends nothing.
 
 A casting time longer than a turn, such as a ten-minute ritual, is refused
 in a fight in the same way, and it offers the same box.

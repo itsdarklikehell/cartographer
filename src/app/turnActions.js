@@ -8,7 +8,9 @@ import {
 } from '../combat/TurnActions.js';
 import { spendResource } from '../entities/Character.js';
 import { classLevelOf } from '../entities/Multiclass.js';
-import { ACTION_SURGE_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
+import { ACTION_SURGE_ID, CHANNEL_DIVINITY_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
+import { channelActions } from '../combat/ChannelDivinity.js';
+import { preserveLife, turnUndead } from './channelDivinity.js';
 import { findCombatant } from './combatants.js';
 import { applyConditionToTarget, applyToTarget } from './combatantWrites.js';
 
@@ -48,11 +50,14 @@ export function turnActionsOf(app, id) {
   const found = findCombatant(app, id);
   if (!found) return [];
   if (found.kind !== 'character') return turnActions();
-  return turnActions({
-    cunningAction: hasCunningAction(found.entity),
-    secondWind: usesOf(found.entity, SECOND_WIND_ID),
-    actionSurge: usesOf(found.entity, ACTION_SURGE_ID),
-  });
+  return [
+    ...turnActions({
+      cunningAction: hasCunningAction(found.entity),
+      secondWind: usesOf(found.entity, SECOND_WIND_ID),
+      actionSurge: usesOf(found.entity, ACTION_SURGE_ID),
+    }),
+    ...channelActions(found.entity, usesOf(found.entity, CHANNEL_DIVINITY_ID)),
+  ];
 }
 
 /**
@@ -66,7 +71,8 @@ export function turnActionsOf(app, id) {
  * @param {string} id
  * @param {TurnAction} action
  * @param {{ rng?: RandomFn }} [options]
- * @returns {boolean} whether the action went through
+ * @returns {boolean | Promise<boolean>} whether the action went through. A
+ *   Channel Divinity option opens a dialog and answers through a promise.
  */
 export function takeTurnAction(app, id, action, { rng = Math.random } = {}) {
   const found = findCombatant(app, id);
@@ -119,7 +125,7 @@ export function toggleBudget(app, id, cost) {
  * @param {{ entity: Character, label: string, store: (next: Character) => void }} found
  * @param {TurnAction} action
  * @param {RandomFn} rng
- * @returns {boolean} whether the action went through
+ * @returns {boolean | Promise<boolean>} whether the action went through
  */
 function useClassAction(app, found, action, rng) {
   const { entity, store } = found;
@@ -128,6 +134,8 @@ function useClassAction(app, found, action, rng) {
     app.toasts.show(`${found.label} has no use of ${action.name} left. A short rest restores it.`);
     return false;
   }
+  if (action.id === 'turn-undead') return turnUndead(app, found, { rng });
+  if (action.id === 'preserve-life') return preserveLife(app, found);
   if (poolId === ACTION_SURGE_ID) {
     if (app.actions.surgeBudget && !app.actions.surgeBudget(entity.id)) {
       app.toasts.show(`${found.label} already used Action Surge this turn.`);

@@ -5,6 +5,8 @@ import {
   CONDITION_EFFECTS,
   autoCrits,
   canAct,
+  canReact,
+  losesTurn,
   combineModes,
   conditionEffect,
   effectsOf,
@@ -182,4 +184,13 @@ test('saveOutcome leaves the other abilities to a roll', () => {
     mode: 'disadvantage',
   });
   assert.deepEqual(saveOutcome([], 'CON'), { autoFail: false, failedBy: null, mode: null });
+});
+
+test('Turned takes the reactions but leaves the turn and the actions', () => {
+  const turned = [createCondition('Turned', 10)];
+  assert.equal(canAct(turned), true);
+  assert.equal(canReact(turned), false);
+  assert.equal(losesTurn(turned), false);
+  assert.equal(canReact([createCondition('Stunned', 1)]), false);
+  assert.equal(canReact([]), true);
 });

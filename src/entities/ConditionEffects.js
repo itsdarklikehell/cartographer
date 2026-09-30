@@ -30,7 +30,7 @@ import { chipSlants } from './ChipSlants.js';
  * `autoFailSaves` names the abilities that fail with no roll at all, which
  * is what being unable to move does to a Strength or Dexterity save.
  * `noActions` takes every action away, and `noTurn` takes only the
- * turn.
+ * turn. `noReactions` takes only the reactions.
  * @typedef {{
  *   attacks?: Slant,
  *   attacksAgainst?: Slant | { melee: Slant, ranged: Slant },
@@ -41,6 +41,7 @@ import { chipSlants } from './ChipSlants.js';
  *   meleeAutoCrit?: boolean,
  *   noActions?: boolean,
  *   noTurn?: boolean,
+ *   noReactions?: boolean,
  * }} ConditionEffect
  */
 
@@ -85,6 +86,10 @@ export const CONDITION_EFFECTS = {
     attacksAgainst: { melee: 'advantage', ranged: 'disadvantage' },
   },
   restrained: { attacks: 'disadvantage', attacksAgainst: 'advantage', saves: ['DEX'] },
+  // Turn Undead leaves this chip. The holder keeps its turns, which it spends
+  // moving away or taking the Dodge action, so it is not `noActions`: that
+  // would make `losesTurn` skip its turn.
+  turned: { noReactions: true },
   stunned: { noActions: true, attacksAgainst: 'advantage', autoFailSaves: BODY_SAVES },
   unconscious: {
     noActions: true,
@@ -271,6 +276,16 @@ export function modeReasons(query) {
  */
 export function canAct(conditions) {
   return !effectsOf(conditions).some(({ effect }) => effect.noActions);
+}
+
+/**
+ * Whether a creature holding these chips can take a reaction: it can act, and
+ * no chip such as Turned takes its reactions away.
+ * @param {RiderSource[] | undefined | null} conditions
+ * @returns {boolean}
+ */
+export function canReact(conditions) {
+  return !effectsOf(conditions).some(({ effect }) => effect.noActions || effect.noReactions);
 }
 
 /**

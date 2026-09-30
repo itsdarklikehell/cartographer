@@ -2,7 +2,7 @@ import { confirmModal } from '../ui/Modal.js';
 import { reactionSpells } from '../combat/Reactions.js';
 import { canSpend } from '../combat/ActionBudget.js';
 import { acOf, isDowned, mayActOn } from '../combat/CombatView.js';
-import { canAct } from '../entities/ConditionEffects.js';
+import { canReact } from '../entities/ConditionEffects.js';
 import { buffCondition } from '../entities/Casting.js';
 import { blockerOf } from '../entities/ChipMods.js';
 import { createCondition } from '../entities/Conditions.js';
@@ -108,7 +108,7 @@ export function wardRaise(found, spell) {
 export function pendingWard(app, defenderId, attackerId, attackSpellId = '') {
   if (defenderId === attackerId) return null;
   const found = findCombatant(app, defenderId);
-  if (!found || isDowned(found) || !canAct(found.entity.conditions ?? [])) return null;
+  if (!found || isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
   const viewer = {
     gm: isGM(app.state.role),
     boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,

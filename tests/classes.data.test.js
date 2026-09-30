@@ -161,5 +161,8 @@ test('subclass features sit at class levels 1-20 and name each feature', () => {
     }
   }
   const cleric = DEFAULT_CLASSES.find((c) => c.id === 'cleric');
-  assert.deepEqual(cleric?.subclasses?.[0].features, { 1: ['Disciple of Life'] });
+  assert.deepEqual(cleric?.subclasses?.[0].features, {
+    1: ['Disciple of Life'],
+    2: ['Channel Divinity: Preserve Life'],
+  });
 });

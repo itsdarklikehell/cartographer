@@ -355,6 +355,18 @@ Extra Attack banked stay banked. With the action free, the surge sets the
 two actions in all. The action bar shows a "+1 action (Action Surge)" pip
 while `spare` is set.
 
+`src/combat/ChannelDivinity.js` adds the cleric entries: Turn Undead from
+cleric level 2, and Preserve Life for a character with the feature of that
+name, which the Life Domain grants at level 2. It also has the pure rules:
+the Destroy Undead CR table, the Preserve Life budget and caps, and the
+check of a share-out. `src/app/channelDivinity.js` opens the dialog first
+and spends the pool and the action only on confirm. Turn Undead rolls each
+save with `resolveSave` and puts a Turned chip on a failure, with
+`endsOnDamage` set and `spellName: 'Turn Undead'` in its source, so the
+end-on-damage log line names the source. Turned has `noReactions` in
+`ConditionEffects.js` rather than `noActions`, because `losesTurn` would skip
+the turn of a `noActions` holder. The ward prompts ask `canReact`.
+
 ### Two-weapon fighting
 
 `src/combat/TwoWeapon.js` is the pure half of the off-hand swing.

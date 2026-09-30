@@ -228,3 +228,16 @@ test('a creature cannot use a class action', () => {
   const { app } = fighterFight();
   assert.equal(takeTurnAction(app, 'gob', entry(app, 'action-surge')), false);
 });
+
+test('a cleric of level 2 gets the Channel Divinity buttons with its pool', () => {
+  const app = fight();
+  app.state.characters = [
+    {
+      ...hero('mirelle', 'cleric', 4),
+      classes: [{ classId: 'cleric', level: 4, subclass: 'Life Domain' }],
+      resources: [{ id: 'channel-divinity', name: 'Channel Divinity', current: 1, max: 1 }],
+    },
+  ];
+  const ids = turnActionsOf(app, 'mirelle').map((a) => a.id);
+  assert.ok(ids.includes('turn-undead') && ids.includes('preserve-life'));
+});

@@ -1,7 +1,7 @@
 import { promptModal } from '../ui/Modal.js';
 import { canSpend } from '../combat/ActionBudget.js';
 import { isDowned, mayActOn } from '../combat/CombatView.js';
-import { canAct } from '../entities/ConditionEffects.js';
+import { canReact } from '../entities/ConditionEffects.js';
 import { isGM } from '../view/ViewRole.js';
 import { combatantsAsTargets, findCombatant } from './combatants.js';
 
@@ -49,7 +49,7 @@ export function pendingRedirect(app, defenderId, attackerId) {
   if (!combat || defenderId === attackerId) return null;
   const found = findCombatant(app, defenderId);
   if (found?.kind !== 'creature' || found.entity.redirectAttack !== true) return null;
-  if (isDowned(found) || !canAct(found.entity.conditions ?? [])) return null;
+  if (isDowned(found) || !canReact(found.entity.conditions ?? [])) return null;
   const viewer = {
     gm: isGM(app.state.role),
     boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
