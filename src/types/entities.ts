@@ -234,12 +234,19 @@ export interface EnemyArmor {
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';
 
+/** The rest that refills a pool in full. A long rest refills every pool. */
+export type Recharge = 'short' | 'long';
+
 export interface ResourcePool {
   id: string;
   name: string;
   type: ResourceType;
   current: number;
   max: number;
+  /** The rest that refills the pool. Absent means a long rest. A short rest
+   * leaves a long-rest pool as it is. HP, slot, pact, and hit-dice pools
+   * follow their own rest rules and ignore this field. */
+  recharge?: Recharge;
 }
 
 /** Item classification. Each equipment slot accepts only compatible types.

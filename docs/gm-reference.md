@@ -1804,6 +1804,27 @@ The hit-dice pool can be spent.
 | Short rest | Spend a die to heal the roll plus the CON modifier |
 | Long rest | Restores half of the total hit dice, at least one, largest dice first. For example, Fighter 3 / Wizard 3 with every die spent gets three dice back |
 
+### Class feature pools
+
+The app gives each character a resource pool for every class feature that
+has a count of uses. The class levels and the ability scores set the size of
+each pool, so you do not type it in. A new level adds its uses unspent, and a
+class that the character no longer has takes its pool away.
+
+| Pool | Class and level | Uses | Refills on |
+| --- | --- | --- | --- |
+| Second Wind | Fighter 1 | 1 | Short rest |
+| Action Surge | Fighter 2 | 1, or 2 from level 17 | Short rest |
+| Rage | Barbarian 1 | 2, then 3 at level 3, 4 at 6, 5 at 12, 6 at 17. No pool at 20, where rage has no limit | Long rest |
+| Bardic Inspiration | Bard 1 | The CHA modifier, at least 1 | Long rest, or short rest from level 5 |
+| Channel Divinity | Cleric 2, Paladin 3 | Cleric: 1, then 2 at level 6, 3 at 18. Paladin: 1. A character with both classes gets the larger count | Short rest |
+| Divine Sense | Paladin 1 | 1 plus the CHA modifier | Long rest |
+| Lay on Hands | Paladin 1 | 5 hit points for each paladin level | Long rest |
+| Ki points | Monk 2 | The monk level | Short rest |
+| Wild Shape | Druid 2 | 2. No pool at 20, where Wild Shape has no limit | Short rest |
+| Sorcery points | Sorcerer 2 | The sorcerer level | Long rest |
+| Arcane Recovery | Wizard 1 | 1 | Long rest |
+
 ### Subclasses
 
 A class can take a subclass from its subclass level.
@@ -2042,7 +2063,7 @@ Only a GM tab shows the buttons.
 | Button | Time passed | Effect |
 | --- | --- | --- |
 | Advance | One watch | None beyond the time |
-| Short rest | One watch | Restores half of each custom resource and refills pact slots. Restores no HP, because in 5e only spent hit dice heal on a short rest |
+| Short rest | One watch | Refills pact slots and each short-rest feature pool (see [Class feature pools](#class-feature-pools)). Restores no HP, because in 5e only spent hit dice heal on a short rest |
 | Long rest | Until the next Dawn, at least two watches | Restores HP and every resource, refills the spell slots, and takes one level of exhaustion off each character |
 
 | Unit | Length |

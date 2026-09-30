@@ -395,31 +395,30 @@ export function restoreResource(character, resourceId, amount) {
 }
 
 /**
- * Restore every resource pool by a fraction of its max, clamped to full. The
- * rest model: a long rest restores everything (fraction 1), and a short rest
- * restores half (fraction 0.5). HP, spell slots, and hit dice follow the D&D
- * rule instead. Only a full rest (fraction 1) refills HP and spell slots, so
- * a short rest heals nothing unless the character spends hit dice. Pact
- * slots refill in full on a short or long rest (fraction 0.5 and up). A full
- * rest restores half of the total hit dice (see `HitDice.restoreHitDice`).
- * A rest that lifts HP above 0 clears the dying state, the same as any other
- * heal (see `restoreResource`). A dead character regains no HP from a rest.
- * This function is pure.
+ * Refill the resource pools that a rest of the given kind recharges. A long
+ * rest refills HP, spell slots, pact slots, and every other pool, and it
+ * restores half of the total hit dice (see `HitDice.restoreHitDice`). A
+ * short rest refills pact slots and each pool whose `recharge` is 'short',
+ * such as Second Wind, Action Surge, ki, and Channel Divinity. A pool with
+ * no `recharge` refills only on a long rest. A short rest heals nothing,
+ * because in 5e a short rest heals only through the hit dice a character
+ * spends. A rest that lifts HP above 0 clears the dying state, the same as
+ * any other heal (see `restoreResource`). A dead character regains no HP
+ * from a rest. This function is pure.
  * @param {Character} character
- * @param {number} fraction 0..1
+ * @param {import('../types/entities.js').Recharge} kind
  * @returns {Character}
  */
-export function restAll(character, fraction) {
-  const clamped = clamp(fraction, 0, 1);
+export function restAll(character, kind) {
+  const long = kind === 'long';
   const dead = isDead(character);
   const pools = character.resources.map((r) => {
-    if (r.id === HP_RESOURCE_ID && dead) return r;
-    if (r.id === HP_RESOURCE_ID || isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
-    if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
-    if (isHitDicePool(r)) return r;
-    return restorePool(r, Math.ceil(r.max * clamped));
+    if ((r.id === HP_RESOURCE_ID && dead) || isHitDicePool(r)) return r;
+    const special = r.id === HP_RESOURCE_ID || isSlotPool(r);
+    const refills = long || isPactPool(r) || (!special && r.recharge === 'short');
+    return refills ? restorePool(r, r.max) : r;
   });
-  const resources = clamped < 1 ? pools : restoreHitDice(pools);
+  const resources = long ? restoreHitDice(pools) : pools;
   const rested = { ...character, resources };
   const before = getHP(character)?.current ?? 0;
   const after = getHP(rested)?.current ?? 0;
@@ -438,17 +437,17 @@ export function restAll(character, fraction) {
  * @returns {Character}
  */
 export function longRest(character) {
-  const { invocationUses: _uses, ...rest } = restAll(character, 1);
+  const { invocationUses: _uses, ...rest } = restAll(character, 'long');
   return isDead(rest) ? rest : easeExhaustion(rest);
 }
 
 /**
- * A short rest: restore half of the maximum of each custom pool. HP, spell
- * slots, and hit dice stay as they are, because in 5e a short rest heals
- * only through the hit dice a character spends. Pact slots refill in full.
+ * A short rest: refill pact slots and every short-rest pool. HP, spell
+ * slots, hit dice, and the long-rest pools stay as they are, because in 5e a
+ * short rest heals only through the hit dice a character spends.
  * @param {Character} character
  * @returns {Character}
  */
 export function shortRest(character) {
-  return restAll(character, 0.5);
+  return restAll(character, 'short');
 }

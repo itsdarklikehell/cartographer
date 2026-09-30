@@ -46,15 +46,22 @@ test('formatClock falls back to the first watch for an out-of-range index', () =
   assert.equal(formatClock({ day: 2, watch: 99 }), 'Day 2, Dawn');
 });
 
-test('longRest fully restores every pool; shortRest restores half of a custom pool', () => {
+test('longRest fully restores every pool; shortRest refills only short-rest pools', () => {
   let hero = withHP(createCharacter('h', 'Hero'), 20);
-  hero = addResource(hero, createResource('ki', 'Ki', 'custom', 4));
-  hero = spendResource(spendResource(hero, 'hp', 16), 'ki', 4); // down to 4/20 HP
+  hero = addResource(hero, { ...createResource('focus', 'Focus', 'custom', 4), recharge: 'short' });
+  hero = addResource(hero, createResource('torch', 'Torch', 'custom', 3));
+  hero = spendResource(spendResource(hero, 'hp', 16), 'focus', 4); // down to 4/20 HP
+  hero = spendResource(hero, 'torch', 3);
+  const pool = (/** @type {typeof hero} */ c, /** @type {string} */ id) =>
+    c.resources.find((r) => r.id === id)?.current;
   const short = shortRest(hero);
   assert.equal(getHP(short).current, 4, 'a short rest heals no HP');
-  assert.equal(short.resources.find((r) => r.id === 'ki')?.current, 2);
+  assert.equal(pool(short, 'focus'), 4, 'a short-rest pool refills in full');
+  assert.equal(pool(short, 'torch'), 0, 'a pool with no recharge waits for a long rest');
   const long = longRest(hero);
   assert.equal(getHP(long).current, 20);
+  assert.equal(pool(long, 'focus'), 4);
+  assert.equal(pool(long, 'torch'), 3);
 });
 
 test('longRest eases one level of exhaustion, and a short rest eases none', () => {

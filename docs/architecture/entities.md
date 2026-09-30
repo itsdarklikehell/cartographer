@@ -61,7 +61,8 @@ ids that the app reserves, so spending a spell slot and spending an arrow run
 through the same `spend`/`restore` code.
 
 `entities/PoolIds.js` defines those ids: `hp`, the `slots-` and `pact-`
-prefixes, and the `hit-dice-d` prefix. The module imports nothing, so the
+prefixes, the `hit-dice-d` prefix, and the ids of the class-feature pools
+(`second-wind`, `rage`, `ki`, and the others in `CLASS_POOL_IDS`). The module imports nothing, so the
 three modules that own the rules for the pools (`Character.js`,
 `SpellSlots.js`, and `HitDice.js`) can all import it without an import cycle.
 Each of the three re-exports the ids that it owns, so callers import
@@ -402,6 +403,7 @@ new value.
     Backgrounds.js       resolve a stored id to its definition
     Proficiencies.js     assemble and edit the seven proficiency lists
     HitDice.js           max HP derivation, hit dice as resource pools
+    ClassPools.js        the use counts of class features as resource pools
     Experience.js        the SRD table of XP per level
     LevelUp.js           pending levels, ASI and feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
@@ -436,9 +438,29 @@ that can change an input therefore has to derive them again, or the pools
 stay wrong.
 
 `Progression.derive` is that step. It runs `syncSlotsToLevel`, then
-`syncHitDice`, then `reconcileMaxHP`, and it keeps what the character already
-spent from each pool. A character whose pools already match comes back as the
-same object.
+`syncHitDice`, then `syncClassPools`, then `reconcileMaxHP`, and it keeps
+what the character already spent from each pool. A character whose pools
+already match comes back as the same object.
+
+`ClassPools.js` derives the pools of the class features that have a count of
+uses: Second Wind, Action Surge, Rage, Bardic Inspiration, Channel Divinity,
+Divine Sense, Lay on Hands, ki, Wild Shape, sorcery points, and Arcane
+Recovery. A table of rules gives the 5e SRD count at each class level. Some
+counts also read the CHA modifier: Bardic Inspiration uses at least 1, and
+Divine Sense uses 1 plus the modifier. Each pool also gets a `recharge` of
+`'short'` or `'long'`. Channel Divinity comes from the cleric and the
+paladin, and a character with both classes gets the larger count, because a
+second class that grants the feature adds no use. Rage and Wild Shape have no
+pool at level 20, where their uses have no limit. The pools go after HP, the
+slot pools, and the hit dice, ahead of any pool that the GM adds. The ids come
+from `PoolIds.js`, so the combat actions can spend a use by the same
+constant.
+
+`Character.restAll(character, kind)` refills the pools for a rest of the kind
+`'short'` or `'long'`. A long rest refills every pool, and it restores half of
+the hit dice. A short rest refills the pact slots and each pool whose
+`recharge` is `'short'`. It leaves HP, spell slots, hit dice, and every other
+pool as they are. A pool with no `recharge` waits for a long rest.
 
 `Progression.js` also exports the writers that app and UI code call:
 `withClasses`, `withRace`, `withCustomRace`, `withProficiencies`, `withExpertise`, `applyASI`,
