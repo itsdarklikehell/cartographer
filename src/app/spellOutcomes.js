@@ -16,7 +16,14 @@ import { slayCombatant } from './slay.js';
 import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
 import { cureTarget } from './healCure.js';
 import { stabilizeCharacter } from './deathSaves.js';
-import { paren, poolLine, saveDetail, splitLine, unaffectedLine } from '../combat/SaveLines.js';
+import {
+  paren,
+  poolLine,
+  saveDetail,
+  saveOutcomeLine,
+  splitLine,
+  unaffectedLine,
+} from '../combat/SaveLines.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -521,7 +528,16 @@ function applySave(app, spell, result, casterId) {
     const line = (text) =>
       o.noRoll
         ? `${logName(app, o.target)} is affected${paren(text)}${o.damage.total > 0 ? `, ${takes}` : ''}${cond}.`
-        : `${logName(app, o.target)} ${verdict} DC ${o.dc}${paren(text)} — ${takes}${cond}.`;
+        : saveOutcomeLine({
+            name: logName(app, o.target),
+            verdict,
+            dc: o.dc,
+            detail: text,
+            takes,
+            damages: groups.length > 0 || taken.total > 0,
+            cond,
+            saved: o.saved,
+          });
     app.actions.logEvent('combat', ...splitLine(line(detail.gm), line(detail.player)));
     applyToTarget(app, o.target.id, taken.total, false);
     if (effect.kills && !o.saved) slayCombatant(app, o.target.id);

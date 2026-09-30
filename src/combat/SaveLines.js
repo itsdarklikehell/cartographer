@@ -80,3 +80,21 @@ export function poolLine(spellName, pool) {
     `${spellName} rolls an HP pool (${pool.dice}).`,
   );
 }
+
+/**
+ * The log line of one target that rolled a save. The damage part shows only
+ * when the spell rolls damage dice or the target took some, so a save against
+ * Fear reads "fails DC 13 (...), Frightened." with no "takes 0 damage". A
+ * success that leaves nothing to report ends in "no effect".
+ * @param {{ name: string, verdict: string, dc: number, detail: string,
+ *   takes: string, damages: boolean, cond: string, saved: boolean }} parts
+ *   `takes` is the damage phrase, `damages` says whether it belongs in the
+ *   line, and `cond` is the condition suffix, such as ", Frightened"
+ * @returns {string}
+ */
+export function saveOutcomeLine({ name, verdict, dc, detail, takes, damages, cond, saved }) {
+  const head = `${name} ${verdict} DC ${dc}${paren(detail)}`;
+  if (damages) return `${head}, ${takes}${cond}.`;
+  if (cond) return `${head}${cond}.`;
+  return saved ? `${head}, no effect.` : `${head}.`;
+}

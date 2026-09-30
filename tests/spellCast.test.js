@@ -650,9 +650,9 @@ test('a failed save takes full damage and lands a tracked condition', () => {
     writeBack: () => {},
     rng: seq([d20(3)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+0: 3\) — takes 0 damage, Paralyzed\.$/);
+  assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+0: 3\), Paralyzed\.$/);
   // A Player tab reads the total without the foe's bonus.
-  assert.match(app.playerLog[1], /Goblin fails DC 14 \(WIS: 3\) — takes 0 damage, Paralyzed\.$/);
+  assert.match(app.playerLog[1], /Goblin fails DC 14 \(WIS: 3\), Paralyzed\.$/);
   const chip = app.state.creatures[0].conditions[0];
   assert.equal(chip.name, 'Paralyzed');
   assert.equal(chip.source.spellId, 'hold-person');
@@ -752,7 +752,7 @@ test('a paralyzed target fails a body save with no roll', () => {
     // Only the damage dice are drawn. A paralyzed target never reaches a d20.
     rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 fire damage\.$/);
+  assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\), takes 18 fire damage\.$/);
   assert.equal(app.state.creatures[0].currentHP, 0);
 });
 
@@ -776,7 +776,7 @@ test('a restrained target rolls its Dexterity save at disadvantage', () => {
     // have cleared.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(18), d20(2)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\) — takes 18 fire damage\.$/);
+  assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\), takes 18 fire damage\.$/);
 });
 
 test('a utility cast logs the spell and says only that it was cast', () => {
