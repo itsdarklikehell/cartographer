@@ -126,12 +126,15 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'wizard-tower', 'academy', 'barracks', 'ruins', 'cave-entrance',
     'mine', 'port', 'farm', 'burned-farm', 'graveyard', 'camp',
     'standing-stones', 'village', 'city', 'oasis', 'lighthouse',
-    'watchtower',
+    'watchtower', 'burned-inn', 'ruined-castle', 'burned-watchtower',
+    'burned-tavern', 'burned-blacksmith', 'burned-general-store',
+    'ruined-wizard-tower',
   ].map((m) => img(`${m}/${m}`)).join('');
 
   const TOWN = ['house', 'cottage', 'market', 'well', 'fountain',
     'town-hall', 'guildhall', 'bakery', 'warehouse', 'stables',
-    'windmill', 'watermill'];
+    'windmill', 'watermill', 'burned-house', 'burned-windmill',
+    'burned-town-hall', 'burned-guildhall'];
   document.getElementById('town').innerHTML = TOWN.map((b) => img(`town/${b}`)).join('');
 
   // A 14x8 block of grass split by two crossing streets. Each building is a

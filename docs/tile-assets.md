@@ -182,12 +182,19 @@ coast and road overlays of its tile. See `stackOverlay` in
 ## POI markers
 
 The single-image markers (`MARKER_TYPES`) are `settlement`, `dungeon`,
-`castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`,
-`temple`, `shrine`, `wizard-tower`, `academy`, `barracks`, `ruins`,
-`cave-entrance`, `mine`, `port`, `farm`, `burned-farm`, `graveyard`,
-`camp`, `standing-stones`, `village`, `city`, `oasis`, `lighthouse`, and
-`watchtower`. The `burned-farm` marker uses the footprint, palette, and
-stroke widths of `farm`, so a GM can swap one for the other in place.
+`castle`, `ruined-castle`, `tavern`, `burned-tavern`, `inn`, `burned-inn`,
+`blacksmith`, `burned-blacksmith`, `general-store`, `burned-general-store`,
+`alchemist`, `temple`, `shrine`, `wizard-tower`, `ruined-wizard-tower`,
+`academy`, `barracks`, `ruins`, `cave-entrance`, `mine`, `port`, `farm`,
+`burned-farm`, `graveyard`, `camp`, `standing-stones`, `village`, `city`,
+`oasis`, `lighthouse`, `watchtower`, and `burned-watchtower`.
+
+The `burned-` and `ruined-` markers show a building after an attack. Each
+one uses the footprint, palette, and stroke widths of its intact marker, so
+a GM can swap the intact tile for the destroyed one in the same place. The
+town buildings `burned-house`, `burned-town-hall`, `burned-guildhall`, and
+`burned-windmill` follow the same rule. For a destroyed temple, use
+`ruins`.
 
 Each marker sits on the standard grass background, `#5a9b4a`, with the
 usual mottle ellipses and a dirt clearing under the building. For this
@@ -211,10 +218,12 @@ would remove this limit. The catalog has no such set.
 ## Town pieces
 
 `town/` contains the town buildings (`TOWN_BUILDINGS`): `house`,
-`cottage`, `market`, `well`, `fountain`, `town-hall`, `guildhall`,
-`bakery`, `warehouse`, `stables`, `windmill`, and `watermill`. Each
-building is a marker on the grass background. Its art stretches over a 2x2
-block, and the town generator paints it at span 2.
+`burned-house`, `cottage`, `market`, `well`, `fountain`, `town-hall`,
+`burned-town-hall`, `guildhall`, `burned-guildhall`, `bakery`, `warehouse`,
+`stables`, `windmill`, `burned-windmill`, and `watermill`. The town
+generator places only the intact buildings. Each building is a marker on
+the grass background. Its art stretches over a 2x2 block, and the town
+generator paints it at span 2.
 
 The town wall pieces (`TOWN_WALL_KINDS`) are overlays with a transparent
 background. `palette.getTownWallPiece(kind)` finds a piece by its kind.
@@ -335,8 +344,8 @@ A tile exists for the app only when its family table names it.
 | `RIVER_KINDS` | `TileCatalog.js` | The fifteen river connector kinds, two bridges, and two fords |
 | `COAST_KINDS` | `TileCatalog.js` | The twelve shoreline pieces |
 | `DOCK_KINDS` | `TileCatalog.js` | The ten pier, pier head, and quay pieces |
-| `MARKER_TYPES` | `TileCatalog.js` | The 27 single-image POI markers |
-| `TOWN_BUILDINGS` | `TileCatalog.js` | The 12 span-2 town buildings |
+| `MARKER_TYPES` | `TileCatalog.js` | The 34 single-image POI markers |
+| `TOWN_BUILDINGS` | `TileCatalog.js` | The 16 span-2 town buildings |
 | `TOWN_WALL_KINDS` | `TileKinds.js` | The ten town wall, gate, and water gate pieces, each with its rule meaning |
 | `INTERIOR_KINDS` | `TileKinds.js` | The 23 interior pieces, each with its rule meaning |
 | `FURNISHING_KINDS` | `TileKinds.js` | The 12 furnishings, each with its rule meaning |

@@ -248,16 +248,20 @@ export function isOverlayType(type) {
  */
 const TOWN_BUILDINGS = [
   'house',
+  'burned-house',
   'cottage',
   'market',
   'well',
   'fountain',
   'town-hall',
+  'burned-town-hall',
   'guildhall',
+  'burned-guildhall',
   'bakery',
   'warehouse',
   'stables',
   'windmill',
+  'burned-windmill',
   'watermill',
 ];
 
@@ -269,14 +273,20 @@ const MARKER_TYPES = [
   'settlement',
   'dungeon',
   'castle',
+  'ruined-castle',
   'tavern',
+  'burned-tavern',
   'inn',
+  'burned-inn',
   'blacksmith',
+  'burned-blacksmith',
   'general-store',
+  'burned-general-store',
   'alchemist',
   'temple',
   'shrine',
   'wizard-tower',
+  'ruined-wizard-tower',
   'academy',
   'barracks',
   'ruins',
@@ -293,6 +303,7 @@ const MARKER_TYPES = [
   'oasis',
   'lighthouse',
   'watchtower',
+  'burned-watchtower',
 ];
 
 /**

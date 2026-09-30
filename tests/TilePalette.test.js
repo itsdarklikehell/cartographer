@@ -126,6 +126,13 @@ test('TilePalette ships with single-image POI markers', () => {
     'oasis',
     'lighthouse',
     'watchtower',
+    'burned-inn',
+    'ruined-castle',
+    'burned-watchtower',
+    'burned-tavern',
+    'burned-blacksmith',
+    'burned-general-store',
+    'ruined-wizard-tower',
   ]) {
     assert.ok(palette.get(type), `missing marker "${type}"`);
   }
@@ -246,7 +253,16 @@ test('TilePalette ships with span-2 town buildings and town wall pieces', () => 
   for (const type of ['cottage', 'market', 'well', 'fountain', 'guildhall', 'bakery']) {
     assert.equal(palette.get(type)?.type, type);
   }
-  for (const type of ['warehouse', 'stables', 'windmill', 'watermill']) {
+  for (const type of [
+    'warehouse',
+    'stables',
+    'windmill',
+    'watermill',
+    'burned-house',
+    'burned-windmill',
+    'burned-town-hall',
+    'burned-guildhall',
+  ]) {
     assert.equal(palette.get(type)?.imageRef, `assets/tiles/town/${type}.svg`);
   }
   assert.equal(palette.listVariants('town-wall').length, 10);
