@@ -1,6 +1,7 @@
 import { confirmModal, promptModal } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
-import { fightEnd, splitCaption, xpSplit } from '../combat/FightEnd.js';
+import { FOE_FATES, fightEnd, sortFates, splitCaption, xpSplit } from '../combat/FightEnd.js';
+import { removeById } from '../entities/Roster.js';
 import { clampInt } from '../util/num.js';
 import { standDown } from '../entities/CreatureMap.js';
 import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
@@ -49,40 +50,45 @@ export function standDownFoes(app, ids) {
   commitCreatures(app);
 }
 
-/** The field name of the overcome box for one standing foe. */
-const overcomeField = (/** @type {string} */ id) => `overcome:${id}`;
+/** The field name of the fate select for one standing foe. */
+const fateField = (/** @type {string} */ id) => `fate:${id}`;
 
 /**
  * When a fight ends with no defeat of the party, offer the experience points
  * of the defeated foes to the characters still alive. A foe that still
- * stands gets a box to count it as overcome, because in 5e a foe that
- * surrenders, flees, or is captured is worth its points too. Each ticked box
- * adds that foe's points and restates the per-character amount. The GM can
+ * stands gets a fate select: still hostile, surrendered or captured, or fled.
+ * In 5e a foe that surrenders, flees, or is captured is worth its points too,
+ * so each of the last two adds that foe's points and restates the
+ * per-character amount. The GM can
  * still change the amount or cancel. Each earner gets the amount through
  * addXP, so a new level becomes pending the usual way.
  *
- * A foe counted as overcome turns neutral (see standDownFoes), so a captive
- * does not start a new encounter each time the party steps onto its tile.
+ * A foe that surrendered turns neutral (see standDownFoes), so a captive
+ * does not start a new encounter each time the party steps onto its tile. A
+ * foe that fled leaves the campaign, and the log reads "Gray Wolf 2 flees.",
+ * with the label that `end` took before the fight cleared. It does not become
+ * unplaced, because an unplaced creature shows on every tile.
  * @param {AppContext} app
  * @param {FightEnd} end
  */
 export async function offerFightXP(app, end) {
   const count = end.earners.length;
   if (end.outcome === 'defeat' || count === 0) return;
-  const foes = end.standingFoes.filter((foe) => foe.xp > 0);
+  const foes = end.standingFoes;
   if (end.xp <= 0 && foes.length === 0) return;
   /** @param {(name: string) => string} get */
-  const totalOf = (get) =>
-    end.xp + foes.reduce((sum, foe) => sum + (get(overcomeField(foe.id)) ? foe.xp : 0), 0);
+  const totalOf = (get) => end.xp + sortFates(foes, (id) => get(fateField(id))).xp;
   const caption = (/** @type {number} */ total) =>
     `XP per character (${splitCaption(total, count)})`;
   const values = await promptModal(
     'Award XP for the fight',
     [
       ...foes.map((foe) => ({
-        name: overcomeField(foe.id),
-        label: `Count ${foe.name} as overcome (surrendered, fled, or captured), ${foe.xp} XP`,
-        type: /** @type {const} */ ('checkbox'),
+        name: fateField(foe.id),
+        label: `${foe.name}, ${foe.xp} XP if overcome`,
+        type: /** @type {const} */ ('select'),
+        options: FOE_FATES,
+        value: 'hostile',
       })),
       {
         name: 'amount',
@@ -103,8 +109,9 @@ export async function offerFightXP(app, end) {
     },
   );
   if (!values) return;
-  const overcome = new Set(foes.filter((foe) => values[overcomeField(foe.id)]).map((f) => f.id));
-  standDownFoes(app, overcome);
+  const fates = sortFates(foes, (id) => String(values[fateField(id)]));
+  standDownFoes(app, fates.surrendered);
+  removeFled(app, fates.fled);
   const amount = clampInt(values.amount, 0);
   if (amount <= 0) return;
   const earners = new Set(end.earners);
@@ -115,4 +122,17 @@ export async function offerFightXP(app, end) {
   app.actions.markDirty();
   app.actions.logEvent('note', `The party is awarded ${amount} XP each for the fight.`);
   app.toasts.show(`Awarded ${amount} XP to ${count} character${count === 1 ? '' : 's'}.`);
+}
+
+/**
+ * Remove the foes that fled from the campaign, with one log line each. The
+ * write goes through commitCreatures, so Undo brings them back.
+ * @param {AppContext} app
+ * @param {import('../combat/FightEnd.js').StandingFoe[]} fled
+ */
+function removeFled(app, fled) {
+  if (fled.length === 0) return;
+  app.state.creatures = fled.reduce((list, foe) => removeById(list, foe.id), app.state.creatures);
+  commitCreatures(app);
+  for (const foe of fled) app.actions.logEvent('combat', `${foe.name} flees.`);
 }

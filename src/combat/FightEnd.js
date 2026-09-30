@@ -109,3 +109,42 @@ export function partyAward(mode, amount, count) {
   const { share } = xpSplit(whole, count);
   return { each: share, caption: `Total XP (${splitCaption(whole, count)}, ${share} each)` };
 }
+
+/**
+ * What became of a foe still standing when the fight ends. A foe that still
+ * fights stays hostile. A foe that surrendered or was captured turns neutral,
+ * so a captive starts no new encounter each time the party steps onto its
+ * tile. A foe that fled leaves the campaign, and Undo brings it back.
+ * @typedef {'hostile' | 'surrendered' | 'fled'} FoeFate
+ */
+
+/** The choices of the fate select, in the order the dialog lists them. */
+export const FOE_FATES = /** @type {{ value: FoeFate, label: string }[]} */ ([
+  { value: 'hostile', label: 'Still hostile' },
+  { value: 'surrendered', label: 'Surrendered or captured' },
+  { value: 'fled', label: 'Fled (remove from the campaign)' },
+]);
+
+/**
+ * Whether a foe with this fate counts as overcome. In 5e a foe that
+ * surrenders, flees, or is captured is worth its experience points.
+ * @param {string} fate
+ * @returns {boolean}
+ */
+export function fateEarnsXP(fate) {
+  return fate === 'surrendered' || fate === 'fled';
+}
+
+/**
+ * Sort the standing foes by the fate the GM picked for each one.
+ * @param {StandingFoe[]} foes
+ * @param {(id: string) => string} fateOf the picked fate of one foe
+ * @returns {{ surrendered: Set<string>, fled: StandingFoe[], xp: number }} the
+ *   ids that turn neutral, the foes that leave, and the XP of both
+ */
+export function sortFates(foes, fateOf) {
+  const surrendered = new Set(foes.filter((f) => fateOf(f.id) === 'surrendered').map((f) => f.id));
+  const fled = foes.filter((f) => fateOf(f.id) === 'fled');
+  const xp = foes.reduce((sum, f) => sum + (fateEarnsXP(fateOf(f.id)) ? f.xp : 0), 0);
+  return { surrendered, fled, xp };
+}

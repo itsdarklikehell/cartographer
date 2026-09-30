@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightEnd, partyAward, splitCaption, xpSplit } from '../src/combat/FightEnd.js';
+import {
+  FOE_FATES,
+  fateEarnsXP,
+  fightEnd,
+  partyAward,
+  sortFates,
+  splitCaption,
+  xpSplit,
+} from '../src/combat/FightEnd.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage } from '../src/entities/Creature.js';
 
@@ -112,4 +120,28 @@ test('partyAward gives each character the amount, or a share of a total', () => 
 test('splitCaption names the split and any left over', () => {
   assert.equal(splitCaption(250, 4), '250 XP split 4 ways, 2 XP left over');
   assert.equal(splitCaption(200, 1), '200 XP split 1 way');
+});
+
+test('sortFates splits the standing foes by the fate the GM picked', () => {
+  const foes = [
+    { id: 'a', name: 'Gray Wolf 1', xp: 50 },
+    { id: 'b', name: 'Gray Wolf 2', xp: 50 },
+    { id: 'c', name: 'Goblin', xp: 25 },
+  ];
+  const fates = /** @type {Record<string, string>} */ ({
+    a: 'fled',
+    b: 'surrendered',
+    c: 'hostile',
+  });
+  const sorted = sortFates(foes, (id) => fates[id]);
+  assert.deepEqual([...sorted.surrendered], ['b']);
+  assert.deepEqual(sorted.fled, [foes[0]]);
+  assert.equal(sorted.xp, 100);
+});
+
+test('fateEarnsXP counts a surrender and a flight, not a foe still hostile', () => {
+  assert.deepEqual(
+    FOE_FATES.map((f) => fateEarnsXP(f.value)),
+    [false, true, true],
+  );
 });

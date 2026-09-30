@@ -1114,12 +1114,17 @@ XP is split evenly among the living characters and rounded down, and the
 dialog states any XP that the split leaves over. A foe with no challenge
 rating is worth nothing. You can change the amount or cancel.
 
-Each hostile creature that still stands gets a box that counts it as overcome,
-for a foe that surrendered, fled, or was captured. A ticked box adds the
-XP of that foe to the split. On **Award**, each ticked foe becomes neutral,
-so the Encounter alert does not fire again when the party steps onto its
-tile. To make it a foe again, set its disposition back to hostile in the
-creature dialog.
+Each hostile creature that still stands gets a select with three choices.
+
+| Choice | On **Award** |
+| --- | --- |
+| Still hostile | No change, and no XP |
+| Surrendered or captured | The foe becomes neutral, so the Encounter alert does not fire again when the party steps onto its tile. Its XP joins the split |
+| Fled (remove from the campaign) | The foe leaves the campaign, and the log reads "Gray Wolf 2 flees." Its XP joins the split. **Undo** brings it back |
+
+To make a captive a foe again, set its disposition back to hostile in the
+creature dialog. To keep a foe that fled in the story, pick **Still
+hostile** and move it to its new tile in the creature dialog.
 
 A fight also ends when no creature of the fight is left on the tile of the
 party or on the eight tiles around it. A walk away from the fight ends it,
