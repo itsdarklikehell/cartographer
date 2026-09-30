@@ -133,3 +133,27 @@ export function crossesInto(clock, minutes, watch) {
   if (WATCHES[clock.watch] === watch) return false;
   return minutes >= minutesUntil(clock, watch);
 }
+
+/** A long rest lasts eight hours. */
+export const LONG_REST_MINUTES = 480;
+
+/**
+ * The clock after a long rest of eight hours: two watches, with the minutes
+ * already spent in the current watch kept.
+ * @param {GameClock} clock
+ * @returns {GameClock}
+ */
+export function longRestClock(clock) {
+  return advanceMinutes(clock, LONG_REST_MINUTES);
+}
+
+/**
+ * Whether a long rest offers to run on until Dawn. From Afternoon or Dusk,
+ * eight hours end in the Night or at the next Dawn, so the GM picks. At any
+ * other time the rest lasts eight hours with no choice.
+ * @param {GameClock} clock
+ * @returns {boolean}
+ */
+export function offersRestUntilDawn(clock) {
+  return WATCHES[clock.watch] === 'Afternoon' || WATCHES[clock.watch] === 'Dusk';
+}

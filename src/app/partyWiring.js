@@ -17,6 +17,7 @@ import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
 import { askShortRestDice } from '../ui/ShortRestDialog.js';
+import { choiceModal } from '../ui/ChoiceModal.js';
 import { spendRestDice } from '../entities/RestHitDice.js';
 import {
   advanceMinutes,
@@ -24,7 +25,9 @@ import {
   advanceWatches,
   formatClock,
   formatMinutes,
+  longRestClock,
   MINUTES_PER_WATCH,
+  offersRestUntilDawn,
   watchesBetween,
 } from '../time/GameClock.js';
 import { passTime } from './passTime.js';
@@ -337,13 +340,29 @@ export function wireParty(app, reloadView = null) {
         ['The party takes a short rest.', ...spent, `Now ${formatClock(state.clock)}.`].join(' '),
       );
     },
-    onLongRest: () => {
-      state.characters = state.characters.map(longRest);
+    // A long rest lasts eight hours. From Afternoon or Dusk, the GM can let
+    // it run on until Dawn instead, and a cancel there cancels the rest.
+    onLongRest: async () => {
       const before = state.clock;
-      state.clock = advanceToDawn(state.clock);
-      // A long rest takes eight hours, two watches, even when Dawn is nearer.
-      passTime(app, Math.max(2, watchesBetween(before, state.clock)));
+      let after = longRestClock(before);
+      if (offersRestUntilDawn(before)) {
+        const dawn = advanceToDawn(before);
+        const { choice } = await choiceModal(
+          `Eight hours of rest end at ${formatClock(after)}. Resting until Dawn ends at ${formatClock(dawn)}.`,
+          [
+            { value: 'eight', label: 'Rest 8 hours' },
+            { value: 'dawn', label: 'Rest until Dawn' },
+          ],
+          { title: 'Long rest' },
+        );
+        if (choice === 'cancel') return;
+        if (choice === 'dawn') after = dawn;
+      }
+      state.characters = state.characters.map(longRest);
+      state.clock = after;
+      passTime(app, watchesBetween(before, after));
       scope.reselect();
+      timePanel.update();
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
     },
   });

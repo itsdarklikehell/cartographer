@@ -641,6 +641,9 @@ in-game clock forward.
    with a hit die left. Type how many hit dice each one spends, and click
    **Rest**. Each die heals its roll plus the CON modifier, and spending
    stops at full HP. **Cancel** cancels the whole rest.
+4. For a long rest from Afternoon or Dusk, the **Long rest** dialog asks
+   how long to rest. Click **Rest 8 hours** or **Rest until Dawn**. At any
+   other time, the long rest takes eight hours with no dialog.
 
 | Rest | What comes back |
 | --- | --- |

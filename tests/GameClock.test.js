@@ -10,6 +10,8 @@ import {
   formatMinutes,
   crossesInto,
   minutesUntil,
+  longRestClock,
+  offersRestUntilDawn,
 } from '../src/time/GameClock.js';
 
 test('advanceMinutes adds up inside a watch and rolls over into the next', () => {
@@ -132,4 +134,18 @@ test('crossesInto tells whether a stretch of time reaches a watch', () => {
   assert.equal(crossesInto(afternoon, 420, 'Night'), true, 'landing on its start');
   assert.equal(crossesInto(afternoon, 1000, 'Night'), true, 'passing through it');
   assert.equal(crossesInto({ day: 2, watch: 5 }, 1000, 'Night'), false, 'already in it');
+});
+
+test('longRestClock rests eight hours and keeps the minutes', () => {
+  assert.deepEqual(longRestClock({ day: 3, watch: 1 }), { day: 3, watch: 3 });
+  assert.deepEqual(longRestClock({ day: 3, watch: 5, minutes: 30 }), {
+    day: 4,
+    watch: 1,
+    minutes: 30,
+  });
+});
+
+test('only Afternoon and Dusk offer a long rest until Dawn', () => {
+  const offers = WATCHES.map((_, watch) => offersRestUntilDawn({ day: 1, watch }));
+  assert.deepEqual(offers, [false, false, false, true, true, false]);
 });
