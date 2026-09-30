@@ -23,3 +23,29 @@ export function travelMinutes(node, depth, steps) {
   const perStep = MINUTES_PER_STEP[Math.min(depth, MINUTES_PER_STEP.length - 1)];
   return perStep * steps;
 }
+
+/**
+ * The minutes a walk along a path takes. The path lists every tile from the
+ * start to the end, so its steps are one fewer than its tiles.
+ * @param {MapNode} node
+ * @param {number} depth the node's depth in the world tree: 0 for the root
+ * @param {readonly string[]} path
+ * @returns {number}
+ */
+export function walkMinutes(node, depth, path) {
+  return travelMinutes(node, depth, path.length - 1);
+}
+
+/**
+ * The most steps of a walk that end before the clock reaches the named
+ * watch. A step that lands exactly on the start of the watch is in it, so
+ * it does not count. A walk that costs no time returns all its steps.
+ * @param {number} untilMinutes minutes to the start of the watch
+ * @param {number} perStep minutes one step costs
+ * @param {number} steps the steps of the whole walk
+ * @returns {number}
+ */
+export function stepsBefore(untilMinutes, perStep, steps) {
+  if (perStep <= 0) return steps;
+  return Math.min(steps, Math.max(0, Math.floor((untilMinutes - 1) / perStep)));
+}

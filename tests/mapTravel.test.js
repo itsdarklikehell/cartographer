@@ -14,6 +14,7 @@ import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
+import { settle, walkDialogs } from './helpers/walkDialogs.js';
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -122,7 +123,7 @@ function world({
   });
   /** @type {any[]} */
   const tooltips = [];
-  const travel = createMapTravel(app, env);
+  const travel = createMapTravel(app, env, walkDialogs());
   /** @param {string} tileId */
   const clickTile = (tileId) => {
     const node = navigator.getCurrentNode();
@@ -455,9 +456,10 @@ test('a player click on a fogged tile does nothing', () => {
   assert.deepEqual(w.log, []);
 });
 
-test('a GM click on a fogged tile still moves the party', () => {
+test('a GM click on a fogged tile still moves the party', async () => {
   const { clickTile, partyTracker } = world();
   clickTile('1,1');
+  await settle();
   assert.equal(partyTracker.getPosition().tileId, '1,1');
 });
 
@@ -606,10 +608,11 @@ test('a tab that moves nobody records no entry', () => {
   assert.deepEqual(state.entryTiles, {});
 });
 
-test('the ways out are the sides of the block the party came in by', () => {
+test('the ways out are the sides of the block the party came in by', async () => {
   const viaCorner = world();
   secondMouth(viaCorner);
   viaCorner.clickTile('5,0');
+  await settle();
   assert.deepEqual(viaCorner.state.entryTiles, { party: { child: '5,0' } });
   assert.deepEqual(
     viaCorner.travel.currentExits().map((/** @type {any} */ e) => e.side),

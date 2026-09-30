@@ -1100,6 +1100,21 @@ watch in the optional `GameClock.minutes` field, and `passTime` ticks timed
 effects only for the whole watches that the walk finishes. A forced move
 counts its steps along the grid.
 
+Before a whole-party GM walk, `app/mapNightWalk.js` checks whether the
+walk reaches the start of Night. The pure `nightWarning` in
+`time/NightWalk.js` builds the warning from the clock, the minutes of one
+step, and the path. It also cuts the path at the last step that ends before
+Night, and `stepsBefore` in `TravelTime.js` counts those steps. A step that
+lands exactly on the start of Night is in Night, so the cut leaves it out.
+When a warning comes up, `walkTo` opens a choice dialog and moves the party
+only after the GM answers. A walk with no warning moves at once, in the
+same call as the click. A forced or fogged move adds the warning to the
+confirm that `confirmMoveHere` opens anyway, so the GM answers one dialog.
+The tab keeps the day of a Night that the GM chose not to hear about again
+in memory, and a reload clears it. `createMapTravel` takes the two dialogs
+as an optional argument, so `tests/mapNightWalk.test.js` answers them with
+the stand-ins in `tests/helpers/walkDialogs.js`.
+
 A player's walk passes the `revealedOnly` option, so a fogged tile stops it
 too. Fog gives an empty cell no revealed state, so an empty cell also stops a
 player's walk. With no such option, a player could learn from a refused move

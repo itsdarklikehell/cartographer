@@ -9,6 +9,7 @@ import { PartyTracker } from '../src/party/PartyTracker.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { gridTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
+import { settle, walkDialogs } from './helpers/walkDialogs.js';
 
 /**
  * A 5x5 revealed town whose wall ring closes in the tile 2,2, with the party
@@ -52,7 +53,7 @@ function town({ role = 'gm', splitParty = false, characters = [], selected = nul
     syncPartyMarker: noop,
     syncExits: noop,
   });
-  const travel = createMapTravel(app, env);
+  const travel = createMapTravel(app, env, walkDialogs());
   /** @param {string} tileId */
   const click = (tileId) => {
     const [x, y] = tileId.split(',').map(Number);
@@ -120,11 +121,12 @@ test('not even the GM can move the party onto a wall', () => {
   assert.deepEqual(spectator.toasts, [], 'a tab that moves nobody says nothing');
 });
 
-test('a GM walk clears the fog along the way and spends game time', () => {
+test('a GM walk clears the fog along the way and spends game time', async () => {
   const w = town();
   const node = w.navigator.getCurrentNode();
   w.app.grid.updateNode({ ...node, tiles: node.tiles.map((t) => ({ ...t, revealed: false })) });
   w.click('4,3');
+  await settle();
   assert.deepEqual(w.partyTracker.getPosition(), { nodeId: 'town', tileId: '4,3' });
   const revealed = (/** @type {string} */ id) =>
     w.navigator.getCurrentNode().tiles.find((t) => t.id === id)?.revealed;
@@ -143,7 +145,7 @@ test('a split character walk clears the fog along the way and spends no time', (
   assert.ok(!w.app.calls.includes('passTravelTime'));
 });
 
-test('a GM walk into a revealed link tile clears the fog on the way', () => {
+test('a GM walk into a revealed link tile clears the fog on the way', async () => {
   const w = town();
   const node = w.navigator.getCurrentNode();
   w.app.grid.updateNode({
@@ -151,6 +153,7 @@ test('a GM walk into a revealed link tile clears the fog on the way', () => {
     tiles: node.tiles.map((t) => ({ ...t, revealed: t.id === '4,4' || t.id === '0,0' })),
   });
   w.click('4,4');
+  await settle();
   assert.equal(w.navigator.getCurrentNode().id, 'inn');
   const revealed = (/** @type {string} */ id) =>
     w.app.grid.getNode('town')?.tiles.find((t) => t.id === id)?.revealed;

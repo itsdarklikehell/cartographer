@@ -10,13 +10,12 @@ import {
 } from '../map/EntryMemory.js';
 import { findPath } from '../map/MapPath.js';
 import { isBlocked } from '../map/TileKinds.js';
-import { travelMinutes } from '../time/TravelTime.js';
 import { describeTile } from '../map/TileCoords.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
-import { confirmModal } from '../ui/Modal.js';
 import { meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { createCellHover } from './mapHover.js';
+import { createWalkGate } from './mapNightWalk.js';
 import { createExitTravel } from './mapExitTravel.js';
 import { createSightingLog } from './mapSightings.js';
 import { createTeleport } from './mapTeleport.js';
@@ -33,8 +32,10 @@ import { createTeleport } from './mapTeleport.js';
  * MapEnv late, after wiring assigns the mounted views.
  * @param {AppContext} app
  * @param {MapEnv} env
+ * @param {import('./mapNightWalk.js').WalkDialogs} [dialogs] stand-ins for the move
+ *   dialogs, for a test
  */
-export function createMapTravel(app, env) {
+export function createMapTravel(app, env, dialogs) {
   const { grid, navigator, partyTracker, state } = app;
   const noteSightings = createSightingLog(app);
   const { exitToParent, veilCrossing } = createExitTravel(app, env, {
@@ -252,49 +253,11 @@ export function createMapTravel(app, env) {
     return findPath(node, at.tileId, tile.id, { revealedOnly: !isGM(state.role) });
   }
 
-  /**
-   * Spend the game time of a whole-party walk to the tile, in the node in
-   * view. A forced move with no walk counts the steps along the grid. Call
-   * this before the party moves, because it counts from the party's tile.
-   * @param {import('../types/map.js').Tile} tile
-   * @param {readonly string[] | null} path
-   * @param {import('../types/map.js').MapNode} [node] the node of the walk
-   */
-  function spendWalk(tile, path, node = navigator.getCurrentNode()) {
-    const from = parseCoords(partyTracker.getPosition().tileId);
-    const to = parseCoords(tile.id);
-    const alongGrid = from && to ? Math.abs(from.x - to.x) + Math.abs(from.y - to.y) : 0;
-    const steps = path ? path.length - 1 : alongGrid;
-    const depth = grid.getBreadcrumb(node.id).length - 1;
-    app.actions.passTravelTime(travelMinutes(node, depth, steps));
-  }
-
-  /**
-   * Ask before a click moves someone out of the node they stand in (the
-   * way a teleport asks), across walls or water that no walk passes
-   * (`forced`), or into a fogged tile that leads to a sub-map (`fogged`),
-   * which a click aimed past a building can hit by mistake. The node in view
-   * or the tile can change while the dialog is open, so the move reads both
-   * again and gives up when the view has left the node.
-   * @param {import('../types/map.js').Tile} tile
-   * @param {'elsewhere' | 'forced' | 'fogged'} [reason]
-   */
-  async function confirmMoveHere(tile, reason = 'elsewhere') {
-    const view = navigator.getCurrentNode();
-    const target = (tile.childNodeId && grid.getNode(tile.childNodeId)) || view;
-    const who = clickSubject()?.name ?? 'the party';
-    const where = describeTile(tile.id);
-    const question = {
-      elsewhere: `Move ${who} to "${target.name}"?`,
-      forced: `Walls, obstacles, or deep water block every path for ${who} to ${where}. Move ${who} there anyway?`,
-      fogged: `The fogged tile at ${where} leads into "${target.name}". Move ${who} into it?`,
-    }[reason];
-    const confirmLabel = { elsewhere: 'Move', forced: 'Move anyway', fogged: 'Enter' }[reason];
-    const ok = await confirmModal(question, { title: 'Move', confirmLabel });
-    const now = navigator.getCurrentNode();
-    const fresh = now.id === view.id ? now.tiles.find((t) => t.id === tile.id) : undefined;
-    if (ok && fresh) travelTo(fresh, walkPath(fresh));
-  }
+  const { spendWalk, walkTo, confirmMoveHere } = createWalkGate(
+    app,
+    { clickSubject, walkPath, travelTo, walkParty },
+    dialogs,
+  );
 
   // This handler runs only outside authoring mode, for Play-mode navigation
   // and moves. Empty cells do nothing. Who moves depends on the tab and on
@@ -334,7 +297,7 @@ export function createMapTravel(app, env) {
       void confirmMoveHere(tile, 'fogged');
       return;
     }
-    travelTo(tile, path);
+    walkTo(tile, path);
   };
 
   /**
@@ -459,21 +422,28 @@ export function createMapTravel(app, env) {
       moveOneCharacter(tile, subject, path ?? []);
       return;
     }
-    if (gm) {
-      if (path !== undefined) spendWalk(tile, path);
-      const before = navigator.getCurrentNode();
-      partyTracker.moveTo(before.id, tile.id, path ?? []);
-      state.characters = recallAll(state.characters);
-      noteSightings(before);
-      discoverTile(tile);
-      env.mapCanvas.refreshNode(navigator.getCurrentNode());
-      env.syncPartyMarker();
-      app.actions.markDirty(); // party position and fog changed
-      refreshLocationPanels();
-      app.actions.maybeTriggerEncounter();
-      return;
-    }
-    // A spectator tab, or a player tab with no character of its own to move.
+    if (gm) walkParty(tile, path);
+    // Otherwise a spectator tab, or a player tab with no character of its own to move.
+  }
+
+  /**
+   * Move the whole party across the node in view onto a tile, spend the
+   * time of the walk, and recall every character to the party.
+   * @param {import('../types/map.js').Tile} tile
+   * @param {readonly string[] | null | undefined} path
+   */
+  function walkParty(tile, path) {
+    if (path !== undefined) spendWalk(tile, path);
+    const before = navigator.getCurrentNode();
+    partyTracker.moveTo(before.id, tile.id, path ?? []);
+    state.characters = recallAll(state.characters);
+    noteSightings(before);
+    discoverTile(tile);
+    env.mapCanvas.refreshNode(navigator.getCurrentNode());
+    env.syncPartyMarker();
+    app.actions.markDirty(); // party position and fog changed
+    refreshLocationPanels();
+    app.actions.maybeTriggerEncounter();
   }
 
   return {

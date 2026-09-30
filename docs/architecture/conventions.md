@@ -290,7 +290,8 @@ top of it.
 
 ### Choosing a dialog
 
-Use `confirmModal` only for a question with two real answers. For a
+Use `confirmModal` only for a question with two real answers, and
+`choiceModal` for a question with three or more. For a
 notification, use `alertModal` when the GM must acknowledge it, or
 `app.toasts.show` when it can dismiss itself. A confirm dialog whose Cancel
 does nothing is a notification in the wrong form. Give the same event the

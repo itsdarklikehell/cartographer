@@ -829,6 +829,21 @@ took 4 hours. Now Day 2, Midday." A split character's walk spends no time. A
 teleport, a way out of a map, and a forced move from another map spend no
 time either.
 
+Before a walk that reaches Night, a GM tab asks first. The dialog names the
+length of the walk and offers three buttons:
+
+| Button | Effect |
+| --- | --- |
+| Walk on | The party takes the whole walk into Night |
+| Stop at Dusk | The party walks only as far as the last tile before Night. The button does not show when the first step already reaches Night, or for a forced move |
+| Cancel | The party stays where it is, and the clock does not move |
+
+Tick **Don't ask again tonight** to skip the question for later walks into
+the same Night. The tab forgets the choice when you reload it. A forced move
+and a click on a fogged link tile add the warning to their own confirm. A
+walk that starts in Night does not ask, and neither does a player tab or a
+split character, because they spend no time.
+
 The walk check applies only to a move inside the map in view. The ways
 out, a teleport from the World panel, and the Place on map button do not
 check for a walk.

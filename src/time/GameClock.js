@@ -106,3 +106,30 @@ export function formatMinutes(minutes) {
   const parts = [hours ? count(hours, 'hour') : '', rest || !hours ? count(rest, 'minute') : ''];
   return parts.filter(Boolean).join(' ');
 }
+
+/**
+ * The minutes from a clock reading to the start of the next watch of that
+ * name. A clock inside that watch counts to its start on the next day.
+ * @param {GameClock} clock
+ * @param {string} watch a name from WATCHES, such as "Night"
+ * @returns {number}
+ */
+export function minutesUntil(clock, watch) {
+  const index = WATCHES.indexOf(watch);
+  const ahead = (index - clock.watch + WATCHES.length) % WATCHES.length || WATCHES.length;
+  return ahead * MINUTES_PER_WATCH - (clock.minutes ?? 0);
+}
+
+/**
+ * Whether `minutes` of time from a clock reading reach the start of the
+ * named watch. A clock already inside that watch does not enter it again
+ * until the next day, so a walk that starts at Night asks nothing.
+ * @param {GameClock} clock
+ * @param {number} minutes
+ * @param {string} watch a name from WATCHES, such as "Night"
+ * @returns {boolean}
+ */
+export function crossesInto(clock, minutes, watch) {
+  if (WATCHES[clock.watch] === watch) return false;
+  return minutes >= minutesUntil(clock, watch);
+}

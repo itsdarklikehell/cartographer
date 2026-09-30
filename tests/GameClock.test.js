@@ -8,6 +8,8 @@ import {
   advanceToDawn,
   formatClock,
   formatMinutes,
+  crossesInto,
+  minutesUntil,
 } from '../src/time/GameClock.js';
 
 test('advanceMinutes adds up inside a watch and rolls over into the next', () => {
@@ -115,4 +117,19 @@ test('formatMinutes reads a walk in hours and minutes', () => {
   assert.equal(formatMinutes(270), '4 hours 30 minutes');
   assert.equal(formatMinutes(0), '0 minutes');
   assert.equal(formatMinutes(-5), '0 minutes');
+});
+
+test('minutesUntil counts to the next start of a watch', () => {
+  const afternoon = { day: 2, watch: 3, minutes: 60 };
+  assert.equal(minutesUntil(afternoon, 'Night'), 420);
+  assert.equal(minutesUntil({ day: 1, watch: 5 }, 'Night'), 1440, 'inside it: the next day');
+  assert.equal(minutesUntil({ day: 1, watch: 5, minutes: 30 }, 'Dawn'), 210);
+});
+
+test('crossesInto tells whether a stretch of time reaches a watch', () => {
+  const afternoon = { day: 2, watch: 3, minutes: 60 };
+  assert.equal(crossesInto(afternoon, 419, 'Night'), false);
+  assert.equal(crossesInto(afternoon, 420, 'Night'), true, 'landing on its start');
+  assert.equal(crossesInto(afternoon, 1000, 'Night'), true, 'passing through it');
+  assert.equal(crossesInto({ day: 2, watch: 5 }, 1000, 'Night'), false, 'already in it');
 });

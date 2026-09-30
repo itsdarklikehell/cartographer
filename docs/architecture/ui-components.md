@@ -738,14 +738,19 @@ openDialog({ className, title, form, returnFocus, build, result }) -> Promise<T>
 - With `form: true`, the parts go inside a `<form method="dialog">`, so
   Enter submits, and a submit button's `value` becomes the return value.
 
-Four dialogs live outside `Modal.js`, and all of them use `openDialog`:
+Five dialogs live outside `Modal.js`, and all of them use `openDialog`:
 `promptSpellDetail` (`SpellDetail.js`), `combatSetupModal`
-(`CombatSetup.js`), `generateDialog` (`GenerateDialog.js`), and the
-ability-score breakdown (`CharacterStatBadge.js`). Focus return and dismissal
+(`CombatSetup.js`), `generateDialog` (`GenerateDialog.js`), the
+ability-score breakdown (`CharacterStatBadge.js`), and `choiceModal`
+(`ChoiceModal.js`). `choiceModal(message, choices, { title, checkLabel })`
+shows one button for each choice beside Cancel, with an optional checkbox
+under the message. It resolves with `{ choice, checked }`, and `choice` is
+"cancel" for Cancel or Escape. Focus return and dismissal
 have one owner, so these dialogs behave the same as the ones in `Modal.js`.
 
 [Conventions](conventions.md#choosing-a-dialog) says which dialog to use:
-`confirmModal` only for a question with two real answers, `alertModal` for a
+`confirmModal` only for a question with two real answers, `choiceModal` for
+a question with three or more, `alertModal` for a
 blocking notification, `app.toasts.show` for one that dismisses itself, and
 `confirmDelete(name, detail?)` for a plain entity delete. `confirmDelete`
 owns the `Delete "X"?` wording and the danger button, so no call site
