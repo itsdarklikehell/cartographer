@@ -121,7 +121,7 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
     { name: 'name', label: 'Name', value: seed?.name ?? '', placeholder: 'Creature name' },
     {
       name: 'role',
-      label: 'Role / faction',
+      label: 'Role / faction (players see it)',
       value: seed?.role ?? '',
       placeholder: 'Role / faction',
     },
@@ -151,7 +151,7 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
     },
     {
       name: 'notes',
-      label: 'Notes',
+      label: 'Notes (GM only)',
       type: 'textarea',
       value: seed?.notes ?? '',
       rows: 3,

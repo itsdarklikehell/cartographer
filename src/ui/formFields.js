@@ -71,6 +71,13 @@ export function captionWrapperKind(tagName) {
  */
 export function captioned(caption, control, className) {
   if (captionWrapperKind(control.tagName) === 'label') {
+    // A wrapping label names a select by all of its text, and Chromium counts
+    // the text of every option in it, so a map picker read out a hundred map
+    // names as its name. aria-labelledby names it by the caption alone.
+    if (control.tagName === 'SELECT' && !control.hasAttribute('aria-label')) {
+      caption.id = uniqueId('caption');
+      control.setAttribute('aria-labelledby', caption.id);
+    }
     return el('label', className, caption, control);
   }
   caption.id = uniqueId('caption');

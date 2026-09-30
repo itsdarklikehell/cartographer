@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { locationFields, readLocation } from '../src/app/locationFields.js';
+import {
+  locationFields,
+  locationOptions,
+  moveToPartyChange,
+  readLocation,
+} from '../src/app/locationFields.js';
 import { createMapNode } from '../src/map/TileGrid.js';
 import { stubApp, stubGrid } from './helpers/app.js';
 
@@ -11,14 +16,81 @@ const region = createMapNode('vale', 'Green Vale', 'world', 4, 6);
 // picker labels each map by.
 const app = stubApp({ grid: stubGrid([world, region]) });
 
-test('the picker offers the unplaced option first, then every map by its path', () => {
+test('the picker offers the unplaced option first, then every map under its parent', () => {
   const [picker] = locationFields(app, null);
   assert.equal(picker.name, 'nodeId');
   assert.deepEqual(picker.options, [
     { value: '', label: 'Unplaced (appears everywhere)' },
     { value: 'world', label: 'Aldenmoor' },
-    { value: 'vale', label: 'Aldenmoor / Green Vale' },
+    { value: 'vale', label: 'Green Vale', group: 'Aldenmoor' },
   ]);
+});
+
+test('locationOptions lists top-level maps first, then each parent group depth first', () => {
+  const node = (/** @type {string} */ id, /** @type {string | null} */ parentId) =>
+    createMapNode(id, id.toUpperCase(), parentId, 2, 2);
+  const nodes = [
+    node('world', null),
+    node('vale', 'world'),
+    node('town', 'vale'),
+    node('reach', 'world'),
+    node('inn', 'town'),
+    node('lost', 'gone'),
+  ];
+  assert.deepEqual(
+    locationOptions(nodes, (id) => `path:${id}`),
+    [
+      { value: 'world', label: 'WORLD' },
+      { value: 'lost', label: 'LOST' },
+      { value: 'vale', label: 'VALE', group: 'path:world' },
+      { value: 'reach', label: 'REACH', group: 'path:world' },
+      { value: 'town', label: 'TOWN', group: 'path:vale' },
+      { value: 'inn', label: 'INN', group: 'path:town' },
+    ],
+  );
+  assert.deepEqual(
+    locationOptions([], (id) => id),
+    [],
+  );
+});
+
+test('the party button is added only on request', () => {
+  assert.deepEqual(
+    locationFields(app, null).map((f) => f.name),
+    ['nodeId', 'tileX', 'tileY'],
+  );
+  const button = locationFields(app, null, { partyButton: true }).at(-1);
+  assert.equal(button?.name, 'toParty');
+  assert.equal(button?.type, 'button');
+});
+
+/** @param {string} tileId */
+function partyForm(tileId) {
+  /** @type {Record<string, string | number>} */
+  const set = {};
+  const form = /** @type {any} */ ({
+    set: (/** @type {string} */ k, /** @type {string | number} */ v) => {
+      set[k] = v;
+    },
+  });
+  const change = moveToPartyChange(
+    /** @type {any} */ ({ partyTracker: { getPosition: () => ({ nodeId: 'vale', tileId }) } }),
+  );
+  return { set, form, change };
+}
+
+test('the party button writes the party map, column, and row, and ignores other fields', () => {
+  const { set, form, change } = partyForm('4,2');
+  assert.equal(change('name', form), false);
+  assert.deepEqual(set, {});
+  assert.equal(change('toParty', form), true);
+  assert.deepEqual(set, { nodeId: 'vale', tileX: 5, tileY: 3 });
+});
+
+test('the party button falls back to the first tile for an unreadable tile id', () => {
+  const { set, form, change } = partyForm('bad');
+  change('toParty', form);
+  assert.deepEqual(set, { nodeId: 'vale', tileX: 1, tileY: 1 });
 });
 
 test('the unplaced label can be reworded for a character', () => {

@@ -3,7 +3,7 @@ import { createCreature, editCreature } from '../entities/Creature.js';
 import { fromTemplate } from '../entities/CreatureTemplate.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
-import { locationFields, readLocation } from './locationFields.js';
+import { locationFields, moveToPartyChange, readLocation } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
 import { clearableDefeated, nameTally } from '../entities/CreatureMap.js';
@@ -50,6 +50,11 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   // lives on the Build-rail row's chips. An edit of any other creature
   // shows it, because no other surface owns it.
   const stats = !(existing && existing.disposition === 'hostile');
+  // A template's stat block is authoritative, so a level change does not
+  // re-stamp over it. A bare preset seed carries no block, and the defaults
+  // keep re-stamping until a stat is hand-edited.
+  const statsChange = creatureFieldsChange({ restampStats: !existing && !seed?.stats });
+  const partyChange = moveToPartyChange(app);
   // The layout uses two columns, with fields paired by theme: identity
   // (name, role), then disposition and hit points, full-width notes, the
   // level and tier, gear, stats, the caster section, then placement. The
@@ -58,17 +63,14 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     existing ? 'Edit creature' : 'New creature',
     [
       ...creatureFields(source, gear, { stats }),
-      ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
-        field.name === 'nodeId' ? { ...field, full: true } : field,
-      ),
+      ...locationFields(app, existing ? existing.location : defaultLocation, {
+        partyButton: true,
+      }).map((field) => (field.name === 'nodeId' ? { ...field, full: true } : field)),
     ],
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
-      // A template's stat block is authoritative, so a level change does
-      // not re-stamp over it. A bare preset seed carries no block, and the
-      // defaults keep re-stamping until a stat is hand-edited.
-      onChange: creatureFieldsChange({ restampStats: !existing && !seed?.stats }),
+      onChange: (name, form) => partyChange(name, form) || statsChange(name, form),
     },
   );
   if (!values) return null;

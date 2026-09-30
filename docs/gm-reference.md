@@ -971,11 +971,11 @@ Build mode, from Play mode, and from the tile menu.
 | Field | Default | Meaning |
 | --- | --- | --- |
 | Name | Empty | The name shown in the panels and the log |
-| Role / faction | Empty | A short description, such as "blacksmith" |
+| Role / faction (players see it) | Empty | A short description, such as "blacksmith". The Player view shows it next to the name |
 | Disposition | Neutral. Hostile for **New encounter** and **New foe here** | Hostile, neutral, or friendly. A hostile creature is a foe |
 | Creature type | Untyped | The SRD type, such as undead or beast. Sleep, the healing spells, Blight, Sunburst, and Sunbeam read it. An untyped creature matches no type rule, and a party character counts as humanoid |
 | Max HP | 4 | The full health pool |
-| Notes | Empty | Text for the GM. The Player view does not show it |
+| Notes (GM only) | Empty | Text for the GM. The Player view does not show it |
 | Level (blank for none) | Blank. 1 for **New encounter** and **New foe here** | Sets the default stat block |
 | Tier | Mob | Mob for rank and file, Legend for an above-normal enemy. A legend always has higher stats than a mob of the same level |
 | Challenge rating | Unrated | The 5e rating, from 0 to 30. It sets the proficiency bonus that the creature rolls with, and its XP |
@@ -988,7 +988,8 @@ Build mode, from Play mode, and from the tile menu.
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
-| Location (map), Column, Row | The selected cell | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere |
+| Location (map), Column, Row | The selected cell | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
+| Move to the party | | Sets the map, column, and row to the party's tile |
 
 The caster class list also offers "Fighter (Eldritch Knight)" and "Rogue
 (Arcane Trickster)". For these two, a caster level below 3 saves as 3,
