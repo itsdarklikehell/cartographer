@@ -29,8 +29,9 @@ import { abilityModifier } from './Modifiers.js';
  * The uses of one class feature at the character's current levels: the
  * pool's maximum and the rest that refills it. A maximum of 0 means the
  * character does not have the feature, or has unlimited uses of it, so the
- * character gets no pool.
- * @typedef {{ max: number, recharge: Recharge }} PoolUses
+ * character gets no pool. `shortRestRegain` is the partial refill of a short
+ * rest on a long-rest pool.
+ * @typedef {{ max: number, recharge: Recharge, shortRestRegain?: number }} PoolUses
  */
 
 /**
@@ -154,6 +155,8 @@ const POOL_RULES = [
     uses: (level) => ({
       max: level('sorcerer') >= 2 ? level('sorcerer') : 0,
       recharge: 'long',
+      // Sorcerous Restoration, sorcerer 20: a short rest regains 4 points.
+      ...(level('sorcerer') >= 20 ? { shortRestRegain: 4 } : {}),
     }),
   },
   {
@@ -186,8 +189,8 @@ export function classPoolsFor(character) {
   /** @param {string} ability */
   const mod = (ability) => abilityModifier(stats[ability] ?? 10);
   return POOL_RULES.flatMap(({ id, name, uses }) => {
-    const { max, recharge } = uses(level, mod);
-    return max > 0 ? [{ ...createResource(id, name, 'custom', max), recharge }] : [];
+    const { max, ...rest } = uses(level, mod);
+    return max > 0 ? [{ ...createResource(id, name, 'custom', max), ...rest }] : [];
   });
 }
 
@@ -215,7 +218,8 @@ export function syncClassPools(character) {
         r.name === next[i].name &&
         r.max === next[i].max &&
         r.current === next[i].current &&
-        r.recharge === next[i].recharge,
+        r.recharge === next[i].recharge &&
+        r.shortRestRegain === next[i].shortRestRegain,
     );
   if (unchanged) return character;
   return {

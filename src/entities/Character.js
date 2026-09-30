@@ -400,7 +400,9 @@ export function restoreResource(character, resourceId, amount) {
  * restores half of the total hit dice (see `HitDice.restoreHitDice`). A
  * short rest refills pact slots and each pool whose `recharge` is 'short',
  * such as Second Wind, Action Surge, ki, and Channel Divinity. A pool with
- * no `recharge` refills only on a long rest. A short rest heals nothing,
+ * no `recharge` refills only on a long rest, and a pool whose `recharge` is
+ * 'none' refills on no rest. A short rest adds `shortRestRegain` points to a
+ * pool that it does not refill in full. A short rest heals nothing,
  * because in 5e a short rest heals only through the hit dice a character
  * spends. A rest that lifts HP above 0 clears the dying state, the same as
  * any other heal (see `restoreResource`). A dead character regains no HP
@@ -415,8 +417,11 @@ export function restAll(character, kind) {
   const pools = character.resources.map((r) => {
     if ((r.id === HP_RESOURCE_ID && dead) || isHitDicePool(r)) return r;
     const special = r.id === HP_RESOURCE_ID || isSlotPool(r);
-    const refills = long || isPactPool(r) || (!special && r.recharge === 'short');
-    return refills ? restorePool(r, r.max) : r;
+    const own = special || isPactPool(r) ? undefined : r.recharge;
+    if (own === 'none') return r;
+    const refills = long || isPactPool(r) || own === 'short';
+    if (refills) return restorePool(r, r.max);
+    return r.shortRestRegain ? restorePool(r, r.shortRestRegain) : r;
   });
   const resources = long ? restoreHitDice(pools) : pools;
   const rested = { ...character, resources };

@@ -476,10 +476,20 @@ from `PoolIds.js`, so the combat actions can spend a use by the same
 constant.
 
 `Character.restAll(character, kind)` refills the pools for a rest of the kind
-`'short'` or `'long'`. A long rest refills every pool, and it restores half of
-the hit dice. A short rest refills the pact slots and each pool whose
-`recharge` is `'short'`. It leaves HP, spell slots, hit dice, and every other
-pool as they are. A pool with no `recharge` waits for a long rest.
+`'short'` or `'long'`. A long rest refills every pool except one whose
+`recharge` is `'none'`, and it restores half of the hit dice. A short rest
+refills the pact slots and each pool whose `recharge` is `'short'`. It
+leaves HP, spell slots, hit dice, and every other pool as they are, apart
+from the `shortRestRegain` points of a pool that sets that field. A pool with
+no `recharge` waits for a long rest. The sorcery points get a
+`shortRestRegain` of 4 at sorcerer 20, for Sorcerous Restoration.
+
+`CustomPools.js` owns the pools that the GM adds on the character sheet. Such
+a pool has an id of the form `pool-N` and a `recharge` of `'short'`,
+`'long'`, or `'none'`. The sheet offers Add pool, and an Edit and a Remove
+button on each such pool. A derived pool gets no Edit button, because the
+next `derive` would write its size and recharge again.
+
 
 `Progression.js` also exports the writers that app and UI code call:
 `withClasses`, `withRace`, `withCustomRace`, `withProficiencies`, `withExpertise`, `applyASI`,

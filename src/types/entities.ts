@@ -245,8 +245,13 @@ export interface EnemyArmor {
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';
 
-/** The rest that refills a pool in full. A long rest refills every pool. */
+/** The rest that refills a pool in full. A long rest refills every pool
+ * except one marked 'none'. */
 export type Recharge = 'short' | 'long';
+
+/** The recharge a pool can store. 'none' marks a pool that no rest refills,
+ * such as the charges of a wand that the GM restores by hand. */
+export type PoolRecharge = Recharge | 'none';
 
 export interface ResourcePool {
   id: string;
@@ -257,7 +262,11 @@ export interface ResourcePool {
   /** The rest that refills the pool. Absent means a long rest. A short rest
    * leaves a long-rest pool as it is. HP, slot, pact, and hit-dice pools
    * follow their own rest rules and ignore this field. */
-  recharge?: Recharge;
+  recharge?: PoolRecharge;
+  /** The points a short rest restores to a pool that refills in full only on
+   * a long rest, for example the 4 sorcery points of Sorcerous Restoration.
+   * Absent means none. */
+  shortRestRegain?: number;
 }
 
 /** Item classification. Each equipment slot accepts only compatible types.

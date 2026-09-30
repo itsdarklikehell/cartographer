@@ -11,6 +11,8 @@ import { buildConditionsSection } from './CharacterConditions.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
 import { buildStatBar, buildSlotLine } from './CharacterBars.js';
+import { addPoolButton, poolEditButtons } from './PoolEditor.js';
+import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
@@ -382,14 +384,15 @@ export function mountCharacterSheet(
     // dice are managed in the progression section. The stepper list at the
     // bottom carries only the custom pools.
     const pools = customPools(character);
-    if (pools.length > 0) {
+    if (pools.length > 0 || perms.editBase) {
       const resources = el('div', 'character-sheet__resources u-col u-g2');
       pools.forEach((pool, index) => {
         const label = el('span', 'character-sheet__resource-label');
         const row = el('div', 'character-sheet__resource-row u-row u-g2 u-muted', label);
         writers.push(() => {
           const next = customPools(live())[index];
-          if (next) label.textContent = `${next.name} ${next.current}/${next.max}`;
+          if (next)
+            label.textContent = `${next.name} ${next.current}/${next.max} (${rechargeLabel(next)})`;
         });
 
         if (perms.play) {
@@ -414,8 +417,11 @@ export function mountCharacterSheet(
             ),
           );
         }
+        if (perms.editBase && isCustomPool(pool))
+          row.append(...poolEditButtons(pool, live, commit));
         resources.appendChild(row);
       });
+      if (perms.editBase) resources.appendChild(el('div', 'u-row', addPoolButton(live, commit)));
       main.appendChild(resources);
     }
 

@@ -1992,10 +1992,22 @@ class that the character no longer has takes its pool away.
 | Lay on Hands | Paladin 1 | 5 hit points for each paladin level | Long rest |
 | Ki points | Monk 2 | The monk level | Short rest |
 | Wild Shape | Druid 2 | 2. No pool at 20, where Wild Shape has no limit | Short rest |
-| Sorcery points | Sorcerer 2 | The sorcerer level | Long rest |
+| Sorcery points | Sorcerer 2 | The sorcerer level | Long rest. From level 20, a short rest also restores 4 points (Sorcerous Restoration) |
 | Arcane Recovery | Wizard 1 | 1 | Long rest |
 
+### Custom pools
+
+The GM can add a pool for any count of uses that the class list does not
+give, such as the charges of a wand. Click **Add pool** below the resource
+list of the sheet, and set the name, the number of uses, and **Refills on**.
+A **Long rest** pool refills on a long rest, a **Short rest** pool refills on
+either rest, and a **No rest** pool refills only when the GM restores it with
+the plus button. Each row shows its rest in brackets. The pencil button edits
+a custom pool, and the bin button removes it. A class feature pool has no
+edit button, because the class levels set its size and its rest.
+
 ### Subclasses
+
 
 A class can take a subclass from its subclass level.
 
@@ -2241,8 +2253,8 @@ on, by the time that [Party movement](#party-movement) lists for each map.
 | Button | Time passed | Effect |
 | --- | --- | --- |
 | Advance | One watch | None beyond the time |
-| Short rest | One hour | Refills pact slots and each short-rest feature pool (see [Class feature pools](#class-feature-pools)). Restores no HP, because in 5e only spent hit dice heal on a short rest |
-| Long rest | Until the next Dawn, at least two watches | Restores HP and every resource, refills the spell slots, and takes one level of exhaustion off each character |
+| Short rest | One hour | Refills pact slots and each short-rest pool (see [Class feature pools](#class-feature-pools) and [Custom pools](#custom-pools)). Sorcerous Restoration gives 4 sorcery points at sorcerer 20. Restores no HP, because in 5e only spent hit dice heal on a short rest |
+| Long rest | Until the next Dawn, at least two watches | Restores HP and every resource except a No rest pool, refills the spell slots, and takes one level of exhaustion off each character |
 
 | Unit | Length |
 | --- | --- |
