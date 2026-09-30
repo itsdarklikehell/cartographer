@@ -1,47 +1,23 @@
 import { promptModal } from './Modal.js';
-import { pickSubclass, subclassButtons } from './SubclassPicker.js';
-import { subclassNotice, withSubclass } from '../entities/Subclass.js';
+import { subclassButtons } from './SubclassPicker.js';
 import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
-import { getClass } from '../entities/Classes.js';
-import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
-import {
-  applyLevelChoices,
-  assignLevel,
-  assignOptions,
-  className,
-  asksForSubclass,
-} from '../entities/LevelAssign.js';
-import {
-  ABILITY_MAX,
-  pendingASISlots,
-  listASIChoices,
-  unlockedFeatures,
-  featuresGained,
-} from '../entities/LevelUp.js';
+import { getClasses, pendingLevels } from '../entities/Multiclass.js';
+import { assignOptions, className } from '../entities/LevelAssign.js';
+import { pendingASISlots, listASIChoices, unlockedFeatures } from '../entities/LevelUp.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
 import {
-  applyASI,
-  takeFeat,
   undoLastChoice,
   withExpertise,
   applyFeatureGrant,
   undoFeatureGrant,
 } from '../entities/Progression.js';
-import {
-  featureKey,
-  getFeatureChoices,
-  pendingFeatureGrants,
-  buildFeatureStamp,
-} from '../entities/FeatureGrants.js';
+import { featureKey, getFeatureChoices, pendingFeatureGrants } from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
-import { ABILITY_SCORES } from '../entities/Modifiers.js';
-import { availableFeats, buildStamp } from '../entities/FeatChoices.js';
-import { featOptions } from '../entities/FeatRequirement.js';
-import { gatherEffectPicks } from './EffectPicks.js';
 import { buildInvocationRows } from './InvocationPicker.js';
-import { activeFeats } from '../library/Library.js';
-import { SKILL_IDS, skillName } from '../data/skills.js';
+import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
+import { chooseASI, chooseFeat } from './ImprovementFlow.js';
+import { skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -55,60 +31,11 @@ import { splitList } from '../util/text.js';
  * feature grants with their prompted picks, the warlock's pact boon and
  * invocations (see InvocationPicker.js), the GM's expertise grant, the
  * unlocked class features, and the hit-dice pools with their short-rest
- * spend. All rule logic lives in the entity modules LevelAssign, LevelUp,
+ * spend. The level dialogs live in LevelAssignFlow.js and the improvement
+ * dialogs in ImprovementFlow.js. All rule logic lives in the entity modules LevelAssign, LevelUp,
  * FeatureGrants, HitDice, and Proficiencies. This file is DOM wiring over
  * them, verified visually.
  */
-
-/**
- * After a character takes a new class, prompt for its multiclass skill
- * pick, if the class's reduced grant includes one. The prompt excludes
- * skills the character already holds. A cancel, or an empty pick list,
- * keeps the assignment without a skill.
- * @param {Character} character
- * @param {string} classId
- * @returns {Promise<string[]>} the picked skill ids
- */
-async function pickMulticlassSkills(character, classId) {
-  const choice = getClass(classId)?.multiclassGrant.skillChoice;
-  if (!choice) return [];
-  const p = getProficiencies(character);
-  const pool = choice.from.length > 0 ? choice.from : SKILL_IDS;
-  const from = pool.filter((id) => !p.skills.includes(id));
-  if (from.length === 0) return [];
-  const values = await promptModal(
-    `${className(classId)} skill`,
-    [
-      {
-        name: 'skills',
-        label: `Choose ${choice.choose}`,
-        type: 'multiselect',
-        options: from.map((id) => ({ value: id, label: skillName(id) })),
-        max: choice.choose,
-        value: '',
-      },
-    ],
-    { submitLabel: 'Choose' },
-  );
-  return values ? splitList(values.skills).slice(0, choice.choose) : [];
-}
-
-/**
- * Prompt for a pending feature grant's picks and return the stamp that
- * claims it. A cancel in any dialog returns null, so the grant stays pending
- * and the sheet's pending row offers it again. The caller applies the stamp
- * to the character read after the last dialog closes, because the character
- * can change while a dialog is open: a heal lands, or a player tab spends a
- * slot.
- * @param {Character} character
- * @param {import('../entities/FeatureGrants.js').PendingFeature} grant
- * @returns {Promise<FeatureStamp | null>}
- */
-async function askFeatureStamp(character, grant) {
-  const title = `${grant.name} (${className(grant.classId)} ${grant.classLevel})`;
-  const picks = await gatherEffectPicks(title, grant.effects, character);
-  return picks ? buildFeatureStamp(grant, picks) : null;
-}
 
 /**
  * The picks a claimed feature grant recorded, as one display line. Only
@@ -183,66 +110,6 @@ export function buildProgressSection(getCharacter, opts) {
   const subclassRow = opts.editBase ? subclassButtons(getCharacter, opts) : [];
   if (subclassRow.length > 0) addRow().append(...subclassRow);
 
-  async function runAssign() {
-    const options = assignOptions(getCharacter());
-    const first = options.find((option) => !option.disabled);
-    if (!first) {
-      opts.notify('No class assignment is available.');
-      return;
-    }
-    const values = await promptModal(
-      'Assign a level',
-      [{ name: 'class', label: 'Class', type: 'select', options, value: first.value }],
-      { submitLabel: 'Assign' },
-    );
-    if (!values) return;
-    const classId = values.class;
-    // The picks gather against a preview of the level. The dialogs stay open
-    // long enough for the sheet's HP or slots to change underneath them, so
-    // the level and its picks apply again to the character read after the
-    // last dialog closes.
-    const from = getCharacter();
-    let preview = assignLevel(from, classId);
-    if (preview === from) return;
-    const skills =
-      classLevelOf(from, classId) === 0 ? await pickMulticlassSkills(preview, classId) : [];
-    preview = applyLevelChoices(from, { classId, skills, stamps: [] });
-    // Reaching the subclass level asks for one. A cancelled pick still takes
-    // the level, and the sheet's Choose button asks again later.
-    const subclass = asksForSubclass(preview, classId)
-      ? ((await pickSubclass(preview, classId)) ?? undefined)
-      : undefined;
-    if (subclass) preview = withSubclass(preview, classId, subclass);
-    const gained = featuresGained(preview, from);
-    /** @type {FeatureStamp[]} */
-    const stamps = [];
-    for (const feature of gained) {
-      if (!feature.effects) continue;
-      const stamp = await askFeatureStamp(preview, {
-        classId: feature.classId,
-        classLevel: feature.level,
-        name: feature.name,
-        effects: feature.effects,
-      });
-      if (!stamp) continue;
-      stamps.push(stamp);
-      // A later grant's picks exclude what an earlier one already gave.
-      preview = applyFeatureGrant(preview, stamp);
-    }
-    const live = getCharacter();
-    const next = applyLevelChoices(live, { classId, skills, stamps, subclass });
-    if (next === live) {
-      opts.notify('That level can no longer be assigned.');
-      return;
-    }
-    const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
-    const subclassText = subclass ? ` ${subclassNotice(next, classId)}` : '';
-    opts.notify(
-      `${live.name} takes ${className(classId)} ${classLevelOf(next, classId)}.${gainedText}${subclassText}`,
-    );
-    opts.onCommit(next);
-  }
-
   const pending = pendingLevels(character);
   const assignable = assignOptions(character).some((option) => !option.disabled);
   if (pending > 0 || (opts.editBase && assignable)) {
@@ -251,101 +118,12 @@ export function buildProgressSection(getCharacter, opts) {
       addText(row, `${pending} level${pending === 1 ? '' : 's'} to assign`);
     }
     if (opts.editBase) {
-      row.appendChild(textButton(pending > 0 ? 'Assign level' : 'Add a class', runAssign));
+      row.appendChild(
+        textButton(pending > 0 ? 'Assign level' : 'Add a class', () =>
+          assignLevelFlow(getCharacter, opts),
+        ),
+      );
     }
-  }
-
-  async function runASI() {
-    const abilityOptions = ABILITY_SCORES.map((key) => ({ value: key, label: key }));
-    const values = await promptModal(
-      'Ability score improvement',
-      [
-        { name: 'first', label: '+1 to', type: 'select', options: abilityOptions },
-        {
-          name: 'second',
-          label: 'and +1 to (the same ability for +2)',
-          type: 'select',
-          options: abilityOptions,
-        },
-      ],
-      { submitLabel: 'Apply' },
-    );
-    if (!values) return;
-    /** @type {Record<string, number>} */
-    const increases = {};
-    increases[values.first] = 1;
-    increases[values.second] = (increases[values.second] ?? 0) + 1;
-    const from = getCharacter();
-    const next = applyASI(from, increases);
-    if (next === from) {
-      opts.notify('That improvement is not valid: ability scores cap at 20.');
-      return;
-    }
-    opts.onCommit(next);
-  }
-
-  /**
-   * Gather the picks a catalog feat needs through the shared pick engine,
-   * and take it. A cancel anywhere abandons the take.
-   * @param {import('../types/feat.js').Feat} feat
-   */
-  async function takeCatalogFeat(feat) {
-    const picks = await gatherEffectPicks(feat.name, feat.effects, getCharacter());
-    if (!picks) return;
-
-    const from = getCharacter();
-    // Two +1 effects can land on the same score, and a score one point under
-    // the cap holds only one of them. The take would refuse as a whole, so
-    // this names the score before the generic refusal below can hide it.
-    /** @type {Record<string, number>} */
-    const stacked = {};
-    for (const key of picks.abilities) stacked[key] = (stacked[key] ?? 0) + 1;
-    for (const [key, value] of Object.entries(stacked)) {
-      if ((from.stats?.[key] ?? 10) + value > ABILITY_MAX) {
-        opts.notify(`${feat.name} would raise ${key} above ${ABILITY_MAX}.`);
-        return;
-      }
-    }
-    const next = takeFeat(from, buildStamp(feat, picks));
-    if (next === from) {
-      opts.notify('That feat could not be taken.');
-      return;
-    }
-    opts.notify(`${from.name} takes ${feat.name}.`);
-    opts.onCommit(next);
-  }
-
-  async function runFeat() {
-    const catalog = availableFeats(getCharacter(), activeFeats());
-    const options = featOptions(getCharacter(), catalog);
-    const values = await promptModal(
-      'Take a feat',
-      [
-        {
-          name: 'feat',
-          label: 'Feat',
-          type: 'select',
-          options: [...options, { value: '', label: 'Custom (name only)' }],
-          value: options.find((o) => !o.disabled)?.value ?? '',
-        },
-      ],
-      { submitLabel: 'Take feat' },
-    );
-    if (!values) return;
-    const feat = catalog.find((f) => f.id === values.feat);
-    if (feat) {
-      await takeCatalogFeat(feat);
-      return;
-    }
-    const named = await promptModal(
-      'Take a feat',
-      [{ name: 'feat', label: 'Feat name', type: 'text', value: '' }],
-      { submitLabel: 'Take feat' },
-    );
-    if (!named) return;
-    const from = getCharacter();
-    const next = takeFeat(from, named.feat);
-    if (next !== from) opts.onCommit(next);
   }
 
   const slots = pendingASISlots(character);
@@ -355,7 +133,10 @@ export function buildProgressSection(getCharacter, opts) {
     const where = `${className(first.classId)} ${first.classLevel}`;
     addText(row, `${slots.length} improvement${slots.length === 1 ? '' : 's'} pending (${where})`);
     if (opts.editBase) {
-      row.append(textButton('+2 ability', runASI), textButton('Take feat', runFeat));
+      row.append(
+        textButton('+2 ability', () => chooseASI(getCharacter, opts)),
+        textButton('Take feat', () => chooseFeat(getCharacter, opts)),
+      );
     }
   }
 

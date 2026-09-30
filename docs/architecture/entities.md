@@ -588,7 +588,8 @@ The dialogs are in `ui/EffectPicks.js`. The class-feature grant flow uses the
 same picks, so a feat and a feature with the same effects prompt the same way.
 A pick whose pool has no more options than the count grants them all with no
 prompt. The expertise prompt runs after the skill picks, because its options
-depend on them. `ui/CharacterProgress.js` connects both flows to the sheet.
+depend on them. `ui/LevelAssignFlow.js` and `ui/ImprovementFlow.js` run both flows,
+and `ui/CharacterProgress.js` places their buttons on the sheet.
 
 ### Class features
 
@@ -1971,6 +1972,8 @@ The parts of the sheet have their own modules:
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |
 | `ui/CharacterProgress.js` | The class rows with subclass, the pending-level assignment, pending ASI and feat choices, feature grants, unlocked features, and the hit-dice pool |
+| `ui/LevelAssignFlow.js` | The dialogs of assigning a level: class, multiclass skills, subclass, and feature picks |
+| `ui/ImprovementFlow.js` | The dialogs of an ability score improvement or a feat |
 
 `view/StatBars.js` decides what the HP bar and the slot pips *say*: the fill
 percentage, the low-HP threshold, the column headings, and every string that a
