@@ -133,9 +133,9 @@ test('Sleep reaches the lowest HP first, and leaves out a target the pool cannot
   resolve(app, p, { targets: 'ogre,goblin,kobold', slot: '1' }, five(3));
   assert.deepEqual(app.log.slice(-4), [
     'Sleep rolls a pool of 15 HP (5d8: 3, 3, 3, 3, 3).',
-    'Kobold is affected (15 HP left in the pool), Unconscious.',
-    'Goblin is affected (10 HP left in the pool), Unconscious.',
-    'Ogre is unaffected (3 HP left in the pool).',
+    'Kobold is affected (within the pool), Unconscious.',
+    'Goblin is affected (within the pool), Unconscious.',
+    'Ogre is unaffected (the pool runs out).',
   ]);
   const chip = creature(app, 'goblin').conditions[0];
   assert.equal(chip.name, 'Unconscious');

@@ -7,7 +7,10 @@
  * roll takes its random source as an argument.
  */
 
+import { roll } from '../dice/DiceRoller.js';
+
 /** @typedef {import('../types/spell.js').SpellHpPool} SpellHpPool */
+/** @typedef {import('../types/dice.js').DieType} DieType */
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
 /** @typedef {import('./Casting.js').CastTarget} CastTarget */
 
@@ -23,8 +26,9 @@ const UNCONSCIOUS = 'unconscious';
  */
 export function rollHpPool(pool, steps, rng) {
   const count = pool.count + (pool.perStep ?? 0) * steps;
-  const rolls = Array.from({ length: count }, () => Math.floor(rng() * pool.sides) + 1);
-  return { total: rolls.reduce((sum, n) => sum + n, 0), rolls, dice: `${count}d${pool.sides}` };
+  const die = /** @type {DieType} */ (`d${pool.sides}`);
+  const result = roll({ counts: { [die]: count }, modifier: 0 }, rng);
+  return { total: result.total, rolls: result.results[0]?.rolls ?? [], dice: `${count}${die}` };
 }
 
 /**
@@ -38,6 +42,9 @@ export function rollHpPool(pool, steps, rng) {
  * Spray both pass over such creatures. A target whose HP the app cannot read
  * takes the effect without spending the pool, the same way an HP limit lets
  * it through, so the GM can still apply the spell. Such targets come last.
+ *
+ * No reason names an HP number. The log reaches a Player tab, and the HP
+ * left in the pool after each target would give away that target's exact HP.
  * @param {CastTarget[]} targets
  * @param {number} total
  * @param {string | undefined} condition the condition the spell imposes
@@ -58,9 +65,8 @@ export function walkHpPool(targets, total, condition) {
     if (condition && held(target, condition)) {
       return { target, affected: false, reason: `already ${condition}` };
     }
-    const reason = `${left} HP left in the pool`;
-    if (target.hp > left) return { target, affected: false, reason };
+    if (target.hp > left) return { target, affected: false, reason: 'the pool runs out' };
     left -= target.hp;
-    return { target, affected: true, reason };
+    return { target, affected: true, reason: 'within the pool' };
   });
 }

@@ -33,10 +33,10 @@ test('the walk takes the lowest HP first and leaves out a target that does not f
   assert.deepEqual(
     walk.map((w) => [w.target.id, w.affected, w.reason]),
     [
-      ['kobold', true, '20 HP left in the pool'],
-      ['goblin', true, '15 HP left in the pool'],
-      ['imp', true, '8 HP left in the pool'],
-      ['ogre', false, '1 HP left in the pool'],
+      ['kobold', true, 'within the pool'],
+      ['goblin', true, 'within the pool'],
+      ['imp', true, 'within the pool'],
+      ['ogre', false, 'the pool runs out'],
     ],
   );
 });
@@ -60,7 +60,7 @@ test('the walk passes over a downed, a sleeping, or an already affected target',
       ['down', false, 'at 0 HP'],
       ['asleep', false, 'already Unconscious'],
       ['blind', false, 'already Blinded'],
-      ['fresh', true, '6 HP left in the pool'],
+      ['fresh', true, 'within the pool'],
       ['unknown', true, 'HP unknown'],
     ],
   );

@@ -110,7 +110,12 @@ replaces the chip of the old repeat.
 
 A chip that ends at a turn boundary shows "next turn" in place of a round
 count. Outside a fight there are no turns, so such a chip lasts one round.
-The end of a fight removes every such chip.
+The app deals later-turn damage only at the end of a turn in a fight, so an
+Acid Arrow cast outside a fight deals no later damage, and the GM applies
+it by hand. The end of a fight removes every chip that ends at a turn
+boundary, and it first deals the later-turn damage that such a chip still
+owes. A dying character takes that damage at the end of its turn, and each
+hit costs it a failed death save.
 
 ### Two effects in one hit
 
@@ -132,8 +137,9 @@ sorts the chosen targets by current HP, lowest first. Each target whose HP
 fits in what the pool has left takes the condition, and its HP comes out of
 the pool. The pool passes over a target at 0 HP, an Unconscious target, and
 a target that already has the condition of the spell. The log states the
-pool roll, and for each target the HP that was left when the pool reached
-it.
+pool roll, and for each target whether the pool reached it. The log names
+no HP number per target, because a Player tab reads the same log, and the
+HP left in the pool would give away the exact HP of a foe.
 
 Sleep ends on a creature when that creature takes damage, including damage
 that its temporary hit points absorb. The printed spell does not affect
