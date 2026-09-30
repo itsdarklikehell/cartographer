@@ -41,4 +41,6 @@ export interface Quest {
   objectives: QuestObjective[];
   /** The places and creatures the quest involves. Only a GM tab shows them. Empty on older saves. */
   links: QuestLink[];
+  /** The ids of the quests that completing this one offers to reveal. Only a GM tab shows them. */
+  unlocks: string[];
 }

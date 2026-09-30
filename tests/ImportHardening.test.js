@@ -147,7 +147,7 @@ test('quests coerce their text fields, status, and reveal flag, and keep unknown
       { title: 'no id' },
     ],
   });
-  const none = { objectives: [], links: [] };
+  const none = { objectives: [], links: [], unlocks: [] };
   assert.deepEqual(state.quests, [
     { id: 'q1', title: '', notes: '', status: 'active', revealed: false, extra: true, ...none },
     {

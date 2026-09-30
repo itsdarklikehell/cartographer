@@ -731,6 +731,7 @@ test('serialize/deserialize round-trips the quest log', () => {
         { kind: 'place', nodeId: 'world', tileId: '1,1' },
         { kind: 'creature', creatureId: 'goblin' },
       ],
+      unlocks: ['q2'],
     },
     {
       id: 'q2',
@@ -740,6 +741,7 @@ test('serialize/deserialize round-trips the quest log', () => {
       revealed: false,
       objectives: [],
       links: [],
+      unlocks: [],
     },
   ];
   const state = buildState({ grid, quests });

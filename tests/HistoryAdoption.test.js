@@ -39,6 +39,7 @@ function state(titles) {
       revealed: false,
       objectives: [],
       links: [],
+      unlocks: [],
     })),
     clock: null,
     npcs: [],

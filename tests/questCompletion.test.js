@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { completeQuest, questDetailCallbacks } from '../src/app/questDetail.js';
+import { questDetailCallbacks } from '../src/app/questDetail.js';
+import { askCompletion, completeQuest } from '../src/app/questCompletion.js';
 import { createQuest } from '../src/quest/Quests.js';
 import { addObjective } from '../src/quest/Objectives.js';
 import { stubApp } from './helpers/app.js';
@@ -154,4 +155,62 @@ test('the reveal offer does not hide an objective another tab revealed meanwhile
   });
   await callbacks.onToggleObjective(quest(app), 'o2');
   assert.equal(quest(app).objectives[1].hidden, false);
+});
+
+/** The stub app with two more quests: q2 hidden, q3 revealed, both unlocked by q1. */
+function unlockApp() {
+  const { app, toasts } = fakeApp();
+  app.state.quests = [
+    { ...quest(app), unlocks: ['q2', 'q3', 'gone'] },
+    createQuest('q2', 'Goblin Raids'),
+    createQuest('q3', 'Hermit', '', 'active', true),
+  ];
+  return { app, toasts };
+}
+
+test('completeQuest reveals the listed quests that are still hidden, with a line each', () => {
+  const { app } = unlockApp();
+  assert.equal(completeQuest(app, quest(app), ['q2', 'q3', 'gone']), true);
+  assert.equal(app.state.quests[1].revealed, true);
+  assert.deepEqual(app.log, [
+    'The party completes the quest Rumors.',
+    'The party learns of the quest Goblin Raids.',
+  ]);
+});
+
+test('askCompletion lists each hidden unlock, ticked, and returns the ticked ids', async () => {
+  const { app } = unlockApp();
+  /** @type {any[]} */
+  const asked = [];
+  const prompt = async (/** @type {string} */ title, /** @type {any[]} */ fields, options) => {
+    asked.push({ title, fields, options });
+    return { reveal: 'q2,q3,q1' };
+  };
+  const reveal = await askCompletion(app, quest(app), 'Done?', {
+    prompt: /** @type {any} */ (prompt),
+  });
+  assert.deepEqual(reveal, ['q2']);
+  assert.equal(asked[0].fields[0].value, 'q2');
+  assert.deepEqual(asked[0].fields[0].options, [{ value: 'q2', label: 'Goblin Raids' }]);
+  assert.equal(asked[0].options.message, 'Done?');
+  const declined = await askCompletion(app, quest(app), 'Done?', {
+    prompt: /** @type {any} */ (async () => null),
+  });
+  assert.equal(declined, null);
+});
+
+test('askCompletion without hidden unlocks confirms, or asks nothing when told not to', async () => {
+  const { app } = fakeApp();
+  /** @type {string[]} */
+  const labels = [];
+  const confirm = async (/** @type {string} */ _m, /** @type {any} */ o) => {
+    labels.push(o.confirmLabel);
+    return labels.length === 1;
+  };
+  const opts = { confirm: /** @type {any} */ (confirm) };
+  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', opts), []);
+  assert.equal(await askCompletion(app, quest(app), 'Done?', opts), null);
+  assert.deepEqual(labels, ['Complete quest', 'Complete quest']);
+  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', { ...opts, askPlain: false }), []);
+  assert.equal(labels.length, 2);
 });

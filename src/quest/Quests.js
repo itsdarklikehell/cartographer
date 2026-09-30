@@ -20,7 +20,7 @@
  * @returns {Quest}
  */
 export function createQuest(id, title, notes = '', status = 'active', revealed = false) {
-  return { id, title, notes, status, revealed, objectives: [], links: [] };
+  return { id, title, notes, status, revealed, objectives: [], links: [], unlocks: [] };
 }
 
 /**
@@ -75,8 +75,9 @@ const playerCopies = new WeakMap();
 
 /**
  * The quest as a player tab draws it. The GM notes are empty, the hidden
- * objectives are gone, and the links are gone, because a link names a place
- * or a creature that the party may not know yet. The player panel builds
+ * objectives are gone, and the links and unlocks are gone, because a link
+ * names a place or a creature, and an unlock names a quest, that the party
+ * may not know yet. The player panel builds
  * its rows from this copy only, so no GM-only text gets into the player
  * screen. The live state keeps the whole quest. A player tab sends its
  * edits as a diff against that state, so a stripped quest in the state
@@ -96,6 +97,7 @@ export function playerQuestView(quest) {
     revealed: quest.revealed,
     objectives: quest.objectives.filter((o) => !o.hidden),
     links: [],
+    unlocks: [],
   };
   playerCopies.set(quest, copy);
   return copy;

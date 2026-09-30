@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { combatState, gameClock } from '../src/storage/RecordCoercion.js';
+import { combatState, gameClock, quests } from '../src/storage/RecordCoercion.js';
 import { advanceWatches } from '../src/time/GameClock.js';
 
 test('gameClock keeps a valid clock and drops a value that is not a record', () => {
@@ -39,4 +39,13 @@ test('combatState keeps the surprised flag only when it is true', () => {
   });
   assert.equal(state?.order[0].surprised, true);
   assert.equal('surprised' in (state?.order[1] ?? {}), false);
+});
+
+test('quests reads the unlock list as unique string ids, and a missing list as empty', () => {
+  const [one, two] = quests([
+    { id: 'a', unlocks: ['b', 'b', '', 3, 'c'] },
+    { id: 'b', unlocks: 'c' },
+  ]);
+  assert.deepEqual(one.unlocks, ['b', 'c']);
+  assert.deepEqual(two.unlocks, []);
 });

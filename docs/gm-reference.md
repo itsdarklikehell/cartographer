@@ -2417,7 +2417,7 @@ The Quests panel in the Story tab lists active and completed quests.
 
 | Control | What it does |
 | --- | --- |
-| New quest | Opens the quest dialog, with Title and Notes |
+| New quest | Opens the quest dialog, with Title, Notes, and Unlocks |
 | Status mark | Completes or reopens the quest |
 | Eye | Reveals the quest to players, or hides it again |
 | Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
@@ -2437,6 +2437,14 @@ whether to reveal the objective to players. When you mark the last open
 objective done, a dialog offers to complete the quest. Completing a quest
 shows a toast and writes a travelogue line. The line of a quest that
 players cannot see is GM-only. Reopening a quest writes no line.
+
+The **Unlocks** field of the quest dialog lists the other quests that this
+quest leads to. When you complete a quest that unlocks hidden quests, the
+dialog lists each of them under **Also reveal**, ticked. Clear a box to
+keep that quest hidden. Each revealed quest gets its own travelogue line.
+This dialog also comes up when you click the status mark of such a quest.
+The Player view never shows the Unlocks list. A deleted quest leaves every
+Unlocks list.
 
 The Quests panel scrolls once its list is taller than most of the window.
 A click on a control keeps the scroll position of the list, and a revealed

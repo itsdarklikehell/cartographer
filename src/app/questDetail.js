@@ -6,7 +6,7 @@
  */
 
 import { confirmModal, promptModal } from '../ui/Modal.js';
-import { applyFresh, replaceById } from '../entities/Roster.js';
+import { applyFresh } from '../entities/Roster.js';
 import {
   addObjective,
   allObjectivesDone,
@@ -14,7 +14,7 @@ import {
   toggleObjectiveDone,
   toggleObjectiveHidden,
 } from '../quest/Objectives.js';
-import { setQuestStatus } from '../quest/Quests.js';
+import { askCompletion, completeQuest } from './questCompletion.js';
 import { addLink, creatureLink, linkKey, liveLinks, placeLink } from '../quest/QuestLinks.js';
 import { displayCoords, tileIdFromDisplay } from '../map/TileCoords.js';
 import { tileIdAt } from '../map/MapGeometry.js';
@@ -43,28 +43,6 @@ export function readPlaceLink(node, values) {
     node.id,
     tileIdFromDisplay(clampInt(column, 1, node.width, 1), clampInt(row, 1, node.height, 1)),
   );
-}
-
-/**
- * Mark a quest completed, show a toast, and write a travelogue line. The
- * line names the quest, so the line of a quest that players cannot see is
- * GM-only, and a Player tab leaves it out. `logEvent` saves the change.
- * @param {AppContext} app
- * @param {Quest} quest
- * @returns {boolean} false when the quest is gone or already completed
- */
-export function completeQuest(app, quest) {
-  const { state } = app;
-  const current = state.quests.find((q) => q.id === quest.id);
-  if (!current || current.status === 'completed') return false;
-  state.quests = replaceById(state.quests, setQuestStatus(current, 'completed'));
-  app.toasts.show(`Completed ${current.title}.`);
-  app.actions.logEvent(
-    'note',
-    `The party completes the quest ${current.title}.`,
-    current.revealed ? undefined : { gm: true },
-  );
-  return true;
 }
 
 /**
@@ -104,17 +82,10 @@ export function questDetailCallbacks(app, { prompt = promptModal, confirm = conf
       );
     }
     const latest = current(quest.id);
-    if (
-      latest?.status === 'active' &&
-      allObjectivesDone(latest.objectives) &&
-      (await confirm(`Every objective of ${latest.title} is done. Complete the quest?`, {
-        title: 'Quest done',
-        confirmLabel: 'Complete quest',
-        cancelLabel: 'Not yet',
-      }))
-    ) {
-      completeQuest(app, latest);
-    }
+    if (latest?.status !== 'active' || !allObjectivesDone(latest.objectives)) return;
+    const message = `Every objective of ${latest.title} is done. Complete the quest?`;
+    const reveal = await askCompletion(app, latest, message, { prompt, confirm });
+    if (reveal) completeQuest(app, latest, reveal);
   }
 
   /**

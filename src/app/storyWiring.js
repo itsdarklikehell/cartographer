@@ -19,7 +19,10 @@ import {
   toggleQuestRevealed,
   toggleQuestStatus,
 } from '../quest/Quests.js';
-import { completeQuest, questDetailCallbacks } from './questDetail.js';
+import { questDetailCallbacks } from './questDetail.js';
+import { askCompletion, completeQuest } from './questCompletion.js';
+import { parseUnlocks } from '../quest/QuestUnlocks.js';
+import { pruneUnlocks } from './questCleanup.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
@@ -215,16 +218,45 @@ export function wireStory(app) {
     fields: (quest) => [
       { name: 'title', label: 'Title', value: quest?.title ?? '' },
       { name: 'notes', label: 'Notes', value: quest?.notes ?? '' },
+      {
+        name: 'unlocks',
+        label: 'Unlocks (completing this quest offers to reveal them)',
+        type: 'multiselect',
+        value: quest?.unlocks.join(',') ?? '',
+        options: state.quests
+          .filter((q) => q.id !== quest?.id)
+          .map((q) => ({ value: q.id, label: q.title })),
+        emptyText: 'There are no other quests yet.',
+      },
     ],
-    create: (id, title, values) => createQuest(id, title, values.notes.trim()),
-    patch: (quest, title, values) => ({ ...quest, title, notes: values.notes.trim() }),
+    create: (id, title, values) => ({
+      ...createQuest(id, title, values.notes.trim()),
+      unlocks: parseUnlocks(values.unlocks, id),
+    }),
+    patch: (quest, title, values) => ({
+      ...quest,
+      title,
+      notes: values.notes.trim(),
+      unlocks: parseUnlocks(values.unlocks, quest.id),
+    }),
   });
+  const deleteQuest = questList.onDelete;
+  questList.onDelete = async (id) => {
+    const deleted = await deleteQuest(id);
+    if (deleted) pruneUnlocks(app);
+    return deleted;
+  };
 
   app.views.questPanel = mountQuestPanel(mustGetElement('quest-container'), {
     getQuests: () => state.quests,
-    onToggle: (quest) => {
+    onToggle: async (quest) => {
       // Completing writes a toast and a travelogue line. Reopening is quiet.
-      if (quest.status === 'active' && completeQuest(app, quest)) return;
+      if (quest.status === 'active') {
+        const message = `Complete ${quest.title}?`;
+        const reveal = await askCompletion(app, quest, message, { askPlain: false });
+        if (!reveal) return app.views.questPanel.update();
+        if (completeQuest(app, quest, reveal)) return;
+      }
       state.quests = replaceById(state.quests, toggleQuestStatus(quest));
       app.actions.markDirty();
     },

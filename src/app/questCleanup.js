@@ -13,6 +13,7 @@ import {
   unlinkMissingCreatures,
   unlinkNodes,
 } from '../quest/QuestLinks.js';
+import { dropMissingUnlocks } from '../quest/QuestUnlocks.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/quest.js').Quest} Quest */
@@ -63,4 +64,13 @@ export function unlinkRemovedNodes(app, nodeIds) {
  */
 export function shrinkNodeLinks(app, nodeId, width, height) {
   store(app, linksAfterShrink(app.state.quests, nodeId, width, height));
+}
+
+/**
+ * Remove the ids of deleted quests from every unlock list. The quest delete
+ * calls this, so no quest offers to reveal a quest that is gone.
+ * @param {AppContext} app
+ */
+export function pruneUnlocks(app) {
+  store(app, dropMissingUnlocks(app.state.quests));
 }

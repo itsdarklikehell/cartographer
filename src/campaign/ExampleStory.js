@@ -25,10 +25,10 @@ const map = (nodeId) => ({ kind: 'place', nodeId, tileId: null });
 /**
  * One active quest. The objectives get their ids from their order.
  * @param {string} id @param {string} title @param {string} notes
- * @param {{ revealed?: boolean, steps: Omit<QuestObjective, 'id'>[], links: QuestLink[] }} parts
+ * @param {{ revealed?: boolean, steps: Omit<QuestObjective, 'id'>[], links: QuestLink[], unlocks?: string[] }} parts
  * @returns {Quest}
  */
-const quest = (id, title, notes, { revealed = false, steps, links }) => ({
+const quest = (id, title, notes, { revealed = false, steps, links, unlocks = [] }) => ({
   id,
   title,
   notes,
@@ -36,6 +36,7 @@ const quest = (id, title, notes, { revealed = false, steps, links }) => ({
   revealed,
   objectives: steps.map((s, i) => ({ id: `o${i + 1}`, ...s })),
   links,
+  unlocks,
 });
 
 /**

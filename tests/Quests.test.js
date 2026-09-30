@@ -20,6 +20,7 @@ test('createQuest defaults to active and hidden with empty notes, objectives, an
     revealed: false,
     objectives: [],
     links: [],
+    unlocks: [],
   });
 });
 
@@ -102,6 +103,7 @@ test('playerQuestView drops the notes, the hidden objectives, and the links', ()
     revealed: true,
     objectives: [{ id: 'o1', text: 'Find the old tomb', done: true, hidden: false }],
     links: [],
+    unlocks: [],
   });
 });
 

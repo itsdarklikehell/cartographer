@@ -727,6 +727,15 @@ When the party steps onto the tile, a message names the handout and offers a
 The Player view shows the steps that are not GM only. It never shows the
 links, the notes, or a GM-only step.
 
+### Reveal the next quest on completion
+
+1. Click the chevron on the quest row, and then click **Edit**.
+2. In **Unlocks**, select the quests that this quest leads to, and save.
+3. When the party finishes the quest, complete it. The dialog lists each
+   hidden quest from **Unlocks** under **Also reveal**, ticked.
+4. Clear the box of any quest the party did not learn of, and click
+   **Complete quest**.
+
 ## Curate the library
 
 The library keeps templates that do not belong to one campaign: equipment,

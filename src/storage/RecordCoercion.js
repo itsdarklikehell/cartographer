@@ -238,7 +238,7 @@ export function logEntries(value) {
  * completed reads as active, a title or notes of the wrong type read as
  * empty text, and a quest reads as hidden from players unless its
  * `revealed` flag is exactly true. A save with no objectives or links
- * reads as empty lists.
+ * reads as empty lists, and so does a save with no unlock list.
  * @param {unknown} value
  * @returns {Quest[]}
  */
@@ -256,9 +256,21 @@ export function quests(value) {
         revealed: quest.revealed === true,
         objectives: questObjectives(quest.objectives),
         links: questLinks(quest.links),
+        unlocks: questUnlocks(quest.unlocks),
       },
     ];
   });
+}
+
+/**
+ * A quest's unlock list: the string ids, without blanks or repeats. A save
+ * with no list reads as an empty one.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+function questUnlocks(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((v) => typeof v === 'string' && v !== ''))];
 }
 
 /**

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   pruneCreatureLinks,
+  pruneUnlocks,
   shrinkNodeLinks,
   unlinkRemovedNodes,
 } from '../src/app/questCleanup.js';
@@ -65,4 +66,17 @@ test('shrinkNodeLinks turns a link to a removed tile into a whole-map link', () 
   const app = fakeApp([placeLink('town', '6,6')]);
   shrinkNodeLinks(app, 'town', 3, 3);
   assert.deepEqual(app.state.quests[0].links, [placeLink('town')]);
+});
+
+test('pruneUnlocks drops the ids of deleted quests and refreshes the log', () => {
+  const app = stubApp({
+    state: {
+      quests: [{ ...createQuest('a', 'A'), unlocks: ['gone', 'a2'] }, createQuest('a2', 'B')],
+    },
+  });
+  pruneUnlocks(app);
+  assert.deepEqual(app.state.quests[0].unlocks, ['a2']);
+  assert.deepEqual(app.refreshes, ['questPanel']);
+  pruneUnlocks(app);
+  assert.deepEqual(app.refreshes, ['questPanel']);
 });
