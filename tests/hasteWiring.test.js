@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
 import { rosterTargets } from '../src/app/spellTargets.js';
-import { endSpellEffects, noteLethargy } from '../src/app/combatants.js';
+import { applyConditionToTarget, endSpellEffects } from '../src/app/combatants.js';
+import { addLethargy } from '../src/app/lethargy.js';
+import { advancePastHeld } from '../src/app/turnAdvance.js';
+import { createParticipant, startCombat } from '../src/combat/Initiative.js';
 import { armorClass } from '../src/entities/Armor.js';
 import { hasExtraAction } from '../src/entities/ChipMods.js';
 import { saveOutcome } from '../src/entities/ConditionEffects.js';
@@ -14,7 +17,7 @@ import { stubApp as baseStubApp } from './helpers/app.js';
 
 /**
  * The wiring of Haste: the chip it leaves with +2 AC, advantage on DEX saves,
- * and an extra action, and the lethargy the log notes when it ends.
+ * and an extra action, and the Lethargic chip it leaves when it ends.
  */
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
@@ -100,10 +103,71 @@ test('the end of Haste leaves its target lethargic', () => {
   );
 });
 
-test('noteLethargy logs the rule for one combatant', () => {
+const chipNamed = (app, id, name) => pc(app, id).conditions.find((c) => c.name === name);
+
+test('outside a fight, the Lethargic chip lasts one round', () => {
   const app = stubApp();
-  noteLethargy(app, 'Wren');
-  assert.deepEqual(app.log, [
-    "Wren is lethargic and can't move or take actions until after its next turn.",
-  ]);
+  cast(app, 'fighter');
+  endSpellEffects(app, 'mage', 'haste');
+  const chip = chipNamed(app, 'fighter', 'Lethargic');
+  assert.equal(chip.rounds, 1);
+  assert.equal(chip.expires, undefined);
+});
+
+test('Haste ending on its target turn costs the next turn, which then ends the chip', () => {
+  const app = stubApp();
+  app.state.combat = startCombat(
+    [createParticipant('fighter', 20), createParticipant('mage', 10)],
+    (p) => p.id,
+  );
+  cast(app, 'fighter');
+  endSpellEffects(app, 'mage', 'haste');
+  assert.deepEqual(chipNamed(app, 'fighter', 'Lethargic').expires, {
+    who: 'fighter',
+    at: 'end',
+    count: 2,
+  });
+  const hooks = {
+    setCombat: (next) => {
+      app.state.combat = next;
+    },
+    tickRound: () => {},
+  };
+  advancePastHeld(app, hooks);
+  assert.equal(chipNamed(app, 'fighter', 'Lethargic').expires.count, 1);
+  const result = advancePastHeld(app, hooks);
+  assert.equal(result?.state.order[result.state.index].id, 'mage', 'the fighter loses its turn');
+  assert.equal(chipNamed(app, 'fighter', 'Lethargic'), undefined);
+});
+
+test('a Haste from another caster replaces the first, and the first leaves lethargy', () => {
+  const app = stubApp();
+  cast(app, 'fighter');
+  const first = chipNamed(app, 'fighter', 'Haste');
+  applyConditionToTarget(
+    app,
+    'fighter',
+    'Haste',
+    (first.rounds ?? 10) + 5,
+    { spellId: 'haste', spellName: 'Haste', casterId: 'other' },
+    null,
+    { mods: first.mods },
+  );
+  assert.ok(chipNamed(app, 'fighter', 'Lethargic'));
+});
+
+test('a hand edit that removes Haste adds the chip and logs it', () => {
+  const app = stubApp();
+  cast(app, 'fighter');
+  const prev = pc(app, 'fighter');
+  const next = addLethargy(app, prev, {
+    ...prev,
+    conditions: prev.conditions.filter((c) => c.name !== 'Haste'),
+  });
+  assert.ok(next.conditions.some((c) => c.name === 'Lethargic'));
+  assert.equal(
+    app.log.at(-1),
+    "Fighter is lethargic and can't move or take actions until after its next turn.",
+  );
+  assert.equal(addLethargy(app, next, next), next, 'no change keeps the entity');
 });

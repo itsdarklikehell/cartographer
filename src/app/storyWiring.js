@@ -19,6 +19,7 @@ import { wireHandouts } from './handoutWiring.js';
 import { creatureForm } from './creatureForm.js';
 import { commitCreatures, storeCreature } from './combatants.js';
 import { setCombatantExhaustion } from './exhaustion.js';
+import { addLethargy } from './lethargy.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -119,8 +120,10 @@ export function wireStory(app) {
     onDelete: deleteNPC,
     // The chips on an NPC's row are combat state, so only the panel beside
     // the party writes them. The combat screen shows the same chips.
-    onUpdate: (npc) => {
-      const prev = state.creatures.find((c) => c.id === npc.id);
+    onUpdate: (edited) => {
+      const prev = state.creatures.find((c) => c.id === edited.id);
+      // A hand edit that removes Haste leaves lethargy, as any other end does.
+      const npc = prev ? addLethargy(app, prev, edited) : edited;
       storeCreature(app, prev ?? npc, npc, (c) => {
         state.creatures = replaceById(state.creatures, c);
       });

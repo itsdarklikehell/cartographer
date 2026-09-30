@@ -1472,8 +1472,11 @@ chip. See [Hit points and immunity](spells-missing.md#hit-points-and-immunity).
 
 Haste gives its target +2 AC, advantage on DEX saves, and one more weapon
 swing on each of its turns. The combat card counts the extra swing in the
-swings left. When Haste ends, the log notes that the target is lethargic, and
-you skip its next turn. See [Speed of action](spells-missing.md#speed-of-action).
+swings left. When Haste ends by any path, including a chip that you remove
+by hand, the target gets a Lethargic chip, and the log notes it. **Next
+turn** steps past a lethargic combatant on its next turn, and the chip ends
+at the end of that turn. The target keeps its concentration and its
+reactions. See [Speed of action](spells-missing.md#speed-of-action).
 
 A spell that the caster still keeps open from an earlier turn, such as Spiritual
 Weapon, casts as a repeat. The dialog is titled **Repeat** and has no slot

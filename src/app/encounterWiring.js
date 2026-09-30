@@ -29,7 +29,7 @@ import { abilityModifier } from '../entities/Modifiers.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { passRound } from '../entities/TimedEffects.js';
-import { hasExtraAction } from '../entities/ChipMods.js';
+import { addLethargy } from './lethargy.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
@@ -39,7 +39,6 @@ import {
   endSpellEffects,
   findCombatant,
   logDefeatTransition,
-  noteLethargy,
   storeCreature,
 } from './combatants.js';
 import { advancePastHeld } from './turnAdvance.js';
@@ -231,10 +230,12 @@ export function wireEncounters(app) {
         : discoveredHostiles(state.creatures, position, app.grid.getNode(position.nodeId) ?? null);
       return list.filter((c) => !hereIds.has(c.id));
     },
-    onUpdate: (next) => {
+    onUpdate: (edited) => {
       // Log the transition into defeat exactly once. Compare against the
       // pre-update creature so damage that keeps it down does not log again.
-      const prev = state.creatures.find((c) => c.id === next.id);
+      const prev = state.creatures.find((c) => c.id === edited.id);
+      // A hand edit that removes Haste leaves lethargy, as any other end does.
+      const next = prev ? addLethargy(app, prev, edited) : edited;
       if (prev) logDefeatTransition(app, prev, next);
       // An HP or chip edit can also break the spell the creature holds.
       storeCreature(app, prev ?? next, next, (c) => {
@@ -312,8 +313,9 @@ export function wireEncounters(app) {
     onDelete: (creature) => deleteCreature(app, creature),
     // Persist base stat edits from the Build rail's chips. The Play panel
     // shows the same creature and picks up the change.
-    onUpdate: (next) => {
-      const prev = state.creatures.find((c) => c.id === next.id);
+    onUpdate: (edited) => {
+      const prev = state.creatures.find((c) => c.id === edited.id);
+      const next = prev ? addLethargy(app, prev, edited) : edited;
       storeCreature(app, prev ?? next, next, (c) => {
         state.creatures = replaceById(state.creatures, c);
       });
@@ -461,7 +463,7 @@ export function wireEncounters(app) {
     /** @type {{ casterId: string, spellId: string }[]} */
     const expired = [];
     /** @type {string[]} */
-    const lethargic = [];
+    const notes = [];
     /**
      * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
      * @param {T[]} list
@@ -469,12 +471,10 @@ export function wireEncounters(app) {
      */
     const tickAll = (list) => {
       const next = list.map((entity) => {
-        const { entity: ticked, ended } = passRound(entity);
+        const { entity: passed, ended } = passRound(entity);
         // A Haste chip that runs out on the tick leaves before its caster's
-        // concentration sweep can see it, so the tick notes the lethargy.
-        if (hasExtraAction(entity.conditions) && !hasExtraAction(ticked.conditions)) {
-          lethargic.push(entity.name);
-        }
+        // concentration sweep can see it, so the tick adds the lethargy.
+        const ticked = passed === entity ? entity : addLethargy(app, entity, passed, notes);
         if (ended) {
           app.actions.logEvent(
             'combat',
@@ -495,7 +495,7 @@ export function wireEncounters(app) {
     // sweep writes to the same two collections. Run earlier, the tick's
     // own write restores its result.
     for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
-    for (const name of lethargic) noteLethargy(app, name);
+    for (const line of notes) app.actions.logEvent('combat', line);
   }
 
   // Turn advance and combat end are registered as actions. This lets the

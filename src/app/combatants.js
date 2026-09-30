@@ -13,7 +13,7 @@ import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { dropIfHelpless } from '../entities/Concentration.js';
 import { settleConcentration } from '../entities/CreatureHit.js';
-import { settleHPBuffs } from '../entities/HPBuffs.js';
+import { settleChips } from './lethargy.js';
 import { immunityTo } from '../entities/ChipMods.js';
 import { applyDefenses, defensesOf } from '../entities/DamageDefenses.js';
 import { replaceById } from '../entities/Roster.js';
@@ -450,10 +450,10 @@ export function applyConditionToTarget(
     app.actions.logEvent('combat', `${endedLine(found.entity.name, c.name)}.`);
   }
   if (found.kind === 'character') {
-    storeCharacterChips(app, found, settleHPBuffs({ ...found.entity, conditions }));
+    storeCharacterChips(app, found, settleChips(app, found.entity, conditions));
     return true;
   }
-  storeCreature(app, found.entity, settleHPBuffs({ ...found.entity, conditions }), found.store);
+  storeCreature(app, found.entity, settleChips(app, found.entity, conditions), found.store);
   app.actions.markDirty();
   return true;
 }
@@ -497,12 +497,13 @@ export function storeCreature(app, prev, next, store) {
  * Write a new condition list back to whatever holds the combatant. The two
  * branches do the same write. They are split because each store function
  * accepts only its own entity type.
+ * @param {AppContext} app
  * @param {Combatant} found
  * @param {import('../types/entities.js').Condition[]} conditions
  */
-function storeConditions(found, conditions) {
-  if (found.kind === 'character') found.store(settleHPBuffs({ ...found.entity, conditions }));
-  else found.store(settleHPBuffs({ ...found.entity, conditions }));
+function storeConditions(app, found, conditions) {
+  if (found.kind === 'character') found.store(settleChips(app, found.entity, conditions));
+  else found.store(settleChips(app, found.entity, conditions));
 }
 
 /**
@@ -523,8 +524,10 @@ function storeConditions(found, conditions) {
  */
 export function endSpellEffects(app, casterId, spellId) {
   const { state } = app;
-  /** @type {{ name: string, condition: string, repeat: boolean, lethargic: boolean }[]} */
+  /** @type {{ name: string, condition: string, repeat: boolean }[]} */
   const freed = [];
+  /** @type {string[]} */
+  const notes = [];
   /**
    * @template {Character | Creature} T
    * @param {T} entity
@@ -538,11 +541,11 @@ export function endSpellEffects(app, casterId, spellId) {
         name: entity.name,
         condition: c.name,
         repeat: !!c.source?.repeat,
-        lethargic: !!c.mods?.extraAction,
       });
     }
-    // A chip that raised the HP maximum (Aid) takes the raise with it.
-    return settleHPBuffs({ ...entity, conditions });
+    // A chip that raised the HP maximum (Aid) takes the raise with it, and a
+    // Haste chip leaves lethargy behind.
+    return settleChips(app, entity, conditions, notes);
   };
   /**
    * swept reassigns a collection only when a chip actually came off it. The
@@ -580,13 +583,13 @@ export function endSpellEffects(app, casterId, spellId) {
   app.actions.markDirty();
   // The chip a caster keeps for a repeat is not a condition it was under, so
   // its line names the spell that ends.
-  for (const { name, condition, repeat, lethargic } of freed) {
+  for (const { name, condition, repeat } of freed) {
     app.actions.logEvent(
       'combat',
       repeat ? `${name}'s ${condition} ends.` : `${endedLine(name, condition)}.`,
     );
-    if (lethargic) noteLethargy(app, name);
   }
+  for (const line of notes) app.actions.logEvent('combat', line);
   for (const creature of despawned) {
     app.actions.logEvent('combat', `${creature.name} vanishes as ${spellNameOf(creature)} ends.`);
   }
@@ -628,7 +631,7 @@ export function retryImposedSaves(app, combatantId, { rng = Math.random } = {}) 
   });
   if (results.length === 0) return results;
   if (conditions !== found.entity.conditions) {
-    storeConditions(found, conditions);
+    storeConditions(app, found, conditions);
     app.actions.markDirty();
   }
   for (const { condition, save, ended } of results) {
@@ -779,17 +782,4 @@ function hitEventLine(name, event) {
         `(CON save ${event.total} vs DC ${event.dc}).`
       );
   }
-}
-
-/**
- * Log the lethargy that Haste leaves when it ends. The GM runs the lost turn,
- * so the log states the rule.
- * @param {AppContext} app
- * @param {string} name the combatant whose Haste ended
- */
-export function noteLethargy(app, name) {
-  app.actions.logEvent(
-    'combat',
-    `${name} is lethargic and can't move or take actions until after its next turn.`,
-  );
 }

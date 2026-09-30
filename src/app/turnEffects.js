@@ -2,7 +2,7 @@ import { rollDamage } from '../dice/DiceRoller.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
 import { isGone } from '../combat/CombatView.js';
-import { settleHPBuffs } from '../entities/HPBuffs.js';
+import { settleChips } from './lethargy.js';
 import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
 import {
@@ -119,6 +119,8 @@ function sweepChips(app, rule) {
   const { state } = app;
   /** @type {{ name: string, condition: string }[]} */
   const freed = [];
+  /** @type {string[]} */
+  const notes = [];
   /**
    * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
    * @param {T[]} list
@@ -132,7 +134,7 @@ function sweepChips(app, rule) {
       // the entity is written. Only an ended chip settles HP and logs.
       if (ended.length === 0) return { ...entity, conditions };
       for (const c of ended) freed.push({ name: entity.name, condition: c.name });
-      return settleHPBuffs({ ...entity, conditions });
+      return settleChips(app, entity, conditions, notes);
     });
     return next.some((entity, i) => entity !== list[i]) ? next : null;
   };
@@ -152,6 +154,7 @@ function sweepChips(app, rule) {
   for (const { name, condition } of freed) {
     app.actions.logEvent('combat', `${endedLine(name, condition)}.`);
   }
+  for (const line of notes) app.actions.logEvent('combat', line);
 }
 
 /**

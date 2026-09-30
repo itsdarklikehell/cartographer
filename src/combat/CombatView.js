@@ -12,7 +12,7 @@ import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
 import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
 import { isDead } from '../entities/DeathSaves.js';
-import { canAct } from '../entities/ConditionEffects.js';
+import { canAct, losesTurn } from '../entities/ConditionEffects.js';
 import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { attacksAvailable, budgetOf } from './ActionBudget.js';
@@ -105,13 +105,13 @@ export function isGone(found) {
 /**
  * Whether the turn pointer steps past a combatant. It does so for one that is
  * out of the fight, and for one whose chips leave it unable to act, such as
- * Stunned. A participant that resolves to nothing, deleted mid-fight or walked
- * off the tile, also has no turn to take.
+ * Stunned or Lethargic. A participant that resolves to nothing, deleted
+ * mid-fight or walked off the tile, also has no turn to take.
  * @param {ResolvedCombatant | null} found
  * @returns {boolean}
  */
 export function skipsTurn(found) {
-  return !found || isDowned(found) || !canAct(conditionsOf(found));
+  return !found || isDowned(found) || losesTurn(conditionsOf(found));
 }
 
 /**

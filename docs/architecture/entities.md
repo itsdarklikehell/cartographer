@@ -891,8 +891,14 @@ roll already fold the chips into the mode they pass.
 `mods.extraAction` gives the holder one more weapon swing on each turn
 (Haste). `ChipMods.hasExtraAction` reads it, and the weapon swing passes the
 result to the action budget (see
-[the action budget](combat.md#the-action-budget)). The end of the spell and
-the round tick both log the lethargy that follows Haste.
+[the action budget](combat.md#the-action-budget)). When such a chip ends,
+`Lethargy.withLethargy` adds a Lethargic chip that ends at the end of the
+next turn of the holder. `Lethargy.endedEffects` compares the chip lists
+before and after a write, and a chip whose name and cast no longer appear
+has ended, so a count-down does not trigger it. Every chip writer in the
+wiring layer passes its write through `app/lethargy.js`: the turn sweep,
+the round tick, the end of a concentration, a replacing cast, and the hand
+edits of the sheet and the creature panels.
 
 ### Stealth and Strength
 
@@ -1777,6 +1783,9 @@ The reads over the table are pure and take chip lists only:
 - `modeReasons(query)` names the chips behind the mode, so a log line can
   explain a cancelled pair instead of printing a straight roll with no reason.
 - `canAct(conditions)` is false when any chip has `noActions`.
+- `losesTurn(conditions)` is true when any chip has `noActions` or `noTurn`.
+  Lethargic has only `noTurn`, so it takes the turn but keeps concentration
+  and reactions, which read `canAct`.
 - `autoCrits(conditions, { melee })` is true when a melee hit on the holder is
   a critical hit. The printed rule is a hit from within 5 feet. The app
   measures no distance, so it uses a melee attack as the closest match.
@@ -1796,10 +1805,10 @@ These sites read the table:
   chips, so the list of the real combatant arrives as `casterConditions`.
 - `app/checkRolls.js` handles a save or a check rolled from the sheet. An
   automatic failure logs and stops before the tray opens.
-- `combat/CombatView.js` asks `canAct`. `skipsTurn(found)` is true for a
-  combatant that is downed, that resolves to nothing, or that cannot act, and
-  `app/turnAdvance.js` passes it to `advanceTurn`. The same answer marks the
-  row `incapacitated`, which is how a card and a ribbon chip show a combatant
+- `combat/CombatView.js` asks `losesTurn`. `skipsTurn(found)` is true for a
+  combatant that is downed, that resolves to nothing, or that loses its turn,
+  and `app/turnAdvance.js` passes it to `advanceTurn`. The answer of `canAct`
+  marks the row `incapacitated`, which is how a card and a ribbon chip show a combatant
   that keeps its place in the order but loses its turn.
 
 Every attack, check, and save in the app reaches one of those sites, so a chip

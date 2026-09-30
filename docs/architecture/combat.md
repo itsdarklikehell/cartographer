@@ -116,7 +116,8 @@ that owns it.
 `advanceTurn` in `Initiative.js` takes a predicate and steps the pointer past
 every combatant that the predicate rejects. `CombatView.skipsTurn` is that
 predicate. It covers a downed combatant, a combatant whose chips cost it the
-turn (Stunned, for example), and a participant id that resolves to nothing.
+turn (Stunned or Lethargic, for example), and a participant id that
+resolves to nothing.
 
 A defeated goblin never gets a turn, but its chip stays in the ribbon, struck
 through. A stunned goblin also keeps its place, marked with a dashed edge

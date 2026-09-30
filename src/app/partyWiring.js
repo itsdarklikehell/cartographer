@@ -15,6 +15,7 @@ import { characterFields, characterFormChange, buildCharacter } from './characte
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { applyToTarget, endSpellEffects, rosterIds } from './combatants.js';
+import { addLethargy } from './lethargy.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -337,7 +338,16 @@ export function wireParty(app) {
   // directly. Each tab's edits go back through its own commit handle. The
   // commit handle writes the character into the roster and updates the
   // other panels. The panel the edit came from has already rebuilt itself.
-  const commitFromSheet = scope.register(() => characterSheet).commit;
+  const sheetCommit = scope.register(() => characterSheet).commit;
+  // A hand edit on the sheet that removes Haste leaves lethargy, as any other
+  // end does. The sheet then needs the new chip back, so that write goes to
+  // every panel.
+  const commitFromSheet = (/** @type {import('../types/entities.js').Character} */ next) => {
+    const prev = state.characters.find((c) => c.id === next.id);
+    const settled = prev ? addLethargy(app, prev, next) : next;
+    if (settled === next) sheetCommit(next);
+    else scope.set(settled);
+  };
   const commitFromSpellbook = scope.register(() => spellbookPanel).commit;
   const commitFromInventory = scope.register(() => inventoryPanel).commit;
 

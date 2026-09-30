@@ -26,7 +26,8 @@
  * `saves` names the abilities whose saving throws the holder rolls at
  * disadvantage. `autoFailSaves` names the abilities that fail with no roll at
  * all, which is what being unable to move does to a Strength or Dexterity
- * save.
+ * save. `noActions` takes every action away, and `noTurn` takes only the
+ * turn.
  * @typedef {{
  *   attacks?: Slant,
  *   attacksAgainst?: Slant | { melee: Slant, ranged: Slant },
@@ -35,6 +36,7 @@
  *   autoFailSaves?: string[],
  *   meleeAutoCrit?: boolean,
  *   noActions?: boolean,
+ *   noTurn?: boolean,
  * }} ConditionEffect
  */
 
@@ -58,6 +60,10 @@ export const CONDITION_EFFECTS = {
   blinded: { attacks: 'disadvantage', attacksAgainst: 'advantage' },
   frightened: { attacks: 'disadvantage', checks: 'disadvantage' },
   incapacitated: { noActions: true },
+  // Haste leaves this chip when it ends (see `Lethargy.js`). The holder
+  // loses its turn but is not incapacitated, so it keeps its concentration
+  // and its reactions.
+  lethargic: { noTurn: true },
   invisible: { attacks: 'advantage', attacksAgainst: 'disadvantage' },
   paralyzed: {
     noActions: true,
@@ -251,6 +257,16 @@ export function modeReasons(query) {
  */
 export function canAct(conditions) {
   return !effectsOf(conditions).some(({ effect }) => effect.noActions);
+}
+
+/**
+ * Whether a creature holding these chips loses its turn. A chip that takes
+ * its actions away does so, and so does Lethargic, which takes only the turn.
+ * @param {RiderSource[] | undefined | null} conditions
+ * @returns {boolean}
+ */
+export function losesTurn(conditions) {
+  return effectsOf(conditions).some(({ effect }) => effect.noActions || effect.noTurn);
 }
 
 /**

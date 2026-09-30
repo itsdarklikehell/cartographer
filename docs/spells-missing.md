@@ -219,8 +219,14 @@ save that a chip retries at the end of a turn, a concentration save, and a
 save from the character sheet. Restrained gives disadvantage on the same
 save, so a restrained target under Haste rolls one die.
 
-When Haste ends, the log notes that the target is lethargic and can't move
-or take actions until after its next turn. The GM skips that turn.
+When Haste ends, the target gets a Lethargic chip, and the log notes that it
+can't move or take actions until after its next turn. The chip ends at the
+end of the next turn of the target, so it waits for two turn ends when Haste
+ends during that turn. The turn pointer steps past a lethargic combatant,
+and the chip does not break concentration. Every path that ends a chip
+adds it: a turn boundary, a round tick, the end of the concentration of the
+caster, a Haste from another caster that replaces the first, and a chip
+that the GM removes by hand. Outside a fight the chip lasts one round.
 
 ### Spells described in prose
 
