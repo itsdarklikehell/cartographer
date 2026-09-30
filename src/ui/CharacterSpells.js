@@ -5,8 +5,10 @@ import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entitie
 import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { arcanumSpellIds, warlockCast } from '../entities/MysticArcanum.js';
 import { tomeRituals } from '../entities/PactTome.js';
+import { thirdCasterSpellIssues } from '../entities/ThirdCasterSpells.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -56,6 +58,18 @@ export function buildSpellsSection(character, opts) {
     'character-sheet__spells u-col u-g2',
     sectionLabel(className ? `Spells (${className})` : 'Spells'),
   );
+  // The subclass spell rules warn and do not block, because the GM may
+  // allow a spell list that the rules do not.
+  const issues = thirdCasterSpellIssues(character, opts.resolveSpells);
+  if (issues.length > 0) {
+    section.appendChild(
+      el(
+        'ul',
+        'character-sheet__spell-warnings u-col u-g1',
+        ...issues.map((text) => el('li', 'u-row u-g1', icon('warning', { size: 14 }), text)),
+      ),
+    );
+  }
 
   // This makes one group per spell level the character can cast from, in
   // ascending order: cantrips first, then each level with something

@@ -133,6 +133,26 @@
    than `auto-fill` so three groups share the whole row instead of leaving a
    phantom fourth column empty, and the minimum holds a long spell name like
    "Protection from Evil and Good" without wrapping it. */
+/* Subclass spell-rule warnings under the heading. The text takes the body
+   colour, because --warning is too light for label-sized text, and the icon
+   takes --warning. */
+.character-sheet__spell-warnings {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-label);
+}
+
+.character-sheet__spell-warnings li {
+  align-items: flex-start;
+}
+
+.character-sheet__spell-warnings .icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--warning);
+}
+
 .character-sheet__spell-levels {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));

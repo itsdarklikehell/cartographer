@@ -1880,13 +1880,17 @@ spells that the character learned under that class. A later change back
 gives full slots. While a class has a subclass on its subclass level, that
 level cannot move to a new class.
 
-The app does not enforce these subclass rules, so you enforce them:
+The Spells block of the character sheet warns when a spell list breaks a
+subclass rule. The warning does not block the list, so a GM can allow it.
 
-- The spell schools of each subclass, with their free picks from any
-  school. The Eldritch Knight uses abjuration and evocation, and the Arcane
-  Trickster uses enchantment and illusion.
-- The number of spells that each subclass knows. No known caster has this
-  limit in the app.
+- The spell schools of each subclass. The Eldritch Knight uses abjuration
+  and evocation, and the Arcane Trickster uses enchantment and illusion.
+  The spells learned at class levels 3, 8, 14, and 20 can come from any
+  school.
+- The number of leveled spells that each subclass knows: 3 at class level
+  3, 4 at level 4, and 13 at level 20. Only the spells learned under the
+  subclass count, so the wizard spells of a Fighter (Eldritch Knight) /
+  Wizard do not.
 - Mage Hand as one of the Arcane Trickster cantrips.
 
 ### Eldritch invocations
