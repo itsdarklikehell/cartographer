@@ -49,6 +49,7 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {boolean} revealAll draw every tile's image regardless of fog of war (Build mode)
  * @property {number} markerRange detection range in grid cells: encounter, NPC, and POI markers draw only within this Euclidean distance of the party or a character token
  * @property {string | null} partyTileId
+ * @property {boolean} [partyInNode] false when partyTileId is the link toward the party on a map above it. That tile is not a marker anchor.
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile

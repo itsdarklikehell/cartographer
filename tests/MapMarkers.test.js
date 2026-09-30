@@ -28,6 +28,15 @@ test('markerAnchors parses the party tile and every character token', () => {
   assert.deepEqual(markerAnchors({ partyTileId: null }), []);
 });
 
+test('markerAnchors skips the party marker on a map above the party', () => {
+  // The marker sits on the link tile toward the party, but the party is not
+  // on this map. A split-off scout who stands here still anchors.
+  const view = { partyTileId: '2,2', partyInNode: false, characterTokens: [{ tileId: '7,7' }] };
+  assert.deepEqual(markerAnchors(view), [{ x: 7, y: 7 }]);
+  assert.equal(withinMarkerRange(markerAnchors(view), 4, '2,3'), false);
+  assert.deepEqual(markerAnchors({ partyTileId: '2,2', partyInNode: true }), [{ x: 2, y: 2 }]);
+});
+
 test('withinMarkerRange measures Euclidean distance to the nearest anchor', () => {
   const anchors = [{ x: 5, y: 5 }];
   assert.equal(withinMarkerRange(anchors, 2, '5,7'), true, 'straight along an axis');

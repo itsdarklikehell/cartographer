@@ -57,9 +57,12 @@ const npcCircle = (ctx, sx, sy, size) => {
 /**
  * The tiles that markers are detected from: every character token's tile plus
  * the party's tile. A scout who wandered off senses danger around their own
- * position, not only the party's position. This is pure, so both the renderer
- * and the hover tooltip can use the one rule.
- * @param {{ characterTokens?: { tileId: string }[], partyTileId?: string | null }} source
+ * position, not only the party's position. On a map above the party, the
+ * party marker stands on the tile that links down toward the party, and
+ * `partyInNode` is false. That tile is not an anchor, because the party is
+ * not on that map. This is pure, so both the renderer and the hover tooltip
+ * can use the one rule.
+ * @param {{ characterTokens?: { tileId: string }[], partyTileId?: string | null, partyInNode?: boolean }} source
  * @returns {{ x: number, y: number }[]}
  */
 export function markerAnchors(source) {
@@ -69,7 +72,7 @@ export function markerAnchors(source) {
     const coords = parseCoords(token.tileId);
     if (coords) anchors.push(coords);
   }
-  if (source.partyTileId) {
+  if (source.partyTileId && source.partyInNode !== false) {
     const coords = parseCoords(source.partyTileId);
     if (coords) anchors.push(coords);
   }

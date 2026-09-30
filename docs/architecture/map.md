@@ -891,7 +891,11 @@ tile and of every individual character token. The range
 (`MapView.markerRange`, set from `PartyTracker.revealRadius`) is twice the
 fog reveal radius. A marker can then be sensed a little beyond the fog edge,
 but never from across the map. Outside Build mode, a node that the party is
-not in shows no markers at all.
+not in shows no markers at all. On a map above the party, the party marker
+stands on the tile that links down toward the party (see `ancestorMarkerTile`
+below). `MapCanvas.setPartyTile` then gets `inNode` false, and
+`markerAnchors` leaves that tile out, so markers near it stay hidden. A
+split-off character who stands on that map still anchors markers.
 
 `markerAnchors` and `withinMarkerRange` in `MapMarkers.js` are the pure
 halves of that rule, and `MapCanvas.markerVisible(tileId)` answers it for code

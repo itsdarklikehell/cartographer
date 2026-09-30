@@ -140,7 +140,10 @@ export function wireMapView(app) {
       position.nodeId === nodeId
         ? null
         : ancestorMarkerTile(grid.getBreadcrumb(position.nodeId), shown);
-    mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : ancestorTile);
+    mapCanvas.setPartyTile(
+      position.nodeId === nodeId ? position.tileId : ancestorTile,
+      position.nodeId === nodeId,
+    );
     const followed = followedView();
     // Build mode frames the whole map from its top-left corner instead of
     // the party, so the mini-map does not cover the first rows and columns.

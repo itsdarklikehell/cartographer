@@ -67,6 +67,8 @@ export class MapCanvas {
     this.regionGroups = [];
     /** @type {string | null} tile id of the party marker within the current node, if any */
     this.partyTileId = null;
+    /** False when partyTileId only points toward the party from a map above it */
+    this.partyInNode = true;
     /** @type {string | null} tile id that a fit centers on when the node
      * overflows the view: the party, or the own character of a bound
      * player tab. Null when that tile is in another node. */
@@ -144,6 +146,7 @@ export class MapCanvas {
     this.node = node;
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
+    this.partyInNode = true;
     this.characterTokens = [];
     this.focusTileId = null;
     // This clears along with the party marker. The previous node's ways out
@@ -339,9 +342,12 @@ export class MapCanvas {
    * Show (or clear, with null) the party marker at a tile id within the
    * current node. This does not reset pan or zoom, unlike setNode.
    * @param {string | null} tileId
+   * @param {boolean} [inNode] false when the tile is the link toward the party
+   *   on a map above it. Markers then do not count the tile as an anchor.
    */
-  setPartyTile(tileId) {
+  setPartyTile(tileId, inNode = true) {
     this.partyTileId = tileId;
+    this.partyInNode = inNode;
     this.render();
   }
 
@@ -526,6 +532,7 @@ export class MapCanvas {
       revealAll: this.revealAll,
       markerRange: this.markerRange,
       partyTileId: this.partyTileId,
+      partyInNode: this.partyInNode,
       encounterTileIds: this.encounterTileIds,
       npcTileIds: this.npcTileIds,
       characterTokens: this.characterTokens,
