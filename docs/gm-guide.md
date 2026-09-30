@@ -374,7 +374,7 @@ at the spot that matches where it left. The arrow label changes as the
 party moves. Walk along the edge to find the part that leads to each
 region.
 
-![Inside the town of Briarwick: a Leave to Briarwick Vale arrow in the margin on each side that leads back](images/play-mode-exits.png)
+![Inside the town of Briarwick: the party in the southwest corner, with a Leave to Briarwick Vale arrow on the west and the south side](images/play-mode-exits.png)
 
 ### Stage an encounter
 
