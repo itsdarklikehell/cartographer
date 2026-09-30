@@ -263,7 +263,7 @@ them. The four built-in catalogs behind them (`defaultEquipmentTemplates()`,
 throws, and does not change the data for every reader. A path that copies
 library data into campaign state says so in its name: `Creature.fromTemplate`,
 `Library.activeEnemyArmor`, `EquipmentPresets.copyEnemyWeapon`, and
-`Character.copySpellbook`.
+`CharacterSpellbook.copySpellbook`.
 
 ## UI and style
 

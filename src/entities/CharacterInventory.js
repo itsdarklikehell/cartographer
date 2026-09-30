@@ -1,0 +1,93 @@
+import { updateById } from './Roster.js';
+import { derive } from './Progression.js';
+import { pruneEquipment } from './Equipment.js';
+
+/**
+ * The inventory writes of a character: add, hand over, edit, and remove a
+ * stack. A write that can move an equipped item unequips it where needed
+ * and re-derives the character. `Character.js` re-exports every function
+ * here, because most callers import the character model from there. Every
+ * function here is pure.
+ */
+
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+
+/**
+ * Add an item, merging quantity into an existing stack with the same id.
+ * @param {Character} character
+ * @param {InventoryItem} item
+ * @returns {Character}
+ */
+export function addItem(character, item) {
+  const existing = character.inventory.find((i) => i.id === item.id);
+  if (!existing) return { ...character, inventory: [...character.inventory, item] };
+
+  return {
+    ...character,
+    inventory: updateById(character.inventory, item.id, (i) => ({
+      ...i,
+      quantity: i.quantity + item.quantity,
+    })),
+  };
+}
+
+/**
+ * Hand part of a stack (or all of it) from one party member to another. The
+ * giver loses `quantity`, unequipping the item if the whole stack goes, and
+ * the receiver gains it, merging into an existing stack with the same id.
+ * A missing item, a non-positive count, or self-transfer changes nothing.
+ * This function is pure and returns both updated characters.
+ * @param {Character} giver
+ * @param {Character} receiver
+ * @param {string} itemId
+ * @param {number} quantity
+ * @returns {{ giver: Character, receiver: Character }}
+ */
+export function transferItem(giver, receiver, itemId, quantity) {
+  const item = giver.inventory.find((i) => i.id === itemId);
+  const count = Math.min(Math.floor(quantity), item?.quantity ?? 0);
+  if (!item || count < 1 || giver.id === receiver.id) return { giver, receiver };
+  return {
+    giver: removeItem(giver, itemId, count),
+    receiver: addItem(receiver, { ...item, quantity: count }),
+  };
+}
+
+/**
+ * Replace an inventory item's fields wholesale (the GM's post-creation edit),
+ * keeping its id so equipment references survive. The replacement is the
+ * edited item as a whole, not a patch. A field absent from `next` is gone.
+ * Any slot that no longer accepts the edited item unequips it. The result
+ * re-derives, so an edited CON bonus on a worn item moves max HP. This
+ * function is pure.
+ * @param {Character} character
+ * @param {string} itemId
+ * @param {InventoryItem} next
+ * @returns {Character}
+ */
+export function updateItem(character, itemId, next) {
+  return derive(
+    pruneEquipment({
+      ...character,
+      inventory: updateById(character.inventory, itemId, (i) => ({ ...next, id: i.id })),
+    }),
+  );
+}
+
+/**
+ * Remove quantity from a stack, dropping it from the inventory entirely once
+ * it hits 0, and unequipping it from any slot it occupied. The result
+ * re-derives, so a worn CON item that leaves takes its HP with it.
+ * @param {Character} character
+ * @param {string} itemId
+ * @param {number} quantity
+ * @returns {Character}
+ */
+export function removeItem(character, itemId, quantity) {
+  const inventory = updateById(character.inventory, itemId, (i) => ({
+    ...i,
+    quantity: Math.max(0, i.quantity - quantity),
+  })).filter((i) => i.quantity > 0);
+  return derive(pruneEquipment({ ...character, inventory }));
+}

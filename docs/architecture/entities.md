@@ -376,6 +376,8 @@ new value.
     Features.js          class features as numbers that the combat paths use
     Progression.js       the writers that app and UI code call, each followed
                          by derive
+    CharacterSpellbook.js  learn, prepare, and copy the spells of a spellbook
+    CharacterInventory.js  add, hand over, edit, and remove inventory stacks
           |
           v
     Character.js         the character value itself; withDefaults runs on

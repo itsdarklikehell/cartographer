@@ -13,15 +13,21 @@ import { isHitDicePool, restoreHitDice } from './HitDice.js';
 import { derive } from './Progression.js';
 import { clearDying, isDead } from './DeathSaves.js';
 import { easeExhaustion, exhaustionFields } from './Exhaustion.js';
-import { cantripLimit, preparedLimit } from './Classes.js';
-import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
+import { emptyEquipment, migrateEquipment, migrateItem } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
-import { coerceHPBuffs, conditionList, recordList, spellbookOf, warlockPicks } from './LoadCoercion.js';
+import {
+  coerceHPBuffs,
+  conditionList,
+  recordList,
+  spellbookOf,
+  warlockPicks,
+} from './LoadCoercion.js';
 import { MAX_LEVEL, levelForXp, xpForLevel } from './Experience.js';
+import { emptySpellbook } from './CharacterSpellbook.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -150,181 +156,22 @@ export function damageCharacter(character, amount) {
  * Re-exported here because character code is its natural import site. */
 export { getClasses } from './Multiclass.js';
 
-/** @returns {Spellbook} an empty spellbook (no cantrips, known, or prepared). */
-export function emptySpellbook() {
-  return { cantrips: [], known: [], prepared: [] };
-}
-
-/**
- * A detached copy of a spellbook, arrays and the sources map included. Used
- * where a library template's spellbook is stamped onto a campaign entity.
- * The template is shared, read-only data, so the entity needs its own lists
- * to learn or prepare spells through. This function is pure.
- * @param {Spellbook} book
- * @returns {Spellbook}
- */
-export function copySpellbook(book) {
-  return {
-    cantrips: [...(book.cantrips ?? [])],
-    known: [...(book.known ?? [])],
-    prepared: [...(book.prepared ?? [])],
-    ...(book.sources ? { sources: { ...book.sources } } : {}),
-  };
-}
-
-/**
- * A character's spellbook, or an empty one for a character that predates
- * spellbooks (so callers never guard against undefined).
- * @param {{ spellbook?: Spellbook }} character
- * @returns {Spellbook}
- */
-export function getSpellbook(character) {
-  return character.spellbook ?? emptySpellbook();
-}
-
-/**
- * Record which class a spell was learned under, when the caller names one.
- * @param {Spellbook} book
- * @param {string} spellId
- * @param {string} [classId]
- * @returns {Spellbook}
- */
-function withSource(book, spellId, classId) {
-  if (!classId) return book;
-  return { ...book, sources: { ...book.sources, [spellId]: classId } };
-}
-
-/**
- * Drop a forgotten spell's source record, if it had one.
- * @param {Spellbook} book
- * @param {string} spellId
- * @returns {Spellbook}
- */
-function withoutSource(book, spellId) {
-  if (!book.sources || !(spellId in book.sources)) return book;
-  const sources = { ...book.sources };
-  delete sources[spellId];
-  return { ...book, sources };
-}
-
-/**
- * The class a spell was learned under, or null when none was recorded (a
- * single-class book, or an older save). Casting falls back to the first
- * caster class then.
- * @param {{ spellbook?: Spellbook }} character
- * @param {string} spellId
- * @returns {string | null}
- */
-export function spellSource(character, spellId) {
-  return getSpellbook(character).sources?.[spellId] ?? null;
-}
-
-/**
- * Learn a cantrip, up to the class's cantrip limit. A duplicate, or a learn
- * that exceeds the limit leaves the character unchanged. `classId`
- * (optional) records which class the cantrip is learned under, for a
- * multiclass caster's per-class spell ability. This function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @param {string} [classId]
- * @returns {Character}
- */
-export function learnCantrip(character, spellId, classId) {
-  const book = getSpellbook(character);
-  if (book.cantrips.includes(spellId) || book.cantrips.length >= cantripLimit(character)) {
-    return character;
-  }
-  const next = withSource({ ...book, cantrips: [...book.cantrips, spellId] }, spellId, classId);
-  return { ...character, spellbook: next };
-}
-
-/**
- * Forget a cantrip. Absent from the list -> unchanged. This function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @returns {Character}
- */
-export function unlearnCantrip(character, spellId) {
-  const book = getSpellbook(character);
-  const next = withoutSource(
-    { ...book, cantrips: book.cantrips.filter((id) => id !== spellId) },
-    spellId,
-  );
-  return { ...character, spellbook: next };
-}
-
-/**
- * Add a leveled spell to the known list. A duplicate leaves the character
- * unchanged. Known-list size is not capped here (no spells-known curve is
- * modeled yet). The prepared set is what the prepared limit bounds.
- * `classId` (optional) records which class the spell is learned under. This
- * function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @param {string} [classId]
- * @returns {Character}
- */
-export function learnSpell(character, spellId, classId) {
-  const book = getSpellbook(character);
-  if (book.known.includes(spellId)) return character;
-  const next = withSource({ ...book, known: [...book.known, spellId] }, spellId, classId);
-  return { ...character, spellbook: next };
-}
-
-/**
- * Forget a leveled spell, dropping it from both the known and prepared lists.
- * This function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @returns {Character}
- */
-export function unlearnSpell(character, spellId) {
-  const book = getSpellbook(character);
-  const next = withoutSource(
-    {
-      ...book,
-      known: book.known.filter((id) => id !== spellId),
-      prepared: book.prepared.filter((id) => id !== spellId),
-    },
-    spellId,
-  );
-  return { ...character, spellbook: next };
-}
-
-/**
- * Prepare a known leveled spell, up to the prepared limit. A spell not in the
- * known list, a duplicate, or a prepare that exceeds the limit leaves the
- * character unchanged. This function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @returns {Character}
- */
-export function prepareSpell(character, spellId) {
-  const book = getSpellbook(character);
-  if (
-    !book.known.includes(spellId) ||
-    book.prepared.includes(spellId) ||
-    book.prepared.length >= preparedLimit(character)
-  ) {
-    return character;
-  }
-  return { ...character, spellbook: { ...book, prepared: [...book.prepared, spellId] } };
-}
-
-/**
- * Unprepare a spell, keeping it known. Absent from the prepared list ->
- * unchanged. This function is pure.
- * @param {Character} character
- * @param {string} spellId
- * @returns {Character}
- */
-export function unprepareSpell(character, spellId) {
-  const book = getSpellbook(character);
-  return {
-    ...character,
-    spellbook: { ...book, prepared: book.prepared.filter((id) => id !== spellId) },
-  };
-}
+/** The spellbook and inventory writes live in their own modules. They are
+ * re-exported here because most callers import the character model from
+ * this file. */
+export {
+  emptySpellbook,
+  copySpellbook,
+  getSpellbook,
+  spellSource,
+  learnCantrip,
+  unlearnCantrip,
+  learnSpell,
+  unlearnSpell,
+  prepareSpell,
+  unprepareSpell,
+} from './CharacterSpellbook.js';
+export { addItem, transferItem, updateItem, removeItem } from './CharacterInventory.js';
 
 /**
  * Fill in fields that a loaded character can predate: any missing ability
@@ -604,83 +451,4 @@ export function longRest(character) {
  */
 export function shortRest(character) {
   return restAll(character, 0.5);
-}
-
-/**
- * Add an item, merging quantity into an existing stack with the same id.
- * @param {Character} character
- * @param {InventoryItem} item
- * @returns {Character}
- */
-export function addItem(character, item) {
-  const existing = character.inventory.find((i) => i.id === item.id);
-  if (!existing) return { ...character, inventory: [...character.inventory, item] };
-
-  return {
-    ...character,
-    inventory: updateById(character.inventory, item.id, (i) => ({
-      ...i,
-      quantity: i.quantity + item.quantity,
-    })),
-  };
-}
-
-/**
- * Hand part of a stack (or all of it) from one party member to another. The
- * giver loses `quantity`, unequipping the item if the whole stack goes, and
- * the receiver gains it, merging into an existing stack with the same id.
- * A missing item, a non-positive count, or self-transfer changes nothing.
- * This function is pure and returns both updated characters.
- * @param {Character} giver
- * @param {Character} receiver
- * @param {string} itemId
- * @param {number} quantity
- * @returns {{ giver: Character, receiver: Character }}
- */
-export function transferItem(giver, receiver, itemId, quantity) {
-  const item = giver.inventory.find((i) => i.id === itemId);
-  const count = Math.min(Math.floor(quantity), item?.quantity ?? 0);
-  if (!item || count < 1 || giver.id === receiver.id) return { giver, receiver };
-  return {
-    giver: removeItem(giver, itemId, count),
-    receiver: addItem(receiver, { ...item, quantity: count }),
-  };
-}
-
-/**
- * Replace an inventory item's fields wholesale (the GM's post-creation edit),
- * keeping its id so equipment references survive. The replacement is the
- * edited item as a whole, not a patch. A field absent from `next` is gone.
- * Any slot that no longer accepts the edited item unequips it. The result
- * re-derives, so an edited CON bonus on a worn item moves max HP. This
- * function is pure.
- * @param {Character} character
- * @param {string} itemId
- * @param {InventoryItem} next
- * @returns {Character}
- */
-export function updateItem(character, itemId, next) {
-  return derive(
-    pruneEquipment({
-      ...character,
-      inventory: updateById(character.inventory, itemId, (i) => ({ ...next, id: i.id })),
-    }),
-  );
-}
-
-/**
- * Remove quantity from a stack, dropping it from the inventory entirely once
- * it hits 0, and unequipping it from any slot it occupied. The result
- * re-derives, so a worn CON item that leaves takes its HP with it.
- * @param {Character} character
- * @param {string} itemId
- * @param {number} quantity
- * @returns {Character}
- */
-export function removeItem(character, itemId, quantity) {
-  const inventory = updateById(character.inventory, itemId, (i) => ({
-    ...i,
-    quantity: Math.max(0, i.quantity - quantity),
-  })).filter((i) => i.quantity > 0);
-  return derive(pruneEquipment({ ...character, inventory }));
 }
