@@ -117,11 +117,11 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     }
 
     // A dying character shows its tracker under concentration. Roll shows on
-    // its own turn for a viewer who can act for it, and Stabilize shows to the
-    // GM on any turn. The sheet shows the same block, from the same builder.
+    // its own turn for a viewer who can act for it, until the roll of that
+    // turn, and Stabilize shows to the GM on any turn. The sheet shows the same block, from the same builder.
     const dying = deathSaveBlock(row.deathSaves, {
       name: row.name ?? 'Unknown combatant',
-      canRoll: current && row.mayAct,
+      canRoll: current && row.mayAct && !row.used.deathSave,
       canStabilize: gm,
       onRoll: () => callbacks.onRollDeathSave(row.id),
       onStabilize: () => callbacks.onStabilize(row.id),

@@ -1603,8 +1603,8 @@ on the combat screen and on its sheet, and the Unconscious chip.
   player when the turn advances.
 - In a fight, a dying character keeps its place in the turn order. When its
   turn starts, the log and a toast say "Mirelle is dying. Roll a death
-  save." The **Roll death save** button shows only on that turn, and the
-  character rolls once per turn. A stable or dead character loses its
+  save." The **Roll death save** button shows only on that turn, and it
+  goes away after the roll, so the character rolls once per turn. A stable or dead character loses its
   turns.
 - The GM sees **Stabilize** on any turn, because an ally stabilizes a
   friend on the ally's own turn.
