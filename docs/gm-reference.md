@@ -1061,7 +1061,7 @@ creature, set its disposition to hostile first.
 | --- | --- |
 | Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
 | Roll initiative | Rolls for every row at once |
-| Start combat | Starts the fight in the listed order |
+| Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 
 For the initiative rules, see [Initiative](#initiative).
 

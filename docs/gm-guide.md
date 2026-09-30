@@ -444,7 +444,8 @@ still open stays until you end the fight. To bring the foes back, click
    values yourself. The hostile creatures of the Active encounter tab join
    the foes. A friendly or neutral creature on the tile of the party joins
    the party.
-6. Click **Start combat**. The combat screen replaces the map.
+6. Click **Start combat**. The app rolls for each row that you did not roll
+   or type, and the combat screen replaces the map.
 
 ![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)
 

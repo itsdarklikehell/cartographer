@@ -4,6 +4,7 @@ import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
+import { rollUnsettled } from '../combat/InitiativeRoll.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
@@ -19,8 +20,9 @@ import { openDialog } from './Modal.js';
  *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
- * Start, this function resolves to the participants with their final
- * initiative values. On cancel, it resolves to null.
+ * Start, this function rolls each row that the GM neither rolled nor typed,
+ * and resolves to the participants with their final initiative values. On
+ * cancel, it resolves to null.
  *
  * As in the initiative panel, a row's name and side come from `describe`,
  * not from the participant, because the participant carries only the
@@ -36,6 +38,8 @@ import { openDialog } from './Modal.js';
 export function combatSetupModal(roster, callbacks = {}) {
   /** @type {Map<string, HTMLInputElement>} */
   const inputs = new Map();
+  /** The ids whose value the GM rolled or typed. Start rolls the others. */
+  const settled = new Set();
 
   /**
    * The setup rows show only a name and a side. The fallback for an
@@ -65,6 +69,7 @@ export function combatSetupModal(roster, callbacks = {}) {
           className: 'initiative-panel__init',
           ariaLabel: `Initiative for ${view.name}`,
         });
+        input.addEventListener('input', () => settled.add(participant.id));
         inputs.set(participant.id, input);
 
         body.push(
@@ -93,6 +98,7 @@ export function combatSetupModal(roster, callbacks = {}) {
               if (!input) continue;
               const { value, note } = rollInitiative(participant);
               input.value = String(value);
+              settled.add(participant.id);
               results.push({ name: describe(participant).name, value, note });
             }
             if (results.length > 0) callbacks.onRolled?.(results);
@@ -117,9 +123,28 @@ export function combatSetupModal(roster, callbacks = {}) {
       actions.push(cancel, start);
       return { body, actions, initialFocus: start };
     },
-    result: (returnValue) =>
-      returnValue === 'start'
-        ? roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 }))
-        : null,
+    result: (returnValue) => {
+      if (returnValue !== 'start') return null;
+      // A row the GM neither rolled nor typed still shows the placeholder of
+      // 10 plus the modifier. Start rolls those rows, and logs them the same
+      // way a press of Roll initiative does.
+      if (callbacks.rollInitiative) {
+        const rolled = rollUnsettled(roster, settled, callbacks.rollInitiative);
+        for (const { participant, value } of rolled) {
+          const input = inputs.get(participant.id);
+          if (input) input.value = String(value);
+        }
+        if (rolled.length > 0) {
+          callbacks.onRolled?.(
+            rolled.map(({ participant, value, note }) => ({
+              name: describe(participant).name,
+              value,
+              note,
+            })),
+          );
+        }
+      }
+      return roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 }));
+    },
   });
 }

@@ -76,3 +76,16 @@ export function rollInitiative(participant, entity, rng = Math.random) {
   const parts = [droppedNote({ dropped }, mode ?? undefined).trim(), ...reasons].filter(Boolean);
   return { value, note: parts.join(', ') };
 }
+
+/**
+ * Roll initiative for each participant whose value the GM did not settle, by
+ * a press of Roll initiative or an edit by hand. Start combat calls this, so
+ * a fight never starts on the dialog's placeholder of 10 plus the modifier.
+ * @param {Participant[]} roster
+ * @param {ReadonlySet<string>} settled the ids with a rolled or typed value
+ * @param {(participant: Participant) => { value: number, note: string }} roll
+ * @returns {{ participant: Participant, value: number, note: string }[]}
+ */
+export function rollUnsettled(roster, settled, roll) {
+  return roster.filter((p) => !settled.has(p.id)).map((p) => ({ participant: p, ...roll(p) }));
+}

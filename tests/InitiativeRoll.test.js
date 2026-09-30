@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { initiativeSlant, rollInitiative } from '../src/combat/InitiativeRoll.js';
+import { initiativeSlant, rollInitiative, rollUnsettled } from '../src/combat/InitiativeRoll.js';
 import { createParticipant } from '../src/combat/Initiative.js';
 import { createCharacter } from '../src/entities/Character.js';
 
@@ -104,4 +104,15 @@ test('a creature is never untrained for what it wears', () => {
     equipment: { chest: 'plate' },
   });
   assert.deepEqual(rollInitiative(at(2), creature, faces([11])), { value: 13, note: '' });
+});
+
+test('rollUnsettled rolls only the rows the GM left alone', () => {
+  const a = createParticipant('a', 12, 2);
+  const b = createParticipant('b', 11, 1);
+  const rolled = rollUnsettled([a, b], new Set(['a']), (p) => ({ value: 15, note: p.id }));
+  assert.deepEqual(rolled, [{ participant: b, value: 15, note: 'b' }]);
+  assert.deepEqual(
+    rollUnsettled([a], new Set(['a']), () => ({ value: 1, note: '' })),
+    [],
+  );
 });
