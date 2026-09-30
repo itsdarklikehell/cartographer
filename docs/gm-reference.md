@@ -759,14 +759,41 @@ four sides of each tile.
 
 - A wall or an obstacle stops the walk. So a town wall, the walls of an
   interior, and furniture such as a table block it.
+- Deep water stops the walk, so the party goes around a lake.
 - A gate or a door lets the walk through.
 - An empty cell lets the walk through, so a gap in a painted map does not
   block a move.
 - A player walk goes through revealed tiles only, so an empty cell stops it.
+- The walk goes around a tile that links to a sub-map, such as a shop in a
+  town. It goes through such a tile only when no other way exists.
+
+The party takes the shortest walk, and the fog clears around every tile of
+the walk, not only around the tile where the party stops.
 
 If no walk leads to the tile, a GM tab asks before it moves the party
-there anyway. So you can still put the party past a wall. A player tab does
-not move the token, and it shows a message.
+there anyway. So you can still put the party past a wall or on a boat in
+deep water. A player tab does not move the token, and it shows a message.
+Nobody can stand on a wall or an obstacle, so a click on one moves nobody
+and shows a message, even in a GM tab.
+
+A GM click on a fogged tile that links to a sub-map asks first, and names
+the sub-map. So a click that aims past a building in the fog does not take
+the party inside by mistake.
+
+A walk of the whole party moves the in-game clock on. The time depends on
+the map.
+
+| Map | Time for each tile of the walk |
+| --- | --- |
+| The world map, at the top of the World panel | 4 hours, one watch |
+| A region map, one level below the world map | 30 minutes |
+| A deeper outdoor map, such as a town | 1 minute |
+| A building interior | None |
+
+The minutes add up across walks, and the Time panel shows the next watch
+once 4 hours have passed. A split character's walk spends no time. A
+teleport, a way out of a map, and a forced move from another map spend no
+time either.
 
 The walk check applies only to a move inside the map in view. The ways
 out, a teleport from the World panel, and the Place on map button do not
@@ -2076,7 +2103,8 @@ removed, the item comes off.
 
 The Time panel shows the in-game day and watch, for example "Day 3, Dusk".
 A day has six watches: Dawn, Morning, Midday, Afternoon, Dusk, and Night.
-Only a GM tab shows the buttons.
+Only a GM tab shows the buttons. A walk of the party also moves the clock
+on, by the time that [Party movement](#party-movement) lists for each map.
 
 | Button | Time passed | Effect |
 | --- | --- | --- |

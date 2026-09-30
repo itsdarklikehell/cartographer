@@ -18,7 +18,13 @@ import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
 import { askShortRestDice } from '../ui/ShortRestDialog.js';
 import { spendRestDice } from '../entities/RestHitDice.js';
-import { advanceWatches, advanceToDawn, formatClock, watchesBetween } from '../time/GameClock.js';
+import {
+  advanceMinutes,
+  advanceToDawn,
+  advanceWatches,
+  formatClock,
+  watchesBetween,
+} from '../time/GameClock.js';
 import { passTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
@@ -328,6 +334,16 @@ export function wireParty(app) {
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
     },
   });
+
+  app.actions.passTravelTime = (minutes) => {
+    if (minutes <= 0) return;
+    const before = state.clock;
+    state.clock = advanceMinutes(state.clock, minutes);
+    // Timed effects count whole watches, so they tick only when the walk
+    // crosses into a new watch.
+    passTime(app, watchesBetween(before, state.clock));
+    timePanel.update();
+  };
 
   // This is one entry point for "the campaign under these panels was
   // replaced". A tab that follows another tab's saves needs this update. It

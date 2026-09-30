@@ -539,7 +539,9 @@ test('exitToParent leaves the party where it stands and only pans the view', () 
  */
 function secondMouth(w) {
   const parent = w.grid.getNode('world');
-  w.grid.updateNode(setTile(parent, createTile('5,0', 'town.svg', { childNodeId: 'child' })));
+  const mouth = createTile('5,0', 'town.svg', { childNodeId: 'child' });
+  // Revealed, so a click walks in with no fogged-link confirm.
+  w.grid.updateNode(setTile(parent, { ...mouth, revealed: true }));
 }
 
 test('walking into a region records the tile it was entered through', () => {

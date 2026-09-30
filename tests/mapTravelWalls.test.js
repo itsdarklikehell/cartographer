@@ -72,9 +72,10 @@ test('a player click cannot take a token across a wall, and says why', () => {
   const w = town({ role: 'player', splitParty: true, characters: [hero], selected: 'hero' });
   w.click('2,2');
   assert.equal(w.state.characters[0].location, null, 'the token stays with the party');
-  assert.deepEqual(w.toasts, ['Walls or obstacles block every path to that tile.']);
+  assert.deepEqual(w.toasts, ['Walls, obstacles, or deep water block every path to that tile.']);
   w.click('1,1');
   assert.equal(w.state.characters[0].location, null, 'no token stands on a wall');
+  assert.equal(w.toasts[1], 'A wall or an obstacle fills column 2, row 2.');
   w.click('4,2');
   assert.deepEqual(w.state.characters[0].location, { nodeId: 'town', tileId: '4,2' });
 });
@@ -107,4 +108,52 @@ test('a spectator click and a mover in another node skip the walk check', () => 
   gm.click('4,4');
   assert.equal(gm.navigator.getCurrentNode().id, 'inn');
   assert.deepEqual(gm.partyTracker.getPosition(), { nodeId: 'inn', tileId: '2,2' });
+});
+
+test('not even the GM can move the party onto a wall', () => {
+  const w = town();
+  w.click('1,1');
+  assert.deepEqual(w.partyTracker.getPosition(), { nodeId: 'town', tileId: '0,0' });
+  assert.deepEqual(w.toasts, ['A wall or an obstacle fills column 2, row 2.']);
+  const spectator = town({ role: 'player' });
+  spectator.click('1,1');
+  assert.deepEqual(spectator.toasts, [], 'a tab that moves nobody says nothing');
+});
+
+test('a GM walk clears the fog along the way and spends game time', () => {
+  const w = town();
+  const node = w.navigator.getCurrentNode();
+  w.app.grid.updateNode({ ...node, tiles: node.tiles.map((t) => ({ ...t, revealed: false })) });
+  w.click('4,3');
+  assert.deepEqual(w.partyTracker.getPosition(), { nodeId: 'town', tileId: '4,3' });
+  const revealed = (/** @type {string} */ id) =>
+    w.navigator.getCurrentNode().tiles.find((t) => t.id === id)?.revealed;
+  assert.equal(revealed('4,0'), true, 'the corner the walk turned at, out of sight of both ends');
+  assert.ok(w.app.calls.includes('passTravelTime'));
+});
+
+test('a split character walk clears the fog along the way and spends no time', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const w = town({ splitParty: true, characters: [hero], selected: 'hero' });
+  const node = w.navigator.getCurrentNode();
+  w.app.grid.updateNode({ ...node, tiles: node.tiles.map((t) => ({ ...t, revealed: false })) });
+  w.click('4,3');
+  assert.deepEqual(w.state.characters[0].location, { nodeId: 'town', tileId: '4,3' });
+  assert.equal(w.navigator.getCurrentNode().tiles.find((t) => t.id === '4,0')?.revealed, true);
+  assert.ok(!w.app.calls.includes('passTravelTime'));
+});
+
+test('a GM walk into a revealed link tile clears the fog on the way', () => {
+  const w = town();
+  const node = w.navigator.getCurrentNode();
+  w.app.grid.updateNode({
+    ...node,
+    tiles: node.tiles.map((t) => ({ ...t, revealed: t.id === '4,4' || t.id === '0,0' })),
+  });
+  w.click('4,4');
+  assert.equal(w.navigator.getCurrentNode().id, 'inn');
+  const revealed = (/** @type {string} */ id) =>
+    w.app.grid.getNode('town')?.tiles.find((t) => t.id === id)?.revealed;
+  assert.ok(revealed('4,0') || revealed('0,4'), 'a corner of the walk around the ring');
+  assert.ok(w.app.calls.includes('passTravelTime'));
 });

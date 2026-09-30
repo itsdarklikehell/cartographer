@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 import {
   revealAround,
+  revealAlong,
   withinRadius,
   hideAll,
   revealAll,
@@ -20,6 +21,14 @@ test('revealAround radius 0 reveals only the center tile', () => {
   const node = revealAround(grid5x5(), '2,2', 0);
   assert.equal(revealedCount(node), 1);
   assert.equal(node.tiles.find((t) => t.id === '2,2').revealed, true);
+});
+
+test('revealAlong reveals around every step of a walk', () => {
+  const start = grid5x5();
+  const node = revealAlong(start, ['0,0', '1,0', '2,0', '3,0', '4,0'], 0);
+  assert.equal(revealedCount(node), 5);
+  assert.equal(revealAlong(node, ['2,0'], 0), node, 'nothing new keeps the node');
+  assert.equal(revealAlong(start, [], 1), start);
 });
 
 test('revealAround radius 1 reveals orthogonal neighbors but not diagonals', () => {

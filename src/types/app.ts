@@ -99,6 +99,10 @@ export interface AppActions {
   // partyWiring: the character selected in the roster, or null for an empty
   // party. The GM's map clicks move this character while the party is split.
   getSelectedCharacterId(): string | null;
+  // partyWiring: move the in-game clock on by the minutes a party walk
+  // took, tick timed effects for any watch the walk finished, and redraw
+  // the clock readout.
+  passTravelTime(minutes: number): void;
   // encounterWiring: defaults to the party's position and "The party". A
   // player who moves their own token passes that character's tile and name.
   maybeTriggerEncounter(position?: PartyPosition, subject?: string): Promise<void>;

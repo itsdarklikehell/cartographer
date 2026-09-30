@@ -1,4 +1,4 @@
-import { revealAround } from '../map/FogOfWar.js';
+import { revealAlong, revealAround } from '../map/FogOfWar.js';
 
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../map/TileGrid.js').TileGrid} TileGrid */
@@ -29,18 +29,22 @@ export class PartyTracker {
   /**
    * Move the party to a tile, and reveal fog around it. The tile can be in a
    * different node than the party's current one, for example after zooming
-   * in or out.
+   * in or out. A walk across the node passes the tiles it went through as
+   * `path`, and the fog clears around each of them too.
    * @param {string} nodeId
    * @param {string} tileId
+   * @param {readonly string[]} [path] tiles of `nodeId` that the walk passed
    */
-  moveTo(nodeId, tileId) {
+  moveTo(nodeId, tileId, path = []) {
     this.position = { nodeId, tileId };
-    this._revealAroundCurrent();
+    this._revealAroundCurrent(path);
   }
 
-  _revealAroundCurrent() {
+  /** @param {readonly string[]} [path] */
+  _revealAroundCurrent(path = []) {
     const node = this.grid.getNode(this.position.nodeId);
     if (!node) throw new Error(`PartyTracker: unknown node "${this.position.nodeId}"`);
-    this.grid.updateNode(revealAround(node, this.position.tileId, this.revealRadius));
+    const walked = revealAlong(node, path, this.revealRadius);
+    this.grid.updateNode(revealAround(walked, this.position.tileId, this.revealRadius));
   }
 }

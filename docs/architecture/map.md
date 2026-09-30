@@ -830,6 +830,8 @@ is a set of pure functions over a MapNode that manage the flag:
   revealed area is a disc instead of a square. Revealing only adds. A tile
   that is already revealed or outside the radius stays as it is, and moving
   away from an area never fogs it again.
+- `revealAlong(node, tileIds, radius)` calls `revealAround` for each tile of
+  a walk, so the party sees what it passes on a long walk.
 - `withinRadius(tileId, centerId, radius)` applies the same Euclidean cutoff
   as a standalone predicate. `CreatureMap.creaturesNear` uses it.
 - `hideAll(node)` resets a node to fully unrevealed, and `revealedCount(node)`
@@ -873,8 +875,8 @@ the costs.
 `PartyPosition`, which is a node id plus a tile id. It is the only object that
 moves the party.
 
-`moveTo(nodeId, tileId)` updates the position, calls `revealAround` on the
-target node, and writes the revealed tiles straight back into the `TileGrid`
+`moveTo(nodeId, tileId, path)` updates the position, calls `revealAlong` on
+the tiles of the walk and `revealAround` on the target tile, and writes the revealed tiles straight back into the `TileGrid`
 that the tracker was constructed with. The constructor also reveals around
 the initial position, so a party never starts the campaign fogged in on its
 own tile.
@@ -887,23 +889,39 @@ separate, so exploring the barrow reveals nothing about the Barrowdowns.
 ### Walls and paths
 
 `PartyTracker.moveTo` does not check the map, so the click path checks each
-move. `onCellClick` in `app/mapTravel.js` calls `walkBlocked`, which asks
-`MapPath.hasOpenPath(node, from, to)` whether a walk leads from the tile of
-the mover to the clicked tile. The mover is whoever the click moves.
+move. `onCellClick` in `app/mapTravel.js` calls `walkPath`, which asks
+`MapPath.findPath(node, from, to)` for the walk from the tile of the mover
+to the clicked tile. The mover is whoever the click moves. `findPath`
+returns the tile ids of the walk, start and target included, or null when
+no walk leads there. `hasOpenPath` is the boolean form.
 
-`hasOpenPath` is a breadth-first search over the four side neighbors of each
+`findPath` is a breadth-first search over the four side neighbors of each
 cell. A step onto a tile that `TileKinds.isBlocked` rejects (a wall or an
-obstacle) stops the walk, and no walk ends on such a tile. Diagonal steps are
-not allowed, so a walk cannot pass between two wall pieces that touch at a
-corner.
+obstacle) or that `TileKinds.isDeepWater` accepts stops the walk, and no
+walk ends on such a tile. Diagonal steps are not allowed, so a walk cannot
+pass between two wall pieces that touch at a corner. The first search
+treats a tile with a `childNodeId` as blocked, so a walk past a shop in a
+town does not cross the shop's tile. When that search finds nothing, a
+second search allows link tiles, because on a region map a road can run
+through a town tile.
 
 An empty cell lets the walk through, so on a sparse hand-painted map a move
 across a gap passes the check. The start tile is not checked, so a party that
 stands on a wall after a repaint can walk off it.
 
-When no walk leads to the tile, a GM tab asks in a confirm dialog and moves
-the party only when the GM accepts. The GM can therefore still put the party
-past a wall. A player tab shows a toast and moves nobody.
+A click on a wall or an obstacle moves nobody, in any tab, because no one
+can stand there. When no walk leads to any other tile, a GM tab asks in a
+confirm dialog and moves the party only when the GM accepts. The GM can
+therefore still put the party past a wall or onto deep water. A player tab
+shows a toast and moves nobody. A GM click on a fogged link tile also asks
+first, because the GM cannot see that the tile leads into a building.
+
+A walk of the whole party calls `app.actions.passTravelTime` with the
+minutes from `time/TravelTime.js`, which prices a step by the depth of the
+node in the world tree. The clock keeps the minutes inside the current
+watch in the optional `GameClock.minutes` field, and `passTime` ticks timed
+effects only for the whole watches that the walk finishes. A forced move
+counts its steps along the grid.
 
 A player's walk passes the `revealedOnly` option, so a fogged tile stops it
 too. Fog gives an empty cell no revealed state, so an empty cell also stops a
@@ -913,7 +931,8 @@ whether a way through the fog exists.
 The check runs only when the mover stands in the node in view. A spectator
 tab, a GM who views another node, the exit buttons, the teleport, and the
 Place action skip it. A move that passes the check, or that the GM forces,
-goes through `travelTo`, which reveals fog and takes exits for every move.
+goes through `travelTo`, which reveals fog along the walk and takes exits
+for every move.
 
 ### Individual character tokens and the split party
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasOpenPath, isPassable } from '../src/map/MapPath.js';
+import { findPath, hasOpenPath, isPassable } from '../src/map/MapPath.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { townWallArt } from '../src/map/TileKinds.js';
@@ -8,8 +8,8 @@ import { gridTiles } from './helpers/grid.js';
 
 /**
  * A node drawn from rows of characters: `.` grass, `#` a town wall, `g` a
- * gate, `f` fogged grass, and a space an empty cell. Every tile except `f`
- * starts revealed.
+ * gate, `~` deep water, `L` grass that links to a sub-map, `f` fogged grass,
+ * and a space an empty cell. Every tile except `f` starts revealed.
  * @param {string[]} rows
  */
 function nodeOf(rows) {
@@ -17,8 +17,14 @@ function nodeOf(rows) {
   const tiles = gridTiles(width, rows.length, (id, x, y) => {
     const c = rows[y][x];
     if (c === ' ') return null;
-    const art = { '#': townWallArt('wall-h'), g: townWallArt('gate-h') }[c] ?? 'grass.svg';
-    return { ...createTile(id, art), revealed: c !== 'f' };
+    const art =
+      {
+        '#': townWallArt('wall-h'),
+        g: townWallArt('gate-h'),
+        '~': 'assets/tiles/deep-water/deep-water-1.svg',
+      }[c] ?? 'grass.svg';
+    const link = c === 'L' ? { childNodeId: 'child' } : {};
+    return { ...createTile(id, art), ...link, revealed: c !== 'f' };
   });
   return withNodeTiles(createMapNode('n', 'N', null, width, rows.length), tiles);
 }
@@ -79,4 +85,27 @@ test('isPassable reads the wall rule and, on request, the fog', () => {
   assert.equal(isPassable(gate, true), true);
   assert.equal(isPassable(fogged, false), true);
   assert.equal(isPassable(fogged, true), false);
+});
+
+test('findPath lists every tile of the shortest walk, start and target included', () => {
+  assert.deepEqual(findPath(nodeOf(['...']), '0,0', '2,0'), ['0,0', '1,0', '2,0']);
+  assert.deepEqual(findPath(TOWN, '0,0', '0,0'), ['0,0'], 'the start tile itself');
+  assert.equal(findPath(TOWN, '0,0', '2,2'), null);
+  assert.equal(findPath(TOWN, '0,1', '4,1')?.length, 7, 'around the top of the ring');
+  assert.deepEqual(findPath(nodeOf(['. .']), '0,0', '2,0'), ['0,0', '1,0', '2,0'], 'a gap');
+});
+
+test('deep water stops a walk, and a move cannot end on it', () => {
+  const lake = nodeOf(['.~.', '...']);
+  assert.deepEqual(findPath(lake, '0,0', '2,0'), ['0,0', '0,1', '1,1', '2,1', '2,0']);
+  assert.equal(findPath(nodeOf(['.~.']), '0,0', '2,0'), null);
+  assert.equal(findPath(lake, '0,0', '1,0'), null, 'the water target');
+  assert.equal(isPassable(lake.tiles[1], false), false);
+});
+
+test('a walk goes around a link tile, and through it only when no other way exists', () => {
+  const beside = findPath(nodeOf(['.L.', '...']), '0,0', '2,0');
+  assert.deepEqual(beside, ['0,0', '0,1', '1,1', '2,1', '2,0']);
+  assert.deepEqual(findPath(nodeOf(['.L.']), '0,0', '2,0'), ['0,0', '1,0', '2,0']);
+  assert.deepEqual(findPath(nodeOf(['.L']), '0,0', '1,0'), ['0,0', '1,0'], 'the link target');
 });

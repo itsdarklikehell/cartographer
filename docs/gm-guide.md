@@ -311,15 +311,19 @@ Switch to **Play** mode. The sidebar has the **Session**, **Story**, and
 
 ### Move the party
 
-1. Click a tile. The whole party walks there, and the fog clears around the
-   new position.
+1. Click a tile. The whole party walks there, and the fog clears along the
+   walk. Walking on a region map moves the in-game clock on (see
+   [Party movement](gm-reference.md#party-movement)).
 2. To move with the keyboard, click the map, move the cursor with the arrow
    keys, and press Enter or Space.
 3. To go into a region or a town, click a tile that links to it.
 
-If walls or obstacles block every path to the tile, a dialog asks before
-the party moves. Click **Move anyway** to put the party there, or
-**Cancel** to stay.
+If walls, obstacles, or deep water block every path to the tile, a dialog
+asks before the party moves. Click **Move anyway** to put the party there,
+or **Cancel** to stay. A click on a wall itself moves nobody.
+
+If you click a fogged tile that leads into a building or another sub-map, a
+dialog names the sub-map. Click **Enter** to go in, or **Cancel** to stay.
 
 ### Split the party
 

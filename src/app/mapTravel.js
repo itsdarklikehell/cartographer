@@ -9,8 +9,10 @@ import {
   rememberEntry,
   travelerFor,
 } from '../map/EntryMemory.js';
-import { revealAround } from '../map/FogOfWar.js';
-import { hasOpenPath } from '../map/MapPath.js';
+import { revealAlong, revealAround } from '../map/FogOfWar.js';
+import { findPath } from '../map/MapPath.js';
+import { isBlocked } from '../map/TileKinds.js';
+import { travelMinutes } from '../time/TravelTime.js';
 import { describeTile } from '../map/TileCoords.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
@@ -199,8 +201,9 @@ export function createMapTravel(app, env) {
    * An encounter on that tile alerts under the character's name.
    * @param {import('../types/map.js').Tile} tile
    * @param {import('../types/entities.js').Character} character
+   * @param {readonly string[]} [path] the tiles the character walked through
    */
-  function moveOneCharacter(tile, character) {
+  function moveOneCharacter(tile, character, path = []) {
     const nodeId = navigator.getCurrentNode().id;
     const party = partyTracker.getPosition();
     const rejoined = party.nodeId === nodeId && party.tileId === tile.id;
@@ -209,7 +212,9 @@ export function createMapTravel(app, env) {
       character.id,
       rejoined ? null : { nodeId, tileId: tile.id },
     );
-    grid.updateNode(revealAround(navigator.getCurrentNode(), tile.id, partyTracker.revealRadius));
+    const radius = partyTracker.revealRadius;
+    const walked = revealAlong(navigator.getCurrentNode(), path, radius);
+    grid.updateNode(revealAround(walked, tile.id, radius));
     discoverTile(tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.syncPartyMarker();
@@ -254,43 +259,65 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Whether walls and obstacles cut the tile off from whoever the click
-   * moves, in the node in view (`MapPath.hasOpenPath`). Without this check,
-   * one click takes the party through a town wall or a dungeon wall. A
-   * player's walk goes through revealed tiles only, so a move cannot tell
-   * the player whether a way through the fog exists. A mover in another node
-   * is not walking here, so the check does not apply.
+   * The walk from whoever the click moves to the tile, in the node in view
+   * (`MapPath.findPath`). Null means that walls, obstacles, or deep water
+   * cut the tile off. Without this check, one click takes the party through
+   * a town wall or across a lake. A player's walk goes through revealed
+   * tiles only, so a move cannot tell the player whether a way through the
+   * fog exists. A mover in another node is not walking here, so the walk is
+   * undefined.
    * @param {import('../types/map.js').Tile} tile
+   * @returns {string[] | null | undefined}
    */
-  function walkBlocked(tile) {
+  function walkPath(tile) {
     const at = moverPosition();
     const node = navigator.getCurrentNode();
-    if (!at || at.nodeId !== node.id) return false;
-    return !hasOpenPath(node, at.tileId, tile.id, { revealedOnly: !isGM(state.role) });
+    if (!at || at.nodeId !== node.id) return undefined;
+    return findPath(node, at.tileId, tile.id, { revealedOnly: !isGM(state.role) });
   }
 
   /**
-   * Ask before a click moves someone out of the node they stand in, the way
-   * a teleport asks, or across a wall that no walk passes. The node in view
+   * Spend the game time of a whole-party walk to the tile, in the node in
+   * view. A forced move with no walk counts the steps along the grid. Call
+   * this before the party moves, because it counts from the party's tile.
+   * @param {import('../types/map.js').Tile} tile
+   * @param {readonly string[] | null} path
+   * @param {import('../types/map.js').MapNode} [node] the node of the walk
+   */
+  function spendWalk(tile, path, node = navigator.getCurrentNode()) {
+    const from = parseCoords(partyTracker.getPosition().tileId);
+    const to = parseCoords(tile.id);
+    const alongGrid = from && to ? Math.abs(from.x - to.x) + Math.abs(from.y - to.y) : 0;
+    const steps = path ? path.length - 1 : alongGrid;
+    const depth = grid.getBreadcrumb(node.id).length - 1;
+    app.actions.passTravelTime(travelMinutes(node, depth, steps));
+  }
+
+  /**
+   * Ask before a click moves someone out of the node they stand in (the
+   * way a teleport asks), across walls or water that no walk passes
+   * (`forced`), or into a fogged tile that leads to a sub-map (`fogged`),
+   * which a click aimed past a building can hit by mistake. The node in view
    * or the tile can change while the dialog is open, so the move reads both
    * again and gives up when the view has left the node.
    * @param {import('../types/map.js').Tile} tile
-   * @param {boolean} [forced] whether walls cut the tile off
+   * @param {'elsewhere' | 'forced' | 'fogged'} [reason]
    */
-  async function confirmMoveHere(tile, forced = false) {
+  async function confirmMoveHere(tile, reason = 'elsewhere') {
     const view = navigator.getCurrentNode();
     const target = (tile.childNodeId && grid.getNode(tile.childNodeId)) || view;
     const who = clickSubject()?.name ?? 'the party';
-    const question = forced
-      ? `Walls or obstacles block every path for ${who} to ${describeTile(tile.id)}. Move ${who} there anyway?`
-      : `Move ${who} to "${target.name}"?`;
-    const ok = await confirmModal(question, {
-      title: 'Move',
-      confirmLabel: forced ? 'Move anyway' : 'Move',
-    });
+    const where = describeTile(tile.id);
+    const question = {
+      elsewhere: `Move ${who} to "${target.name}"?`,
+      forced: `Walls, obstacles, or deep water block every path for ${who} to ${where}. Move ${who} there anyway?`,
+      fogged: `The fogged tile at ${where} leads into "${target.name}". Move ${who} into it?`,
+    }[reason];
+    const confirmLabel = { elsewhere: 'Move', forced: 'Move anyway', fogged: 'Enter' }[reason];
+    const ok = await confirmModal(question, { title: 'Move', confirmLabel });
     const now = navigator.getCurrentNode();
     const fresh = now.id === view.id ? now.tiles.find((t) => t.id === tile.id) : undefined;
-    if (ok && fresh) travelTo(fresh);
+    if (ok && fresh) travelTo(fresh, walkPath(fresh));
   }
 
   // This handler runs only outside authoring mode, for Play-mode navigation
@@ -308,25 +335,41 @@ export function createMapTravel(app, env) {
     // name the sub-map behind it, or put a token past walls into the fog
     // and reveal what lies there.
     if (!isGM(state.role) && !tile.revealed) return;
+    // Nobody stands on a wall or an obstacle, so not even the GM can force
+    // a move onto one.
+    if (isBlocked(tile)) {
+      if (moverPosition()) {
+        app.toasts.show(`A wall or an obstacle fills ${describeTile(tile.id)}.`);
+      }
+      return;
+    }
     if (movesFromElsewhere(tile)) {
       void confirmMoveHere(tile);
       return;
     }
+    const path = walkPath(tile);
     // The GM can force a move that no walk makes, and a player cannot.
-    if (walkBlocked(tile)) {
-      if (isGM(state.role)) void confirmMoveHere(tile, true);
-      else app.toasts.show('Walls or obstacles block every path to that tile.');
+    if (path === null) {
+      if (isGM(state.role)) void confirmMoveHere(tile, 'forced');
+      else app.toasts.show('Walls, obstacles, or deep water block every path to that tile.');
       return;
     }
-    travelTo(tile);
+    if (path && tile.childNodeId && !tile.revealed) {
+      void confirmMoveHere(tile, 'fogged');
+      return;
+    }
+    travelTo(tile, path);
   };
 
   /**
    * Carry out a click on a tile: zoom into its sub-map, step out through a
-   * door, or move whoever the click moves onto it.
+   * door, or move whoever the click moves onto it. The fog clears along the
+   * walk, and a walk of the whole party spends game time.
    * @param {import('../types/map.js').Tile} tile
+   * @param {string[] | null} [path] the walk from `walkPath`: null for a
+   *   forced move, and undefined when the mover is not in the node in view
    */
-  function travelTo(tile) {
+  function travelTo(tile, path) {
     const gm = isGM(state.role);
     const subject = clickSubject();
     if (tile.childNodeId) {
@@ -347,6 +390,13 @@ export function createMapTravel(app, env) {
           // fog around them. This makes sure that the child does not draw as
           // a blank fog field with no marker on it.
           const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at, tile.id);
+          // A walk up to the link tile clears the fog of the parent on the
+          // way, and the whole party spends the time of it.
+          if (path) {
+            const walked = grid.getNode(parent.id) ?? parent;
+            grid.updateNode(revealAlong(walked, path, partyTracker.revealRadius));
+          }
+          if (path !== undefined && !subject) spendWalk(tile, path, parent);
           if (subject) {
             state.characters = moveCharacter(state.characters, subject.id, {
               nodeId: child.id,
@@ -424,11 +474,12 @@ export function createMapTravel(app, env) {
       }
     }
     if (subject) {
-      moveOneCharacter(tile, subject);
+      moveOneCharacter(tile, subject, path ?? []);
       return;
     }
     if (gm) {
-      partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
+      if (path !== undefined) spendWalk(tile, path);
+      partyTracker.moveTo(navigator.getCurrentNode().id, tile.id, path ?? []);
       state.characters = recallAll(state.characters);
       discoverTile(tile);
       env.mapCanvas.refreshNode(navigator.getCurrentNode());

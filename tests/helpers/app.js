@@ -37,6 +37,7 @@ const ACTION_NAMES = [
   'refreshSelectedCharacter',
   'getBoundCharacterId',
   'getSelectedCharacterId',
+  'passTravelTime',
   'maybeTriggerEncounter',
   'openEncounterContextMenu',
   'removeCombatant',

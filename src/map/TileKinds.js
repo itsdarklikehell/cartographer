@@ -157,3 +157,15 @@ export function isBlocked(tile) {
   const kind = tileKind(tile);
   return kind === 'wall' || kind === 'obstacle';
 }
+
+/**
+ * Whether a tile is deep water, which a walk does not cross. The party can
+ * still stand on it, for example in a boat, so a GM move onto it asks first
+ * instead of refusing. Only the base image counts, because deep water is a
+ * terrain family and not an overlay.
+ * @param {Tile} tile
+ * @returns {boolean}
+ */
+export function isDeepWater(tile) {
+  return tile.imageRef.startsWith('assets/tiles/deep-water/');
+}

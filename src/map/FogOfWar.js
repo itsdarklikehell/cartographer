@@ -52,6 +52,20 @@ export function revealAround(node, centerId, radius) {
 }
 
 /**
+ * Reveal the fog around every tile of a walk, as `revealAround` does for
+ * each step. A party that crosses a map in one click sees what it passes,
+ * and not only the ends of the walk. A walk that reveals nothing new
+ * returns the same node.
+ * @param {MapNode} node
+ * @param {readonly string[]} tileIds the tiles of the walk, in any order
+ * @param {number} radius
+ * @returns {MapNode}
+ */
+export function revealAlong(node, tileIds, radius) {
+  return tileIds.reduce((at, id) => revealAround(at, id, radius), node);
+}
+
+/**
  * Check if a tile sits within a Euclidean radius (in grid cells) of a center
  * tile. The function uses the same distance rule as revealAround. Callers
  * that gate visibility by proximity, for example the map marker detection

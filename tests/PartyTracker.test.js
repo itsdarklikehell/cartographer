@@ -32,6 +32,14 @@ test('moveTo updates position and reveals fog at the new tile', () => {
   assert.equal(revealedCount(grid.getNode('n')), 2); // 0,0 and 4,4, reveal is monotonic
 });
 
+test('moveTo reveals fog around every tile of the walk it is given', () => {
+  const grid = new TileGrid();
+  grid.addNode(grid5x5());
+  const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '0,0' }, { revealRadius: 0 });
+  tracker.moveTo('n', '3,0', ['0,0', '1,0', '2,0', '3,0']);
+  assert.equal(revealedCount(grid.getNode('n')), 4);
+});
+
 test('moveTo reveals fog on the default radius', () => {
   const grid = new TileGrid();
   grid.addNode(grid5x5());
