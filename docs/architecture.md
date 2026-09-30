@@ -148,9 +148,11 @@ wiring module only loads it:
 | `ExampleWorld.js` | The generated world from one fixed seed, and the region names |
 | `ExampleRegions.js` | The hand edits of each region, and the story places |
 | `ExampleStaging.js` | The helpers that expand sites into sub-maps and pick tiles for the story places |
-| `ExampleContent.js` | The populace, combined from the four files below |
+| `ExampleContent.js` | The populace, combined from the files below |
 | `ExampleParty.js` | The four level-4 characters |
-| `ExampleCast.js` | The creatures, the people, and the bestiary |
+| `ExampleCast.js` | The foes and the bestiary |
+| `ExamplePeople.js` | The people of the Marches: townsfolk, patrons, and the Castellan |
+| `ExampleStatBlocks.js` | The ability scores of each kind of foe |
 | `ExampleStory.js` | The quests with their steps and links |
 | `ExampleHandouts.js` | The handouts, bound to their story places |
 

@@ -4,13 +4,17 @@ import { defaultEnemyStats } from '../entities/Modifiers.js';
 import {
   ACOLYTE,
   BANDIT,
+  BANDIT_CAPTAIN,
   BUGBEAR,
   CULTIST,
+  DAGGER,
+  DIRE_WOLF,
   DROWNED,
   GOBLIN,
   GOBLIN_BOSS,
   GREEN_HAG,
   HARPY,
+  HOUSE_GUARD,
   KNOCKER,
   OSTRAND,
   SCORPION,
@@ -21,7 +25,9 @@ import {
   WRAITH,
   WYVERN,
   ZOMBIE,
+  trained,
 } from './ExampleStatBlocks.js';
+import { people } from './ExamplePeople.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -55,20 +61,10 @@ const natural = (name, count, sides, damageType, properties) => ({
   armor: null,
 });
 
-/** @param {string[]} saves @param {string[]} skills */
-const trained = (saves, skills) => ({ proficiencies: { saves, skills } });
-
 /** @param {string[]} immune @param {string[]} [resist] @param {string[]} [vulnerable] */
 const guards = (immune, resist = [], vulnerable = []) => ({
   defenses: { resist, vulnerable, immune },
 });
-
-const DAGGER = {
-  name: 'Dagger',
-  kind: /** @type {'melee'} */ ('melee'),
-  category: /** @type {'simple'} */ ('simple'),
-  damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
-};
 
 const SCIMITAR = {
   name: 'Scimitar',
@@ -104,6 +100,27 @@ const PACK = {
   armor: null,
   packTactics: true,
   ...trained([], ['perception', 'stealth']),
+};
+// A dire wolf bites for 2d6, and its bite knocks a target that fails a DC 13
+// Strength save prone.
+const DIRE_PACK = {
+  ...PACK,
+  weapon: {
+    ...natural('Bite', 2, 6, 'piercing').weapon,
+    onHitSave: { ability: 'STR', dc: 13, condition: 'Prone' },
+  },
+};
+// A Thornhold guard fights with a longsword in Chain Mail, which gives AC 16.
+const HOUSE = {
+  weapon: {
+    name: 'Longsword',
+    kind: /** @type {'melee'} */ ('melee'),
+    category: /** @type {'martial'} */ ('martial'),
+    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  },
+  multiattack: 2,
+  armor: enemyArmor('Chain Mail'),
+  ...trained([], ['athletics', 'perception']),
 };
 const UNDEAD = {
   creatureType: /** @type {const} */ ('undead'),
@@ -216,9 +233,23 @@ function enemies(at) {
     // Field enemies on the overworld, one type for each biome.
     mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, at('goblinScout'), GOBLIN, SNEAK),
     mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, at('wolf1'), WOLF, PACK),
-    mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, at('wolf2'), WOLF, PACK),
+    mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, at('wolf1'), WOLF, PACK),
+    mob('gray-wolf-3', 'Gray Wolf', 11, 1, 0.25, at('wolf1'), WOLF, PACK),
+    mob('gray-wolf-4', 'Gray Wolf', 11, 1, 0.25, at('wolf1'), WOLF, PACK),
+    // Two dire wolves lead the pack, so the six rate Medium for the party.
+    mob('dire-wolf-1', 'Dire Wolf', 37, 3, 1, at('wolf1'), DIRE_WOLF, DIRE_PACK),
+    mob('dire-wolf-2', 'Dire Wolf', 37, 3, 1, at('wolf1'), DIRE_WOLF, DIRE_PACK),
     mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, at('bandit1'), BANDIT),
-    mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, at('bandit2'), BANDIT),
+    mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, at('bandit1'), BANDIT),
+    // The captain makes the watchtower band a Medium fight for the party.
+    legend('bandit-captain', 'Bandit Captain', 65, 4, 2, at('bandit1'), BANDIT_CAPTAIN, {
+      weapon: SCIMITAR,
+      multiattack: 2,
+      armor: enemyArmor('Studded Leather'),
+      ...trained(['STR', 'DEX', 'WIS'], ['athletics', 'deception']),
+      notes:
+        'Leads the band at the watchtower. A hooded rider paid her to let gray-wax crates pass and to rob every other caravan. She parries once a round (+2 AC against one melee hit) and flees at a quarter of her hit points.',
+    }),
     mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, at('bogZombie1'), ZOMBIE, ROTTING),
     mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, at('bogZombie2'), ZOMBIE, ROTTING),
     mob('hill-harpy', 'Harpy', 24, 2, 1, at('harpy'), HARPY, HARPY_KIT),
@@ -310,6 +341,17 @@ function enemies(at) {
       role: 'Pale-sworn',
       notes: 'A Thornhold servant who hears the crown through the Castellan. Guards her ledger.',
     }),
+    // The Castellan's sworn guards stand with her and turn on the party
+    // with her. With them, her unmasking rates Hard for the party.
+    ...[1, 2].map((n) =>
+      mob(`thornhold-guard-${n}`, 'Thornhold Guard', 32, 3, 1, at('irenne'), HOUSE_GUARD, {
+        ...HOUSE,
+        disposition: 'neutral',
+        role: 'Guard of Thornhold',
+        notes:
+          'Sworn to the Castellan, not to Lord Aldemar. Set them hostile with her when she is unmasked. They block the stair while she runs.',
+      }),
+    ),
     mob('pale-sworn-2', 'Pale-sworn Acolyte', 16, 2, 0.25, at('cultist2'), ACOLYTE, {
       ...CULTIST_KIT,
       role: 'Pale-sworn',
@@ -323,7 +365,7 @@ function enemies(at) {
     }),
     // The barrow: the pickets, the wight, and King Ostrand at his tomb.
     mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, at('skeleton1'), SKELETON, SKELETAL),
-    mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, at('skeleton2'), SKELETON, SKELETAL),
+    mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, at('skeleton1'), SKELETON, SKELETAL),
     legend('grave-wight', 'Grave Wight', 45, 4, 3, at('wight'), WIGHT, {
       armor: enemyArmor('Studded Leather'),
       creatureType: 'undead',
@@ -355,136 +397,6 @@ function enemies(at) {
 }
 
 /**
- * The people of the Marches. The `role` of each one shows to the players, so
- * it names only what the town knows. The secrets live in the GM notes. The
- * party starts with Dorn's caravan, Wren owes Corvin a run, and Aldric
- * served House Vane, so those four are known from the start.
- * @param {(name: string) => Place} at
- * @returns {Creature[]}
- */
-function people(at) {
-  return [
-    createCreature('caravan-master-dorn', 'Dorn', {
-      creatureType: 'humanoid',
-      role: 'Caravan master, stranded at the crossroads',
-      disposition: 'neutral',
-      met: true,
-      notes:
-        'Blunt and impatient. He came west from the Eastmarch with six crates sealed in gray wax and a fee paid twice over not to open them. They go to "the Castellan, Thornhold". He does not know what is inside, and he does not want to know. He points anyone capable at Bram in Briarwick.',
-      stats: { STR: 12, CON: 14, CHA: 12 },
-      location: at('dorn'),
-    }),
-    createCreature('innkeeper-bram', 'Bram', {
-      creatureType: 'humanoid',
-      role: 'Innkeeper, the Waystation at Briarwick',
-      disposition: 'friendly',
-      notes:
-        'Knows every road and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo. A rider from Thornhold pays him to hold letters for Dorn.',
-      stats: { INT: 12, WIS: 14, CHA: 13 },
-      location: at('bram'),
-    }),
-    createCreature('reeve-maera', 'Reeve Maera', {
-      creatureType: 'humanoid',
-      role: 'Reeve of Briarwick',
-      disposition: 'neutral',
-      notes:
-        'Keeps the shire records. She knows the pale crown as the seal of King Ostrand, and she knows that the seal lies in the Thornhold crypt. Wax this fresh means that someone took it out. The hand of the orders is familiar to her, but she cannot place it (DC 15 Insight to see that she fears to name a Vane).',
-      stats: { INT: 14, WIS: 15, CHA: 12 },
-      location: at('maera'),
-    }),
-    createCreature('sella-the-smith', 'Sella', {
-      creatureType: 'humanoid',
-      role: 'Blacksmith of Briarwick',
-      disposition: 'friendly',
-      notes:
-        'Buys ore and sells and repairs arms. She can recast a broken warding key, but only from pale silver out of Hollowvein or the lost tithe of the Silver Road. She sold a key mold of the old pattern to a Thornhold rider last spring and regrets it.',
-      stats: { STR: 15, CON: 14 },
-      location: at('sella'),
-    }),
-    createCreature('sister-alwyn', 'Sister Alwyn', {
-      creatureType: 'humanoid',
-      role: 'Priestess of the Dawn, Briarwick temple',
-      disposition: 'friendly',
-      notes:
-        'She wrote to the temple for Mirelle. The graves in her yard were opened from the inside. She blesses weapons against the risen dead: for one day, a blessed weapon deals radiant damage.',
-      stats: { INT: 12, WIS: 16, CHA: 14 },
-      location: at('alwyn'),
-    }),
-    createCreature('farmer-hedda', 'Hedda', {
-      creatureType: 'humanoid',
-      role: 'Farmer, the big steading on the south road',
-      disposition: 'friendly',
-      notes:
-        'Sells provisions and knows every field hand in the vale. She saw the burned farm the night it went up. The raiders worked in silence, in files, and a hooded rider on a gray horse watched from the road.',
-      stats: { CON: 14, WIS: 13 },
-      location: at('hedda'),
-    }),
-    createCreature('hermit-odo', 'Odo', {
-      creatureType: 'humanoid',
-      role: 'Hermit of Graypeak',
-      disposition: 'neutral',
-      notes:
-        'The last of the warden line that keeps the warding key. Half-deaf and stubborn. He will not come down while Skalvyr hunts over the hermitage, and he gives the key only to someone who swears the oath of the wardens. He knows that one other key can open the door: a counter-key cut from the same silver.',
-      stats: { CON: 13, INT: 13, WIS: 16 },
-      location: at('odo'),
-    }),
-    createCreature('harbormaster-petra', 'Harbormaster Petra', {
-      creatureType: 'humanoid',
-      role: 'Harbormaster of Saltmere',
-      disposition: 'neutral',
-      notes:
-        'Runs the port and taxes what Corvin thinks she cannot see. She pays 10 gp a head for the drowned dead. Her tide log shows that they first walked on the night the Gull sank off the pier head.',
-      stats: { STR: 12, WIS: 14, CHA: 13 },
-      location: at('petra'),
-    }),
-    createCreature('corvin-the-smuggler', 'Corvin', {
-      creatureType: 'humanoid',
-      role: 'Smuggler, the Drowned Lantern in Saltmere',
-      disposition: 'neutral',
-      met: true,
-      notes:
-        'Sells anything. A buyer who pays under a pale seal hired him to ship Hollowvein silver east, and the Gull went down with the last load. He calls in the marker of Wren: one run to Thornhold with a sealed box. He wants to know who his buyer is, because the buyer owes him a boat.',
-      stats: { DEX: 15, INT: 13, CHA: 14 },
-      location: at('corvin'),
-    }),
-    createCreature('lord-aldemar', 'Lord Aldemar Vane', {
-      creatureType: 'humanoid',
-      role: 'Lord of Thornhold',
-      disposition: 'neutral',
-      met: true,
-      notes:
-        "Proud and in denial. He calls the raids peasant panic and says that his house's ward cannot fail. He trusts his cousin Irenne with the keep and its keys. He softens only when he sees the pale seal on the orders, and he opens the crypt ledger once the shade in his hall is put down.",
-      stats: { STR: 14, INT: 12, WIS: 13, CHA: 15 },
-      location: at('aldemar'),
-    }),
-    createCreature('castellan-irenne', 'Castellan Irenne Vane', {
-      creatureType: 'humanoid',
-      role: 'Castellan of Thornhold, cousin to Lord Aldemar',
-      disposition: 'neutral',
-      met: true,
-      notes:
-        'The hidden hand. For a year the crown of Ostrand has spoken to her in dreams, and she took the pale seal from the crypt to write his orders. She paid Snagtooth to topple a wardstone and burn the farms, bought Hollowvein silver through Corvin, and had a counter-key cut in the east. The key waits in the sealed crates of Dorn. She is courteous and helpful, and she asks the party to carry her letters. Set her hostile when she is unmasked. She flees to the barrow before she fights.',
-      level: 5,
-      tier: 'legend',
-      cr: 2,
-      maxHP: 44,
-      stats: { STR: 10, DEX: 14, CON: 14, INT: 13, WIS: 12, CHA: 17 },
-      weapon: DAGGER,
-      armor: enemyArmor('Leather Armor'),
-      ...trained(['WIS', 'CHA'], ['deception', 'insight', 'persuasion']),
-      class: 'warlock',
-      casterLevel: 5,
-      spellbook: {
-        cantrips: ['eldritch-blast', 'chill-touch'],
-        known: ['hellish-rebuke', 'hold-person', 'invisibility', 'fear'],
-        prepared: ['hellish-rebuke', 'hold-person', 'invisibility', 'fear'],
-      },
-      location: at('irenne'),
-    }),
-  ];
-}
-
-/**
  * Every creature of the example campaign: the enemies and the people, in one
  * list.
  * @param {(name: string) => Place} at
@@ -503,7 +415,9 @@ export function exampleBestiary() {
   return [
     template('goblin', 'Goblin', 7, 1, 0.25, GOBLIN, SNEAK),
     template('gray-wolf', 'Gray Wolf', 11, 1, 0.25, WOLF, PACK),
+    template('dire-wolf', 'Dire Wolf', 37, 3, 1, DIRE_WOLF, DIRE_PACK),
     template('bandit', 'Bandit', 11, 1, 0.125, BANDIT),
+    template('thornhold-guard', 'Thornhold Guard', 32, 3, 1, HOUSE_GUARD, HOUSE),
     template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, ZOMBIE, ROTTING),
     template('harpy', 'Harpy', 24, 2, 1, HARPY, HARPY_KIT),
     template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, SCORPION, SCORPION_KIT),

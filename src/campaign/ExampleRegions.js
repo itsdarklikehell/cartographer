@@ -268,7 +268,6 @@ export const REGION_STAGES = {
       near: true,
     })();
     put(stage, 'wolf1', pack);
-    put(stage, 'wolf2', pack);
     const wild = outdoors(gen, (t) => isOpenGround(t) && tileDistance(t.id, gate) > 6, { gap: 2 });
     const tower = landmark(stage, 'watchtower', wild);
     noteTile(
@@ -277,7 +276,6 @@ export const REGION_STAGES = {
       'A broken watchtower on the vale road. Bandits use it to watch for caravans.',
     );
     put(stage, 'bandit1', besideTile(gen, tower));
-    put(stage, 'bandit2', stage.places.bandit1.tileId);
 
     stage.after.push((node) => {
       const briarwick = node('briarwick');
@@ -468,7 +466,7 @@ export const REGION_STAGES = {
       const levels = stackOf(node('barrow'), node);
       const [first] = levels;
       stage.places.barrowDoor = { nodeId: first.id, tileId: first.entry };
-      putInside(stage, first, ['skeleton1', 'skeleton2'], {
+      putInside(stage, first, ['skeleton1'], {
         near: true,
         fallback: stage.places.barrowDoor,
       });

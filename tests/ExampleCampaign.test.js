@@ -401,6 +401,30 @@ test('the wolves bite with DEX at the SRD +4, and the camp around Snagtooth rate
   );
 });
 
+test('each staged fight of the main line rates as the story needs', () => {
+  /** @param {string} id */
+  const group = (id) =>
+    campaign.creatures
+      .filter((c) => spotOf(c) === spotOf(creature(id)))
+      .map((c) => ({ ...c, disposition: /** @type {const} */ ('hostile') }));
+  /** @param {import('../src/types/creature.js').Creature} c */
+  const spotOf = (c) => JSON.stringify(c.location);
+  const rate = (id) => difficultyLine(campaign.characters, group(id));
+  assert.equal(group('gray-wolf-1').length, 6, 'four wolves and two dire wolves');
+  assert.match(rate('gray-wolf-1'), /^Medium: /);
+  assert.match(rate('bandit-captain'), /^Medium: /);
+  assert.match(rate('crypt-shade'), /^Hard: /);
+  assert.deepEqual(
+    group('castellan-irenne').map((c) => c.id),
+    ['thornhold-guard-1', 'thornhold-guard-2', 'castellan-irenne'],
+  );
+  assert.match(rate('castellan-irenne'), /^Hard: /);
+  assert.equal(spotOf(creature('barrow-skeleton-2')), spotOf(creature('barrow-skeleton-1')));
+  assert.match(rate('ostrand'), /^Deadly: /);
+  const guard = campaign.bestiary.find((t) => t.id === 'thornhold-guard');
+  assert.equal(guard?.multiattack, 2);
+});
+
 test('the example spellcasters follow the school rules of their subclasses', () => {
   const school = new Map(DEFAULT_SPELLS.map((s) => [s.id, s.school]));
   /** @param {string[]} ids @param {string[]} schools */

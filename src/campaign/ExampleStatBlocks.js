@@ -33,3 +33,18 @@ export const WRAITH = block([6, 16, 16, 12, 14, 15], 14);
 export const WIGHT = block([15, 14, 16, 10, 13, 15], 12);
 // Plate, the legend default from level 5, gives AC 18 whatever the DEX.
 export const OSTRAND = block([18, 12, 18, 14, 16, 18], 11);
+export const DIRE_WOLF = block([17, 15, 15, 3, 12, 7], 14);
+// The SRD Bandit Captain: Studded Leather at DEX 16 gives AC 15.
+export const BANDIT_CAPTAIN = block([15, 16, 14, 14, 11, 14], 13);
+// A sworn house guard of Thornhold in Chain Mail, near an SRD Thug in build.
+export const HOUSE_GUARD = block([15, 12, 14, 10, 11, 10], 11);
+
+/** @param {string[]} saves @param {string[]} skills */
+export const trained = (saves, skills) => ({ proficiencies: { saves, skills } });
+
+export const DAGGER = {
+  name: 'Dagger',
+  kind: /** @type {'melee'} */ ('melee'),
+  category: /** @type {'simple'} */ ('simple'),
+  damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+};
