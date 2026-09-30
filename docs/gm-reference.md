@@ -1084,6 +1084,8 @@ combatant with Extra Attack also shows how many swings are left.
 | A cast | What the casting time of the spell names: an action, a bonus action, or a reaction |
 | An off-hand swing | The bonus action |
 | An opportunity attack | The reaction |
+| A standard action (Dash, Disengage, Dodge, Help, Hide, Ready) | The action |
+| Dash, Disengage, or Hide under **Cunning Action** | The bonus action, for a Rogue of 2nd level or higher |
 
 The whole turn comes back when the turn of that combatant starts again. The
 reaction comes back at the same time, not at the top of the round. A
@@ -1094,6 +1096,23 @@ The pips never block a button. Instead, the dialog refuses a swing or a
 cast that the turn cannot pay for. The dialog then offers an **Ignore
 action cost** box that goes ahead anyway. Use the box for a rule that the
 app does not model.
+
+Each pip is also a button. Press a free pip to mark that cost used, for
+example when a bonus action goes to something the app does not track.
+Press a used pip to mark it free again, for example after a spend by
+mistake. The combat log records each press.
+
+The **Standard actions** group under the spells has one button for each
+standard action. A button spends the action and writes a log line, such as
+"Ser Aldric takes the Dash action." The app does not move tokens or track
+hidden creatures, so the GM resolves the rest. **Dodge** also puts a
+Dodging chip on the combatant until the start of its next turn, and attack
+rolls against a Dodging creature roll at disadvantage. The app does not
+give the Dodging creature advantage on its Dexterity saves. A Rogue of 2nd
+level or higher also gets a **Cunning Action (bonus action)** group with
+Dash, Disengage, and Hide, which spend the bonus action instead. A button
+whose cost the turn already spent shows a toast and does nothing, so press
+the pip first to free the cost.
 
 A casting time longer than a turn, such as a ten-minute ritual, is refused
 in a fight in the same way, and it offers the same box.

@@ -12,6 +12,7 @@ import {
   resetSneak,
   spend,
   spendAttack,
+  unspend,
 } from '../src/combat/ActionBudget.js';
 
 /**
@@ -232,4 +233,17 @@ test('refresh returns the same participant when the turn is already fresh', () =
   assert.equal(refresh(clean), clean);
   const legacy = at(undefined);
   assert.equal(refresh(legacy), legacy);
+});
+
+test('unspend frees one cost, and freeing the action drops its banked swings', () => {
+  const fresh = at({});
+  assert.equal(unspend(fresh, 'bonus'), fresh, 'a free cost returns the same participant');
+  assert.equal(budgetOf(unspend(at({ bonus: true }), 'bonus').used).bonus, false);
+  const swung = unspend(
+    at({ action: true, attacksLeft: 1, attacked: true, bonus: true }),
+    'action',
+  );
+  assert.deepEqual(budgetOf(swung.used), { ...freshBudget(), bonus: true });
+  const reacted = unspend(at({ reaction: true, action: true, attacksLeft: 1 }), 'reaction');
+  assert.equal(budgetOf(reacted.used).attacksLeft, 1, 'only the action gives its bank back');
 });

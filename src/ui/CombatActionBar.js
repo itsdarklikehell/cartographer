@@ -1,10 +1,12 @@
 import { classNames, el } from './dom.js';
-import { sectionLabel, textButton } from './buttons.js';
+import { bareButton, sectionLabel, textButton } from './buttons.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { groupSpellsByLevel } from '../entities/SpellView.js';
 import { ACTION_COSTS, COST_LABELS } from '../combat/ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').ActionBudget} ActionBudget */
+/** @typedef {import('../types/combat.js').ActionCost} ActionCost */
+/** @typedef {import('../combat/TurnActions.js').TurnAction} TurnAction */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -28,21 +30,34 @@ import { ACTION_COSTS, COST_LABELS } from '../combat/ActionBudget.js';
  * `offhand` is the second swing of two-weapon fighting, in its own group. The
  * host decides when the swing is available, so the group is absent unless the
  * turn can take it.
+ *
+ * `turn` lists the turn actions that are not a swing or a cast, such as Dash
+ * and Hide (see `combat/TurnActions.js`). Each entry names its group, and the
+ * bar draws one row per group in list order, so a class feature adds its
+ * own row by adding entries. With `onToggleBudget`, each pip is a toggle
+ * button: the GM presses it to mark a cost used on something the app does
+ * not model, or to free a cost spent by mistake.
  * @param {{
  *   weapons: (InventoryItem | EnemyWeapon)[],
  *   spells: Spell[],
  *   offhand?: (InventoryItem | EnemyWeapon)[],
+ *   turn?: TurnAction[],
  * }} actions
  * @param {{
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onOffhandAttack?: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onTurnAction?: (action: TurnAction) => void,
+ *   onToggleBudget?: (cost: ActionCost) => void,
  * }} callbacks
  * @param {{ used: ActionBudget, attacksLeft: number } | null} [budget]
  * @returns {HTMLElement | null}
  */
 export function combatActionBar(actions, callbacks, budget = null) {
-  if (actions.weapons.length === 0 && actions.spells.length === 0) return null;
+  const turn = callbacks.onTurnAction ? (actions.turn ?? []) : [];
+  if (actions.weapons.length === 0 && actions.spells.length === 0 && turn.length === 0) {
+    return null;
+  }
   const groups = el('div', 'combat-action-bar__groups');
   const bar = el(
     'div',
@@ -50,7 +65,7 @@ export function combatActionBar(actions, callbacks, budget = null) {
     sectionLabel('Actions', { tag: 'h3', className: 'combat-action-bar__heading' }),
     groups,
   );
-  if (budget) bar.insertBefore(budgetRow(budget), groups);
+  if (budget) bar.insertBefore(budgetRow(budget, callbacks.onToggleBudget), groups);
 
   if (actions.weapons.length > 0) {
     groups.appendChild(
@@ -102,25 +117,79 @@ export function combatActionBar(actions, callbacks, budget = null) {
     );
   }
 
+  const onTurn = callbacks.onTurnAction;
+  if (onTurn) {
+    for (const [label, entries] of groupBy(turn, (a) => a.group)) {
+      groups.appendChild(
+        group(
+          label,
+          entries.map((action) =>
+            textButton(action.name, () => onTurn(action), {
+              className: 'combat-action-bar__turn',
+              ariaLabel:
+                action.cost === 'action'
+                  ? `Take the ${action.name} action`
+                  : `Take the ${action.name} action as a ${COST_LABELS[action.cost].toLowerCase()}`,
+              title: action.title,
+            }),
+          ),
+        ),
+      );
+    }
+  }
+
   return bar;
+}
+
+/**
+ * The entries of a list in groups, keyed by `key`, in order of first
+ * appearance.
+ * @template T
+ * @param {T[]} list
+ * @param {(item: T) => string} key
+ * @returns {Map<string, T[]>}
+ */
+function groupBy(list, key) {
+  /** @type {Map<string, T[]>} */
+  const groups = new Map();
+  for (const item of list) {
+    const k = key(item);
+    groups.set(k, [...(groups.get(k) ?? []), item]);
+  }
+  return groups;
 }
 
 /**
  * What the turn has left, as one pip per cost plus the swing count. A spent pip
  * is struck through and dimmed, so the row reads at a glance without color
  * alone carrying the difference. The state is also spelled out for a screen
- * reader, which cannot see either.
+ * reader, which cannot see either. With `onToggle`, each pip is a button
+ * whose pressed state means used.
  * @param {{ used: ActionBudget, attacksLeft: number }} budget
+ * @param {(cost: ActionCost) => void} [onToggle]
  * @returns {HTMLElement}
  */
-function budgetRow(budget) {
+function budgetRow(budget, onToggle) {
+  /** @type {HTMLElement[]} */
   const pips = ACTION_COSTS.map((cost) => {
     const spent = budget.used[cost];
-    const pip = el(
-      'span',
-      classNames(['combat-action-bar__pip', spent && 'combat-action-bar__pip--spent']),
-      COST_LABELS[cost],
-    );
+    const className = classNames([
+      'combat-action-bar__pip',
+      spent && 'combat-action-bar__pip--spent',
+    ]);
+    const label = COST_LABELS[cost];
+    if (onToggle) {
+      const pip = bareButton([label], () => onToggle(cost), {
+        className: `${className} combat-action-bar__pip--toggle`,
+        title: spent
+          ? `${label} used. Press to mark it free again`
+          : `${label} free. Press to mark it used`,
+      });
+      pip.setAttribute('aria-pressed', String(spent));
+      pip.setAttribute('aria-label', `${label} used`);
+      return pip;
+    }
+    const pip = el('span', className, label);
     pip.appendChild(el('span', 'sr-only', spent ? ': used' : ': available'));
     return pip;
   });

@@ -403,6 +403,21 @@ body.mode-combat .app-buildrail {
   text-decoration: line-through;
 }
 
+/* A pip the GM can press. A spent toggle keeps a dashed border, so it
+   still reads as a control. */
+.combat-action-bar__pip--toggle {
+  cursor: pointer;
+}
+
+.combat-action-bar__pip--toggle.combat-action-bar__pip--spent {
+  border-color: var(--border);
+  border-style: dashed;
+}
+
+.combat-action-bar__pip--toggle:hover {
+  background: var(--surface-sunken);
+}
+
 .combat-action-bar__groups {
   display: flex;
   flex-direction: column;

@@ -135,6 +135,11 @@ export interface AppActions {
     cost: ActionCost | TurnFlag | 'attack',
     options?: { attacksPerAction?: number; extraAction?: boolean },
   ): boolean;
+  // encounterWiring: the GM's override on one cost of a turn. A free cost
+  // becomes spent and a spent one becomes free. The return value is true
+  // when the cost is spent afterward, and null when the id is not in a
+  // running fight.
+  toggleBudget?(id: string, cost: ActionCost): boolean | null;
   // encounterWiring: drop the running fight when nothing is staged on the
   // party's tile any more, because the party walked off or the last
   // creature there was deleted. Only the paths that change those two facts

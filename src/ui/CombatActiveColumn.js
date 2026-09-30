@@ -124,6 +124,8 @@ export function mountActiveColumn(callbacks, loadoutOf) {
               onWeaponAttack: callbacks.onWeaponAttack,
               onCastSpell: callbacks.onCastSpell,
               onOffhandAttack: callbacks.onOffhandAttack,
+              onTurnAction: callbacks.onTurnAction,
+              onToggleBudget: callbacks.onToggleBudget,
             },
             // The pips belong to the turn the bar acts on, so they come from
             // the same row.

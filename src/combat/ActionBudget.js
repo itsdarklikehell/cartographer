@@ -98,6 +98,24 @@ export function spend(participant, cost) {
 }
 
 /**
+ * Give one cost back, for the GM who marked it spent by mistake or who
+ * rules that the turn still has it. Giving back the action also drops the
+ * swings it banked and the mark that it went to an attack, because the
+ * next Attack action banks its swings again. A cost that is not spent
+ * returns the participant unchanged.
+ * @param {Participant} participant
+ * @param {ActionCost} cost
+ * @returns {Participant}
+ */
+export function unspend(participant, cost) {
+  const used = budgetOf(participant.used);
+  if (!used[cost]) return participant;
+  const next = { ...used, [cost]: false };
+  if (cost === 'action') Object.assign(next, { attacksLeft: 0, attacked: false });
+  return { ...participant, used: next };
+}
+
+/**
  * Spend one weapon swing. The first swing of a turn costs the action and banks
  * the rest of the attacks the combatant's Extra Attack grants. Each later
  * swing draws on that bank and costs nothing. Only a weapon that buys two or

@@ -60,6 +60,9 @@ const BODY_SAVES = ['STR', 'DEX'];
  */
 export const CONDITION_EFFECTS = {
   blinded: { attacks: 'disadvantage', attacksAgainst: 'advantage' },
+  // The Dodge action leaves this chip until the start of the holder's next
+  // turn. Its advantage on Dexterity saves is not modeled.
+  dodging: { attacksAgainst: 'disadvantage' },
   frightened: { attacks: 'disadvantage', checks: 'disadvantage' },
   incapacitated: { noActions: true },
   // Haste leaves this chip when it ends (see `Lethargy.js`). The holder

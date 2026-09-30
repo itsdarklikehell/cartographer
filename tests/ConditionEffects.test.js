@@ -91,6 +91,11 @@ test('invisible helps its holder and hinders whoever swings at it', () => {
   );
 });
 
+test('a Dodging target hinders whoever swings at it, and not its own attacks', () => {
+  assert.equal(rollMode({ target: chips('Dodging'), kind: 'attack' }), 'disadvantage');
+  assert.equal(rollMode({ roller: chips('Dodging'), kind: 'attack' }), null);
+});
+
 test('a check reads the roller only', () => {
   assert.equal(rollMode({ roller: chips('Frightened'), kind: 'check' }), 'disadvantage');
   assert.equal(rollMode({ roller: chips('Blinded'), kind: 'check' }), null);

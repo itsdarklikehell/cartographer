@@ -31,7 +31,10 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  *     weapons: (InventoryItem | EnemyWeapon)[],
  *     spells: Spell[],
  *     offhand?: (InventoryItem | EnemyWeapon)[],
+ *     turn?: import('../combat/TurnActions.js').TurnAction[],
  *   },
+ *   onTurnAction?: (action: import('../combat/TurnActions.js').TurnAction) => void,
+ *   onToggleBudget?: (cost: import('../types/combat.js').ActionCost) => void,
  *   getLoadout: (id: string) => Loadout,
  *   getReaction: (id: string) => {
  *     weapons: (InventoryItem | EnemyWeapon)[],
@@ -64,7 +67,8 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  * target is held. The selection feeds the action bar under the active
  * combatant: the current turn's weapons and spells, offered only when the
  * viewer can act that turn. Its picks report through `onWeaponAttack` and
- * `onCastSpell`.
+ * `onCastSpell`. Its standard and class action buttons report through
+ * `onTurnAction`, and its budget pips through `onToggleBudget`.
  *
  * Every card carries its combatant's loadout (`getLoadout`): what they wear,
  * what they can swing, and, where the viewer can see the detail, their spell

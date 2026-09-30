@@ -11,6 +11,7 @@ import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
+import { takeTurnAction, toggleBudget, turnActionsOf } from './turnActions.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 import { entriesFor } from '../log/LogVisibility.js';
 
@@ -110,7 +111,18 @@ export function wireCombatScreen(app) {
         // two light melee weapons in hand, the Attack action already spent, and
         // the bonus action still free.
         offhand: canOffhand(active, weapons) ? offhandWeapons(weapons) : [],
+        turn: turnActionsOf(app, active.id),
       };
+    },
+    // The standard actions, and the class actions that reuse them, belong to
+    // the combatant whose turn it is. The pips toggle that same budget.
+    onTurnAction: (action) => {
+      const active = state.combat?.order[state.combat.index];
+      if (active) takeTurnAction(app, active.id, action);
+    },
+    onToggleBudget: (cost) => {
+      const active = state.combat?.order[state.combat.index];
+      if (active) toggleBudget(app, active.id, cost);
     },
     // This is what one combatant brings, trimmed to what this tab is
     // allowed to know. The GM sees every sheet. A player sees their own

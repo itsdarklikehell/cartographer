@@ -574,7 +574,7 @@ Encounters panel's Start combat button calls back into `encounterWiring.js`,
 which builds the roster with the pure `combat/CombatRoster.js`.
 
 The turn flow is registered on `app.actions` (`advanceCombatTurn`,
-`endCombat`, `spendBudget`, `addCombatant`, `removeCombatant`, and
+`endCombat`, `spendBudget`, `toggleBudget`, `addCombatant`, `removeCombatant`, and
 `syncCombatLocation`), so the combat screen drives the same fight through
 the same code. The fight itself renders in combat mode, which
 [Combat](combat.md) describes. These helper modules support the turn flow:

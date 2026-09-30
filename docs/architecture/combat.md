@@ -32,6 +32,8 @@ src/combat/Initiative.js ..... pure: the order, the round counter, the turn
                                pointer, and the turn advance
 src/combat/ActionBudget.js ... pure: what one combatant already spent on the
                                current turn, and what a turn start gives back
+src/combat/TurnActions.js .... pure: the standard actions and Cunning Action
+                               as action bar entries, and their log lines
 src/combat/CombatView.js ..... pure: projects a CombatState into rows a
                                panel can draw (side, HP, AC, defeated,
                                who can act), plus the fight's outcome
@@ -77,8 +79,9 @@ src/ui/CombatantCard.js ...... one board card, which is also a target-picker
                                button when given an onSelect
 src/ui/LoadoutBlock.js ....... a loadout as labelled lines, shared by the
                                cards and the active column
-src/ui/CombatActionBar.js .... the active combatant's weapons and spells as
-                               buttons, grouped by kind and spell level
+src/ui/CombatActionBar.js .... the active combatant's weapons, spells, and
+                               turn actions as buttons, grouped by kind and
+                               spell level, under the budget pips
 src/ui/InitiativePanel.js .... the sidebar card: one status line plus the
                                Open combat button
 src/app/combatWiring.js ...... mounts the screen, keeps its transient UI
@@ -87,6 +90,8 @@ src/app/encounterWiring.js ... the only writer of state.combat, with the turn
                                flow as registered actions
 src/app/turnAdvance.js ....... the turn advance, with the turn boundaries
                                that it passes on the way
+src/app/turnActions.js ....... takes a turn action, and the GM's pip
+                               override on the budget
 src/app/turnEffects.js ....... what the start and the end of one turn do:
                                repeated saves, later-turn damage, and
                                chips that end at a boundary
@@ -242,9 +247,10 @@ feet, so `Movement.walkSpeed` is for display only.
 
 ### Spending the budget
 
-`app.actions.spendBudget(id, cost, options)` is the only write path.
-`encounterWiring.js` registers it, so `state.combat` keeps one writer. The
-cost is one of these values:
+`app.actions.spendBudget(id, cost, options)` is the write path for every
+spend, and `app.actions.toggleBudget(id, cost)` is the write path for the
+GM's pip override. `encounterWiring.js` registers both, so `state.combat`
+keeps one writer. The cost of a spend is one of these values:
 
 - `'action'`, `'bonus'`, or `'reaction'`, for that part of the turn
 - `'attack'`, for a weapon swing
@@ -281,6 +287,30 @@ once spent, and the bar shows the swing count when more than one swing is
 left. The pips show the budget and never gate a button. `CombatantRow`
 includes `used` and `attacksLeft`, so the screen reads them from the same row
 that it draws everything else from.
+
+Each pip is a toggle button with `aria-pressed`. A press calls
+`toggleBudget` in `src/app/turnActions.js`, which goes through the
+`toggleBudget` action of encounterWiring. That action spends the cost with
+`spend` or gives it back with `unspend` from `ActionBudget.js`. Giving back
+the action also drops the swings it banked, so the next Attack action banks
+them again. The press writes a log line, because no other record of the
+override exists.
+
+### Turn actions
+
+`src/combat/TurnActions.js` lists the turn actions that are not a swing or a
+cast. `turnActions` returns the six standard actions, each with the action
+as its cost, and with `cunningAction` it adds Dash, Disengage, and Hide with
+the bonus action as their cost. Each entry names a `group`, and the action
+bar draws one row of buttons per group in list order. A class action joins
+the bar by adding entries with its own group, with no change to the bar.
+
+`src/app/turnActions.js` is the app half. `turnActionsOf` reads the class
+levels of a character for Cunning Action, and a creature gets the standard
+actions only. `takeTurnAction` spends the cost through `spendBudget`, logs
+the line from `turnActionLine`, and for Dodge puts a Dodging chip on the
+combatant that ends at the start of its next turn. `ConditionEffects.js`
+gives attacks against a Dodging creature disadvantage.
 
 ### Two-weapon fighting
 

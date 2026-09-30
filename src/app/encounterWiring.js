@@ -3,7 +3,7 @@ import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import { encounterGroup } from '../entities/CreatureMap.js';
 import { addParticipant, startCombat, dropParticipant } from '../combat/Initiative.js';
-import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
+import { attacksAvailable, canSpend, spend, spendAttack, unspend } from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
@@ -132,6 +132,26 @@ export function wireEncounters(app) {
     // sidebar card shows none of this, so only the screen redraws.
     app.views.combatScreen.update();
     return true;
+  };
+
+  /**
+   * The GM's override on one cost of a turn, for the pips of the action bar.
+   * @param {string} id
+   * @param {import('../types/combat.js').ActionCost} cost
+   * @returns {boolean | null} whether the cost is spent afterward, or null
+   *   when the id is not in a running fight
+   */
+  app.actions.toggleBudget = (id, cost) => {
+    const combat = current();
+    const index = combat ? combat.order.findIndex((p) => p.id === id) : -1;
+    if (!combat || index < 0) return null;
+    const participant = combat.order[index];
+    const free = canSpend(participant, cost);
+    const order = [...combat.order];
+    order[index] = free ? spend(participant, cost) : unspend(participant, cost);
+    setCombat({ ...combat, order });
+    app.views.combatScreen.update();
+    return free;
   };
 
   wireEncounterPanels(app, { onStartCombat: startCombatSetup });
