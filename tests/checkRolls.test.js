@@ -407,14 +407,17 @@ test('a sheet roll keeps the tray setup and judges the total against a typed DC'
   const pass = stubApp({ rng: scripted([face(20, 12)]), dc: 15 });
   rollCheck(pass, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
   assert.deepEqual(pass.options, { keep: true });
-  assert.equal(pass.log[0], 'Rook rolls a Stealth check (DEX +3): 15 against DC 15: success.');
+  assert.equal(
+    pass.log[0],
+    'Rook rolls a Stealth check (DEX +3): 15 against DC 15 from the dice tray: success.',
+  );
   assert.deepEqual(pass.toastMessages, [
-    'Rook rolls 15 on a Stealth check against DC 15: success.',
+    'Rook rolls 15 on a Stealth check against DC 15 from the dice tray: success.',
   ]);
   const fail = stubApp({ rng: scripted([face(20, 11)]), dc: 15 });
   rollCheck(fail, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
   assert.deepEqual(fail.toastMessages, [
-    'Rook rolls 14 on a Stealth check against DC 15: failure.',
+    'Rook rolls 14 on a Stealth check against DC 15 from the dice tray: failure.',
   ]);
 });
 

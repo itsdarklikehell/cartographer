@@ -2021,7 +2021,10 @@ kind of spell with **One roll only**.
 
 The DC is the **Target / DC** field of the dice tray. Type a DC there once,
 and each save or skill that you roll from the sheet reports success or
-failure against it, in the toast and in the log. With the field blank,
+failure against it, in the toast and in the log, as in "against DC 13 from
+the dice tray". The field keeps what you typed until you clear it. An attack
+or a death save compares against its own target and leaves the field alone.
+With the field blank,
 nothing judges the roll, so compare the total against the DC that you have
 in mind. The d20 mode of the dice tray applies, and the log names the die
 that it dropped.
@@ -2580,7 +2583,8 @@ also goes into the Travelogue under the name of the roller. The name is
 for a spectator tab.
 
 An attack or a death save from the app loads the tray, opens it, and rolls
-it. A save or a
+it. An attack judges against the AC of its target for that roll only, and
+the Target / DC field keeps the value that you typed. A save or a
 skill from the character sheet rolls in the tray without opening it, and it
 puts your dice and modifier back after the roll. A roll that names its own
 mode uses that mode for one roll only, and it leaves the d20 mode as it was.

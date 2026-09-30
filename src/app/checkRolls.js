@@ -179,7 +179,9 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const modeNote = droppedNote(d20, result.selection.mode);
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
   const verdict =
-    dc === null ? '' : ` against DC ${dc}: ${result.total >= dc ? 'success' : 'failure'}`;
+    dc === null
+      ? ''
+      : ` against DC ${dc} from the dice tray: ${result.total >= dc ? 'success' : 'failure'}`;
   app.actions.logEvent(
     'roll',
     `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}${verdict}.${naturalNote}`,
