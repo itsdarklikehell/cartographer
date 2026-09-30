@@ -1971,6 +1971,7 @@ The parts of the sheet have their own modules:
 | `ui/CharacterBars.js` | The HP bar and the slot pips (the elements and the update loop) |
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |
+| `ui/CharacterConditions.js` | The condition chips, the held concentration, the exhaustion pips, and the death-save block |
 | `ui/CharacterProgress.js` | The class rows with subclass, the pending-level assignment, pending ASI and feat choices, feature grants, unlocked features, and the hit-dice pool |
 | `ui/LevelAssignFlow.js` | The dialogs of assigning a level: class, multiclass skills, subclass, and feature picks |
 | `ui/ImprovementFlow.js` | The dialogs of an ability score improvement or a feat |
