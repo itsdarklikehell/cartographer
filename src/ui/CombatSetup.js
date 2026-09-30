@@ -26,6 +26,11 @@ import { stealthStep } from './CombatSetupStealth.js';
  * line to `onStealth`. With `onParley`, a Parley button closes the dialog
  * with no fight. The dialog then calls `onParley` and resolves to null.
  *
+ * `nearby` lists foes outside the roster, each with its distance in tiles.
+ * They show under "Add nearby foes" with a Join box, unticked. A ticked foe
+ * joins the roster for Roll initiative and Start. The Stealth contest covers
+ * only the roster.
+ *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
  * Start, this function rolls each row that the GM neither rolled nor typed,
@@ -43,6 +48,7 @@ import { stealthStep } from './CombatSetupStealth.js';
  *   stealth?: import('./CombatSetupStealth.js').StealthHooks,
  *   onStealth?: (line: string) => void,
  *   onParley?: () => void,
+ *   nearby?: { participant: Participant, distance: number }[],
  * }} [callbacks]
  * @returns {Promise<Participant[] | null>}
  */
@@ -67,7 +73,21 @@ export function combatSetupModal(roster, callbacks = {}) {
   // Two rows that share a name get numbers, in roster order, which is the
   // campaign's order of characters and then creatures. The fight numbers
   // them the same way.
-  const labels = numberedNames(roster.map((p) => ({ id: p.id, name: described(p).name })));
+  const nearby = callbacks.nearby ?? [];
+  /** The Join box of each nearby foe. */
+  /** @type {Map<string, HTMLInputElement>} */
+  const joined = new Map();
+  /** The roster plus each nearby foe whose Join box is ticked. */
+  const active = () => [
+    ...roster,
+    ...nearby.filter((n) => joined.get(n.participant.id)?.checked).map((n) => n.participant),
+  ];
+  const labels = numberedNames(
+    [...roster, ...nearby.map((n) => n.participant)].map((p) => ({
+      id: p.id,
+      name: described(p).name,
+    })),
+  );
   const describe = (/** @type {Participant} */ participant) => {
     const view = described(participant);
     return { ...view, name: labels.get(participant.id) ?? view.name };
@@ -83,7 +103,13 @@ export function combatSetupModal(roster, callbacks = {}) {
         ? stealthStep(roster, describe, surprised, callbacks.stealth)
         : null;
       if (stealth) body.push(stealth.section);
-      for (const participant of roster) {
+      /**
+       * One row: the name, the DEX modifier, and the initiative field, then
+       * the cells that follow them.
+       * @param {Participant} participant
+       * @param {Node[]} cells
+       */
+      const initiativeRow = (participant, cells) => {
         const view = describe(participant);
         const modifier = el(
           'span',
@@ -91,35 +117,54 @@ export function combatSetupModal(roster, callbacks = {}) {
           formatModifier(participant.modifier ?? 0),
         );
         setTip(modifier, 'DEX modifier, added to the initiative roll');
-
         const input = numberField(participant.initiative, {
           className: 'initiative-panel__init',
           ariaLabel: `Initiative for ${view.name}`,
         });
         input.addEventListener('input', () => settled.add(participant.id));
         inputs.set(participant.id, input);
-
+        return el(
+          'div',
+          `initiative-panel__row combat-setup__row u-row u-g2 initiative-panel__row--${view.side}`,
+          el('span', 'initiative-panel__name', view.name),
+          modifier,
+          input,
+          ...cells,
+        );
+      };
+      for (const participant of roster) {
+        const name = describe(participant).name;
         const surprise = checkbox('Surprised', participant.surprised === true, {
           className: 'initiative-panel__surprised',
         });
-        surprise.input.setAttribute('aria-label', `${view.name} is surprised`);
+        surprise.input.setAttribute('aria-label', `${name} is surprised`);
         setTip(
           surprise.label,
           'No action, bonus action, or move on its first turn, and no reaction until that turn ends',
         );
         surprised.set(participant.id, surprise.input);
-
         body.push(
-          el(
-            'div',
-            `initiative-panel__row combat-setup__row u-row u-g2 initiative-panel__row--${view.side}`,
-            el('span', 'initiative-panel__name', view.name),
-            modifier,
-            input,
+          initiativeRow(participant, [
             surprise.label,
             ...(stealth ? [stealth.cells(participant)] : []),
-          ),
+          ]),
         );
+      }
+
+      if (nearby.length > 0) {
+        body.push(el('h3', 'combat-setup__nearby-title', 'Add nearby foes'));
+        for (const { participant, distance } of nearby) {
+          const name = describe(participant).name;
+          const join = checkbox('Join', false, { className: 'initiative-panel__surprised' });
+          join.input.setAttribute('aria-label', `Add ${name} to the fight`);
+          joined.set(participant.id, join.input);
+          const away = el(
+            'span',
+            'combat-setup__distance u-muted',
+            `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`,
+          );
+          body.push(initiativeRow(participant, [away, join.label]));
+        }
       }
 
       /** @type {HTMLElement[]} */
@@ -132,7 +177,7 @@ export function combatSetupModal(roster, callbacks = {}) {
           () => {
             /** @type {{ name: string, value: number, note: string }[]} */
             const results = [];
-            for (const participant of roster) {
+            for (const participant of active()) {
               const input = inputs.get(participant.id);
               if (!input) continue;
               const { value, note } = rollInitiative(participant);
@@ -180,7 +225,7 @@ export function combatSetupModal(roster, callbacks = {}) {
       // 10 plus the modifier. Start rolls those rows, and logs them the same
       // way a press of Roll initiative does.
       if (callbacks.rollInitiative) {
-        const rolled = rollUnsettled(roster, settled, callbacks.rollInitiative);
+        const rolled = rollUnsettled(active(), settled, callbacks.rollInitiative);
         for (const { participant, value } of rolled) {
           const input = inputs.get(participant.id);
           if (input) input.value = String(value);
@@ -195,7 +240,7 @@ export function combatSetupModal(roster, callbacks = {}) {
           );
         }
       }
-      return roster.map((p) => {
+      return active().map((p) => {
         const { surprised: _, ...rest } = p;
         const initiative = Number(inputs.get(p.id)?.value) || 0;
         return surprised.get(p.id)?.checked

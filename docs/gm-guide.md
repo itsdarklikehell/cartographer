@@ -463,6 +463,10 @@ still open stays until you end the fight. To bring the foes back, click
    values yourself. The hostile creatures of the Active encounter tab join
    the foes. A friendly or neutral creature on the tile of the party joins
    the party.
+   - To bring in a foe from farther away, such as a second wolf two tiles
+     off, tick **Join** on its row under **Add nearby foes**. In a running
+     fight, click **Add to fight** on its row in the **Nearby encounters**
+     tab instead.
    - If one side sneaks up on the other, set **Who sneaks** to that side,
      or to **Both sides** when each side sneaks, and click **Roll Stealth** or type each Stealth total. The app ticks
      **Surprised** on each watcher whose passive Perception notices no one.

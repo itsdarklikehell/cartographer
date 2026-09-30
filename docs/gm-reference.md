@@ -1177,8 +1177,11 @@ creature dialog. To keep a foe that fled in the story, pick **Still
 hostile** and move it to its new tile in the creature dialog.
 
 A fight also ends when no creature of the fight is left on the tile of the
-party or on the eight tiles around it. A walk away from the fight ends it,
-and so does the deletion of the last creature in it.
+party or on the eight tiles around it, and no hostile creature of the fight
+is left within the nearby range (8 tiles by default). A walk out of that
+range ends the fight, and so does the deletion of the last creature in it.
+The wider range lets a foe that joined from farther away keep the fight
+open.
 
 ### Combat setup
 
@@ -1189,6 +1192,14 @@ friendly or neutral creature on the tile of the party. Hostile creatures
 line up as foes, and friendly and neutral creatures line up with the party.
 Only a hostile creature starts an encounter. To fight a friendly or neutral
 creature, set its disposition to hostile first.
+
+Under **Add nearby foes**, the dialog lists the other live hostile creatures
+within the nearby range, nearest first, with the distance in tiles. Tick
+**Join** on a row to bring that foe into the fight. A joined foe rolls
+initiative with the others. The Stealth contest covers only the rows above
+the list. During a fight, the **Nearby encounters** tab has an **Add to
+fight** button on each hostile row that is not in the fight. It rolls
+initiative for the foe, logs the roll, and puts the foe into the order.
 
 Combatants that share a name get a number after it, such as "Goblin
 Scout 1" and "Goblin Scout 2". The numbers follow the order of the creature
@@ -1211,6 +1222,7 @@ running fight. The log and the stored name keep the plain name.
 | Stealth total | The Stealth total of a sneaker row. Roll Stealth fills it, and you can type your own value |
 | PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
+| Join | A foe under **Add nearby foes**: tick it to add the foe to the fight |
 | Parley | Closes the dialog with no fight, and turns the foes neutral, and logs a line such as "The party settles the encounter without a fight. Goblin Scout 1 and Goblin Scout 2 stand down." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 

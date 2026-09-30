@@ -1,7 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { encounterGroup } from '../entities/CreatureMap.js';
 import { addParticipant, startCombat, dropParticipant } from '../combat/Initiative.js';
 import {
   attacksAvailable,
@@ -13,7 +12,13 @@ import {
 } from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { parleyLine, passivePerceptionOf, rollStealth } from '../combat/Stealth.js';
-import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
+import {
+  combatRoster,
+  fightInReach,
+  initiativeLine,
+  nearbyFoes,
+  nearbyRadius,
+} from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
 import { combatLabels, describeCombatant, findCombatant, logName } from './combatants.js';
@@ -202,9 +207,14 @@ export function wireEncounters(app) {
     // The dialog logs the "Initiative rolled" line, and it belongs to this
     // fight's log.
     const startedAt = Date.now();
-    const roster = combatRoster(state.characters, state.creatures, app.partyTracker.getPosition());
+    const position = app.partyTracker.getPosition();
+    const roster = combatRoster(state.characters, state.creatures, position);
+    const radius = nearbyRadius(app.partyTracker.revealRadius);
     const participants = await combatSetupModal(roster, {
       describe,
+      // Hostiles farther out than the encounter group, within the radius of
+      // the Nearby tab. The GM ticks the ones that join.
+      nearby: nearbyFoes(state.creatures, position, radius),
       // Initiative is a DEX check, and it rolls as one: the chips of the
       // roller and armor the roller is not trained for slant the d20, and
       // exhaustion takes its penalty off the total. The value stays editable,
@@ -371,15 +381,13 @@ export function wireEncounters(app) {
   app.actions.syncCombatLocation = () => {
     const combat = current();
     if (!combat) return;
-    // The fight goes on while any creature in its order still stands within
-    // the encounter group of the party's position. Defeated combatants
-    // count here. A combatant at 0 HP is a turn in the fight, not the end of
-    // it. Only walking away, or deleting everyone in the fight, ends a fight
-    // this way. Non-hostile creatures count too, because a bystander in the
-    // order is part of the fight.
-    const inFight = new Set(combat.order.map((p) => p.id));
-    const near = encounterGroup(state.creatures, app.partyTracker.getPosition());
-    if (near.some((c) => inFight.has(c.id))) return;
+    // The fight goes on while a creature in its order stands in the
+    // encounter group of the party, or a hostile in its order stands within
+    // the radius of "Add nearby foes" (see `fightInReach`). Only walking
+    // away, or deleting everyone in the fight, ends a fight this way.
+    const position = app.partyTracker.getPosition();
+    const radius = nearbyRadius(app.partyTracker.revealRadius);
+    if (fightInReach(combat.order, state.creatures, position, radius)) return;
     app.actions.logEvent('combat', 'The fight ends. No creature in it is left near the party.');
     setCombat(null);
     exitCombatMode();

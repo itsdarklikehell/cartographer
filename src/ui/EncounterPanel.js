@@ -55,6 +55,8 @@ import { describeTile } from '../map/TileCoords.js';
  *   getDifficulty?: () => string,
  *   getRole?: () => ViewRole,
  *   getLabel?: (encounter: Encounter) => string,
+ *   canAddToFight?: (encounter: Encounter) => boolean,
+ *   onAddToFight?: (encounter: Encounter) => void,
  * }} callbacks
  * `getLabel` gives the name a row shows, such as "Roadside Bandit 2" for the
  * second of two foes with one name.
@@ -64,6 +66,8 @@ import { describeTile } from '../map/TileCoords.js';
  * combat button whenever `canStartCombat` allows it, when no fight is
  * already running. This is the entry into the initiative flow, which
  * players do not get.
+ * `canAddToFight` and `onAddToFight` give a Nearby row an "Add to fight"
+ * button for the GM, on each row that `canAddToFight` allows.
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {
@@ -339,8 +343,34 @@ export function mountEncounterPanel(container, callbacks) {
     dependsOn: () => activeAddButtons().length,
   });
 
+  // A Nearby row gains "Add to fight" while a fight runs that the creature
+  // is not part of. The joinable ids are what the row actions depend on
+  // beyond the rows, so the list repaints when a fight starts or ends.
+  const joinable = () =>
+    callbacks
+      .getNearbyEncounters()
+      .filter((e) => callbacks.canAddToFight?.(e))
+      .map((e) => e.id)
+      .join(',');
+  /** @type {typeof actions} */
+  const nearbyActions = (encounter, ctx) => [
+    ...(ctx.gm && callbacks.canAddToFight?.(encounter)
+      ? [
+          {
+            icon: /** @type {const} */ ('sword'),
+            label: `Add ${nameOf(encounter)} to the fight`,
+            title: 'Add to fight',
+            onClick: () => callbacks.onAddToFight?.(encounter),
+          },
+        ]
+      : []),
+    ...actions(encounter, ctx),
+  ];
+
   const nearbyList = mountListPanel(nearbyPanel, {
     ...rowOptions,
+    actions: nearbyActions,
+    dependsOn: joinable,
     getRows: () => callbacks.getNearbyEncounters(),
     emptyMessage: 'No encounters nearby.',
     classes: { ...rowOptions.classes, add: 'encounter-panel__add' },

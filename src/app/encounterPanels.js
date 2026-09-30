@@ -17,7 +17,13 @@ import { isDefeated } from '../entities/Creature.js';
 import { difficultyLine } from '../entities/EncounterDifficulty.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { encounterLabels } from '../combat/DisplayNames.js';
-import { combatRoster } from '../combat/CombatRoster.js';
+import {
+  combatRoster,
+  creatureParticipant,
+  initiativeLine,
+  nearbyRadius,
+} from '../combat/CombatRoster.js';
+import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { addLethargy } from './lethargy.js';
@@ -109,9 +115,11 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     const group = hostileGroup(state.creatures, position);
     const hereIds = new Set(group.map((c) => c.id));
     const list = isGM(state.role)
-      ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
-          (c) => c.disposition === 'hostile',
-        )
+      ? creaturesNear(
+          state.creatures,
+          position,
+          nearbyRadius(app.partyTracker.revealRadius),
+        ).filter((c) => c.disposition === 'hostile')
       : // A player needs no record of a fallen foe, so a defeated one
         // leaves the players' list.
         discoveredHostiles(
@@ -199,6 +207,24 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     canStartCombat,
     onStartCombat,
     getRole: () => state.role,
+    // A hostile on the Nearby tab can join a running fight it is not part
+    // of. It rolls initiative as it joins and takes its place in the order.
+    canAddToFight: (c) =>
+      isGM(state.role) &&
+      state.combat !== null &&
+      c.disposition === 'hostile' &&
+      !isDefeated(c) &&
+      !state.combat.order.some((p) => p.id === c.id),
+    onAddToFight: (c) => {
+      const participant = creatureParticipant(c);
+      const { value, note } = rollInitiative(participant, c);
+      app.actions.logEvent(
+        'roll',
+        initiativeLine([{ name: labels.get(c.id) ?? c.name, value, note }]),
+      );
+      app.actions.addCombatant({ ...participant, initiative: value });
+      app.views.encounterPanel.update();
+    },
   });
 
   // This is the Build rail's foe authoring list. It lists the hostile

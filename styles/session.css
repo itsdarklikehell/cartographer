@@ -218,6 +218,18 @@ body.role-player .npc-scope {
   margin-left: auto;
 }
 
+/* The foes that the GM can add from farther out, under a rule of their own. */
+.combat-setup__nearby-title {
+  margin: var(--space-2) 0 0;
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  font-size: var(--text-label);
+}
+
+.combat-setup__distance {
+  font-size: var(--text-label);
+}
+
 .combat-setup__stealth-outcome {
   display: flex;
   flex-direction: column;

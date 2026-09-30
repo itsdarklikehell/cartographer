@@ -873,6 +873,16 @@ foes, and friendly and neutral creatures line up with the party. A friendly or
 neutral creature alone does not make an encounter. The GM who wants to fight
 one sets its disposition to hostile first.
 
+`nearbyFoes` in `combat/CombatRoster.js` lists the undefeated hostiles
+within `nearbyRadius` that stand outside the encounter group, each with its
+straight-line distance in tiles. The setup dialog shows them under "Add
+nearby foes" with a Join box, and only the ticked ones join the roster for
+Roll initiative and Start. During a fight, the Nearby tab gives each hostile
+row outside the order an "Add to fight" button. `encounterPanels.js` rolls
+initiative for it and calls `app.actions.addCombatant`. The Nearby list
+repaints on the set of joinable ids through its `dependsOn`, so the button
+shows when a fight starts and goes when it ends.
+
 Only a hostile creature is a threat, and only a threat opens the arrival modal
 when the party steps next to it or onto its tile. A friendly or neutral
 creature opens nothing. The NPCs panel lists it, and a step onto its tile logs
@@ -903,7 +913,7 @@ failing. The GM can edit every value by hand before Start.
 ## Ending a fight
 
 A fight ends when the GM presses End combat, or when no creature of the fight
-is left near the party's tile. The defeat of the last enemy does not end the fight.
+is left near the party. The defeat of the last enemy does not end the fight.
 An automatic end on the last kill would close the screen mid-swing, and it
 would take the log and the board away before the party could heal.
 
@@ -935,10 +945,14 @@ refresh never calls it, because that refresh also runs from the rehydrate
 loop. There, a state write would conflict with the save that the tab just
 took from another tab.
 
-The check reads `encounterGroup` and keeps the fight while any creature of
-that group is in the running order. The group counts defeated creatures and
-bystanders, because a combatant at 0 HP is a turn in the fight and not the
-end of it. A walk away from the fight ends it, and so does the deletion of the
+The check is `fightInReach` in `combat/CombatRoster.js`. It keeps the
+fight while any creature of the encounter group is in the running order, or
+while any hostile in the order stands within `nearbyRadius`, four times the
+reveal radius. That radius is the one of the Nearby tab and of the "Add
+nearby foes" list, so a foe that joined from there does not end the fight at
+once. Both checks count defeated creatures, because a combatant at 0 HP is a
+turn in the fight and not the end of it. A bystander counts only inside the
+encounter group. A walk away from the fight ends it, and so does the deletion of the
 last creature in it, but a kill does not.
 
 ### The outcome banner
