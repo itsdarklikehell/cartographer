@@ -83,8 +83,11 @@ function rollName(event) {
  * way. A chip that stops a creature moving fails its Strength and Dexterity
  * saves outright, and that failure is logged without a die.
  *
- * A sheet roll carries no DC. The GM reads the total against whatever they had
- * in mind, which is why nothing here judges success. A natural 1 or 20 is an
+ * The roll borrows the tray without taking it over: the dice and the modifier
+ * the GM set up there come back after the roll. The DC is the tray's target
+ * field. When the GM typed one, the log and the toast say whether the total
+ * meets it. When the field is blank, nothing here judges success, and the GM
+ * reads the total against whatever they had in mind. A natural 1 or 20 is an
  * ordinary result on both rolls, so the log names it and the app does not act
  * on it.
  *
@@ -151,11 +154,11 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   // A null mode means nothing slanted the roll, and the key stays off the
   // selection so the tray's standing toggle still applies.
   const mode = rollMode(conditionQuery, wearSlants);
-  const { result } = app.actions.rollDice({
-    counts: { d20: 1 },
-    modifier: bonus + rider.modifier,
-    ...(mode ? { mode } : {}),
-  });
+  const { result, target: dc = null } = app.actions.rollDice(
+    { counts: { d20: 1 }, modifier: bonus + rider.modifier, ...(mode ? { mode } : {}) },
+    null,
+    { keep: true },
+  );
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
   const parts = [`${ability} ${formatModifier(abilityMod)}`];
@@ -175,10 +178,12 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   // names no mode, so the note can appear without this module asking for it.
   const modeNote = droppedNote(d20, result.selection.mode);
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
+  const verdict =
+    dc === null ? '' : ` against DC ${dc}: ${result.total >= dc ? 'success' : 'failure'}`;
   app.actions.logEvent(
     'roll',
-    `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}.${naturalNote}`,
+    `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}${verdict}.${naturalNote}`,
   );
-  app.toasts.show(`${character.name} rolls ${result.total} on ${phrase}.`);
+  app.toasts.show(`${character.name} rolls ${result.total} on ${phrase}${verdict}.`);
   spendRollRiders(app, character.id, rider);
 }

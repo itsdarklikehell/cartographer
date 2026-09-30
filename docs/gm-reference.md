@@ -1749,18 +1749,22 @@ A dot in front of each save or skill shows how trained the character is.
 Passive Perception is 10 plus the Perception bonus. Compare it against a
 hidden thing when nobody says they are looking.
 
-A click on a save or a skill rolls it. The dice tray opens with the d20 and
-the whole bonus. The log shows the parts of the number: the ability
-modifier, the proficiency or expertise, and any condition chip that adds to
-the roll.
+A click on a save or a skill rolls it with a d20 and the whole bonus. The
+roll goes through the dice tray, but the tray stays closed, and the dice and
+the modifier that you set up in the tray stay as they were. The log shows
+the parts of the number: the ability modifier, the proficiency or expertise,
+and any condition chip that adds to the roll.
 
 Guidance and Resistance add to one roll only. The first check or save that
 they change removes their chip. In the Library, the spell form marks this
 kind of spell with **One roll only**.
 
-The roll has no DC, so nothing judges it. Compare the total against the DC
-that you have in mind. The d20 mode of the dice tray applies, and the log
-names the die that it dropped.
+The DC is the **Target / DC** field of the dice tray. Type a DC there once,
+and each save or skill that you roll from the sheet reports success or
+failure against it, in the toast and in the log. With the field blank,
+nothing judges the roll, so compare the total against the DC that you have
+in mind. The d20 mode of the dice tray applies, and the log names the die
+that it dropped.
 
 The Conditions block shows the chips and the held spell with its Drop
 control. While the character is at 0 HP, it also shows the death-save
@@ -2241,7 +2245,7 @@ steppers, and it does not read typed dice expressions.
 | Die counts | A plus and minus counter for each of d4, d6, d8, d10, d12, d20, and d100 |
 | Modifier | A flat number, set with plus and minus steppers |
 | d20 mode | Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
-| Target | An optional number to meet or beat. Each roll then reports success or failure |
+| Target / DC | An optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
 | Roll | Rolls the selection |
 
 The tray shows the latest result, with each face and the total. Every roll
@@ -2249,9 +2253,11 @@ also goes into the Travelogue under the name of the roller. The name is
 "The GM" for a GM tab, the character name for a bound tab, and "A player"
 for a spectator tab.
 
-An attack or a check from the app loads the tray and rolls it. A roll that
-names its own mode uses that mode for one roll only, and it leaves the d20
-mode as it was.
+An attack or a death save from the app loads the tray, opens it, and rolls
+it. A save or a
+skill from the character sheet rolls in the tray without opening it, and it
+puts your dice and modifier back after the roll. A roll that names its own
+mode uses that mode for one roll only, and it leaves the d20 mode as it was.
 
 ## The library
 

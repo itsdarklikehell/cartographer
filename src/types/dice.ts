@@ -26,3 +26,18 @@ export interface DiceResult {
 }
 
 export type RandomFn = () => number;
+
+/** Options for a roll that a caller loads into the dice tray. */
+export interface TrayRollOptions {
+  /** Roll without expanding the tray, against the target the GM typed, and
+   * put the GM's dice and modifier back afterward. */
+  keep?: boolean;
+}
+
+/** A roll made in the dice tray. `target` is the number the roll was judged
+ * against, or null when it had none. */
+export interface TrayRoll {
+  result: DiceResult;
+  text: string;
+  target: number | null;
+}

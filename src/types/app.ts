@@ -19,7 +19,7 @@ import type { Handout } from './handout.js';
 import type { ActionCost, CombatState, Participant, TurnFlag } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { PartyPosition } from './map.js';
-import type { DiceResult, DiceSelection } from './dice.js';
+import type { DiceResult, DiceSelection, TrayRollOptions } from './dice.js';
 import type { ModalField } from './modal.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
@@ -172,8 +172,13 @@ export interface AppActions {
   mergeQueuedPatches(): void;
   // diceWiring: load a selection, and an optional target number, into the dice
   // tray and roll it there. Weapon attacks route through this function, so
-  // the roll shows where every other roll happens.
-  rollDice(selection: DiceSelection, target?: number | null): { result: DiceResult; text: string };
+  // the roll shows where every other roll happens. With `keep`, a sheet check
+  // borrows the tray and leaves the GM's setup in place.
+  rollDice(
+    selection: DiceSelection,
+    target?: number | null,
+    options?: TrayRollOptions,
+  ): { result: DiceResult; text: string; target?: number | null };
 }
 
 /** The `AppState` lists whose panels are built by `app/entityList.js`. A new

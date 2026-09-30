@@ -28,5 +28,6 @@ export function wireDiceTray(app) {
 
   // This lets a weapon attack load and roll the tray (d20 plus modifier
   // against the defender's AC). The roll then shows where every other roll shows.
-  app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);
+  app.actions.rollDice = (selection, target, options) =>
+    diceTray.rollSelection(selection, target, options);
 }

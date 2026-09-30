@@ -20,18 +20,25 @@ const face = (sides, n) => (n - 1) / sides + 1e-9;
 
 /**
  * A stub app whose dice tray rolls the scripted sequence. `rolls` records each
- * selection the roll loaded into the tray, along with the target it rolled
- * against, which for a sheet roll is always absent.
- * @param {{ rng?: () => number, mode?: string }} [opts]
+ * selection the roll loaded into the tray, along with the target it passed,
+ * which for a sheet roll is always null. `dc` stands in for the number the GM
+ * typed in the tray's target field, and `options` records how the roll asked
+ * to use the tray.
+ * @param {{ rng?: () => number, mode?: string, dc?: number | null }} [opts]
  */
-function stubApp({ rng = () => 0.5, mode = undefined } = {}) {
+function stubApp({ rng = () => 0.5, mode = undefined, dc = null } = {}) {
   const app = baseStubApp({
     toasts: { show: (/** @type {string} */ message) => app.toastMessages.push(message) },
     actions: {
-      rollDice: (/** @type {any} */ selection, /** @type {number} */ target) => {
+      rollDice: (
+        /** @type {any} */ selection,
+        /** @type {number} */ target,
+        /** @type {any} */ options,
+      ) => {
         app.rolls.push({ selection, target });
+        app.options = options;
         // The tray owns advantage, so the stub rolls it the way the tray would.
-        return { result: roll(mode ? { ...selection, mode } : selection, rng) };
+        return { result: roll(mode ? { ...selection, mode } : selection, rng), target: dc };
       },
     },
   });
@@ -60,9 +67,7 @@ test('a proficient save rolls the ability modifier plus proficiency', () => {
   const character = withProficiencies(hero(), { saves: ['DEX'] });
   const app = stubApp({ rng: scripted([face(20, 11)]) });
   rollCheck(app, character, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
-  assert.deepEqual(app.rolls, [
-    { selection: { counts: { d20: 1 }, modifier: 6 }, target: undefined },
-  ]);
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 6 }, target: null }]);
   assert.equal(app.log[0], 'Rook rolls a DEX saving throw (DEX +3, proficiency +3): 17.');
   assert.deepEqual(app.toastMessages, ['Rook rolls 17 on a DEX saving throw.']);
 });
@@ -212,10 +217,10 @@ test('a natural 1 and a natural 20 are named, and nothing between them is', () =
   assert.doesNotMatch(middle.log[0], /Natural/);
 });
 
-test('a sheet roll carries no DC into the tray', () => {
+test('a sheet roll sets no target in the tray and judges nothing without a DC', () => {
   const app = stubApp({ rng: scripted([face(20, 10)]) });
   rollCheck(app, hero(), { kind: 'save', key: 'DEX' }, { rng: () => 0 });
-  assert.equal(app.rolls[0].target, undefined, 'a sheet roll judges nothing');
+  assert.equal(app.rolls[0].target, null, 'the tray keeps the target the GM typed');
   assert.doesNotMatch(app.log[0], /vs|success|fail/i);
 });
 
@@ -396,4 +401,28 @@ test('a Guidance chip rides one check and is used up by it', () => {
   quiet.state.characters = [plain];
   rollCheck(quiet, plain, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
   assert.equal(quiet.state.characters[0], plain);
+});
+
+test('a sheet roll keeps the tray setup and judges the total against a typed DC', () => {
+  const pass = stubApp({ rng: scripted([face(20, 12)]), dc: 15 });
+  rollCheck(pass, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.deepEqual(pass.options, { keep: true });
+  assert.equal(pass.log[0], 'Rook rolls a Stealth check (DEX +3): 15 against DC 15: success.');
+  assert.deepEqual(pass.toastMessages, [
+    'Rook rolls 15 on a Stealth check against DC 15: success.',
+  ]);
+  const fail = stubApp({ rng: scripted([face(20, 11)]), dc: 15 });
+  rollCheck(fail, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.deepEqual(fail.toastMessages, [
+    'Rook rolls 14 on a Stealth check against DC 15: failure.',
+  ]);
+});
+
+test('a tray that reports no target leaves the roll unjudged', () => {
+  const app = stubApp({ rng: scripted([face(20, 12)]) });
+  app.actions.rollDice = (/** @type {any} */ selection) => ({
+    result: roll(selection, () => 0.55),
+  });
+  rollCheck(app, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.match(app.toastMessages[0], /^Rook rolls \d+ on a Stealth check\.$/);
 });

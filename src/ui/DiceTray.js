@@ -22,12 +22,15 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * attack from the initiative panel. It loads the given counts, modifier, and
  * target into the tray, expands the tray so the result is visible, and
  * rolls. It does not fire `onRoll`, because such callers log the roll under
- * their own name.
+ * their own name. With `keep`, it rolls without expanding the tray, uses the
+ * target that the GM typed, and puts the GM's dice and modifier back
+ * afterward. A save or a check from the character sheet rolls this way, so
+ * the GM can type a DC once and roll several checks against it.
  * @param {HTMLElement} container
  * @param {{ onRoll?: (text: string) => void }} [opts]
  * @returns {{
  *   getSelection: () => import('../types/dice.js').DiceSelection,
- *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null) => { result: import('../types/dice.js').DiceResult, text: string },
+ *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null, options?: import('../types/dice.js').TrayRollOptions) => import('../types/dice.js').TrayRoll,
  * }}
  */
 export function mountDiceTray(container, opts = {}) {
@@ -125,13 +128,13 @@ export function mountDiceTray(container, opts = {}) {
   const targetInput = numberField('', {
     placeholder: 'none',
     className: 'dice-tray__target',
-    ariaLabel: 'Target number to beat (optional)',
+    ariaLabel: 'Target number or DC to meet (optional)',
   });
   root.appendChild(
     el(
       'div',
       'dice-tray__row u-row u-g2',
-      el('span', 'dice-tray__label u-muted', 'target'),
+      el('span', 'dice-tray__label u-muted', 'target / DC'),
       targetInput,
     ),
   );
@@ -149,11 +152,17 @@ export function mountDiceTray(container, opts = {}) {
   resultEl.setAttribute('role', 'status');
   resultEl.hidden = true;
 
+  /** The target field as a number, or null while it is blank or not a number. */
+  function readTarget() {
+    const target = targetInput.value === '' ? null : Number(targetInput.value);
+    return target !== null && Number.isFinite(target) ? target : null;
+  }
+
   function performRoll() {
     const result = roll(selection);
     let text = formatResult(result);
-    const target = targetInput.value === '' ? null : Number(targetInput.value);
-    if (target !== null && Number.isFinite(target)) {
+    const target = readTarget();
+    if (target !== null) {
       text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
     }
     resultEl.textContent = text;
@@ -166,7 +175,11 @@ export function mountDiceTray(container, opts = {}) {
 
   return {
     getSelection: () => selection,
-    rollSelection: (next, target = null) => {
+    rollSelection: (next, target = null, { keep = false } = {}) => {
+      // With `keep`, the roll borrows the tray. The dice and the modifier the
+      // GM set up come back after the roll, the target field stays as the GM
+      // left it and is the target of this roll, and the tray stays closed.
+      const saved = { counts: { ...selection.counts }, modifier: selection.modifier };
       for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
       selection.modifier = next.modifier ?? 0;
       // A caller that does not name a mode inherits the tray's toggle, so
@@ -174,16 +187,22 @@ export function mountDiceTray(container, opts = {}) {
       // caller that names one uses it for this roll only: the toggle goes
       // back to the GM's own choice afterward.
       selection.mode = next.mode ?? standingMode;
-      targetInput.value = target === null ? '' : String(target);
-      for (const refresh of refreshers) refresh();
-      disclosure.setExpanded(true);
+      if (!keep) {
+        targetInput.value = target === null ? '' : String(target);
+        for (const refresh of refreshers) refresh();
+        disclosure.setExpanded(true);
+      }
       // The restore runs even when the roll throws, so a failed programmatic
       // roll cannot leave the toggle showing a mode the GM never picked.
       try {
-        return performRoll();
+        return { ...performRoll(), target: readTarget() };
       } finally {
         selection.mode = standingMode;
-        modeSwitch.sync(standingMode);
+        if (keep) {
+          for (const die of DIE_TYPES) selection.counts[die] = saved.counts[die] ?? 0;
+          selection.modifier = saved.modifier;
+        }
+        for (const refresh of refreshers) refresh();
       }
     },
   };
