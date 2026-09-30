@@ -48,6 +48,7 @@ test('typeRuleFields keeps known types and conditions and drops empty lists', ()
     typeRuleFields({
       typeRules: {
         skip: ['Undead', 'undead', 'robot'],
+        only: ['Humanoid', 'robot'],
         skipImmuneTo: ['charmed', 'Concentrating', 'nope'],
         disadvantage: ['ooze'],
         maxDamage: ['plant'],
@@ -56,6 +57,7 @@ test('typeRuleFields keeps known types and conditions and drops empty lists', ()
     {
       typeRules: {
         skip: ['undead'],
+        only: ['humanoid'],
         skipImmuneTo: ['Charmed'],
         disadvantage: ['ooze'],
         maxDamage: ['plant'],
@@ -81,6 +83,10 @@ test('typeSkipReason names the type or the immunity that passes a target over', 
   );
   assert.equal(typeSkipReason(rules, { creatureType: 'humanoid' }), null);
   assert.equal(typeSkipReason({ skip: ['undead'] }, {}), null);
+  const only = { only: /** @type {any} */ (['humanoid', 'giant']) };
+  assert.equal(typeSkipReason(only, { creatureType: 'beast' }), 'not humanoid or giant');
+  assert.equal(typeSkipReason(only, { creatureType: 'giant' }), null);
+  assert.equal(typeSkipReason(only, {}), null);
 });
 
 test('withTypeSaveMode folds a disadvantage into the target mode', () => {
@@ -111,6 +117,10 @@ test('typeRulesSummary reads each rule', () => {
   assert.equal(
     typeRulesSummary(/** @type {any} */ ({ disadvantage: ['plant'], maxDamage: ['plant'] })),
     'Saves at disadvantage: plant. Maximum damage: plant.',
+  );
+  assert.equal(
+    typeRulesSummary(/** @type {any} */ ({ only: ['humanoid'] })),
+    'Only affects humanoid.',
   );
 });
 
@@ -211,12 +221,19 @@ test('every built-in heal of hit points but Revivify skips undead and constructs
 
 test('the spell form draft keeps the type rules of a save and a heal', async () => {
   const { assembleEffect } = await import('../src/entities/SpellDraft.js');
-  const rules = { skip: ['undead'], skipImmuneTo: ['Charmed'], disadvantage: [], maxDamage: [] };
+  const rules = {
+    skip: ['undead'],
+    only: ['humanoid'],
+    skipImmuneTo: ['Charmed'],
+    disadvantage: [],
+    maxDamage: [],
+  };
   const save = assembleEffect(
     /** @type {any} */ ({ kind: 'save', damage: [], saveAbility: 'WIS', typeRules: rules }),
   );
   assert.deepEqual(/** @type {any} */ (save).typeRules, {
     skip: ['undead'],
+    only: ['humanoid'],
     skipImmuneTo: ['Charmed'],
   });
   const heal = assembleEffect(/** @type {any} */ ({ kind: 'heal', damage: [], typeRules: rules }));

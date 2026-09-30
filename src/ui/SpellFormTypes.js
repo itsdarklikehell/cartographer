@@ -10,7 +10,7 @@ import { capitalize } from '../util/text.js';
 
 /**
  * The spell form's creature-type rules: the types a save or heal spell has
- * no effect on, the condition whose immunity passes a target over, and the
+ * no effect on, the only types a save spell affects, the condition whose immunity passes a target over, and the
  * types that save at disadvantage or take the maximum damage. A heal shows
  * only the skipped types. `ui/SpellForm.js` places the rows, calls `sync`
  * when the effect kind changes, and reads the values back with `read`.
@@ -28,6 +28,7 @@ export function buildTypeControls(spell) {
   const boxes = (stored) =>
     CREATURE_TYPES.map((t) => checkbox(capitalize(t), !!stored?.includes(t)));
   const skip = boxes(rules.skip);
+  const only = boxes(rules.only);
   const disadvantage = boxes(rules.disadvantage);
   const maxDamage = boxes(rules.maxDamage);
   /** @param {string} caption @param {ReturnType<typeof boxes>} list @param {string} tip */
@@ -54,6 +55,9 @@ export function buildTypeControls(spell) {
         'Sleep passes over undead. A heal passes over undead and constructs',
       ),
     ),
+    only: fieldRow(
+      group('Only affects', only, 'Hold Person and Charm Person affect only humanoids'),
+    ),
     immune: fieldRow(immuneField),
     disadvantage: fieldRow(
       group(
@@ -71,6 +75,7 @@ export function buildTypeControls(spell) {
   function sync(kind) {
     const saves = kind === 'save';
     rows.skip.hidden = !saves && kind !== 'heal';
+    rows.only.hidden = !saves;
     rows.immune.hidden = !saves;
     rows.disadvantage.hidden = !saves;
     rows.maxDamage.hidden = !saves;
@@ -84,6 +89,7 @@ export function buildTypeControls(spell) {
     return {
       typeRules: {
         skip: ticked(skip),
+        only: ticked(only),
         skipImmuneTo: [...(immune.value ? [immune.value] : []), ...moreImmune],
         disadvantage: ticked(disadvantage),
         maxDamage: ticked(maxDamage),

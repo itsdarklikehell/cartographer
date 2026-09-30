@@ -362,6 +362,35 @@ export const LEVEL_1 = [
     },
   },
   {
+    id: 'charm-person',
+    name: 'Charm Person',
+    level: 1,
+    school: 'enchantment',
+    classes: ['bard', 'druid', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'hours', amount: 1 },
+    concentration: false,
+    ritual: false,
+    description:
+      'A humanoid must succeed on a WIS save or be charmed by the caster, and it regards the ' +
+      'caster as a friendly acquaintance. It saves with advantage if the caster or its ' +
+      'companions are fighting it, which the GM rules. The charm ends early when the caster ' +
+      'or its companions do anything harmful to the target, and the GM then removes the ' +
+      'chip. When the spell ends, the creature knows it was charmed. Each slot level above ' +
+      '1st adds one more target, and the targets stand within 30 feet of each other.',
+    scaling: { targetsPerLevel: 1 },
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Charmed',
+      typeRules: { only: ['humanoid'] },
+    },
+  },
+  {
     id: 'color-spray',
     name: 'Color Spray',
     level: 1,

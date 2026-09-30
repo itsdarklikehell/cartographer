@@ -1,6 +1,6 @@
 /**
- * The creature-type rules of a spell: which targets it passes over, which
- * save at disadvantage, and which take the maximum damage. The spell data
+ * The creature-type rules of a spell: which targets it passes over or alone
+ * affects, which save at disadvantage, and which take the maximum damage. The spell data
  * keeps them in `effect.typeRules`, so a GM can author them in the Library.
  * Every function is pure.
  */
@@ -13,7 +13,7 @@ import { CREATURE_TYPES, normalizeConditionImmunities } from './CreatureType.js'
 /** @typedef {import('./Casting.js').CastTarget} CastTarget */
 
 /** The type lists of a rule set, in the order the form shows them. */
-export const TYPE_RULE_KEYS = /** @type {const} */ (['skip', 'disadvantage', 'maxDamage']);
+export const TYPE_RULE_KEYS = /** @type {const} */ (['skip', 'only', 'disadvantage', 'maxDamage']);
 
 /**
  * A written type list, cleaned: known SRD types, lowercase, without repeats.
@@ -51,8 +51,10 @@ export function typeRuleFields(raw) {
 
 /**
  * Why a spell passes over a target, or null when it reaches it. A target of
- * a skipped type, or one immune to a condition the rules name, is passed
- * over. The reason reads in the log, for example "undead".
+ * a skipped type, of a type outside the `only` list, or immune to a
+ * condition the rules name, is passed over. An untyped target passes the
+ * `only` list, so the GM decides for a creature that names no type. The
+ * reason reads in the log, for example "undead" or "not humanoid".
  * @param {SpellTypeRules | undefined} rules
  * @param {CastTarget} target
  * @returns {string | null}
@@ -61,6 +63,7 @@ export function typeSkipReason(rules, target) {
   if (!rules) return null;
   const type = target.creatureType;
   if (type && rules.skip?.includes(type)) return type;
+  if (type && rules.only && !rules.only.includes(type)) return `not ${rules.only.join(' or ')}`;
   const immune = new Set((target.conditionImmunities ?? []).map((c) => c.toLowerCase()));
   const guard = rules.skipImmuneTo?.find((c) => immune.has(c.toLowerCase()));
   return guard ? `immune to ${guard}` : null;
@@ -103,6 +106,7 @@ export function typeRulesSummary(rules) {
   const skip = [...(rules.skip ?? []), ...(rules.skipImmuneTo ?? []).map((c) => `${c}-immune`)];
   return [
     skip.length > 0 ? `No effect on ${skip.join(', ')}.` : '',
+    rules.only ? `Only affects ${rules.only.join(', ')}.` : '',
     rules.disadvantage ? `Saves at disadvantage: ${rules.disadvantage.join(', ')}.` : '',
     rules.maxDamage ? `Maximum damage: ${rules.maxDamage.join(', ')}.` : '',
   ]

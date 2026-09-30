@@ -10,6 +10,10 @@ export interface SpellTypeRules {
   /** Types the spell has no effect on (Sleep's undead, a heal's undead and
    * constructs). A skipped target spends none of an HP pool. */
   skip?: CreatureType[];
+  /** The only types the spell affects (Hold Person's humanoids). A target
+   * of any other type is passed over. An untyped creature still counts, so the
+   * GM decides for a creature that names no type. */
+  only?: CreatureType[];
   /** Conditions whose immunity puts a target out of reach (Sleep passes over
    * a creature immune to Charmed). */
   skipImmuneTo?: string[];

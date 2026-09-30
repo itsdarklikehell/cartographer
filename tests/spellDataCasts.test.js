@@ -99,3 +99,36 @@ test('Hypnotic Pattern incapacitates until damage and skips the Charmed-immune',
   );
   assert.equal(maxTargets(spell, 0), Infinity);
 });
+
+test('Charm Person and Hold Person reach only humanoids, and an untyped target', () => {
+  const spell = byId('charm-person');
+  assert.equal(spell.concentration, false);
+  assert.deepEqual(spell.duration, { kind: 'hours', amount: 1 });
+  assert.equal(maxTargets(spell, 2), 3);
+  assert.deepEqual(byId('hold-person').effect.typeRules, { only: ['humanoid'] });
+  assert.deepEqual(byId('hold-monster').effect.typeRules, { skip: ['undead'] });
+  const result = /** @type {any} */ (
+    castSpell(caster('bard', ['charm-person']), spell, {
+      slotLevel: 3,
+      saveDC: 30,
+      rng: seq([]),
+      targets: [
+        { id: 'gob', name: 'Goblin', saveBonus: 0, creatureType: 'humanoid' },
+        { id: 'wolf', name: 'Wolf', saveBonus: 0, creatureType: 'beast' },
+        { id: 'x', name: 'Stranger', saveBonus: 0 },
+      ],
+    })
+  );
+  assert.deepEqual(
+    result.outcomes.map((/** @type {any} */ o) => [
+      o.target.id,
+      o.unaffectedBy ?? null,
+      o.condition,
+    ]),
+    [
+      ['gob', null, 'Charmed'],
+      ['x', null, 'Charmed'],
+      ['wolf', 'not humanoid', null],
+    ],
+  );
+});

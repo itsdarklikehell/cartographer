@@ -458,6 +458,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       hp.rows.pool,
       hp.rows.endsOnDamage,
       types.rows.skip,
+      types.rows.only,
       types.rows.immune,
       types.rows.disadvantage,
       types.rows.maxDamage,

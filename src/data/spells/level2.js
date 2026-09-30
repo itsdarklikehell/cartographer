@@ -51,6 +51,7 @@ export const LEVEL_2 = [
       halfOnSave: false,
       condition: 'Paralyzed',
       saveEnds: true,
+      typeRules: { only: ['humanoid'] },
     },
   },
   {

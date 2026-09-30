@@ -475,7 +475,9 @@ A save or heal spell can carry `effect.typeRules` (see `src/types/spell.ts`).
 `conditionImmunities` from the roster, and `entities/SpellTypeRules.js`
 applies the lists in `Casting.js`. A skipped target reports `unaffectedBy`
 and spends none of an HP pool, so Sleep passes over undead without losing
-dice. A `disadvantage` type folds a disadvantage into the save mode of that
+dice. An `only` list passes over a typed target outside it and lets an
+untyped target through, so Hold Person on a GM creature with no type still
+lands. A `disadvantage` type folds a disadvantage into the save mode of that
 target alone, and a `maxDamage` type reads the damage dice at their top face.
 
 A chip with the `disadvantageVsSource` mod slants the attacks of its holder

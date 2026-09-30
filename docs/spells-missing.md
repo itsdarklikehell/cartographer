@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 98. Three built-in spells come from
+lists 319 spells, and the app ships 99. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -25,7 +25,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Charm Person, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
@@ -153,12 +153,14 @@ roll as usual.
 ### Creature types
 
 A spell can name creature types in `effect.typeRules`. Sleep and Hold
-Monster have no effect on undead, and the healing spells have no effect on
+Monster have no effect on undead, Hold Person and Charm Person affect only
+humanoids, and the healing spells have no effect on
 undead or constructs. Blight has no effect on undead or constructs, and a
 plant saves at disadvantage and takes the maximum damage. Sunburst and
 Sunbeam give undead and oozes disadvantage on the save. Sleep and Hypnotic
 Pattern pass over a creature immune to Charmed. A party character
-counts as humanoid, and a creature with no type matches no rule.
+counts as humanoid. A creature with no type matches no rule, and it still
+counts for an `only` list, so the GM decides whether the spell reaches it.
 
 ### Hit-point rules
 
@@ -425,7 +427,7 @@ The app does not have these parts:
 
 ### Exploration and social spells
 
-Examples: Identify, Charm Person, Suggestion, Divination, and
+Examples: Identify, Suggestion, Divination, and
 teleportation.
 
 These spells have rules that exist only as text, so they work as `utility`
