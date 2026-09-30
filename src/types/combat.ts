@@ -30,9 +30,9 @@ export type ActionCost = 'action' | 'bonus' | 'reaction';
 /**
  * A once-per-turn allowance that costs no action. Sneak Attack damage rides an
  * attack that already paid for itself, and a dying character rolls one death
- * save on its turn.
+ * save on its turn. The two spell flags feed the bonus action spell rule.
  */
-export type TurnFlag = 'sneak' | 'deathSave';
+export type TurnFlag = 'sneak' | 'deathSave' | 'bonusSpell' | 'actionSpell';
 
 /**
  * What one combatant already spent this turn. The three costs are booleans,
@@ -58,6 +58,10 @@ export interface ActionBudget {
   sneak: boolean;
   /** Whether a dying character already rolled its death save this turn. */
   deathSave: boolean;
+  /** Whether a spell was cast with the bonus action this turn (see `SpellRule.js`). */
+  bonusSpell: boolean;
+  /** Whether a spell of 1st level or higher was cast with the action this turn. */
+  actionSpell: boolean;
   /**
    * Whether the extra action of a chip such as Haste is spent. The extra
    * action buys one weapon swing, and nothing banks behind it.

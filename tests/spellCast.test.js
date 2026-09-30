@@ -1817,7 +1817,10 @@ test('a bonus-action cast spends the bonus action', () => {
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
   });
-  assert.deepEqual(spends, [{ id: 'mage', cost: 'bonus' }]);
+  assert.deepEqual(spends, [
+    { id: 'mage', cost: 'bonus' },
+    { id: 'mage', cost: 'bonusSpell' },
+  ]);
 });
 
 test('a reaction cast spends the reaction on somebody else another turn', () => {
@@ -2206,4 +2209,41 @@ test('a heal with no dice writes no hit points', () => {
   resolveCast(app, plan, submit({ target: 'monk' }), { writeBack: () => {}, rng: seq([]) });
   assert.equal(getHP(app.state.characters[1]).current, 4);
   assert.ok(!app.log.some((l) => /heals Monk/.test(l)));
+});
+
+// -- bonus action spell rule ------------------------------------------------
+
+/** A leveled action spell and a bonus action spell for the rule tests. */
+const RULE_HEAL = { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] };
+const leveledAction = () =>
+  spell({ id: 'mend', name: 'Mend', level: 1, castingTime: { kind: 'action' }, effect: RULE_HEAL });
+
+test('after a bonus action spell, a leveled action spell needs the rule opt-out', () => {
+  const caster = mage();
+  const { app, spends } = inFight(caster, { bonus: true, bonusSpell: true });
+  const plan = planFor(app, caster, leveledAction());
+  assert.match(String(plan.ruleBlock), /only a cantrip/);
+  assert.ok(plan.fields.some((f) => f.name === 'ignore-spell-rule'));
+  /** @type {string[]} */
+  const toasts = [];
+  app.toasts = /** @type {any} */ ({ show: (/** @type {string} */ m) => toasts.push(m) });
+  resolveCast(app, plan, submit({ target: 'mage' }), { writeBack: () => {} });
+  assert.deepEqual(spends, [], 'a refused cast spends nothing');
+  assert.match(toasts[0], /^Mage cannot cast Mend: after a bonus action spell/);
+  resolveCast(app, plan, submit({ target: 'mage', 'ignore-spell-rule': '1' }), {
+    writeBack: () => {},
+  });
+  assert.deepEqual(spends, [
+    { id: 'mage', cost: 'action' },
+    { id: 'mage', cost: 'actionSpell' },
+  ]);
+});
+
+test('the rule skips a caster whose turn is not running', () => {
+  const caster = mage();
+  const { app } = inFight(caster, { bonus: true, bonusSpell: true });
+  app.state.combat = { ...app.state.combat, index: 1 };
+  const plan = planFor(app, caster, leveledAction());
+  assert.equal(plan.ruleBlock, null);
+  assert.equal(plan.spellFlag, null);
 });

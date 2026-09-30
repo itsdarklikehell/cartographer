@@ -1890,9 +1890,21 @@ but no actions.
 | Ignore components | A spell with a material component | Casts without a check of the inventory. The label adds "(not carried)" when the character lacks the component |
 | Ignore armor | A caster in untrained armor | Casts anyway |
 | Ignore action cost | A turn that already spent the cost | Casts anyway |
+| Ignore the bonus action spell rule | A cast on the caster's own turn that the rule blocks | Casts anyway. The label names the reason |
 
 The spell attack bonus is the proficiency bonus plus the spell ability
 modifier, minus any exhaustion penalty.
+
+The app follows the bonus action spell rule on the caster's own turn. After
+a spell cast with the bonus action, the caster can cast only a cantrip with
+a casting time of one action for the rest of the turn. A spell of 1st level
+or higher, a reaction spell, and a spell cast with the second action of
+Action Surge are all blocked. After a spell of 1st level or higher cast with
+the action, a bonus action spell is blocked. An action cantrip blocks
+nothing. The rule does not apply on another combatant's turn, so Shield
+stays open after a bonus action spell. A repeat of a spell that an earlier
+turn paid for is not a new cast, and the rule skips it. Giving back the
+bonus action on the action bar also clears the spell that it paid for.
 
 A hit of Ray of Sickness also rolls the CON save of the target. The target
 list shows that save bonus beside the AC. A hit of Vampiric Touch gives the

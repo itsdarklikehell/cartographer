@@ -45,6 +45,8 @@ test('freshBudget spends nothing', () => {
     attacked: false,
     sneak: false,
     deathSave: false,
+    bonusSpell: false,
+    actionSpell: false,
     extra: false,
     surged: false,
     spare: false,
@@ -76,6 +78,8 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       attacked: false,
       sneak: false,
       deathSave: true,
+      bonusSpell: false,
+      actionSpell: false,
       extra: false,
       surged: false,
       spare: false,
@@ -310,4 +314,14 @@ test('endSurprise drops the flag and gives the reaction back', () => {
   const ended = endSurprise({ ...plain, surprised: true, used: surprisedBudget(true) });
   assert.equal('surprised' in ended, false);
   assert.deepEqual(ended.used, { ...freshBudget(), action: true, bonus: true });
+});
+
+test('the spell flags are read, spent, and freed with the bonus action', () => {
+  const used = budgetOf({ bonusSpell: true, actionSpell: true });
+  assert.equal(used.bonusSpell, true);
+  assert.equal(used.actionSpell, true);
+  const cast = spend(spend(at(), 'bonus'), 'bonusSpell');
+  assert.equal(canSpend(cast, 'bonusSpell'), false);
+  const freed = unspend(cast, 'bonus');
+  assert.equal(budgetOf(freed.used).bonusSpell, false);
 });

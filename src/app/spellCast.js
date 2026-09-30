@@ -14,7 +14,8 @@ import { tomeRituals } from '../entities/PactTome.js';
 import { replaceById } from '../entities/Roster.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
-import { COST_LABELS, canSpend } from '../combat/ActionBudget.js';
+import { COST_LABELS, budgetOf, canSpend } from '../combat/ActionBudget.js';
+import { spellRuleBlock, spellRuleFlag } from '../combat/SpellRule.js';
 import { activeCreatureByName } from '../library/Library.js';
 import {
   findCombatant,
@@ -307,6 +308,15 @@ export function castPlan(app, entity, listed, offered, route = null) {
   // Two things block a cast: a turn that already spent this part of itself, and
   // a casting time no turn can hold. Both offer the same opt-out.
   const actionBlocked = Boolean(participant && (cost === null || !canSpend(participant, cost)));
+  // The bonus action spell rule applies on the caster's own turn alone, so a
+  // reaction spell on another turn (Shield) never meets it. A repeat of a spell
+  // that an earlier turn paid for is not a new cast, and the rule skips it.
+  const onTurn = participant && app.state.combat?.order[app.state.combat.index]?.id === entity.id;
+  const ruleCheck = onTurn && !repeat && participant;
+  const ruleBlock = ruleCheck
+    ? spellRuleBlock(budgetOf(participant.used), spell.level, cost)
+    : null;
+  const spellFlag = ruleCheck ? spellRuleFlag(spell.level, cost) : null;
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
     maxCap,
     material: material.required,
@@ -319,6 +329,7 @@ export function castPlan(app, entity, listed, offered, route = null) {
       : actionCost === null
         ? `Ignore casting time (${formatCastingTime(castingTime)})`
         : `Ignore action cost (${COST_LABELS[actionCost].toLowerCase()} already used)`,
+    ruleLabel: ruleBlock ? `Ignore the bonus action spell rule (${ruleBlock})` : '',
   });
   if (!fields) {
     const kind = pactOnly ? 'pact' : `level ${spell.level}+`;
@@ -340,6 +351,8 @@ export function castPlan(app, entity, listed, offered, route = null) {
     actionCost,
     actionBlocked,
     castingTime,
+    ruleBlock,
+    spellFlag,
     free,
     invocation,
     fields,
@@ -392,6 +405,7 @@ async function runCast(
       ...(plan.material.required && !plan.material.satisfied ? ['ignore-components'] : []),
       ...(plan.armor.length > 0 ? ['ignore-armor'] : []),
       ...(plan.actionBlocked ? ['ignore-action'] : []),
+      ...(plan.ruleBlock ? ['ignore-spell-rule'] : []),
     ],
   });
   if (!values) return;

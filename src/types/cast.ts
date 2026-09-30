@@ -38,6 +38,10 @@ export interface CastPlan {
   armor: string[];
   actionCost?: ActionCost | null;
   actionBlocked?: boolean;
+  /** Why the bonus action spell rule blocks this cast, or null (see `SpellRule.js`). */
+  ruleBlock?: string | null;
+  /** The turn flag this cast sets for the rule, or null. */
+  spellFlag?: import('./combat.js').TurnFlag | null;
   castingTime?: CastingTime;
   /** Present for a cast that spends no slot because an earlier turn paid for
    * it: a repeat of a spell the caster still keeps open. */

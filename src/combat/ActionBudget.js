@@ -38,6 +38,8 @@ export function freshBudget() {
     attacked: false,
     sneak: false,
     deathSave: false,
+    bonusSpell: false,
+    actionSpell: false,
     extra: false,
     surged: false,
     spare: false,
@@ -66,6 +68,8 @@ export function budgetOf(value) {
     attacked: used.attacked === true,
     sneak: used.sneak === true,
     deathSave: used.deathSave === true,
+    bonusSpell: used.bonusSpell === true,
+    actionSpell: used.actionSpell === true,
     extra: used.extra === true,
     surged: used.surged === true,
     spare: used.surged === true && used.spare === true,
@@ -118,6 +122,9 @@ export function unspend(participant, cost) {
   if (!used[cost]) return participant;
   const next = { ...used, [cost]: false };
   if (cost === 'action') Object.assign(next, { attacksLeft: 0, attacked: false });
+  // A bonus action given back takes its spell with it, so the rule no longer
+  // limits the rest of the turn.
+  if (cost === 'bonus') next.bonusSpell = false;
   return { ...participant, used: next };
 }
 

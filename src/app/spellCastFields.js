@@ -135,7 +135,7 @@ function targetsLabel(kind, cap, range) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, materialMissing?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number, free?: boolean }} [opts] `material`: true when the
+ * @param {{ material?: boolean, materialMissing?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, ruleLabel?: string, maxCap?: number, free?: boolean }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
  *   checkbox for a table that treats components as flavor. `materialMissing`: true when
  *   the caster does not carry the component, which the box label then says. `ritual`: true when this caster can
@@ -144,6 +144,8 @@ function targetsLabel(kind, cap, range) {
  *   the opt-out checkbox that lets the GM waive the armor rule.
  *   `actionLabel`: the wording of the action-cost opt-out, for a cast the
  *   caster's turn cannot pay for. An empty string leaves the box out.
+ *   `ruleLabel`: the wording of the bonus action spell rule opt-out. An empty
+ *   string leaves the box out.
  *   `maxCap`: the cap at the highest offered slot. It defaults to `cap`.
  *   `free`: true for a cast that spends no slot, such as a repeat. It has no
  *   slot picker and no ritual box, and it is never refused for want of a slot.
@@ -156,6 +158,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
     ritual = false,
     armor = false,
     actionLabel = '',
+    ruleLabel = '',
     maxCap = cap,
     free = false,
   } = opts;
@@ -303,6 +306,11 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       type: 'checkbox',
       full: true,
     });
+  }
+  // The bonus action spell rule blocks a cast on the caster's own turn. The
+  // label names the reason, and ticking the box casts anyway.
+  if (ruleLabel) {
+    fields.push({ name: 'ignore-spell-rule', label: ruleLabel, type: 'checkbox', full: true });
   }
   return fields;
 }

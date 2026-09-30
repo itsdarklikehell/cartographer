@@ -301,6 +301,13 @@ until the box is ticked, through the `submitRequires` option of
 resolver then refuses. The cast dialog gates its components and armor
 opt-outs in the same way.
 
+The bonus action spell rule lives in `combat/SpellRule.js`. The budget keeps
+two turn flags for it, `bonusSpell` and `actionSpell`, which `resolveCast`
+sets through `spendBudget` after it spends the cost. `castPlan` asks
+`spellRuleBlock` only when the caster holds the running turn and the cast is
+not a repeat, and puts the reason on the plan as `ruleBlock`. The dialog then
+adds an "Ignore the bonus action spell rule" box that `submitRequires` gates.
+
 The action bar draws the budget as pips. Each cost has one pip, struck through
 once spent, and the bar shows the swing count when more than one swing is
 left. The pips show the budget and never gate a button. `CombatantRow`

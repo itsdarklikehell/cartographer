@@ -151,6 +151,10 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     );
     return;
   }
+  if (plan.ruleBlock && values['ignore-spell-rule'] !== '1') {
+    app.toasts.show(`${entity.name} cannot cast ${spell.name}: ${plan.ruleBlock}.`);
+    return;
+  }
   // The plan judged the budget when the dialog opened, and the fight can move
   // while it stands there. The spend re-checks, so a cost that something else
   // took in the meantime refuses here the way the attack path refuses.
@@ -162,6 +166,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       return;
     }
   }
+  // The cast marks the turn for the bonus action spell rule, also when the GM
+  // ticked an opt-out, because the spell was still cast.
+  if (plan.spellFlag) app.actions.spendBudget?.(entity.id, plan.spellFlag);
   // The rest of the cast rolls against the final targets, after any Redirect
   // Attack below has swapped one of them for an ally.
   const rest = () => {
