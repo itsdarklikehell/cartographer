@@ -11,6 +11,7 @@ import {
   knownCreaturesAt,
   discoveredHostiles,
   meetCreatures,
+  standDown,
   isOnTile,
   formatLocation,
   moveCreature,
@@ -265,4 +266,16 @@ test('nameTally counts repeated names in first-seen order', () => {
   );
   assert.equal(nameTally(list), 'Goblin x3, Wolf');
   assert.equal(nameTally([]), '');
+});
+
+test('standDown turns the named creatures neutral and met, and keeps the rest', () => {
+  const roster = [
+    createCreature('g', 'Goblin', { disposition: 'hostile' }),
+    createCreature('w', 'Wolf', { disposition: 'hostile' }),
+  ];
+  const next = standDown(roster, new Set(['g']));
+  assert.equal(next[0].disposition, 'neutral');
+  assert.equal(next[0].met, true);
+  assert.equal(next[1], roster[1]);
+  assert.equal(standDown(roster, new Set(['x'])), roster);
 });

@@ -21,7 +21,7 @@ import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { focusMapCanvas } from './combatWiring.js';
-import { confirmFightEnd, offerFightXP } from './combatEnd.js';
+import { confirmFightEnd, offerFightXP, standDownFoes } from './combatEnd.js';
 import { wireEncounterPanels } from './encounterPanels.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -228,13 +228,14 @@ export function wireEncounters(app) {
         },
       },
       onStealth: (line) => app.actions.logEvent('roll', line),
-      // A parley settles the encounter with no fight. The foes stay hostile
-      // and in place, so the GM changes their disposition by hand if the
-      // truce lasts.
+      // A parley settles the encounter with no fight. The foes stay in place
+      // but turn neutral, so the Encounter alert does not open again on the
+      // party's next move next to them.
       onParley: () => {
         const foes = roster.filter((p) => describe(p)?.side === 'foe').map((p) => p.id);
         const names = combatLabels(app, foes);
         app.actions.logEvent('note', parleyLine(foes.map((id) => names.get(id) ?? id)));
+        standDownFoes(app, new Set(foes));
       },
     });
     if (!participants) return;

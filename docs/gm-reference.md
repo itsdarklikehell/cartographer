@@ -1109,7 +1109,7 @@ numbers it. The log and the stored name keep the plain name.
 | Stealth total | The Stealth total of a sneaker row. Roll Stealth fills it, and you can type your own value |
 | PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
-| Parley | Closes the dialog with no fight, and logs a line such as "The party settles the encounter with Goblin Scout 1 and Goblin Scout 2 without a fight." See [Parley](#parley) |
+| Parley | Closes the dialog with no fight, and turns the foes neutral, and logs a line such as "The party settles the encounter without a fight. Goblin Scout 1 and Goblin Scout 2 stand down." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 
 For the initiative rules, see [Initiative](#initiative).
@@ -1167,10 +1167,11 @@ sneaks (Stealth Ayla 16, Bren 11). Goblin 1 and Goblin 2 are surprised."
 
 **Parley** in the setup dialog records that the party settled the encounter
 without a fight. It closes the dialog, starts no fight, and writes a note
-to the travelogue that names the foes. The foes stay hostile and stay on
-their tiles, so the **Encounter!** dialog opens again when the party next
-moves next to them. If the truce lasts, change the disposition of each foe
-in the creature dialog.
+to the travelogue that names the foes. The foes stay on their tiles, but
+they stand down and become neutral, so the **Encounter!** dialog does not
+open again when the party next moves next to them. **Undo** makes them
+hostile again. If the truce breaks later, change the disposition of each
+foe back to hostile in the creature dialog.
 
 ### Attack dialog
 

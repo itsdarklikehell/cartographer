@@ -196,6 +196,20 @@ export function meetCreatures(creatures, position) {
 }
 
 /**
+ * Turn the given creatures neutral and mark them met, for foes that stand
+ * down after a fight or a parley. The Encounter alert fires only for hostile
+ * creatures, so a foe left hostile opens it again on the party's next move
+ * next to it. The array keeps its identity when no id matches.
+ * @param {Creature[]} creatures
+ * @param {Set<string>} ids
+ * @returns {Creature[]}
+ */
+export function standDown(creatures, ids) {
+  if (!creatures.some((c) => ids.has(c.id))) return creatures;
+  return creatures.map((c) => (ids.has(c.id) ? { ...c, disposition: 'neutral', met: true } : c));
+}
+
+/**
  * Move one creature to a location, or make it unplaced with null. An unknown
  * id leaves the list unchanged. This is the creature counterpart of
  * `party/CharacterTokens.moveCharacter`.

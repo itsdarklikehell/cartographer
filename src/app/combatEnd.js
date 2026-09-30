@@ -2,6 +2,7 @@ import { confirmModal, promptModal } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
 import { fightEnd, splitCaption, xpSplit } from '../combat/FightEnd.js';
 import { clampInt } from '../util/num.js';
+import { standDown } from '../entities/CreatureMap.js';
 import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -33,6 +34,21 @@ export async function confirmFightEnd(app) {
   return ok && app.state.combat ? end : null;
 }
 
+/**
+ * Turn foes neutral when they stop fighting, after a fight or a parley. The
+ * write goes through commitCreatures, so it marks the campaign dirty and
+ * undo steps back over it like any other creature edit. The GM can make a
+ * foe hostile again in the creature dialog.
+ * @param {AppContext} app
+ * @param {Set<string>} ids
+ */
+export function standDownFoes(app, ids) {
+  const next = standDown(app.state.creatures, ids);
+  if (next === app.state.creatures) return;
+  app.state.creatures = next;
+  commitCreatures(app);
+}
+
 /** The field name of the overcome box for one standing foe. */
 const overcomeField = (/** @type {string} */ id) => `overcome:${id}`;
 
@@ -45,10 +61,8 @@ const overcomeField = (/** @type {string} */ id) => `overcome:${id}`;
  * still change the amount or cancel. Each earner gets the amount through
  * addXP, so a new level becomes pending the usual way.
  *
- * A foe counted as overcome turns neutral. The Encounter alert fires only
- * for hostile creatures, so a captive does not start a new encounter each
- * time the party steps onto its tile. The GM can make it hostile again in
- * the creature dialog.
+ * A foe counted as overcome turns neutral (see standDownFoes), so a captive
+ * does not start a new encounter each time the party steps onto its tile.
  * @param {AppContext} app
  * @param {FightEnd} end
  */
@@ -90,12 +104,7 @@ export async function offerFightXP(app, end) {
   );
   if (!values) return;
   const overcome = new Set(foes.filter((foe) => values[overcomeField(foe.id)]).map((f) => f.id));
-  if (overcome.size > 0) {
-    app.state.creatures = app.state.creatures.map((c) =>
-      overcome.has(c.id) ? { ...c, disposition: 'neutral', met: true } : c,
-    );
-    commitCreatures(app);
-  }
+  standDownFoes(app, overcome);
   const amount = clampInt(values.amount, 0);
   if (amount <= 0) return;
   const earners = new Set(end.earners);

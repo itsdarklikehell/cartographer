@@ -69,7 +69,11 @@ test('parleyLine names the foes, or none', () => {
   assert.equal(parleyLine([]), 'The party settles the encounter without a fight.');
   assert.equal(
     parleyLine(['Goblin', 'Wolf']),
-    'The party settles the encounter with Goblin and Wolf without a fight.',
+    'The party settles the encounter without a fight. Goblin and Wolf stand down.',
+  );
+  assert.equal(
+    parleyLine(['Goblin']),
+    'The party settles the encounter without a fight. Goblin stands down.',
   );
 });
 

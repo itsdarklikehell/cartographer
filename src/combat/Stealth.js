@@ -113,13 +113,14 @@ export function stealthLine(side, sneakers, surprised) {
 
 /**
  * The travelogue line of a parley, which ends the encounter with no fight.
+ * The foes named stand down and turn neutral.
  * @param {string[]} foes the names of the foes the party talks down
  * @returns {string}
  */
 export function parleyLine(foes) {
   return foes.length === 0
     ? 'The party settles the encounter without a fight.'
-    : `The party settles the encounter with ${nameList(foes)} without a fight.`;
+    : `The party settles the encounter without a fight. ${nameList(foes)} ${foes.length === 1 ? 'stands' : 'stand'} down.`;
 }
 
 /**
