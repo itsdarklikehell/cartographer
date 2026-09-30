@@ -1723,7 +1723,7 @@ character detail card shows.
 | Place on map | GM, while the party is split | Moves that character. See [Party splitting](#party-splitting) |
 | Delete | GM | Deletes the character |
 | New character | GM | Opens character creation |
-| Award Party XP | GM | Grants the same XP to every character. The default is 100 per character |
+| Award Party XP | GM | Grants XP to every character: the same amount to each, or a total split evenly and rounded down. The default is 100 per character |
 | Spectator tab | GM | Opens a Player tab bound to no character |
 | Allow splitting the party | GM | See [Party splitting](#party-splitting) |
 | Playing as | Player tab | Binds the tab to a character |

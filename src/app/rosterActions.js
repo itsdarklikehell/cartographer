@@ -7,6 +7,7 @@ import { revealAround } from '../map/FogOfWar.js';
 import { clampInt } from '../util/num.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { rosterIds } from './combatants.js';
+import { partyAward } from '../combat/FightEnd.js';
 import { locationFields, readLocation } from './locationFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -178,14 +179,44 @@ export function rosterActions(app, { scope, selectCharacter }) {
     // after an encounter, instead of opening each sheet in turn. Levels, HP
     // growth, and spell-slot progression from addXP still apply per
     // character as usual.
+    // The GM can type the XP each character gets, or a total for the app to
+    // split. The amount's caption restates the result on every edit, so a
+    // split needs no sums by hand.
     onAwardXP: async () => {
+      const count = state.characters.length;
+      /** @param {string} mode @param {string} amount */
+      const award = (mode, amount) =>
+        partyAward(mode === 'total' ? 'total' : 'each', Number(amount) || 0, count);
       const values = await promptModal(
         'Award XP to the party',
-        [{ name: 'amount', label: 'XP per character', type: 'number', value: 100, min: 1 }],
-        { submitLabel: 'Award' },
+        [
+          {
+            name: 'mode',
+            label: 'Award',
+            type: 'select',
+            options: [
+              { value: 'each', label: 'The same XP to each character' },
+              { value: 'total', label: 'A total, split evenly' },
+            ],
+            value: 'each',
+          },
+          {
+            name: 'amount',
+            label: award('each', '100').caption,
+            type: 'number',
+            value: 100,
+            min: 1,
+          },
+        ],
+        {
+          submitLabel: 'Award',
+          onChange: (_name, form) =>
+            form.setLabel('amount', award(form.get('mode'), form.get('amount')).caption),
+        },
       );
-      const amount = clampInt(values?.amount, 0);
-      if (!values || amount <= 0) return;
+      if (!values) return;
+      const amount = award(values.mode, values.amount).each;
+      if (amount <= 0) return;
       state.characters = state.characters.map((c) => addXP(c, amount));
       scope.reselect(); // refresh the sheet, inventory, and roster
       app.actions.markDirty();

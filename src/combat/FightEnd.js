@@ -88,3 +88,22 @@ export function splitCaption(total, count) {
   const left = remainder > 0 ? `, ${remainder} XP left over` : '';
   return `${Math.max(0, Math.floor(total))} XP split ${ways}${left}`;
 }
+
+/**
+ * What an award of `amount` XP gives each of `count` characters. In `each`
+ * mode every character gets the amount. In `total` mode the amount is split,
+ * rounded down. The caption restates the result for the award dialog.
+ * @param {'each' | 'total'} mode
+ * @param {number} amount
+ * @param {number} count
+ * @returns {{ each: number, caption: string }}
+ */
+export function partyAward(mode, amount, count) {
+  const whole = Math.max(0, Math.floor(amount));
+  const who = `${count} ${count === 1 ? 'character' : 'characters'}`;
+  if (mode === 'each') {
+    return { each: whole, caption: `XP per character (${who}, ${whole * count} XP in all)` };
+  }
+  const { share } = xpSplit(whole, count);
+  return { each: share, caption: `Total XP (${splitCaption(whole, count)}, ${share} each)` };
+}

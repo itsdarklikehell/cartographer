@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fightEnd, splitCaption, xpSplit } from '../src/combat/FightEnd.js';
+import { fightEnd, partyAward, splitCaption, xpSplit } from '../src/combat/FightEnd.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage } from '../src/entities/Creature.js';
 
@@ -94,6 +94,18 @@ test('xpSplit rounds each share down and reports what is left over', () => {
   assert.deepEqual(xpSplit(100, 4), { share: 25, remainder: 0 });
   assert.deepEqual(xpSplit(30, 0), { share: 0, remainder: 30 });
   assert.deepEqual(xpSplit(-5, 2), { share: 0, remainder: 0 });
+});
+
+test('partyAward gives each character the amount, or a share of a total', () => {
+  assert.deepEqual(partyAward('each', 100, 4), {
+    each: 100,
+    caption: 'XP per character (4 characters, 400 XP in all)',
+  });
+  assert.deepEqual(partyAward('total', 250, 4), {
+    each: 62,
+    caption: 'Total XP (250 XP split 4 ways, 2 XP left over, 62 each)',
+  });
+  assert.equal(partyAward('each', -3, 1).caption, 'XP per character (1 character, 0 XP in all)');
 });
 
 test('splitCaption names the split and any left over', () => {
