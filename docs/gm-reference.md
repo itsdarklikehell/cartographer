@@ -1894,6 +1894,10 @@ but no actions.
 | Ignore action cost | A turn that already spent the cost | Casts anyway |
 | Ignore the bonus action spell rule | A cast on the caster's own turn that the rule blocks | Casts anyway. The label names the reason |
 
+If you press **Cast** with no target or recipient ticked, the dialog stays
+open and shows "Pick at least one target." No slot is spent. A utility spell
+or a summons needs no target.
+
 The spell attack bonus is the proficiency bonus plus the spell ability
 modifier, minus any exhaustion penalty.
 

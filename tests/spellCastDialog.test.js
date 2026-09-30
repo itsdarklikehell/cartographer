@@ -74,11 +74,18 @@ function fight(wren = caster()) {
 function answering(answers) {
   /** @type {{ title: string, fields: any[] }[]} */
   const asked = [];
-  const prompt = async (/** @type {string} */ title, /** @type {any[]} */ fields) => {
+  /** @type {{ title: string, fields: any[], options: any }[]} */
+  const seen = [];
+  const prompt = async (
+    /** @type {string} */ title,
+    /** @type {any[]} */ fields,
+    /** @type {any} */ options,
+  ) => {
     asked.push({ title, fields });
+    seen.push({ title, fields, options });
     return answers.shift() ?? null;
   };
-  return { asked, prompt: /** @type {any} */ (prompt) };
+  return { asked, seen, prompt: /** @type {any} */ (prompt) };
 }
 
 test('a closed cast dialog casts nothing, and a board pick opens pre-selected', async () => {
@@ -147,4 +154,19 @@ test('an answered cast from the sheet writes the caster back to the roster', asy
   );
   assert.equal(slots.current, 1, 'the spent slot is written back');
   assert.ok(app.calls.includes('refreshSelectedCharacter'));
+});
+
+test('the cast dialog refuses Cast with no target ticked, and passes one that is', async () => {
+  const app = fight();
+  const { seen, prompt } = answering([null]);
+  await castSpellAction(app, app.combat, app.combat.order[0], spellById('eldritch-blast'), {
+    prompt,
+  });
+  const { validate } = seen[0].options;
+  /** @type {Record<string, string>} */
+  const values = { allocation: 'ogre:0' };
+  const get = (/** @type {string} */ name) => values[name] ?? '';
+  assert.equal(validate(get), 'Pick at least one target.');
+  values.allocation = 'ogre:1';
+  assert.equal(validate(get), '');
 });

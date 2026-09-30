@@ -24,7 +24,14 @@ import {
   targetFeatRiders,
   targetArmorPenalty,
 } from './combatants.js';
-import { combatTargets, rosterTargets, targetFree, prefillTarget } from './spellTargets.js';
+import {
+  combatTargets,
+  missingTarget,
+  rosterTargets,
+  targetFree,
+  targetValues,
+  prefillTarget,
+} from './spellTargets.js';
 import { castFields, castChangeHandler, castCap, startingSlotLevel } from './spellCastFields.js';
 import { resolveCast } from './spellCastResolve.js';
 import { castRoutes } from '../entities/CastRoute.js';
@@ -407,6 +414,12 @@ async function runCast(
       ...(plan.actionBlocked ? ['ignore-action'] : []),
       ...(plan.ruleBlock ? ['ignore-spell-rule'] : []),
     ],
+    // Cast with no target ticked keeps the dialog open, so the GM picks one
+    // instead of starting the cast over.
+    validate: (get) =>
+      missingTarget(spell, plan.targets, targetValues(plan.fields, get))
+        ? 'Pick at least one target.'
+        : '',
   });
   if (!values) return;
   await resolveCast(app, plan, values, { writeBack });

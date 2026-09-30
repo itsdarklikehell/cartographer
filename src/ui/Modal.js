@@ -157,7 +157,9 @@ function asInput(element) {
  * `advancedLabel`, placed where the first advanced field appears. This lets a
  * plain Enter submit their defaults without the form showing them.
  * `submitRequires` names checkbox fields, and the submit button stays
- * disabled until every one of them is ticked. `message` puts a paragraph
+ * disabled until every one of them is ticked. `validate` runs when the GM
+ * presses the submit button. A non-empty message keeps the dialog open and
+ * shows the message above the buttons. `message` puts a paragraph
  * above the fields, and the dialog names it as its description. The dismiss
  * button reads "Cancel" unless `cancelLabel` names what declining does, and
  * Escape resolves the same way as that button.
@@ -171,6 +173,7 @@ function asInput(element) {
  *   advancedLabel?: string,
  *   onChange?: (name: string, form: ModalFormHandle) => void,
  *   submitRequires?: string[],
+ *   validate?: (get: (name: string) => string) => string,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -433,6 +436,21 @@ export function promptModal(title, fields, options = {}) {
       };
       for (const input of gates) input.addEventListener('change', syncGates);
       syncGates();
+      // A refused submit cancels the click, so the form does not close. Enter
+      // in a field submits through a click on this button too.
+      const invalid = el('p', 'modal__error');
+      invalid.setAttribute('role', 'alert');
+      invalid.hidden = true;
+      const validate = options.validate;
+      if (validate) {
+        body.push(invalid);
+        submit.addEventListener('click', (event) => {
+          const problem = validate((name) => getters[name]?.() ?? '');
+          invalid.textContent = problem;
+          invalid.hidden = !problem;
+          if (problem) event.preventDefault();
+        });
+      }
 
       return {
         body,

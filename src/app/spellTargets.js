@@ -197,6 +197,33 @@ export function chosenTargets(targets, values) {
 }
 
 /**
+ * The target fields of an open dialog, read through its `get` handle. Only
+ * the fields the dialog has are read, because `chosenTargets` picks its
+ * source by which of them is present.
+ * @param {{ name: string }[]} fields
+ * @param {(name: string) => string} get
+ * @returns {Record<string, string>}
+ */
+export function targetValues(fields, get) {
+  const names = ['allocation', 'targets', 'target'];
+  return Object.fromEntries(
+    fields.filter((f) => names.includes(f.name)).map((f) => [f.name, get(f.name)]),
+  );
+}
+
+/**
+ * Whether a cast that needs a target has none picked. A utility spell or a
+ * summons picks no creature, so it is never missing one.
+ * @param {Spell} spell
+ * @param {import('./combatants.js').CombatTarget[]} targets the offered targets
+ * @param {Record<string, string>} values the dialog record
+ * @returns {boolean}
+ */
+export function missingTarget(spell, targets, values) {
+  return !targetFree(spell.effect.kind) && chosenTargets(targets, values).length === 0;
+}
+
+/**
  * How a cast's targets read in a toast message. The function returns the
  * one name when a spell reached one creature, and a count when it reached
  * several.

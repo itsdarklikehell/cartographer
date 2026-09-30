@@ -308,6 +308,12 @@ sets through `spendBudget` after it spends the cost. `castPlan` asks
 not a repeat, and puts the reason on the plan as `ruleBlock`. The dialog then
 adds an "Ignore the bonus action spell rule" box that `submitRequires` gates.
 
+A cast with no target ticked is refused inside the dialog. The `validate`
+option of `promptModal` runs `missingTarget` from `app/spellTargets.js` when
+the GM presses Cast. When no target is picked, the dialog stays open and shows
+"Pick at least one target." above its buttons. `resolveCast` runs the same
+check, so a caller that skips the dialog still spends no slot on nobody.
+
 The action bar draws the budget as pips. Each cost has one pip, struck through
 once spent, and the bar shows the swing count when more than one swing is
 left. The pips show the budget and never gate a button. `CombatantRow`

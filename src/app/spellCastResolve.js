@@ -18,7 +18,7 @@ import { findCombatant, hpOf, targetConditions } from './combatants.js';
 import { castTypeFields } from '../entities/CreatureType.js';
 import { sourceSlant } from '../entities/SourceSlant.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
-import { targetFree, chosenTargets } from './spellTargets.js';
+import { chosenTargets, missingTarget } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
 import { redirectSpellTargets } from './redirectWard.js';
@@ -112,7 +112,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
   let chosen = chosenTargets(targets, values);
-  if (!targetFree(resolved.effect.kind) && chosen.length === 0) {
+  if (missingTarget(resolved, targets, values)) {
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
   }
