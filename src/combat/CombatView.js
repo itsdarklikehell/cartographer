@@ -199,10 +199,16 @@ function sideIsDown(view, side) {
 /**
  * Assemble the full view of a running combat for one viewer: the round, the
  * turn pointer, and one row per participant in order. Pure over its inputs:
- * the combat state, the injected id resolver, and who is looking.
+ * the combat state, the injected id resolver, and who is looking. `labels`
+ * maps an id to its display name, which numbers combatants that share a
+ * name (see `DisplayNames.js`). An id with no label shows the entity's name.
  * @param {CombatState} combat
  * @param {(id: string) => ResolvedCombatant | null} resolve
- * @param {{ gm: boolean, boundCharacterId?: string | null }} viewer
+ * @param {{
+ *   gm: boolean,
+ *   boundCharacterId?: string | null,
+ *   labels?: ReadonlyMap<string, string>,
+ * }} viewer
  * @returns {CombatView}
  */
 export function buildCombatView(combat, resolve, viewer) {
@@ -211,7 +217,7 @@ export function buildCombatView(combat, resolve, viewer) {
     const found = resolve(participant.id);
     return {
       id: participant.id,
-      name: found ? found.entity.name : null,
+      name: found ? (viewer.labels?.get(participant.id) ?? found.entity.name) : null,
       side: found ? sideOf(found) : /** @type {'party'} */ ('party'),
       initiative: participant.initiative,
       hp: found ? hpOf(found) : null,

@@ -226,20 +226,37 @@ export function select(options, value, opts = {}) {
  * depend on another field, for example the item form's preset list
  * following the item type, refills itself through this function, so
  * options build in one place.
+ *
+ * An option with a `group` goes into an `<optgroup>` of that label. A run of
+ * options with the same group shares one optgroup.
  * @param {HTMLSelectElement} picker
- * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
+ * @param {(string | { value: string, label: string, disabled?: boolean, group?: string })[]} options
  * @param {string} value
  */
 export function setOptions(picker, options, value) {
-  picker.replaceChildren(
-    ...options.map((opt) => {
-      const spec = typeof opt === 'string' ? { value: opt, label: opt } : opt;
-      const option = el('option', '', spec.label);
-      option.value = spec.value;
-      if ('disabled' in spec && spec.disabled) option.disabled = true;
-      return option;
-    }),
-  );
+  /** @type {HTMLElement[]} */
+  const children = [];
+  /** @type {HTMLOptGroupElement | null} */
+  let group = null;
+  for (const opt of options) {
+    const spec = typeof opt === 'string' ? { value: opt, label: opt } : opt;
+    const option = el('option', '', spec.label);
+    option.value = spec.value;
+    if ('disabled' in spec && spec.disabled) option.disabled = true;
+    const groupLabel = 'group' in spec ? spec.group : undefined;
+    if (!groupLabel) {
+      group = null;
+      children.push(option);
+      continue;
+    }
+    if (group?.label !== groupLabel) {
+      group = /** @type {HTMLOptGroupElement} */ (el('optgroup', ''));
+      group.label = groupLabel;
+      children.push(group);
+    }
+    group.appendChild(option);
+  }
+  picker.replaceChildren(...children);
   picker.value = value;
 }
 

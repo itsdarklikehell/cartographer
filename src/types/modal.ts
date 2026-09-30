@@ -17,6 +17,8 @@ export interface FieldOption {
   /** Select only: shown, but not selectable, for example a class the
    * character cannot take. */
   disabled?: boolean;
+  /** Select only: the label of the `<optgroup>` the option sits in. */
+  group?: string;
 }
 
 /** What every field carries: its key in the submitted record, and its caption. */

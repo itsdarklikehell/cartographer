@@ -6,7 +6,7 @@ import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
-import { findCombatant, spellsOf, weaponsOf } from './combatants.js';
+import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
 import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
@@ -75,6 +75,12 @@ export function wireCombatScreen(app) {
         // refresh corrects it. InitiativePanel's canAttack makes the same
         // allowance.
         boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
+        // Two foes that share a name read as "Gray Wolf 1" and "Gray Wolf 2"
+        // on the cards and the ribbon, the same labels the dialogs use.
+        labels: combatLabels(
+          app,
+          state.combat.order.map((p) => p.id),
+        ),
       });
     },
     isGM: () => isGM(state.role),

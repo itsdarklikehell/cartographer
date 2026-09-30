@@ -1057,6 +1057,11 @@ line up as foes, and friendly and neutral creatures line up with the party.
 Only a hostile creature starts an encounter. To fight a friendly or neutral
 creature, set its disposition to hostile first.
 
+Combatants that share a name get a number after it, such as "Goblin
+Scout 1" and "Goblin Scout 2". The numbers follow the order of the creature
+list, and the combat screen and the attack and spell dialogs use the same
+numbers. The log and the stored name keep the plain name.
+
 | Control | What it does |
 | --- | --- |
 | Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
@@ -1071,7 +1076,7 @@ A weapon button in the action bar opens the attack dialog.
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| Defender | The card picked on the board, or the first defender | The target, shown with its AC |
+| Defender | The card picked on the board, or the first defender | The target, shown with its AC. The foes of the attacker come first, and creatures on its own side follow under **Same side** |
 | Roll | Auto (from conditions) | Auto, Normal, Advantage, or Disadvantage. A value other than Auto overrides the condition chips |
 | Target cover | None | None, Half cover (+2 AC), or Three-quarters cover (+5 AC) |
 | Range | Normal | For a ranged or thrown weapon. Long range takes disadvantage |

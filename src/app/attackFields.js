@@ -112,9 +112,12 @@ export function attackDialog({
         name: 'target',
         label: 'Defender',
         type: 'select',
+        // The defenders come foes first. A creature on the attacker's own
+        // side sits in a group of its own after them.
         options: defenders.map((d) => ({
           value: d.id,
-          label: `${d.name} (AC ${d.ac})`,
+          label: `${d.label ?? d.name} (AC ${d.ac})`,
+          ...(d.ally ? { group: 'Same side' } : {}),
         })),
         // A board-picked defender opens pre-selected. If no defender holds
         // that id, for example after a deselect or a defeat, the dialog

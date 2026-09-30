@@ -5,6 +5,7 @@ import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
+import { numberedNames } from '../combat/DisplayNames.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
@@ -47,8 +48,16 @@ export function combatSetupModal(roster, callbacks = {}) {
    * @param {Participant} participant
    * @returns {Pick<ParticipantView, 'name' | 'side'>}
    */
-  const describe = (participant) =>
+  const described = (participant) =>
     callbacks.describe?.(participant) ?? { name: 'Unknown combatant', side: 'party' };
+  // Two rows that share a name get numbers, in roster order, which is the
+  // campaign's order of characters and then creatures. The fight numbers
+  // them the same way.
+  const labels = numberedNames(roster.map((p) => ({ id: p.id, name: described(p).name })));
+  const describe = (/** @type {Participant} */ participant) => {
+    const view = described(participant);
+    return { ...view, name: labels.get(participant.id) ?? view.name };
+  };
 
   return openDialog({
     title: 'Set up combat',

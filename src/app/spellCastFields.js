@@ -187,7 +187,11 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   }
   if (!targetFree(kind)) {
     const noun = helps(kind) ? 'Recipient' : 'Target';
-    const options = targets.map((t) => ({ value: t.id, label: targetLabel(spell, t) }));
+    const options = targets.map((t) => ({
+      value: t.id,
+      label: targetLabel(spell, t),
+      ...(t.ally ? { group: 'Same side' } : {}),
+    }));
     const projectiles = spell.effect.kind === 'attack' ? spell.effect.projectiles : undefined;
     if (projectiles && cap > 1) {
       fields.push({

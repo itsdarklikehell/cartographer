@@ -128,10 +128,12 @@ export function rosterTargets(app, spell, casterId) {
  */
 export function targetLabel(spell, target) {
   const kind = spell.effect.kind;
-  if (helps(kind)) return target.name;
+  // The numbered label tells apart two targets that share a name.
+  const name = target.label ?? target.name;
+  if (helps(kind)) return name;
   if (kind === 'save') {
-    if (target.saveBonus === undefined) return target.name;
-    return `${target.name} (${spell.effect.saveAbility} ${formatModifier(target.saveBonus)})`;
+    if (target.saveBonus === undefined) return name;
+    return `${name} (${spell.effect.saveAbility} ${formatModifier(target.saveBonus)})`;
   }
   // A hit that brings a save names the bonus beside the AC.
   // Every kind left here is an attack.
@@ -141,7 +143,7 @@ export function targetLabel(spell, target) {
     onHitSave && target.saveBonus !== undefined
       ? `, ${onHitSave} ${formatModifier(target.saveBonus)}`
       : '';
-  return `${target.name} (AC ${target.ac}${save})`;
+  return `${name} (AC ${target.ac}${save})`;
 }
 
 /**

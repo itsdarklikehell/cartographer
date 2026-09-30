@@ -236,8 +236,29 @@ test('combatantsAsTargets lists foes and drops downed ones', () => {
   const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
   assert.deepEqual(
     targets.map((t) => t.id),
-    ['goblin', 'sage', 'brute'],
-    'the defeated orc drops out, and the neutral sage stays attackable',
+    ['goblin', 'brute', 'sage'],
+    'the defeated orc drops out, and the neutral sage stays attackable after the foes',
+  );
+  assert.deepEqual(
+    targets.map((t) => t.ally ?? false),
+    [false, false, true],
+  );
+});
+
+test('combatantsAsTargets numbers targets that share a name', () => {
+  const { hero } = fixtures();
+  const wolf = (/** @type {string} */ id) =>
+    createCreature(id, 'Wolf', { disposition: 'hostile', maxHP: 8, location: HERE });
+  const app = stubApp({ characters: [hero], creatures: [wolf('w1'), wolf('w2')] });
+  const combat = { order: [{ id: 'w2' }, { id: 'hero' }, { id: 'w1' }] };
+  const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[1]);
+  assert.deepEqual(
+    targets.map((t) => [t.id, t.label, t.name]),
+    [
+      ['w2', 'Wolf 2', 'Wolf'],
+      ['w1', 'Wolf 1', 'Wolf'],
+    ],
+    'the numbers follow the creature list, not the initiative order',
   );
 });
 

@@ -82,9 +82,10 @@ test('fightEnd lists the foes still standing with their worth', () => {
       imp: { kind: 'creature', entity: foe('imp', 1) },
       rat: { kind: 'creature', entity: foe('rat') },
     }),
+    new Map([['imp', 'imp 2']]),
   );
   assert.deepEqual(end.standingFoes, [
-    { id: 'imp', name: 'imp', xp: 200 },
+    { id: 'imp', name: 'imp 2', xp: 200 },
     { id: 'rat', name: 'rat', xp: 0 },
   ]);
 });

@@ -14,6 +14,7 @@ import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
 import { arcanumSpellIds } from '../entities/MysticArcanum.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
+import { labelsFor } from '../combat/DisplayNames.js';
 import { spellbookIds } from './casterFields.js';
 import { pruneCreatureLinks } from './questCleanup.js';
 
@@ -47,10 +48,14 @@ import { pruneCreatureLinks } from './questCleanup.js';
  * spell's targets carry `saveBonus`, which the app derives for a character and
  * for a creature alike. See `targetSaveBonus`. `armorPenalty` marks a character
  * that rolls a STR or DEX save at disadvantage because it wears armor it is
- * not trained for. See `targetArmorPenalty`.
+ * not trained for. See `targetArmorPenalty`. `label` is the name a picker
+ * shows, numbered when two targets share a name, and `ally` marks a target
+ * on the actor's own side in a hostile list.
  * @typedef {{
  *   id: string,
  *   name: string,
+ *   label?: string,
+ *   ally?: boolean,
  *   ac: number,
  *   saveBonus?: number,
  *   armorPenalty?: boolean,
@@ -90,6 +95,19 @@ function cachedIndex(items) {
  */
 export function rosterIds(state) {
   return [...state.characters, ...state.creatures].map((e) => e.id);
+}
+
+/**
+ * The display names of the given ids, with a number after each name that
+ * repeats among them ("Gray Wolf 1", "Gray Wolf 2"). The numbers follow the
+ * campaign's own order, the characters and then the creatures, so a
+ * creature keeps its number from the setup dialog into the fight.
+ * @param {AppContext} app
+ * @param {Iterable<string>} ids
+ * @returns {Map<string, string>}
+ */
+export function combatLabels(app, ids) {
+  return labelsFor([...app.state.characters, ...app.state.creatures], ids);
 }
 
 /**
@@ -347,6 +365,10 @@ export function spellsOf(app, id) {
  * participant, not from the order, so a creature that turns hostile
  * mid-fight becomes targetable as one. An actor whose own entity is gone can
  * target nothing.
+ *
+ * A hostile list puts the actor's foes first and marks the creatures on its
+ * own side as `ally`, so a wolf's bite opens on the party and its packmate
+ * sits apart at the end. Each target carries its numbered `label`.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} actor
@@ -356,17 +378,34 @@ export function spellsOf(app, id) {
 export function combatantsAsTargets(app, combat, actor, { allies = false } = {}) {
   const actorSide = describeCombatant(app, actor.id)?.side;
   if (!actorSide) return [];
-  return combat.order.flatMap((p) => {
+  const labels = combatLabels(
+    app,
+    combat.order.map((p) => p.id),
+  );
+  /** @param {Combatant} found @param {boolean} ally */
+  const target = (found, ally) => ({
+    ...asTarget(found.entity, found.kind),
+    label: labels.get(found.entity.id) ?? found.entity.name,
+    ...(ally ? { ally: true } : {}),
+  });
+  /** @type {CombatTarget[]} */
+  const foes = [];
+  /** @type {CombatTarget[]} */
+  const friends = [];
+  for (const p of combat.order) {
     const found = findCombatant(app, p.id);
-    if (!found) return [];
+    if (!found) continue;
     const sameSide = sideOf(found) === actorSide;
     if (allies) {
-      return sameSide ? [asTarget(found.entity, found.kind)] : [];
+      if (sameSide) friends.push(target(found, false));
+      continue;
     }
     const attackable = !sameSide || (found.kind === 'creature' && p.id !== actor.id);
-    if (!attackable || isDowned(found)) return [];
-    return [asTarget(found.entity, found.kind)];
-  });
+    if (!attackable || isDowned(found)) continue;
+    if (sameSide) friends.push(target(found, true));
+    else foes.push(target(found, false));
+  }
+  return [...foes, ...friends];
 }
 
 /**

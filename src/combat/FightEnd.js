@@ -27,13 +27,15 @@ import { isDead } from '../entities/DeathSaves.js';
  * hostile creatures that still stand, and the experience points that the
  * defeated ones are worth. The points go to the characters in the order who
  * are still alive, a dying one included, split evenly and rounded down. A
- * foe with no challenge rating is worth nothing.
+ * foe with no challenge rating is worth nothing. `labels` gives the display
+ * names of the standing foes, as in `buildCombatView`.
  * @param {CombatState} combat
  * @param {(id: string) => ResolvedCombatant | null} resolve
+ * @param {ReadonlyMap<string, string>} [labels]
  * @returns {FightEnd}
  */
-export function fightEnd(combat, resolve) {
-  const view = buildCombatView(combat, resolve, { gm: true });
+export function fightEnd(combat, resolve, labels) {
+  const view = buildCombatView(combat, resolve, { gm: true, labels });
   const foes = view.rows.filter((row) => row.side === 'foe' && row.counted);
   let xp = 0;
   /** @type {StandingFoe[]} */
@@ -43,7 +45,7 @@ export function fightEnd(combat, resolve) {
     if (found?.kind !== 'creature') continue;
     const worth = crXP(found.entity.cr ?? -1);
     if (row.defeated) xp += worth;
-    else standingFoes.push({ id: row.id, name: found.entity.name, xp: worth });
+    else standingFoes.push({ id: row.id, name: row.name ?? found.entity.name, xp: worth });
   }
   const earners = view.rows.flatMap((row) => {
     const found = resolve(row.id);

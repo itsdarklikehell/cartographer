@@ -147,6 +147,15 @@ test('buildCombatView assembles a row per participant in order', () => {
     view.rows.every((r) => r.mayAct),
     'the GM may act for everyone',
   );
+  const labelled = buildCombatView(combat, resolve, {
+    gm: true,
+    labels: new Map([['goblin', 'Goblin 2']]),
+  });
+  assert.deepEqual(
+    labelled.rows.map((r) => r.name),
+    ['Goblin 2', 'Hero', 'Sage'],
+    'a label replaces the name, and an id with no label keeps it',
+  );
 });
 
 test('buildCombatView keeps a row for an id nothing resolves', () => {

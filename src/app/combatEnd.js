@@ -2,7 +2,7 @@ import { confirmModal, promptModal } from '../ui/Modal.js';
 import { addXP } from '../entities/Character.js';
 import { fightEnd, splitCaption, xpSplit } from '../combat/FightEnd.js';
 import { clampInt } from '../util/num.js';
-import { commitCreatures, findCombatant } from './combatants.js';
+import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../combat/FightEnd.js').FightEnd} FightEnd */
@@ -18,7 +18,11 @@ import { commitCreatures, findCombatant } from './combatants.js';
 export async function confirmFightEnd(app) {
   const combat = app.state.combat;
   if (!combat) return null;
-  const end = fightEnd(combat, (id) => findCombatant(app, id));
+  const labels = combatLabels(
+    app,
+    combat.order.map((p) => p.id),
+  );
+  const end = fightEnd(combat, (id) => findCombatant(app, id), labels);
   if (end.standing === 0 || end.outcome === 'defeat') return end;
   const n = end.standing;
   const ok = await confirmModal(
