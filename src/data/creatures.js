@@ -59,10 +59,12 @@ export const DEFAULT_CREATURES = deepFreeze([
     cr: 0.25,
     proficiencies: { saves: [], skills: ['perception', 'stealth'] },
     // A natural weapon: no category, because it is neither simple nor
-    // martial.
+    // martial. Finesse makes the bite roll with DEX, which gives the SRD
+    // +4 to hit and 2d4+2 damage.
     weapon: {
       name: 'Bite',
       kind: 'melee',
+      properties: ['finesse'],
       damage: [{ count: 2, sides: 4, damageType: 'piercing' }],
     },
     armor: null,

@@ -123,20 +123,17 @@ function aldric() {
       damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     },
     {
-      id: 'ember-blade',
-      name: 'Ember Blade',
+      id: 'vane-greatsword',
+      name: 'Vane Greatsword',
       quantity: 1,
       notes: '',
       type: 'weapon',
       kind: 'melee',
       category: 'martial',
       properties: ['heavy', 'two-handed'],
-      description: 'A greatsword with a smoldering edge, a gift from Lord Aldemar.',
-      damage: [
-        { count: 2, sides: 6, damageType: 'slashing' },
-        { count: 1, sides: 4, damageType: 'fire' },
-      ],
-      statusEffects: ['burning'],
+      description:
+        'A plain greatsword with the thorn of House Vane on the pommel, a gift from Lord Aldemar.',
+      damage: [{ count: 2, sides: 6, damageType: 'slashing' }],
     },
     { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield' },
     {
@@ -148,7 +145,6 @@ function aldric() {
       armorWeight: 'heavy',
       baseAC: 16,
     },
-    { id: 'steel-helm', name: 'Steel Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 },
     {
       id: 'vane-signet',
       name: 'Vane Signet',
@@ -162,7 +158,6 @@ function aldric() {
   ];
   c.equipment = {
     ...bare(),
-    helmet: 'steel-helm',
     chest: 'chain-mail',
     mainHand: 'longsword',
     offHand: 'oak-shield',
@@ -284,9 +279,12 @@ function wren() {
       expertise: ['perception'],
     }),
   );
+  // An Arcane Trickster always knows Mage Hand. At rogue 4 she knows four
+  // 1st-level spells: three from enchantment or illusion and one from any
+  // school, here Shield.
   c.spellbook = {
-    cantrips: ['light', 'chill-touch', 'ray-of-frost'],
-    known: ['magic-missile', 'mage-armor', 'thunderwave', 'burning-hands'],
+    cantrips: ['mage-hand', 'minor-illusion', 'message'],
+    known: ['charm-person', 'disguise-self', 'silent-image', 'shield'],
     prepared: [],
   };
   c.inventory = [
@@ -378,21 +376,40 @@ function brannoc() {
     { classId: 'fighter', subclass: 'Eldritch Knight' },
     { classId: 'wizard' },
   ]);
+  // As an Eldritch Knight 3 he knows two cantrips and three 1st-level
+  // spells: two from abjuration or evocation and one from any school. As a
+  // wizard 1 he knows three cantrips, keeps six 1st-level spells in his
+  // spellbook, and prepares two of them (INT modifier plus wizard level).
   c.spellbook = {
-    cantrips: ['shocking-grasp', 'light', 'fire-bolt', 'acid-splash', 'ray-of-frost'],
-    known: ['thunderwave', 'burning-hands', 'mage-armor', 'magic-missile'],
-    prepared: ['magic-missile'],
+    cantrips: ['shocking-grasp', 'light', 'fire-bolt', 'mending', 'prestidigitation'],
+    known: [
+      'shield',
+      'thunderwave',
+      'detect-magic',
+      'magic-missile',
+      'protection-from-evil-and-good',
+      'burning-hands',
+      'false-life',
+      'sleep',
+      'color-spray',
+    ],
+    prepared: ['magic-missile', 'protection-from-evil-and-good'],
     // A multiclass caster names the class that each spell belongs to.
     sources: {
       'shocking-grasp': 'fighter',
       light: 'fighter',
+      shield: 'fighter',
       thunderwave: 'fighter',
-      'burning-hands': 'fighter',
-      'mage-armor': 'fighter',
+      'detect-magic': 'fighter',
       'fire-bolt': 'wizard',
-      'acid-splash': 'wizard',
-      'ray-of-frost': 'wizard',
+      mending: 'wizard',
+      prestidigitation: 'wizard',
       'magic-missile': 'wizard',
+      'protection-from-evil-and-good': 'wizard',
+      'burning-hands': 'wizard',
+      'false-life': 'wizard',
+      sleep: 'wizard',
+      'color-spray': 'wizard',
     },
   };
   c.inventory = [

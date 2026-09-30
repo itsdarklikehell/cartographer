@@ -20,10 +20,17 @@ import { defaultEnemyStats } from '../entities/Modifiers.js';
  * Its stat block AC is its natural armor.
  * @param {string} name @param {number} count @param {number} sides
  * @param {string} damageType
+ * @param {EnemyWeapon['properties']} [properties] a finesse bite rolls with DEX
  * @returns {{ weapon: EnemyWeapon, armor: null }}
  */
-const natural = (name, count, sides, damageType) => ({
-  weapon: { name, kind: 'melee', category: null, damage: [{ count, sides, damageType }] },
+const natural = (name, count, sides, damageType, properties) => ({
+  weapon: {
+    name,
+    kind: 'melee',
+    category: null,
+    ...(properties ? { properties } : {}),
+    damage: [{ count, sides, damageType }],
+  },
   armor: null,
 });
 
@@ -42,13 +49,34 @@ const DAGGER = {
   damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
 };
 
+const SCIMITAR = {
+  name: 'Scimitar',
+  kind: /** @type {'melee'} */ ('melee'),
+  category: /** @type {'martial'} */ ('martial'),
+  properties: /** @type {EnemyWeapon['properties']} */ (['finesse', 'light']),
+  damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+};
+
+// The Brute trait of a bugbear adds one die to each melee hit, so the
+// morningstar rolls 2d8 where a person rolls 1d8.
+const BRUTE_MORNINGSTAR = {
+  name: 'Morningstar',
+  kind: /** @type {'melee'} */ ('melee'),
+  category: /** @type {'martial'} */ ('martial'),
+  damage: [{ count: 2, sides: 8, damageType: 'piercing' }],
+};
+
 // Stat block extras. An armored enemy sets DEX and an AC of 10 + DEX, so its
-// worn armor gives the SRD AC: Leather Armor at DEX 14 is AC 13 and at DEX 12
-// is AC 12. An unarmored enemy states its natural AC.
-const GOBLIN = { DEX: 14, AC: 12 };
+// worn armor gives the SRD AC: Leather Armor at DEX 12 is AC 12. A shield
+// adds 2 on top of 10 + DEX. An unarmored enemy states its natural AC. The
+// goblins, the goblin boss, the bugbear, and the wolf take all six scores
+// from their SRD stat blocks.
+const GOBLIN = { STR: 8, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 8, AC: 14 };
+const GOBLIN_BOSS = { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 10, AC: 14 };
+const BUGBEAR = { STR: 15, DEX: 14, CON: 13, INT: 8, WIS: 11, CHA: 9, AC: 14 };
 const BANDIT = { DEX: 12, AC: 11 };
 const SKELETON = { DEX: 14, AC: 12 };
-const WOLF = { AC: 13 };
+const WOLF = { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 };
 const ZOMBIE = { AC: 8 };
 const HARPY = { AC: 11 };
 const SCORPION = { AC: 15 };
@@ -56,11 +84,20 @@ const DROWNED = { AC: 11 };
 
 // The gear, training, and defenses of each kind of creature, shared by the
 // placed creatures and the bestiary.
-const SNEAK = trained([], ['stealth']);
+// Leather Armor and a shield give a goblin AC 15.
+const SNEAK = {
+  weapon: SCIMITAR,
+  armor: enemyArmor('Leather Armor'),
+  ...trained([], ['stealth']),
+};
+// The app does not roll Pack Tactics or the knock-down of the bite, so the
+// notes remind the GM of both.
 const PACK = {
   creatureType: /** @type {const} */ ('beast'),
-  ...natural('Bite', 2, 4, 'piercing'),
+  ...natural('Bite', 2, 4, 'piercing', ['finesse']),
   ...trained([], ['perception', 'stealth']),
+  notes:
+    'Pack Tactics: advantage on an attack roll when an ally stands within 5 feet of the target. A creature hit by the bite passes a DC 11 Strength save or falls prone.',
 };
 const UNDEAD = {
   creatureType: /** @type {const} */ ('undead'),
@@ -212,21 +249,27 @@ function enemies(at) {
     // The Northmarch: the raiders who toppled the wardstone.
     mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, at('raider1'), GOBLIN, SNEAK),
     mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, at('raider2'), GOBLIN, SNEAK),
-    // Chain Mail, the legend default below level 5, gives AC 16.
-    legend(
-      'snagtooth',
-      'Chieftain Snagtooth',
-      36,
-      3,
-      1,
-      at('snagtooth'),
-      {},
-      {
-        ...trained([], ['intimidation', 'stealth']),
-        notes:
-          'Paid in pale silver ingots stamped with the thorn of House Vane. He never met his patron. A hooded rider brings the orders and the silver to the camp at each new moon. He surrenders at half hit points and trades the orders for his life.',
-      },
-    ),
+    // A goblin boss: a Chain Shirt and a shield give AC 17. The app rolls one
+    // attack for each Attack action, so the notes state his Multiattack.
+    legend('snagtooth', 'Chieftain Snagtooth', 21, 3, 1, at('snagtooth'), GOBLIN_BOSS, {
+      weapon: SCIMITAR,
+      armor: enemyArmor('Chain Shirt'),
+      ...trained([], ['intimidation', 'stealth']),
+      notes:
+        'Multiattack: two scimitar attacks, the second with disadvantage. Redirect Attack: when an attack hits him, he can use his reaction to swap places with a goblin within 5 feet, which takes the hit instead. Paid in pale silver ingots stamped with the thorn of House Vane. He never met his patron. A hooded rider brings the orders and the silver to the camp at each new moon. He surrenders at half hit points and trades the orders for his life.',
+    }),
+    // His camp guard: a bugbear and two goblins. With Snagtooth, the four
+    // rate Medium for the level-4 party. Hide and a shield give the
+    // bugbear AC 16.
+    mob('camp-bugbear', 'Bugbear', 27, 3, 1, at('snagtooth'), BUGBEAR, {
+      weapon: BRUTE_MORNINGSTAR,
+      armor: enemyArmor('Hide'),
+      ...trained([], ['stealth', 'survival']),
+      notes:
+        'Surprise Attack: when it hits a creature that is surprised, in the first round of a fight, the hit deals an extra 2d6 damage. Snagtooth pays it in silver, and it leaves the camp once he surrenders.',
+    }),
+    mob('camp-goblin1', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
+    mob('camp-goblin2', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
     legend(
       'skalvyr',
       'Skalvyr the Wyvern',

@@ -14,6 +14,10 @@ import { coerceCR, crXP } from '../src/data/challenge.js';
 import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
 import { effectiveStatBlock } from '../src/entities/Creature.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { DEFAULT_CREATURES } from '../src/data/creatures.js';
+import { attackAbility } from '../src/entities/Weapons.js';
+import { abilityModifier } from '../src/entities/Modifiers.js';
+import { creatureProficiencyBonus } from '../src/entities/CreatureChecks.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 const { grid } = campaign;
@@ -210,12 +214,13 @@ test('every example enemy and template is rated, so the difficulty hint has numb
 
 test('example enemies reach their stat block AC, and beasts fight unarmored with natural attacks', () => {
   const expected = {
-    'goblin-scout': 13,
+    'goblin-scout': 15,
+    'camp-bugbear': 16,
     'bandit-1': 12,
     'barrow-skeleton-1': 13,
     'gray-wolf-1': 13,
     'giant-scorpion': 15,
-    snagtooth: 16,
+    snagtooth: 17,
     'grave-wight': 14,
     ostrand: 18,
   };
@@ -300,4 +305,53 @@ test('every example caster knows only spells of a level it has slots for', () =>
       assert.ok((levels.get(id) ?? 0) <= top, `${c.name}: ${id} is above slot level ${top}`);
     }
   }
+});
+
+test('the wolves bite with DEX at the SRD +4, and the camp around Snagtooth rates Medium', () => {
+  const wolves = [creature('gray-wolf-1'), campaign.bestiary.find((t) => t.id === 'gray-wolf')];
+  for (const wolf of wolves) {
+    assert.ok(wolf?.weapon);
+    assert.equal(attackAbility(wolf.weapon, wolf.stats), 'DEX', wolf.name);
+    assert.equal(abilityModifier(wolf.stats.DEX) + creatureProficiencyBonus(wolf), 4, wolf.name);
+  }
+  const library = DEFAULT_CREATURES.find((t) => t.id === 'wolf');
+  assert.ok(library?.weapon);
+  assert.equal(attackAbility(library.weapon, library.stats), 'DEX');
+
+  const boss = creature('snagtooth');
+  const camp = ['camp-bugbear', 'camp-goblin1', 'camp-goblin2'].map(creature);
+  for (const guard of camp) assert.deepEqual(guard.location, boss.location, guard.id);
+  assert.match(difficultyLine(campaign.characters, [boss, ...camp]), /^Medium: 1000 XP/);
+  const raiders = [creature('goblin-raider-1'), creature('goblin-raider-2')];
+  assert.match(
+    difficultyLine(campaign.characters, [boss, ...camp, ...raiders]),
+    /^Medium: /,
+    'the camp stays Medium with the two outlying raiders',
+  );
+});
+
+test('the example spellcasters follow the school rules of their subclasses', () => {
+  const school = new Map(DEFAULT_SPELLS.map((s) => [s.id, s.school]));
+  /** @param {string[]} ids @param {string[]} schools */
+  const inSchools = (ids, schools) => ids.filter((id) => schools.includes(school.get(id) ?? ''));
+  const wren = campaign.characters.find((c) => c.id === 'wren')?.spellbook;
+  assert.ok(wren?.cantrips.includes('mage-hand'), 'an Arcane Trickster knows Mage Hand');
+  assert.equal(wren.cantrips.length, 3);
+  assert.equal(wren.known.length, 4);
+  assert.ok(inSchools(wren.known, ['enchantment', 'illusion']).length >= 3);
+
+  const book = campaign.characters.find((c) => c.id === 'brannoc')?.spellbook;
+  const sources = book?.sources;
+  assert.ok(book && sources);
+  /** @param {string} classId @param {string[]} ids */
+  const from = (classId, ids) => ids.filter((id) => sources[id] === classId);
+  const knight = from('fighter', book.known);
+  assert.equal(knight.length, 3, 'an Eldritch Knight 3 knows three spells');
+  assert.ok(inSchools(knight, ['abjuration', 'evocation']).length >= 2);
+  assert.equal(from('fighter', book.cantrips).length, 2);
+  assert.equal(from('wizard', book.cantrips).length, 3);
+  assert.equal(from('wizard', book.known).length, 6, 'a wizard 1 keeps six spells in the book');
+  assert.deepEqual(from('wizard', book.prepared), book.prepared);
+  assert.equal(book.prepared.length, 2);
+  for (const id of [...book.cantrips, ...book.known]) assert.ok(sources[id], id);
 });
