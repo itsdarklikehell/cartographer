@@ -103,6 +103,11 @@ test('each character starts with one personal handout that only its own tab sees
 test('the clues of the example lie on the tiles where the party finds them', () => {
   /** @param {string} id */
   const handout = (id) => campaign.handouts.find((h) => h.id === id);
+  /** @param {string} id */
+  const where = (id) => {
+    const found = handout(id);
+    return { nodeId: found?.nodeId, tileId: found?.tileId };
+  };
   const inscription = handout('barrow-inscription');
   assert.equal(inscription?.nodeId, creature('barrow-skeleton-1').location?.nodeId);
   const barrow = campaign.grid.getNode('barrow');
@@ -111,6 +116,8 @@ test('the clues of the example lie on the tiles where the party finds them', () 
 
   assert.equal(handout('snagtooth-orders')?.tileId, creature('snagtooth').location?.tileId);
   assert.equal(handout('irennes-letter')?.nodeId, creature('pale-sworn-1').location?.nodeId);
+  assert.deepEqual(where('letter-for-dorn'), creature('innkeeper-bram').location);
+  assert.deepEqual(where('empty-seal-niche'), creature('crypt-shade').location);
   assert.equal(handout('crypt-ledger')?.tileId, null);
   assert.equal(handout('legend-of-ostrand')?.nodeId, null);
 });

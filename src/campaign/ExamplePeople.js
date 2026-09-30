@@ -21,7 +21,7 @@ export function people(at) {
       disposition: 'neutral',
       met: true,
       notes:
-        'Blunt and impatient. He came west from the Eastmarch with six crates sealed in gray wax and a fee paid twice over not to open them. They go to "the Castellan, Thornhold". He does not know what is inside, and he does not want to know. He points anyone capable at Bram in Briarwick.',
+        'Blunt and impatient. He came west from the Eastmarch with six crates sealed in gray wax and a fee paid twice over not to open them. They go to "the Castellan, Thornhold". He does not know what is inside, and he does not want to know. He points anyone capable at Bram in Briarwick. He pays each guard 25 gp when the caravan reaches Thornhold, and 25 gp more if crate four arrives with its wax unbroken.',
       stats: { STR: 12, CON: 14, CHA: 12 },
       location: at('dorn'),
     }),
@@ -39,7 +39,7 @@ export function people(at) {
       role: 'Reeve of Briarwick',
       disposition: 'neutral',
       notes:
-        'Keeps the shire records. She knows the pale crown as the seal of King Ostrand, and she knows that the seal lies in the Thornhold crypt. Wax this fresh means that someone took it out. The hand of the orders is familiar to her, but she cannot place it (DC 15 Insight to see that she fears to name a Vane).',
+        'Keeps the shire records. She knows the pale crown as the seal of King Ostrand, and she knows that the seal lies in the Thornhold crypt. Wax this fresh means that someone took it out. The hand of the orders is familiar to her, but she cannot place it (DC 15 Insight to see that she fears to name a Vane). Before the party brings her the orders, she tells the legend of Ostrand, sends them to the open graves at the temple, and asks them to find out who pays the raiders.',
       stats: { INT: 14, WIS: 15, CHA: 12 },
       location: at('maera'),
     }),
@@ -57,7 +57,7 @@ export function people(at) {
       role: 'Priestess of the Dawn, Briarwick temple',
       disposition: 'friendly',
       notes:
-        'She wrote to the temple for Mirelle. The graves in her yard were opened from the inside. She blesses weapons against the risen dead: for one day, a blessed weapon deals radiant damage.',
+        'She wrote to the temple for Mirelle. The graves in her yard were opened from the inside, in the same month that the wardstone fell and the pale seal left the Thornhold crypt. The Reeve can confirm the dates from the shire records. She blesses weapons against the risen dead: for one day, a blessed weapon deals radiant damage.',
       stats: { INT: 12, WIS: 16, CHA: 14 },
       location: at('alwyn'),
     }),
@@ -114,7 +114,7 @@ export function people(at) {
       disposition: 'neutral',
       met: true,
       notes:
-        'The hidden hand. For a year the crown of Ostrand has spoken to her in dreams, and she took the pale seal from the crypt to write his orders. She paid Snagtooth to topple a wardstone and burn the farms, bought Hollowvein silver through Corvin, and had a counter-key cut in the east. The key waits in the sealed crates of Dorn. She is courteous and helpful, and she asks the party to carry her letters. Set her hostile when she is unmasked. She flees to the barrow before she fights.',
+        'The hidden hand. For a year the crown of Ostrand has spoken to her in dreams, and she took the pale seal from the crypt to write his orders. She paid Snagtooth to topple a wardstone and burn the farms, bought Hollowvein silver through Corvin, and had a counter-key cut in the east. The key waits in the sealed crates of Dorn. She is courteous and helpful, and she asks the party to carry her letters. If crate four arrives empty, she pays Dorn in full, and that night a Pale-sworn searches the packs of the party. If she learns that the party has the counter-key, she invites them to dine and offers 200 gp for "a Vane heirloom". A refusal gets Hold Person at the table, and her guards try to take the key. Set her and her two guards hostile when she is unmasked. She runs before she fights: she turns invisible, takes the stairs down to the dungeon, and leaves for the barrow. Move her there if she gets away.',
       level: 5,
       tier: 'legend',
       cr: 2,

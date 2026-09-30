@@ -275,7 +275,7 @@ function enemies(at) {
       ...natural('Claws', 2, 8, 'slashing'),
       ...trained([], ['arcana', 'deception', 'perception', 'stealth']),
       notes:
-        'Green hag. Illusory Appearance: she wears the face of a lost village girl until she strikes. Mimicry: she calls for help in the voice of anyone the party has lost. Invisible Passage: she turns invisible at will until she attacks.',
+        'Green hag. Illusory Appearance: she wears the face of a lost village girl until she strikes. Mimicry: she calls for help in the voice of anyone the party has lost. Invisible Passage: she turns invisible at will until she attacks. She wants pale silver for the charms on her eaves, and she trades what she knows for it: a hooded rider from Thornhold buys her sleep charms. She fights only in the bog, stays invisible, uses Mimicry to split the party, and flees at half hit points.',
     }),
     // The Northmarch: the raiders who toppled the wardstone.
     mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, at('raider1'), GOBLIN, SNEAK),
@@ -311,7 +311,7 @@ function enemies(at) {
       ...natural('Stinger', 2, 6, 'piercing'),
       ...trained([], ['perception']),
       notes:
-        'Wyvern. Multiattack: one bite (2d6 + 4 piercing) and one sting. A creature hit by the sting makes a DC 15 CON save and takes 7d6 poison damage on a fail, or half as much on a success. It flies at 80 feet.',
+        'Wyvern. Multiattack: one bite (2d6 + 4 piercing) and one sting. A creature hit by the sting makes a DC 15 CON save and takes 7d6 poison damage on a fail, or half as much on a success. It flies at 80 feet. It wants the hermitage for a nest. It dives from the peak, stings the nearest caster, and climbs out of reach. It flees at a third of its hit points and does not chase below the treeline.',
     }),
     // Thornhold: the shade in the hall, and the Pale-sworn in the dungeons.
     legend('crypt-shade', 'The Crypt Shade', 67, 5, 5, at('shade'), WRAITH, {
@@ -355,6 +355,8 @@ function enemies(at) {
     mob('pale-sworn-2', 'Pale-sworn Acolyte', 16, 2, 0.25, at('cultist2'), ACOLYTE, {
       ...CULTIST_KIT,
       role: 'Pale-sworn',
+      notes:
+        'A novice of the crown. After a Parley it talks to save its life. It knows that the Castellan hears the crown in her dreams and wrote the orders under the pale seal, that the seal came out of the crypt upstairs, and that a key from the east was to come to her in the wagons of Dorn. It does not know where the hermit keeps the warding key.',
       class: 'cleric',
       casterLevel: 1,
       spellbook: {
@@ -374,7 +376,7 @@ function enemies(at) {
       ...trained([], ['perception', 'stealth']),
       multiattack: 2,
       notes:
-        'Wight. Multiattack: two weapon attacks, and it can swap one for Life Drain. Life Drain: +4 to hit, 1d6 + 2 necrotic damage, and the target makes a DC 13 CON save or its hit point maximum drops by the damage until it finishes a long rest. A humanoid that Life Drain kills rises as a zombie at the next dusk.',
+        'Wight. Multiattack: two weapon attacks, and it can swap one for Life Drain. Life Drain: +4 to hit, 1d6 + 2 necrotic damage, and the target makes a DC 13 CON save or its hit point maximum drops by the damage until it finishes a long rest. A humanoid that Life Drain kills rises as a zombie at the next dusk. It guards the second level for the king. It shoots from the dark, then closes to drain the weakest foe. It wants the living for the guard of the king, and it spares one who kneels.',
     }),
     // Plate, the legend default from level 5, gives AC 18.
     legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, at('ostrand'), OSTRAND, {
@@ -391,7 +393,7 @@ function enemies(at) {
       conditionImmunities: ['Poisoned'],
       ...trained(['STR', 'CON', 'WIS'], ['athletics', 'intimidation', 'perception']),
       notes:
-        'Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton. While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key.',
+        'While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key. Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton.',
     }),
   ];
 }

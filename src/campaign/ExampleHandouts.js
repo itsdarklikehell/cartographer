@@ -61,6 +61,12 @@ export function exampleHandouts(at) {
       { at: at('bram') },
     ),
     handout(
+      'letter-for-dorn',
+      'A Letter for Master Dorn',
+      'Folded paper under the thorn seal of House Vane, in a cramped, elegant hand: "Master Dorn. Stop no more than one night at the crossroads, and let no one near crate four. You will have the second half of your fee only if its wax is whole when it reaches my hand. The Castellan, Thornhold."',
+      { at: at('bram') },
+    ),
+    handout(
       'dorns-manifest',
       "Dorn's Manifest",
       'A bill of lading pinned inside the lead wagon. "Six crates, sealed, from the east road. Consigned to the Castellan, Thornhold. Paid in full in advance. Crate four: lock fittings, silver, one piece. To be opened by the Castellan\'s own hand and by no other."',
@@ -112,6 +118,13 @@ export function exampleHandouts(at) {
       'The Crypt Ledger of Thornhold',
       'The sealing, in the hand of the first Vane: "Five stones raised and sworn at the circle, one for each warden house. A key cut of Hollowvein silver, the same vein that crowned him, because like binds like. The door stays shut while the circle stands and a warden\'s line keeps the key. We do not write where the key is kept. He listens."',
       { nodeId: at('shade').nodeId },
+    ),
+    // The shade stands watch where the seal was kept.
+    handout(
+      'empty-seal-niche',
+      'An Empty Niche in the Crypt',
+      'A niche cut into the crypt wall under the Vane banner. The dust on its shelf keeps the clean outline of a small square box. A brass plate reads: "THE SEAL OF THE SEALING. LET NO HAND MOVE IT." Drops of gray wax, still soft, mark the floor below.',
+      { at: at('shade') },
     ),
     handout(
       'irennes-letter',
