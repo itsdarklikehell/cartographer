@@ -112,7 +112,7 @@ export function exampleQuests(at) {
     quest(
       'the-hermit-of-graypeak',
       'The Hermit of Graypeak',
-      'Odo keeps the warding key of the barrow, as his line has since the sealing. Skalvyr the wyvern nests in the eyrie above the hermitage, and Odo will not come out while it hunts. He gives the key only to someone who swears the oath of the wardens, and he warns that a counter-key cut from the same silver would also open the door.',
+      'Odo keeps the warding key of the barrow, as his line has since the sealing. Skalvyr the wyvern nests in the eyrie above the hermitage, and Odo will not come out while it hunts. He gives the key only to someone who swears the oath of the wardens, and he warns that a counter-key cut from the same silver fits the lock once a smith recasts it whole with more pale silver.',
       {
         steps: [
           step('Climb to the hermitage in Graypeak'),
@@ -156,7 +156,7 @@ export function exampleQuests(at) {
     quest(
       'the-hand-that-writes',
       'The Hand That Writes',
-      'Someone at Thornhold writes the orders of Ostrand. It is Castellan Irenne Vane. The crown has spoken to her in dreams for a year. Clues: her hand matches the orders; Corvin was paid under her seal; the crates of Dorn are addressed to her; her Pale-sworn servants guard a ledger in the keep dungeons. Unmasked, she runs for the barrow with the counter-key if she has it.',
+      'Someone at Thornhold writes the orders of Ostrand. It is Castellan Irenne Vane. The crown has spoken to her in dreams for a year. Clues: her hand matches the orders; Corvin was paid under her seal; the crates of Dorn are addressed to her; her Pale-sworn servants guard a ledger in the keep dungeons. Unmasked, she runs for the forge of Sella with the counter-key if she has it, because it is half a key until it is recast. Story clock: on day 6 she (or the Pale-sworn, if she is dead) reaches Sella with the counter-key, and on day 8 they open the barrow.',
       {
         steps: [
           step('Learn who at Thornhold could reach the crypt'),
@@ -177,7 +177,7 @@ export function exampleQuests(at) {
     quest(
       'the-barrow-king',
       'The Barrow of the Old King',
-      'King Ostrand has risen in his tomb, and the ward is all that keeps him there. Open the door with the warding key, go down through his court of skeletons and the grave wight, and end him at his tomb. If Irenne opens the door first with the counter-key, the dead of the barrow walk the Barrowdowns until he falls.',
+      'King Ostrand has risen in his tomb, and the ward is all that keeps him there. Open the door with the warding key, go down through his court of skeletons and the grave wight, and end him at his tomb. If Irenne recasts the counter-key and opens the door first (on day 8, unless the party stops her), the dead of the barrow walk the Barrowdowns until he falls.',
       {
         steps: [
           step('Open the barrow door with the warding key'),
@@ -197,7 +197,7 @@ export function exampleQuests(at) {
     quest(
       'dorns-sealed-cargo',
       "Dorn's Sealed Cargo",
-      'The six crates of Dorn go to "the Castellan, Thornhold". One holds a silver key of the old pattern: the counter-key, cut in the east from Hollowvein silver. If the party keeps Dorn at the crossroads, Irenne sends her Pale-sworn to fetch it. If they open a crate, Dorn is furious but does not stop them.',
+      'The six crates of Dorn go to "the Castellan, Thornhold". One holds a silver key of the old pattern: the counter-key, cut in the east from Hollowvein silver. If the party keeps Dorn at the crossroads, Irenne sends her Pale-sworn to fetch it. If they open a crate, Dorn is furious but does not stop them. The counter-key is half a key, because the cutter in the east had too little pale silver for the ward. Sella in Briarwick can recast it whole with pale silver from Hollowvein or the Silver Road.',
       {
         steps: [
           step('Ask Dorn where his cargo goes'),

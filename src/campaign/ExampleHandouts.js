@@ -87,7 +87,7 @@ export function exampleHandouts(at) {
     handout(
       'odos-warning',
       "Odo's Warning",
-      '"The key turns a lock, not a king. Ostrand was buried with his sword, his crown, and his pride. The ward kept folk out, and it kept him in as well. And mind this: any key cut from the same silver fits the same door. Break the ward, go down, and finish what the old rites could not."',
+      '"The key turns a lock, not a king. Ostrand was buried with his sword, his crown, and his pride. The ward kept folk out, and it kept him in as well. And mind this: a key cut from the same silver fits the same door once a smith makes it whole. Break the ward, go down, and finish what the old rites could not."',
       { at: at('odo') },
     ),
     handout(
@@ -116,7 +116,7 @@ export function exampleHandouts(at) {
     handout(
       'crypt-ledger',
       'The Crypt Ledger of Thornhold',
-      'The sealing, in the hand of the first Vane: "Five stones raised and sworn at the circle, one for each warden house. A key cut of Hollowvein silver, the same vein that crowned him, because like binds like. The door stays shut while the circle stands and a warden\'s line keeps the key. We do not write where the key is kept. He listens."',
+      'The sealing, in the hand of the first Vane: "Five stones raised and sworn at the circle, one for each warden house. A key cut of Hollowvein silver, the same vein that crowned him, because like binds like. A key with less silver in it than the crown will not turn. The door stays shut while the circle stands and a warden\'s line keeps the key. We do not write where the key is kept. He listens."',
       { nodeId: at('shade').nodeId },
     ),
     // The shade stands watch where the seal was kept.
@@ -129,7 +129,7 @@ export function exampleHandouts(at) {
     handout(
       'irennes-letter',
       'A Letter under the Keep',
-      'Found with the Pale-sworn, in the cramped, elegant hand of the orders: "The key comes up the east road in the wagons of Dorn. If the caravan stops at the crossroads, take crate four and bring it to me, not to the keep. He is patient, and so am I. When the circle breaks, the door is ours." It is sealed with a pale crown in gray wax.',
+      'Found with the Pale-sworn, in the cramped, elegant hand of the orders: "The key comes up the east road in the wagons of Dorn. If the caravan stops at the crossroads, take crate four and bring it to me, not to the keep. He is patient, and so am I. The smith at Briarwick will finish it. When the circle breaks, the door is ours." It is sealed with a pale crown in gray wax.',
       { at: at('cultist1') },
     ),
     handout(

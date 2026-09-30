@@ -34,26 +34,25 @@ export const DOWNS_WEST_GATE = '0,16';
  */
 
 /**
- * The index of the first site whose label is in `labels`, or -1.
- * @param {RegionStage} stage @param {string[]} labels
- * @returns {number}
- */
-function siteIndex(stage, labels) {
-  return stage.gen.sites.findIndex((s) => labels.includes(s.label));
-}
-
-/**
  * The index of the first site whose label is in `labels`. When no site has
  * one, the stage stamps `marker` on open ground far from the entry and adds
- * a site for it that opens into `archetype`.
+ * a site for it that opens into `archetype`. With `away`, a site counts only
+ * when each of its tiles lies at least `away.min` tiles from `away.from` and
+ * off the road, and a stamped marker keeps the same distance.
  * @param {RegionStage} stage @param {string[]} labels @param {string} marker
  * @param {{ archetype: string, kind: import('../types/map.js').NodeKind, size: string }} inside
+ * @param {{ from: string, min: number }} [away]
  * @returns {number}
  */
-function ensureSite(stage, labels, marker, { archetype, kind, size }) {
-  const found = siteIndex(stage, labels);
+function ensureSite(stage, labels, marker, { archetype, kind, size }, away) {
+  const byId = new Map(stage.gen.tiles.map((t) => [t.id, t]));
+  /** @param {string} id */
+  const far = (id) =>
+    !away ||
+    (tileDistance(id, away.from) >= away.min && !onRoad(/** @type {Tile} */ (byId.get(id))));
+  const found = stage.gen.sites.findIndex((s) => labels.includes(s.label) && s.tileIds.every(far));
   if (found >= 0) return found;
-  const tileId = outdoors(stage.gen, isOpenGround)();
+  const tileId = outdoors(stage.gen, (t) => isOpenGround(t) && far(t.id))();
   stampMarker(stage.gen, stage.palette, tileId, marker, '');
   stage.gen.sites.push({
     tileIds: [tileId],
@@ -446,11 +445,19 @@ export const REGION_STAGES = {
       siteTile(stage, keep),
       'Thornhold, seat of House Vane, sworn wardens of the barrow. Its crypt keeps the ledger of the sealing.',
     );
-    const tomb = ensureSite(stage, ['dungeon'], 'dungeon', {
-      archetype: 'dungeon',
-      kind: 'interior',
-      size: 'medium',
-    });
+    // The barrow lies a long walk from the keep and off the road, so a party
+    // that follows the caravan to Thornhold does not find it on the way.
+    const tomb = ensureSite(
+      stage,
+      ['dungeon'],
+      'dungeon',
+      {
+        archetype: 'dungeon',
+        kind: 'interior',
+        size: 'medium',
+      },
+      { from: siteTile(stage, keep), min: 12 },
+    );
     stage.overrides.set(tomb, {
       id: 'barrow',
       name: 'Barrow of the Old King',

@@ -469,3 +469,14 @@ test('a road crosses the border from the Briarwick Vale into the Barrowdowns', (
   assert.ok(roadArms(getTile(nodeOf('briarwick-vale'), VALE_EAST_GATE)).includes('e'));
   assert.ok(roadArms(getTile(nodeOf('barrowdowns'), DOWNS_WEST_GATE)).includes('w'));
 });
+
+test('the barrow lies at least 12 tiles from the keep, off the road', () => {
+  const downs = nodeOf('barrowdowns');
+  /** @param {string} id */
+  const link = (id) => downs.tiles.find((t) => t.childNodeId === id);
+  const keep = link('thornhold');
+  const barrow = link('barrow');
+  assert.ok(keep && barrow);
+  assert.ok(tileDistance(keep.id, barrow.id) >= 12, `${keep.id} to ${barrow.id}`);
+  assert.equal(roadArms(barrow).length, 0);
+});

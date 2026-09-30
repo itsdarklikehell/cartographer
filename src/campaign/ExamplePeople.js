@@ -48,7 +48,7 @@ export function people(at) {
       role: 'Blacksmith of Briarwick',
       disposition: 'friendly',
       notes:
-        'Buys ore and sells and repairs arms. She can recast a broken warding key, but only from pale silver out of Hollowvein or the lost tithe of the Silver Road. She sold a key mold of the old pattern to a Thornhold rider last spring and regrets it.',
+        'Buys ore and sells and repairs arms. She can recast a broken warding key, but only from pale silver out of Hollowvein or the lost tithe of the Silver Road. She sold a key mold of the old pattern to a Thornhold rider last spring and regrets it. If the Castellan or the Pale-sworn bring her the counter-key on day 6, she recasts it under threat.',
       stats: { STR: 15, CON: 14 },
       location: at('sella'),
     }),
@@ -75,7 +75,7 @@ export function people(at) {
       role: 'Hermit of Graypeak',
       disposition: 'neutral',
       notes:
-        'The last of the warden line that keeps the warding key. Half-deaf and stubborn. He will not come down while Skalvyr hunts over the hermitage, and he gives the key only to someone who swears the oath of the wardens. He knows that one other key can open the door: a counter-key cut from the same silver.',
+        'The last of the warden line that keeps the warding key. Half-deaf and stubborn. He will not come down while Skalvyr hunts over the hermitage, and he gives the key only to someone who swears the oath of the wardens. He knows that a counter-key cut from the same silver can also open the door, but only after a smith recasts it whole with more pale silver.',
       stats: { CON: 13, INT: 13, WIS: 16 },
       location: at('odo'),
     }),
@@ -114,7 +114,7 @@ export function people(at) {
       disposition: 'neutral',
       met: true,
       notes:
-        'The hidden hand. For a year the crown of Ostrand has spoken to her in dreams, and she took the pale seal from the crypt to write his orders. She paid Snagtooth to topple a wardstone and burn the farms, bought Hollowvein silver through Corvin, and had a counter-key cut in the east. The key waits in the sealed crates of Dorn. She is courteous and helpful, and she asks the party to carry her letters. If crate four arrives empty, she pays Dorn in full, and that night a Pale-sworn searches the packs of the party. If she learns that the party has the counter-key, she invites them to dine and offers 200 gp for "a Vane heirloom". A refusal gets Hold Person at the table, and her guards try to take the key. Set her and her two guards hostile when she is unmasked. She runs before she fights: she turns invisible, takes the stairs down to the dungeon, and leaves for the barrow. Move her there if she gets away.',
+        'The hidden hand. For a year the crown of Ostrand has spoken to her in dreams, and she took the pale seal from the crypt to write his orders. She paid Snagtooth to topple a wardstone and burn the farms, bought Hollowvein silver through Corvin, and had a counter-key cut in the east. The key waits in the sealed crates of Dorn. It is half a key, and she needs Sella to recast it with more pale silver. Story clock: on day 6 she reaches the forge of Sella with the key, and on day 8 she opens the barrow. If she is dead, the Pale-sworn keep the same days. She is courteous and helpful, and she asks the party to carry her letters. If crate four arrives empty, she pays Dorn in full, and that night a Pale-sworn searches the packs of the party. If she learns that the party has the counter-key, she invites them to dine and offers 200 gp for "a Vane heirloom". A refusal gets Hold Person at the table, and her guards try to take the key. Set her and her two guards hostile when she is unmasked. She runs before she fights: she turns invisible, takes the stairs down to the dungeon, and leaves for the barrow. Move her there if she gets away.',
       level: 5,
       tier: 'legend',
       cr: 2,
