@@ -12,7 +12,7 @@ import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js'
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
 import { capitalize } from '../util/text.js';
-import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
+import { coerceHPBuffs, conditionList, recordList, spellbookOf } from './LoadCoercion.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -194,7 +194,7 @@ export function withDefaults(creature) {
   const book = spellbookOf(spellbook);
   return ensureCasterFields(
     {
-      ...stripped,
+      ...coerceHPBuffs(stripped),
       ...(resources !== undefined ? { resources: recordList(resources) } : {}),
       ...(book ? { spellbook: book } : {}),
       ...crFields(creature.cr),

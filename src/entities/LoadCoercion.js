@@ -9,6 +9,9 @@ import { PACT_BOONS } from '../data/invocations.js';
  * pure.
  */
 
+import { normalizeChipMods } from './ChipMods.js';
+import { clampInt } from '../util/num.js';
+
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 
@@ -32,12 +35,44 @@ export function recordList(value) {
 
 /**
  * A stored condition list. An entry needs a string name, because the
- * condition chips and the exhaustion migration read it as one.
+ * condition chips and the exhaustion migration read it as one. A chip's mods
+ * go through `normalizeChipMods`, so a stored `ac: "5"` reads as 5. As a
+ * string, the AC sum would join it onto the base AC, and AC 15 would read as
+ * 1505.
  * @param {unknown} value
  * @returns {Condition[]}
  */
 export function conditionList(value) {
-  return recordList(value).filter((entry) => typeof entry.name === 'string');
+  return recordList(value)
+    .filter((entry) => typeof entry.name === 'string')
+    .map((entry) => {
+      if (!('mods' in entry)) return entry;
+      const { mods: raw, ...rest } = entry;
+      const mods = normalizeChipMods(raw);
+      return mods ? { ...rest, mods } : rest;
+    });
+}
+
+/** The largest stored HP maximum raise. Chips of several spells can add up. */
+const MAX_STORED_BOOST = 1000;
+
+/**
+ * An entity with its HP buff fields (see `HPBuffFields`) cleaned. The HP
+ * maximum raise is a whole number from 0 up, and a raise of 0 or a value that
+ * is not a number drops the field. The name of the chip that granted the
+ * temporary HP stays only when it is a string that is not empty.
+ * @template {Record<string, any>} T
+ * @param {T} entity
+ * @returns {T}
+ */
+export function coerceHPBuffs(entity) {
+  const { hpBoost, bonusHPFrom, ...rest } = entity;
+  const boost = clampInt(hpBoost, 0, MAX_STORED_BOOST, 0);
+  return /** @type {T} */ ({
+    ...rest,
+    ...(boost > 0 ? { hpBoost: boost } : {}),
+    ...(typeof bonusHPFrom === 'string' && bonusHPFrom ? { bonusHPFrom } : {}),
+  });
 }
 
 /**

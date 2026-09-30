@@ -173,8 +173,12 @@ the reaction control of the combat screen, and undoes the damage by hand.
 Mage Armor gives a character with no body armor a base AC of 13 plus its DEX
 modifier, and a shield still adds to it. A higher base on the character
 sheet, or a higher unarmored defense, wins. On a creature with no armor,
-the spell raises a lower AC to 13 plus the DEX modifier. The chip stays when
-the holder puts armor on, but it then changes nothing, and the GM removes it.
+the spell raises a lower AC to 13 plus the DEX modifier. A creature has no
+shield field, and its authored AC already includes any shield it carries,
+so the spell drops the +2 of a shield that is part of that AC. A creature
+with AC 12 from DEX 10 and a shield gets AC 13 and not 15, and the GM
+applies the difference by hand. The chip stays when the holder puts armor
+on, but it then changes nothing, and the GM removes it.
 
 Barkskin sets a floor of 16 under the AC of its target. The floor applies
 after every bonus, so Shield of Faith on a target with AC 12 gives AC 16,

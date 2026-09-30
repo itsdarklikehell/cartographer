@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  coerceHPBuffs,
   conditionList,
   recordList,
   spellbookOf,
@@ -11,7 +12,11 @@ import {
   createCharacter,
   withDefaults as withCharacterDefaults,
 } from '../src/entities/Character.js';
-import { createCreature, withDefaults as withCreatureDefaults } from '../src/entities/Creature.js';
+import {
+  createCreature,
+  effectiveStatBlock,
+  withDefaults as withCreatureDefaults,
+} from '../src/entities/Creature.js';
 import { deserialize } from '../src/storage/SaveManager.js';
 
 test('recordList keeps the record entries of an array and reads anything else as empty', () => {
@@ -135,4 +140,49 @@ test('character withDefaults coerces malformed warlock picks', () => {
   assert.equal('invocations' in loaded, false);
   assert.equal('invocationUses' in loaded, false);
   assert.equal('pactBoon' in loaded, false);
+});
+
+test('conditionList runs chip mods through normalizeChipMods', () => {
+  const list = conditionList([
+    { name: 'X', rounds: null, mods: { ac: '5' } },
+    { name: 'Y', rounds: null, mods: { junk: 1 } },
+    { name: 'Z', rounds: 2 },
+  ]);
+  assert.deepEqual(list, [
+    { name: 'X', rounds: null, mods: { ac: 5 } },
+    { name: 'Y', rounds: null },
+    { name: 'Z', rounds: 2 },
+  ]);
+});
+
+test('a loaded chip with a string AC bonus adds it as a number', () => {
+  const orc = withCreatureDefaults(
+    /** @type {any} */ ({
+      id: 'o',
+      name: 'Orc',
+      maxHP: 10,
+      stats: { AC: 15 },
+      conditions: [{ name: 'X', rounds: null, mods: { ac: '5' } }],
+    }),
+  );
+  assert.equal(effectiveStatBlock(orc).AC, 20);
+});
+
+test('coerceHPBuffs keeps a whole raise from 0 up and a named grant', () => {
+  assert.deepEqual(coerceHPBuffs({ a: 1, hpBoost: '7', bonusHPFrom: 'heroism' }), {
+    a: 1,
+    hpBoost: 7,
+    bonusHPFrom: 'heroism',
+  });
+  assert.deepEqual(coerceHPBuffs({ hpBoost: -3, bonusHPFrom: 5 }), {});
+  assert.deepEqual(coerceHPBuffs({ hpBoost: 'x', bonusHPFrom: '' }), {});
+  const hero = withCharacterDefaults(
+    /** @type {any} */ ({ id: 'h', name: 'H', hpBoost: '-4', bonusHPFrom: 3 }),
+  );
+  assert.equal('hpBoost' in hero, false);
+  assert.equal('bonusHPFrom' in hero, false);
+  const orc = withCreatureDefaults(
+    /** @type {any} */ ({ id: 'o', name: 'Orc', maxHP: 10, hpBoost: 'x' }),
+  );
+  assert.equal('hpBoost' in orc, false);
 });

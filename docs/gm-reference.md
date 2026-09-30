@@ -1473,7 +1473,10 @@ the dialog opens. See [Hit-point rules](spells-missing.md#hit-point-rules).
 
 A buff with a range of Self, such as Shield, offers only the caster as its
 target. The chip of Shield, Shield of Faith, Mage Armor, or Barkskin changes
-the AC that the sheet, the combatant cards, and every later attack read. See
+the AC that the sheet, the combatant cards, and every later attack read. On
+a creature, Mage Armor replaces the authored AC when 13 plus DEX is higher,
+and a creature has no shield field, so a shield that is part of the
+authored AC does not add to the Mage Armor AC. See
 [Armor class](spells-missing.md#armor-class).
 
 Aid raises the HP maximum and current HP of its targets while its chip lasts.

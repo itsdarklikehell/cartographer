@@ -155,7 +155,10 @@ cycle, and a cycle in a save would freeze the tab at startup.
 The character and creature `withDefaults` functions use
 `entities/LoadCoercion.js` for their list fields (resources, inventory,
 conditions) and for the spellbook. A scalar in one of those fields then reads
-as empty.
+as empty. The mods of each loaded chip go through `ChipMods.normalizeChipMods`,
+so a stored `ac: "5"` adds 5 to the AC instead of joining the string onto it.
+`LoadCoercion.coerceHPBuffs` keeps `hpBoost` only as a whole number above 0
+and `bonusHPFrom` only as a string that is not empty.
 
 `loadInitialCampaign` throws on a save with no map nodes, and the import
 refuses such a file before it stores anything. Any JSON record parses as a

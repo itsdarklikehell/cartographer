@@ -20,7 +20,7 @@ import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
-import { conditionList, recordList, spellbookOf, warlockPicks } from './LoadCoercion.js';
+import { coerceHPBuffs, conditionList, recordList, spellbookOf, warlockPicks } from './LoadCoercion.js';
 import { MAX_LEVEL, levelForXp, xpForLevel } from './Experience.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -379,7 +379,7 @@ export function withDefaults(character) {
     level,
   );
   return derive({
-    ...rest,
+    ...coerceHPBuffs(rest),
     level,
     xp: clampInt(character.xp, xpForLevel(level), xpForLevel(MAX_LEVEL)),
     race: character.race ?? '',
