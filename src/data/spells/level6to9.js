@@ -211,6 +211,30 @@ export const LEVEL_6_TO_9 = [
     },
   },
   {
+    id: 'arcane-sword',
+    name: 'Arcane Sword',
+    level: 7,
+    school: 'evocation',
+    classes: ['bard', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V', 'S', 'M'],
+    materials: {
+      text: 'a miniature platinum sword with a grip and pommel of copper and zinc, worth 250 gp',
+      costGP: 250,
+      consumed: false,
+    },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A sword of force hovers in range and makes a melee spell attack against a target ' +
+      'within 5 feet of it for 3d10 force. Each later turn, a bonus action moves it up to ' +
+      '20 feet and attacks the same target or a different one. The GM tracks where it is.',
+    effect: { kind: 'attack', damage: [{ count: 3, sides: 10, damageType: 'force' }], melee: true },
+    repeat: { cost: 'bonus' },
+  },
+  {
     id: 'power-word-stun',
     name: 'Power Word Stun',
     level: 8,
@@ -257,6 +281,33 @@ export const LEVEL_6_TO_9 = [
       halfOnSave: false,
       hpLimit: 100,
       kills: true,
+    },
+  },
+  {
+    id: 'weird',
+    name: 'Weird',
+    level: 9,
+    school: 'illusion',
+    classes: ['wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      "Each creature of the caster's choice in a 30-foot-radius sphere makes a WIS save or " +
+      'is frightened. At the end of each of its turns, a frightened creature repeats the ' +
+      'save: a failure deals 4d10 psychic, and a success ends the spell for that creature.',
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Frightened',
+      saveEnds: true,
+      ongoing: { damage: [{ count: 4, sides: 10, damageType: 'psychic' }] },
     },
   },
   {

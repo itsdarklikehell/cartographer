@@ -28,11 +28,11 @@ test('Fear leaves the retry to the GM, with no automatic save each turn', () => 
   assert.equal('saveEnds' in byId('fear').effect, false);
 });
 
-test('Revivify raises the dead, and no other built-in heal does', () => {
+test('Revivify and Raise Dead raise the dead, and no other built-in heal does', () => {
   const revivers = DEFAULT_SPELLS.filter((s) => s.effect.kind === 'heal' && s.effect.revives);
   assert.deepEqual(
     revivers.map((s) => s.id),
-    ['revivify'],
+    ['revivify', 'raise-dead'],
   );
 });
 

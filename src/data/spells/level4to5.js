@@ -170,6 +170,35 @@ export const LEVEL_4_TO_5 = [
     },
   },
   {
+    id: 'raise-dead',
+    name: 'Raise Dead',
+    level: 5,
+    school: 'necromancy',
+    classes: ['bard', 'cleric', 'paladin'],
+    castingTime: { kind: 'hours', amount: 1 },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a diamond worth at least 500 gp', costGP: 500, consumed: true },
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'Return a creature dead no longer than 10 days to life with 1 hit point. The spell ' +
+      'has no effect on a living creature or on undead, and it cannot restore a missing ' +
+      'body part or a creature that died of old age. The GM checks the 10 days, and that ' +
+      'the soul is free and willing. The spell also neutralizes poisons and nonmagical ' +
+      'diseases, and the creature takes a -4 penalty to attack rolls, saving throws, and ' +
+      'ability checks, which drops by 1 at each long rest. The GM rules both.',
+    // One hit point, as Revivify. The `revives` flag makes the heal reach
+    // only a dead target.
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 0, sides: 4, damageType: 'healing', bonus: 1 }],
+      revives: true,
+      typeRules: { skip: ['undead'] },
+    },
+  },
+  {
     id: 'mass-cure-wounds',
     name: 'Mass Cure Wounds',
     level: 5,

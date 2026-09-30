@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 99. Three built-in spells come from
+lists 319 spells, and the app ships 102. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -29,11 +29,11 @@ Player's Handbook. The ranger has Hunter's Mark.
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
-| 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
+| 5th | Cone of Cold, Greater Restoration, Raise Dead, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
-| 7th | Finger of Death, Fire Storm |
+| 7th | Finger of Death, Fire Storm, Arcane Sword |
 | 8th | Power Word Stun, Sunburst |
-| 9th | Meteor Swarm, Power Word Kill |
+| 9th | Meteor Swarm, Power Word Kill, Weird |
 
 The selection prefers spells whose rules the current mechanics resolve in
 full. The resolver applies these rules:
@@ -103,16 +103,16 @@ concentrating.
 
 ### Later turns
 
-Acid Arrow and Phantasmal Killer leave a chip on the target. The chip deals
+Acid Arrow, Phantasmal Killer, and Weird leave a chip on the target. The chip deals
 its damage at the end of the turns of that creature, and it ends at the
-boundary that the spell names. Phantasmal Killer deals its damage only when
-the repeated save fails, and a success ends the spell. Each caster's cast
+boundary that the spell names. Phantasmal Killer and Weird deal their damage
+only when the repeated save fails, and a success ends the spell. Each caster's cast
 keeps its own chip, so two Acid Arrows on one ogre both deal their later
 damage, and a target that is already Frightened still takes the chip of
 Phantasmal Killer.
 
-Witch Bolt, Spiritual Weapon, Call Lightning, and Sunbeam leave a chip on the caster, named
-after the spell. While the caster has that chip, a cast of the same spell
+Witch Bolt, Spiritual Weapon, Call Lightning, Sunbeam, and Arcane Sword
+leave a chip on the caster, named after the spell. While the caster has that chip, a cast of the same spell
 is a repeat. The dialog says Repeat, offers no slot, and costs the action or
 bonus action that the spell names. A repeat of Witch Bolt deals 1d12 to the
 creature that the first cast hit, with no roll. If the caster can also cast
@@ -330,8 +330,8 @@ that it can. The description of each entry states the difference:
   slot, tripled with a 7th-level slot, and quadrupled with a 9th-level slot.
 - Witch Bolt ends when the caster uses its action for something else, or
   when the target moves out of range. The GM ends it by hand.
-- Spiritual Weapon moves up to 20 feet before each attack. The GM tracks
-  where it is.
+- Spiritual Weapon and Arcane Sword move up to 20 feet before each attack.
+  The GM tracks where each one is.
 - Shatter gives disadvantage on the save to a creature of stone, crystal,
   or metal. No creature type marks such a creature, so the GM rolls that
   save by hand when the cast also catches other creatures.
@@ -348,8 +348,10 @@ that it can. The description of each entry states the difference:
   Faerie Fire does not cancel invisibility, so the GM rules both.
 - Disintegrate turns a target at 0 HP to dust, and Finger of Death raises a
   slain humanoid as a zombie. The GM rules both.
-- Revivify raises only a dead target. The GM checks that the target died
-  within the last minute.
+- Revivify and Raise Dead raise only a dead target, and Raise Dead passes
+  over undead. The GM checks that the target died within the last minute
+  for Revivify, or within 10 days for Raise Dead. The GM also rules the
+  -4 penalty that Raise Dead leaves, and the poisons and diseases it ends.
 - Lesser Restoration ends a Blinded, Deafened, Paralyzed, or Poisoned chip,
   and the caster picks one when the target has more than one. Heal ends the
   Blinded and Deafened chips beside its 70 HP. The app tracks no diseases,

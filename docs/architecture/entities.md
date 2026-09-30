@@ -809,7 +809,7 @@ Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure
 Wounds ship with it, and the spell form offers it as the "Add spellcasting
 modifier" box. A heal effect with `revives` raises the dead, and it heals only
 a dead target (see [Damage and healing at 0 HP](#damage-and-healing-at-0-hp)).
-Revivify ships with it, and the spell form offers it as the "Raises the dead"
+Revivify and Raise Dead ship with it, and the spell form offers it as the "Raises the dead"
 box. `Library.normalizeSpell` and `SpellDraft.assembleEffect` keep the flag
 only when it is true.
 

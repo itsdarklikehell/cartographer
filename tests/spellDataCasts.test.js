@@ -132,3 +132,66 @@ test('Charm Person and Hold Person reach only humanoids, and an untyped target',
     ],
   );
 });
+
+test('Weird frightens each creature in its area and deals 4d10 on each failed retry', () => {
+  const spell = byId('weird');
+  assert.equal(spell.targetCount, 0);
+  assert.equal(spell.concentration, true);
+  const result = /** @type {any} */ (
+    castSpell(caster('wizard', ['weird']), spell, {
+      slotLevel: 9,
+      saveDC: 30,
+      rng: seq([]),
+      targets: [
+        { id: 'a', name: 'Orc', saveBonus: 0 },
+        { id: 'b', name: 'Ogre', saveBonus: 0 },
+      ],
+    })
+  );
+  for (const outcome of result.outcomes) {
+    assert.equal(outcome.condition, 'Frightened');
+    assert.deepEqual(outcome.ongoing, [{ count: 4, sides: 10, damageType: 'psychic' }]);
+  }
+  assert.equal(spell.effect.saveEnds, true);
+});
+
+test('Arcane Sword makes a 3d10 force melee spell attack and repeats as a bonus action', () => {
+  const spell = byId('arcane-sword');
+  assert.deepEqual(spell.classes, ['bard', 'wizard']);
+  assert.equal(spell.effect.melee, true);
+  assert.deepEqual(spell.effect.damage, [{ count: 3, sides: 10, damageType: 'force' }]);
+  assert.deepEqual(spell.repeat, { cost: 'bonus' });
+  assert.deepEqual(spell.materials, {
+    text: 'a miniature platinum sword with a grip and pommel of copper and zinc, worth 250 gp',
+    costGP: 250,
+    consumed: false,
+  });
+});
+
+test('Raise Dead takes an hour and a consumed 500 gp diamond, and passes over undead', () => {
+  const spell = byId('raise-dead');
+  assert.deepEqual(spell.castingTime, { kind: 'hours', amount: 1 });
+  assert.deepEqual(spell.materials, {
+    text: 'a diamond worth at least 500 gp',
+    costGP: 500,
+    consumed: true,
+  });
+  assert.equal(spell.effect.revives, true);
+  const result = /** @type {any} */ (
+    castSpell(
+      caster('cleric', ['raise-dead']),
+      { ...spell, targetCount: 2 },
+      {
+        slotLevel: 5,
+        rng: seq([]),
+        targets: [
+          { id: 'pc', name: 'Hero', creatureType: 'humanoid' },
+          { id: 'z', name: 'Zombie', creatureType: 'undead' },
+        ],
+      },
+    )
+  );
+  assert.equal(result.outcomes[0].healing.total, 1);
+  assert.equal(result.outcomes[0].unaffectedBy, undefined);
+  assert.equal(result.outcomes[1].unaffectedBy, 'undead');
+});
