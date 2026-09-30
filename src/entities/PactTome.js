@@ -178,3 +178,39 @@ export function removeTomeRitual(character, id) {
     bookOfShadows: { ...book, rituals: book.rituals.filter((r) => r !== id) },
   };
 }
+
+/**
+ * The character with the grants of a lost tome taken back. Without the Pact
+ * of the Tome, the Book of Shadows cantrips leave the spellbook and the book
+ * goes. Otherwise they would stay as class cantrips and count against the
+ * cantrip limit. Without Book of Ancient Secrets, the book keeps no rituals,
+ * so a warlock who takes the invocation again picks two new ones. Only the
+ * ids in `bookOfShadows.cantrips` leave, and `setTomeCantrips` never puts a
+ * class cantrip there, so a cantrip the warlock learned from a class stays.
+ * The character comes back unchanged when nothing needs to go.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function settleTome(character) {
+  const book = character.bookOfShadows;
+  if (!book) return character;
+  if (hasTome(character)) {
+    if (hasAncientSecrets(character) || book.rituals.length === 0) return character;
+    return { ...character, bookOfShadows: { ...book, rituals: [] } };
+  }
+  const { bookOfShadows: _book, ...rest } = character;
+  const granted = new Set(book.cantrips);
+  const spells = character.spellbook;
+  if (!spells) return rest;
+  const sources = Object.fromEntries(
+    Object.entries(spells.sources ?? {}).filter(([id]) => !granted.has(id)),
+  );
+  return {
+    ...rest,
+    spellbook: {
+      ...spells,
+      cantrips: spells.cantrips.filter((id) => !granted.has(id)),
+      ...(spells.sources ? { sources } : {}),
+    },
+  };
+}

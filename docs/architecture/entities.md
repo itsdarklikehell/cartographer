@@ -727,6 +727,14 @@ casts with a slot. `SpellView.isRitualOnly` is true for a ritual in the
 book, so `castPlan` offers no slot, `payForCast` accepts the ritual cast,
 and the sheet lists it. `Classes.hasRitualCasting` is true for a warlock
 with the invocation, and with a spell id only for a ritual in the book.
+`PactTome.settleTome` takes back what a lost tome granted, and
+`Invocations.setInvocations` calls it, so `setPactBoon` and every
+invocation change run it. Without the Tome boon, the ids in
+`bookOfShadows.cantrips` leave `spellbook.cantrips` and `spellbook.sources`,
+and `bookOfShadows` goes. Without Book of Ancient Secrets, the rituals empty.
+`setTomeCantrips` never lists a cantrip that the spellbook already has, and
+`unlearnCantrip` drops a forgotten id from the book, so the list names only
+the cantrips the book granted and a class cantrip never leaves.
 `toCaster` copies `invocations`, `pactBoon`, and `bookOfShadows`, so these
 checks read the caster view. `PactTome.js` imports only `Multiclass.js`,
 because `Classes.js` imports it and `Invocations.js` imports the

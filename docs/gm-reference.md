@@ -1916,9 +1916,6 @@ The app does not enforce these invocation rules, so you enforce them:
 - The ritual casting of a warlock with Book of Ancient Secrets. The app
   offers the ritual box for a ritual in the Book of Shadows only, but a
   ritual that the warlock also knows as a warlock spell casts with a slot.
-- The switch away from the Pact of the Tome. The Book of Shadows cantrips
-  stay in the spellbook and count against the cantrip limit, so forget
-  them in the Spellbook tab.
 - How the Pact of the Blade summons the pact weapon, and the familiar of the
   Pact of the Chain with the invocations that use it. The pact weapon does not
   count as magical against resistance to nonmagical damage.
@@ -1933,6 +1930,12 @@ CHA and the warlock save DC. They do not count against the cantrip limit,
 so the Spellbook tab reads, for example, "Cantrips 5/5" for two class
 cantrips and three book cantrips.
 
+A change of the pact boon away from the Pact of the Tome removes the Book of
+Shadows. Its cantrips leave the spellbook, and a cantrip that the warlock
+knew from a class before the book stays. To keep a book cantrip, forget it
+in the Spellbook tab and learn it again as a class cantrip before you change
+the boon.
+
 The Book of Ancient Secrets invocation adds rituals to the book. The pick
 asks for two 1st-level rituals from the list of any class. To copy more
 rituals later, click **Add ritual** on the **Book rituals** row. The list
@@ -1940,7 +1943,8 @@ offers rituals up to half the warlock level, rounded up. A ritual in the
 book lists with the other spells on the sheet, and it casts only as a
 ritual, with no slot and ten minutes more. The GM decides when the warlock
 finds a ritual to copy, and the app does not charge the gold or the time
-of the copy.
+of the copy. A warlock who loses the invocation loses the rituals too, so
+the invocation picked again asks for two new rituals.
 
 ### Mystic Arcanum
 

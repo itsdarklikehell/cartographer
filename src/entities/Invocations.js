@@ -4,6 +4,7 @@ import { classLevelOf } from './Multiclass.js';
 import { getProficiencies } from './Proficiencies.js';
 import { featureKey, getFeatureChoices, undoFeatureGrant } from './FeatureGrants.js';
 import { compactGrants, grantDiff, mergeGrants, requestedGrants } from './GrantLedger.js';
+import { settleTome } from './PactTome.js';
 
 /**
  * The eldritch invocations and the pact boon of a warlock. A character
@@ -160,7 +161,8 @@ function withSkillGrants(character, picked) {
  * The character with this list of invocations. Unknown ids, repeats, and
  * invocations the character does not qualify for drop, and the list stops at
  * the count of its warlock level. An invocation that grants skills records
- * or undoes them to match.
+ * or undoes them to match, and a lost Pact of the Tome or Book of Ancient
+ * Secrets takes back what the book granted (see `PactTome.settleTome`).
  * @param {Character} character
  * @param {string[]} ids
  * @returns {Character}
@@ -175,12 +177,13 @@ export function setInvocations(character, ids) {
     .slice(0, count);
   const { invocations: _old, ...rest } = character;
   const next = kept.length > 0 ? { ...rest, invocations: kept } : rest;
-  return withSkillGrants(next, kept);
+  return settleTome(withSkillGrants(next, kept));
 }
 
 /**
  * The character with this pact boon, or with none for null. The picks that
- * needed the old boon drop.
+ * needed the old boon drop, and a switch away from the Pact of the Tome
+ * removes the Book of Shadows and its cantrips.
  * @param {Character} character
  * @param {PactBoon | null} boon
  * @returns {Character}

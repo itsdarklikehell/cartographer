@@ -113,7 +113,15 @@ export function unlearnCantrip(character, spellId) {
     { ...book, cantrips: book.cantrips.filter((id) => id !== spellId) },
     spellId,
   );
-  return { ...character, spellbook: next };
+  // A forgotten Book of Shadows cantrip leaves the book too, so the same id
+  // learned again from a class list counts as a class cantrip.
+  const tome = character.bookOfShadows;
+  if (!tome?.cantrips.includes(spellId)) return { ...character, spellbook: next };
+  return {
+    ...character,
+    spellbook: next,
+    bookOfShadows: { ...tome, cantrips: tome.cantrips.filter((id) => id !== spellId) },
+  };
 }
 
 /**

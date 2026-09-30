@@ -8,12 +8,14 @@ import {
   pendingTomeRituals,
   removeTomeRitual,
   setTomeCantrips,
+  settleTome,
   tomeCantrips,
   tomeOptions,
   tomeRituals,
 } from '../src/entities/PactTome.js';
 import { cantripLimit, hasRitualCasting, spellSaveDC } from '../src/entities/Classes.js';
-import { learnCantrip } from '../src/entities/Character.js';
+import { learnCantrip, unlearnCantrip } from '../src/entities/Character.js';
+import { setInvocations, setPactBoon } from '../src/entities/Invocations.js';
 import { isRitualOnly } from '../src/entities/SpellView.js';
 import { canCast, castSpell } from '../src/entities/Casting.js';
 import { toCaster } from '../src/entities/Caster.js';
@@ -149,4 +151,64 @@ test('applyWarlockPicks fills an empty book and adds rituals', () => {
   assert.deepEqual(tomeRituals(next), ['detect-magic']);
   const again = applyWarlockPicks(next, { added: [], tomeCantrips: ['light'] });
   assert.deepEqual(tomeCantrips(again), ['fire-bolt']);
+});
+
+test('a switch away from the Pact of the Tome removes the book cantrips', () => {
+  const tome = setTomeCantrips(warlock(5, secrets), ['fire-bolt', 'guidance', 'chill-touch']);
+  const withRituals = addTomeRituals(tome, [spell('detect-magic')]);
+  const blade = setPactBoon(withRituals, 'blade');
+  assert.equal('bookOfShadows' in blade, false);
+  // Chill Touch was a class cantrip before the book, so it stays.
+  assert.deepEqual(blade.spellbook.cantrips, ['eldritch-blast', 'chill-touch']);
+  assert.deepEqual(blade.spellbook.sources ?? {}, {});
+  assert.equal(cantripLimit(blade), 3, 'no book cantrip counts against the limit');
+  assert.deepEqual(blade.invocations, undefined, 'Book of Ancient Secrets needs the Tome');
+  assert.equal(setPactBoon(withRituals, null).bookOfShadows, undefined);
+});
+
+test('dropping Book of Ancient Secrets empties the rituals and keeps the cantrips', () => {
+  const tome = setTomeCantrips(warlock(5, secrets), ['fire-bolt']);
+  const book = addTomeRituals(tome, [spell('detect-magic')]);
+  const dropped = setInvocations(book, []);
+  assert.deepEqual(dropped.bookOfShadows, { cantrips: ['fire-bolt'], rituals: [] });
+  assert.deepEqual(tomeCantrips(dropped), ['fire-bolt']);
+  // Taking the invocation again asks for two new rituals.
+  assert.equal(pendingTomeRituals(setInvocations(dropped, ['book-of-ancient-secrets'])), 2);
+});
+
+test('settleTome leaves a character with nothing to take back unchanged', () => {
+  const bare = warlock(5);
+  assert.equal(settleTome(bare), bare);
+  const tome = setTomeCantrips(warlock(5), ['fire-bolt']);
+  assert.equal(settleTome(tome), tome, 'a Tome warlock keeps the book');
+  const book = addTomeRituals(setTomeCantrips(warlock(5, secrets), ['fire-bolt']), [
+    spell('detect-magic'),
+  ]);
+  assert.equal(settleTome(book), book, 'the invocation keeps the rituals');
+  // A book with no spellbook beside it just goes.
+  const orphan = {
+    ...warlock(5, { pactBoon: 'chain' }),
+    bookOfShadows: { cantrips: ['x'], rituals: [] },
+  };
+  delete orphan.spellbook;
+  assert.equal('bookOfShadows' in settleTome(orphan), false);
+  // A spellbook without a source map gets none.
+  const noSources = {
+    ...warlock(5, { pactBoon: 'chain' }),
+    bookOfShadows: { cantrips: ['fire-bolt'], rituals: [] },
+  };
+  noSources.spellbook = { ...noSources.spellbook, cantrips: ['eldritch-blast', 'fire-bolt'] };
+  assert.equal('sources' in settleTome(noSources).spellbook, false);
+});
+
+test('a forgotten book cantrip learned again from a class stays at the switch', () => {
+  const tome = setTomeCantrips(warlock(5), ['fire-bolt', 'guidance']);
+  const forgot = unlearnCantrip(tome, 'fire-bolt');
+  assert.deepEqual(forgot.bookOfShadows.cantrips, ['guidance']);
+  // Unlearning a class cantrip leaves the book alone.
+  assert.equal(unlearnCantrip(tome, 'chill-touch').bookOfShadows, tome.bookOfShadows);
+  const relearned = learnCantrip(forgot, 'fire-bolt', 'warlock');
+  assert.deepEqual(tomeCantrips(relearned), ['guidance']);
+  const chain = setPactBoon(relearned, 'chain');
+  assert.deepEqual(chain.spellbook.cantrips, ['eldritch-blast', 'chill-touch', 'fire-bolt']);
 });
