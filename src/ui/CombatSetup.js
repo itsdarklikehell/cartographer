@@ -2,7 +2,7 @@ import { formatModifier } from '../entities/Modifiers.js';
 import { setTip } from './Tooltip.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
-import { numberField } from './formFields.js';
+import { checkbox, numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
 import { numberedNames } from '../combat/DisplayNames.js';
@@ -17,7 +17,8 @@ import { numberedNames } from '../combat/DisplayNames.js';
  * injected roll in tests). Each roll also returns a note saying what slanted
  * it, which the dialog passes on to `onRolled` for the log. A Start combat
  * button submits the form. Rolled values stay editable, so the GM can override
- * a result by hand before starting.
+ * a result by hand before starting. A Surprised box on each row marks a
+ * combatant that the other side caught unaware.
  *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
@@ -39,6 +40,8 @@ import { numberedNames } from '../combat/DisplayNames.js';
 export function combatSetupModal(roster, callbacks = {}) {
   /** @type {Map<string, HTMLInputElement>} */
   const inputs = new Map();
+  /** @type {Map<string, HTMLInputElement>} */
+  const surprised = new Map();
   /** The ids whose value the GM rolled or typed. Start rolls the others. */
   const settled = new Set();
 
@@ -81,6 +84,16 @@ export function combatSetupModal(roster, callbacks = {}) {
         input.addEventListener('input', () => settled.add(participant.id));
         inputs.set(participant.id, input);
 
+        const surprise = checkbox('Surprised', participant.surprised === true, {
+          className: 'initiative-panel__surprised',
+        });
+        surprise.input.setAttribute('aria-label', `${view.name} is surprised`);
+        setTip(
+          surprise.label,
+          'No action, bonus action, or move on its first turn, and no reaction until that turn ends',
+        );
+        surprised.set(participant.id, surprise.input);
+
         body.push(
           el(
             'div',
@@ -88,6 +101,7 @@ export function combatSetupModal(roster, callbacks = {}) {
             el('span', 'initiative-panel__name', view.name),
             modifier,
             input,
+            surprise.label,
           ),
         );
       }
@@ -153,7 +167,13 @@ export function combatSetupModal(roster, callbacks = {}) {
           );
         }
       }
-      return roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 }));
+      return roster.map((p) => {
+        const { surprised: _, ...rest } = p;
+        const initiative = Number(inputs.get(p.id)?.value) || 0;
+        return surprised.get(p.id)?.checked
+          ? { ...rest, initiative, surprised: true }
+          : { ...rest, initiative };
+      });
     },
   });
 }

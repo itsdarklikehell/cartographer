@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gameClock } from '../src/storage/RecordCoercion.js';
+import { combatState, gameClock } from '../src/storage/RecordCoercion.js';
 import { advanceWatches } from '../src/time/GameClock.js';
 
 test('gameClock keeps a valid clock and drops a value that is not a record', () => {
@@ -26,4 +26,17 @@ test('gameClock fills a missing day and resets a watch outside the day', () => {
   assert.deepEqual(gameClock({}), { day: 1, watch: 0 });
   assert.deepEqual(gameClock({ day: 0, watch: -2 }), { day: 1, watch: 0 });
   assert.deepEqual(gameClock({ day: '4.7', watch: 6 }), { day: 4, watch: 0 });
+});
+
+test('combatState keeps the surprised flag only when it is true', () => {
+  const state = combatState({
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'a', initiative: 12, modifier: 1, surprised: true },
+      { id: 'b', initiative: 8, modifier: 0, surprised: 'yes' },
+    ],
+  });
+  assert.equal(state?.order[0].surprised, true);
+  assert.equal('surprised' in (state?.order[1] ?? {}), false);
 });

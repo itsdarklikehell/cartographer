@@ -9,7 +9,7 @@ import {
   dropParticipant,
   addParticipant,
 } from '../src/combat/Initiative.js';
-import { freshBudget, spend } from '../src/combat/ActionBudget.js';
+import { freshBudget, spend, surprisedBudget } from '../src/combat/ActionBudget.js';
 
 /**
  * A stand-in for the app's name resolution: participants carry only ids, so
@@ -323,4 +323,41 @@ test('dropParticipant refreshes the top of the order when the last combatant lea
   const next = dropParticipant(state, 'b');
   assert.equal(currentParticipant(next)?.id, 'a');
   assert.equal(next.order[0].used.action, false);
+});
+
+test('startCombat spends the reaction of the surprised, and the whole turn of the first', () => {
+  const state = startCombat([
+    { ...createParticipant('a', 20), surprised: true },
+    createParticipant('b', 15),
+    { ...createParticipant('c', 10), surprised: true },
+  ]);
+  assert.deepEqual(state.order[0].used, surprisedBudget(true));
+  assert.deepEqual(state.order[1].used, freshBudget());
+  assert.deepEqual(state.order[2].used, surprisedBudget(false));
+});
+
+test('advanceTurn gives a surprised lander a spent turn and ends surprise after it', () => {
+  const state = startCombat([
+    createParticipant('a', 20),
+    { ...createParticipant('b', 15), surprised: true },
+  ]);
+  const onB = advanceTurn(state).state;
+  assert.deepEqual(onB.order[1].used, surprisedBudget(true), 'no action or bonus on its turn');
+  assert.equal(onB.order[1].surprised, true);
+  const after = advanceTurn(onB).state;
+  assert.equal(after.order[1].surprised, undefined, 'the surprise ends with the turn');
+  assert.equal(after.order[1].used?.reaction, false, 'the reaction comes back');
+  const round2 = advanceTurn(after).state;
+  assert.deepEqual(round2.order[1].used, freshBudget(), 'its next turn is a normal one');
+});
+
+test('advanceTurn ends the surprise of a combatant it steps past', () => {
+  const state = startCombat([
+    createParticipant('a', 20),
+    { ...createParticipant('b', 15), surprised: true },
+    createParticipant('c', 10),
+  ]);
+  const result = advanceTurn(state, (p) => p.id === 'b');
+  assert.equal(currentParticipant(result.state)?.id, 'c');
+  assert.equal(result.state.order[1].surprised, undefined);
 });

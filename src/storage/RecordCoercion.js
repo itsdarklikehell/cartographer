@@ -112,6 +112,7 @@ export function combatState(value) {
               // A save from before the action budget carries nothing here, and
               // `budgetOf` reads that as a turn with everything unspent.
               used: budgetOf(entry.used),
+              ...(entry.surprised === true ? { surprised: true } : {}),
             },
           ]
         : [],

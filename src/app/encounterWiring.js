@@ -16,7 +16,7 @@ import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
 import { describeCombatant, findCombatant } from './combatants.js';
-import { endSpellEffects } from './combatantWrites.js';
+import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { focusMapCanvas } from './combatWiring.js';
@@ -218,6 +218,14 @@ export function wireEncounters(app) {
     if (!participants) return;
     const started = startCombat(participants, (p) => describe(p)?.name ?? '', startedAt);
     setCombat(started);
+    // A surprised combatant wears a Surprised chip that ends with its first
+    // turn, the same turn its budget flag ends in Initiative.advanceTurn.
+    for (const p of started.order.filter((q) => q.surprised)) {
+      applyConditionToTarget(app, p.id, 'Surprised', null, undefined, null, {
+        expires: { who: p.id, at: 'end', count: 1 },
+      });
+      app.actions.logEvent('combat', `${describe(p)?.name ?? 'Unknown combatant'} is surprised.`);
+    }
     const first = started.order[started.index];
     if (first) startTurnEffects(app, first.id);
     app.views.initiativePanel.update(); // shows the panel again

@@ -16,6 +16,12 @@ export interface Participant {
    * a fresh turn.
    */
   used?: ActionBudget;
+  /**
+   * Whether the combatant starts the fight surprised. Its first turn has no
+   * action and no bonus action, and it has no reaction until that turn ends.
+   * The flag goes away when that turn ends.
+   */
+  surprised?: boolean;
 }
 
 /** One kind of turn expenditure. Movement is absent: see `ActionBudget`. */

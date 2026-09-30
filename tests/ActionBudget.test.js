@@ -7,6 +7,7 @@ import {
   budgetOf,
   canSpend,
   canSurge,
+  endSurprise,
   freshBudget,
   isFresh,
   refresh,
@@ -14,6 +15,7 @@ import {
   spend,
   spendAttack,
   surge,
+  surprisedBudget,
   unspend,
 } from '../src/combat/ActionBudget.js';
 
@@ -266,4 +268,22 @@ test('surge gives a spent action back once per turn and keeps the swing bank', (
   assert.equal(next.used?.action, true);
   assert.equal(next.used?.attacksLeft, 1, 'the second Attack action banks its own swing');
   assert.equal(isFresh({ ...fresh, used: { ...freshBudget(), surged: true } }), false);
+});
+
+test('surprisedBudget spends the reaction, and on the turn the action and bonus too', () => {
+  assert.deepEqual(surprisedBudget(false), { ...freshBudget(), reaction: true });
+  assert.deepEqual(surprisedBudget(true), {
+    ...freshBudget(),
+    action: true,
+    bonus: true,
+    reaction: true,
+  });
+});
+
+test('endSurprise drops the flag and gives the reaction back', () => {
+  const plain = { id: 'a', initiative: 10, modifier: 0 };
+  assert.equal(endSurprise(plain), plain);
+  const ended = endSurprise({ ...plain, surprised: true, used: surprisedBudget(true) });
+  assert.equal('surprised' in ended, false);
+  assert.deepEqual(ended.used, { ...freshBudget(), action: true, bonus: true });
 });

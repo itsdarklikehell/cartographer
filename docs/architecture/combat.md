@@ -297,6 +297,16 @@ the action also drops the swings it banked, so the next Attack action banks
 them again. The press writes a log line, because no other record of the
 override exists.
 
+A participant with `surprised` set starts the fight with the budget of
+`surprisedBudget`: its reaction is spent, and on its own turn the action and
+the bonus action are spent too. `startCombat` gives that budget to every
+surprised participant, and `refreshTurn` gives it again when the pointer
+lands on one. `advanceTurn` runs `endSurprise` on the participant whose
+turn ends and on each participant it steps past, which drops the flag and
+frees the reaction. encounterWiring also puts a Surprised chip on each
+surprised combatant that ends at the end of its first turn, so the card
+shows the state. The setup dialog sets the flag from its Surprised boxes.
+
 ### Turn actions
 
 `src/combat/TurnActions.js` lists the turn actions that are not a swing or a

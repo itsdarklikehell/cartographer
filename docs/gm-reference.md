@@ -1067,9 +1067,25 @@ numbers. The log and the stored name keep the plain name.
 | --- | --- |
 | Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
 | Roll initiative | Rolls for every row at once |
+| Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 
 For the initiative rules, see [Initiative](#initiative).
+
+### Surprise
+
+The GM decides who is surprised, for example after a Stealth check against
+the passive Perception of the other side. Tick **Surprised** on each of
+those rows before you press Start combat. The log records a line such as
+"Goblin Scout is surprised."
+
+A surprised combatant wears a Surprised chip and keeps its place in the
+initiative order. Until its first turn ends, its Reaction pip is spent. On
+that first turn, the Action and Bonus action pips are spent too, so every
+button that needs them refuses. The app does not track movement, so the GM
+keeps the surprised combatant in place. At the end of that turn the chip
+ends and the reaction comes back, and its next turn is a normal one. To
+overrule a spent pip, press it to mark it free.
 
 ### Attack dialog
 

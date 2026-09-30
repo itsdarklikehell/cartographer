@@ -243,3 +243,26 @@ export function surge(participant) {
     used: { ...budgetOf(participant.used), action: false, surged: true },
   };
 }
+
+/**
+ * The budget of a surprised combatant. Before its first turn it has only
+ * the reaction spent, and on that turn the action and the bonus action are
+ * spent too.
+ * @param {boolean} onTurn whether the surprised turn is the one running
+ * @returns {ActionBudget}
+ */
+export function surprisedBudget(onTurn) {
+  return { ...freshBudget(), reaction: true, action: onTurn, bonus: onTurn };
+}
+
+/**
+ * End the surprise of a combatant whose first turn is over, and give it
+ * its reaction back. A combatant that is not surprised returns unchanged.
+ * @param {Participant} participant
+ * @returns {Participant}
+ */
+export function endSurprise(participant) {
+  if (!participant.surprised) return participant;
+  const { surprised: _, ...rest } = participant;
+  return { ...rest, used: { ...budgetOf(participant.used), reaction: false } };
+}

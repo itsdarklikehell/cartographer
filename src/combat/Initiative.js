@@ -6,7 +6,7 @@
  * elsewhere in this codebase.
  */
 
-import { freshBudget, refresh, resetSneak } from './ActionBudget.js';
+import { endSurprise, freshBudget, refresh, resetSneak, surprisedBudget } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -47,6 +47,8 @@ export function sortInitiative(participants, nameOf = () => '') {
 
 /**
  * Begin a combat: sort the participants and start at round 1, first turn.
+ * A surprised participant starts with its reaction spent, and the first in
+ * the order also has its action and bonus action spent.
  * `startedAt` is injected instead of read from the clock, so this function
  * stays pure. The caller passes the moment its setup opened, which is where
  * the fight's slice of the travelogue begins.
@@ -56,7 +58,10 @@ export function sortInitiative(participants, nameOf = () => '') {
  * @returns {CombatState}
  */
 export function startCombat(participants, nameOf, startedAt = 0) {
-  return { round: 1, index: 0, order: sortInitiative(participants, nameOf), startedAt };
+  const order = sortInitiative(participants, nameOf).map((p, at) =>
+    p.surprised ? { ...p, used: surprisedBudget(at === 0) } : p,
+  );
+  return { round: 1, index: 0, order, startedAt };
 }
 
 /**
@@ -135,7 +140,9 @@ export function currentParticipant(state) {
  * The participant the pointer lands on gets a whole action budget back,
  * because their turn is what begins. A participant the pointer steps past
  * keeps a spent budget: they cannot act, and their own next turn start clears
- * it if something revives them.
+ * it if something revives them. A surprised participant whose turn ends, or
+ * whose turn the pointer steps past, is no longer surprised and gets its
+ * reaction back.
  * @param {CombatState} state
  * @param {(participant: Participant) => boolean} [isDefeated]
  * @returns {{ state: CombatState, wrapped: boolean }}
@@ -145,7 +152,9 @@ export function advanceTurn(state, isDefeated = () => false) {
   let index = state.index;
   let round = state.round;
   let wrapped = false;
+  const passed = new Set([index]);
   for (let steps = 0; steps < state.order.length; steps += 1) {
+    if (steps > 0) passed.add(index);
     index += 1;
     if (index >= state.order.length) {
       index = 0;
@@ -154,11 +163,16 @@ export function advanceTurn(state, isDefeated = () => false) {
     }
     if (!isDefeated(state.order[index])) break;
   }
-  return { state: { ...state, index, round, order: refreshTurn(state.order, index) }, wrapped };
+  // The turn that ends, and each turn the pointer steps past, ends the
+  // surprise of its combatant.
+  const unsurprised = state.order.map((p, at) => (passed.has(at) ? endSurprise(p) : p));
+  const order = unsurprised.some((p, at) => p !== state.order[at]) ? unsurprised : state.order;
+  return { state: { ...state, index, round, order: refreshTurn(order, index) }, wrapped };
 }
 
 /**
- * The order with the participant at `index` given a fresh budget, and the
+ * The order with the participant at `index` given a fresh budget (or the
+ * spent one of a surprised turn), and the
  * Sneak Attack flag reset on everyone else. Sneak Attack is once per turn, and
  * a turn is anyone's turn, so a new turn re-arms it for the whole order: a
  * rogue that spent it can spend it again on an opportunity attack. The array
@@ -171,7 +185,12 @@ export function advanceTurn(state, isDefeated = () => false) {
 function refreshTurn(order, index) {
   let changed = false;
   const next = order.map((participant, at) => {
-    const reset = at === index ? refresh(participant) : resetSneak(participant);
+    const reset =
+      at !== index
+        ? resetSneak(participant)
+        : participant.surprised
+          ? { ...participant, used: surprisedBudget(true) }
+          : refresh(participant);
     if (reset !== participant) changed = true;
     return reset;
   });
