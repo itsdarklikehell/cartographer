@@ -1,5 +1,6 @@
 import { promptModal, confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
-import { createCreature, editCreature, fromTemplate } from '../entities/Creature.js';
+import { createCreature, editCreature } from '../entities/Creature.js';
+import { fromTemplate } from '../entities/CreatureTemplate.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';

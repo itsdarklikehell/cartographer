@@ -133,7 +133,7 @@ every creature on the party's tile as met. `knownCreaturesAt` is the player
 view of the non-hostile creatures, and `discoveredHostiles` is the player view
 of the hostile creatures, through the fog of war.
 
-`Creature.fromTemplate` builds a creature from a library template, and
+`CreatureTemplate.fromTemplate` builds a creature from a library template, and
 `toTemplate` builds a template from a creature. A library file has no version
 field, so `fromTemplate` reads every template format that a file can contain.
 A `statBlock` field reads as `stats`, and a template with no disposition reads
@@ -192,9 +192,9 @@ creature is worth no XP.
 
 `coerceCR` is the only gate for the field. It accepts a number or a written
 rating such as `"1/4"`, and it drops any value that is not a defined step. It
-does not round the value to a nearby step. `Creature.js` runs every write path
-(`createCreature`, `editCreature`, `withDefaults`, `toTemplate`, and
-`fromTemplate`) through it, and `Library.normalizeLibrary` runs library entries
+does not round the value to a nearby step. `Creature.js` and
+`CreatureTemplate.js` run every write path (`createCreature`, `editCreature`,
+`withDefaults`, `toTemplate`, and `fromTemplate`) through it, and `Library.normalizeLibrary` runs library entries
 through it. A saved creature with no `cr` field is unrated, so the field needs
 no migration step.
 
@@ -1753,7 +1753,7 @@ refuses a cast whose name matches no template, before the dialog opens and so
 before a slot is spent.
 
 `spawnSummons` in `app/summons.js` reads the template, builds one creature per
-count through `Creature.fromTemplate`, and puts all of them on the party's
+count through `CreatureTemplate.fromTemplate`, and puts all of them on the party's
 tile. That tile is the only place that a cast can reach, because the app
 cannot measure the distance between two tokens. Each creature gets its own id.
 Its side is the disposition of the template, so a hostile template fights the

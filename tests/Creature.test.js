@@ -14,10 +14,9 @@ import {
   applyDamage,
   heal,
   isDefeated,
-  toTemplate,
-  fromTemplate,
   slay,
 } from '../src/entities/Creature.js';
+import { toTemplate, fromTemplate } from '../src/entities/CreatureTemplate.js';
 import { createCondition } from '../src/entities/Conditions.js';
 import { slotLevelOf } from '../src/entities/SpellSlots.js';
 

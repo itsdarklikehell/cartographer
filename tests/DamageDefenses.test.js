@@ -8,13 +8,8 @@ import {
   defensesSummary,
   normalizeDefenses,
 } from '../src/entities/DamageDefenses.js';
-import {
-  createCreature,
-  editCreature,
-  fromTemplate,
-  toTemplate,
-  withDefaults,
-} from '../src/entities/Creature.js';
+import { createCreature, editCreature, withDefaults } from '../src/entities/Creature.js';
+import { fromTemplate, toTemplate } from '../src/entities/CreatureTemplate.js';
 import { normalizeLibrary } from '../src/library/Library.js';
 
 /** One damage group, as `rollDamage` returns it. */

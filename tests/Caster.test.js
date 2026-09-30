@@ -10,12 +10,8 @@ import {
   casterTemplateFields,
   casterSummary,
 } from '../src/entities/Caster.js';
-import {
-  createCreature,
-  toTemplate,
-  fromTemplate,
-  editCreature,
-} from '../src/entities/Creature.js';
+import { createCreature, editCreature } from '../src/entities/Creature.js';
+import { fromTemplate, toTemplate } from '../src/entities/CreatureTemplate.js';
 import { getPactPool, getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
 import { spellSaveDC, spellAttackBonus } from '../src/entities/Classes.js';
 import { castSpell } from '../src/entities/Casting.js';

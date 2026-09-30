@@ -301,7 +301,7 @@ export function renderGuide(data) {
         <ul>
           <li><strong>Tile lookups.</strong> <code>src/map/TileIndex.js</code> gives O(1) <code>tileAt(node, id)</code>, which is safe because a tile write replaces the node.</li>
           <li><strong>Derived map data.</strong> <code>findRegionGroups</code> and <code>spanBlocks</code> cache in a WeakMap keyed on the node. A mutated node would serve a stale answer forever.</li>
-          <li><strong>Frozen catalogs.</strong> The built-in tables run through <code>deepFreeze</code>, so any code that copies one into campaign state has to do so explicitly, as <code>Creature.fromTemplate</code> does.</li>
+          <li><strong>Frozen catalogs.</strong> The built-in tables run through <code>deepFreeze</code>, so any code that copies one into campaign state has to do so explicitly, as <code>CreatureTemplate.fromTemplate</code> does.</li>
         </ul>
       </div>
 

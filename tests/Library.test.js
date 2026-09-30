@@ -34,7 +34,7 @@ import { DEFAULT_FEATS } from '../src/data/feats.js';
 import { crXP } from '../src/data/challenge.js';
 import { normalizeCreatureProficiencies } from '../src/entities/Proficiencies.js';
 import { getClass, spellSaveDC } from '../src/entities/Classes.js';
-import { fromTemplate } from '../src/entities/Creature.js';
+import { fromTemplate } from '../src/entities/CreatureTemplate.js';
 import { isCaster, toCaster } from '../src/entities/Caster.js';
 import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
 

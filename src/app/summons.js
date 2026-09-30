@@ -8,7 +8,8 @@
  * condition sweep, because both ends of a spell end together.
  */
 
-import { effectiveStatBlock, fromTemplate } from '../entities/Creature.js';
+import { effectiveStatBlock } from '../entities/Creature.js';
+import { fromTemplate } from '../entities/CreatureTemplate.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { createParticipant } from '../combat/Initiative.js';
 import { slugId } from '../entities/Roster.js';

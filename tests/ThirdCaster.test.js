@@ -27,12 +27,8 @@ import {
   ensureCasterFields,
   casterTemplateFields,
 } from '../src/entities/Caster.js';
-import {
-  createCreature,
-  editCreature,
-  toTemplate,
-  fromTemplate,
-} from '../src/entities/Creature.js';
+import { createCreature, editCreature } from '../src/entities/Creature.js';
+import { fromTemplate, toTemplate } from '../src/entities/CreatureTemplate.js';
 import { normalizeLibrary } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 

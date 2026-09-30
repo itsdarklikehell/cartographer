@@ -4,7 +4,7 @@ import { confirmDelete, alertModal } from '../ui/Modal.js';
 import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
-import { toTemplate } from '../entities/Creature.js';
+import { toTemplate } from '../entities/CreatureTemplate.js';
 import {
   clearableDefeated,
   creaturesAt,

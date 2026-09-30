@@ -261,7 +261,7 @@ them. The four built-in catalogs behind them (`defaultEquipmentTemplates()`,
 `DEFAULT_CREATURES`, `DEFAULT_SPELLS`, and `DEFAULT_FEATS`) pass through
 `deepFreeze` (`src/util/deepFreeze.js`). A write to a shared array then
 throws, and does not change the data for every reader. A path that copies
-library data into campaign state says so in its name: `Creature.fromTemplate`,
+library data into campaign state says so in its name: `CreatureTemplate.fromTemplate`,
 `Library.activeEnemyArmor`, `EquipmentPresets.copyEnemyWeapon`, and
 `CharacterSpellbook.copySpellbook`.
 

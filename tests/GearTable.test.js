@@ -11,7 +11,8 @@ import {
 } from '../src/storage/SaveManager.js';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { applyDamage, fromTemplate } from '../src/entities/Creature.js';
+import { applyDamage } from '../src/entities/Creature.js';
+import { fromTemplate } from '../src/entities/CreatureTemplate.js';
 import { installLocalStorage } from './helpers/env.js';
 
 beforeEach(installLocalStorage);

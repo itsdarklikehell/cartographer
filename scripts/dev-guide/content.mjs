@@ -152,7 +152,7 @@ export const ROUTER_ANSWERS = {
     trap: 'Never mutate in place. A writer returns a new object, and the panel repaint guard depends on that. Catalogs in src/data/ are deep-frozen, so copy one before you write it into campaign state.',
     refs: [
       ['src/util/deepFreeze.js', 'deepFreeze'],
-      ['src/entities/Creature.js', 'fromTemplate'],
+      ['src/entities/CreatureTemplate.js', 'fromTemplate'],
     ],
   },
   storage: {
@@ -308,7 +308,7 @@ export const PROSE_REFERENCES = [
   ['src/storage/StateDiff.js', 'invertOps'],
   ['src/storage/HistoryLog.js', 'HISTORY_BYTE_CAP'],
   ['src/storage/fileIO.js', 'downloadJSON'],
-  ['src/entities/Creature.js', 'fromTemplate'],
+  ['src/entities/CreatureTemplate.js', 'fromTemplate'],
   ['src/util/deepFreeze.js', 'deepFreeze'],
   ['src/party/PartyTracker.js', 'moveTo'],
 ];
