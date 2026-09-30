@@ -793,14 +793,16 @@ tile** button.
 
 #### Handout visibility
 
-The handout panel renders only what `Handouts.handoutsFor` returns for the
+The handout panel renders only what `Handouts.handoutsFor` and `revealedFor` return for the
 tab:
 
 - A GM tab gets every handout of the party's node.
 - A player tab gets the revealed handouts that are campaign-wide, bound to
   the party's node, or bound to the party's tile. Of those, it gets only the
   ones whose `audience` is null or names the character that the tab is bound
-  to (`getBoundCharacterId`).
+  to (`getBoundCharacterId`). `Handouts.revealedFor` adds every other
+  revealed handout for that audience, which the panel lists under
+  "Revealed earlier".
 - A spectator tab has no character, so it never lists a handout with an
   audience.
 

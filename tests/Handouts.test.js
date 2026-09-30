@@ -6,9 +6,9 @@ import {
   withDefaults,
   toggleRevealed,
   handoutRevealLine,
-  readHandouts,
   handoutsAt,
   handoutsFor,
+  revealedFor,
   inAudience,
   unbindFrom,
   bindingsIn,
@@ -287,21 +287,20 @@ test('handoutRevealLine hides the title of a hidden or targeted handout', () => 
   ]);
 });
 
-test('readHandouts lists the revealed handouts a tab saw at other spots', () => {
+test('revealedFor lists the spot first, then every other revealed handout of the audience', () => {
   const at = (id, extra = {}) => ({ ...createHandout(id, id), revealed: true, ...extra });
-  const here = at('here');
-  const gone = at('gone');
+  const here = at('here', { nodeId: 'world', tileId: '2,2' });
+  const far = at('far', { nodeId: 'cave', tileId: '1,1' });
   const hidden = at('hidden', { revealed: false });
   const other = at('other', { audience: ['c2'] });
-  const unseen = at('unseen');
-  const all = [here, gone, hidden, other, unseen];
-  const seen = new Set(['here', 'gone', 'hidden', 'other']);
-  assert.deepEqual(
-    readHandouts(all, [here], seen, 'c1').map((h) => h.id),
-    ['gone'],
-  );
-  assert.deepEqual(
-    readHandouts(all, [], seen, 'c2').map((h) => h.id),
-    ['here', 'gone', 'other'],
-  );
+  const wide = at('wide');
+  const all = [far, here, hidden, other, wide];
+  const ids = (/** @type {{ id: string }[]} */ list) => list.map((h) => h.id);
+  const c1 = revealedFor(all, party, 'c1');
+  assert.deepEqual(ids(c1.here), ['here', 'wide']);
+  assert.deepEqual(ids(c1.earlier), ['far']);
+  const c2 = revealedFor(all, { nodeId: 'cave', tileId: '9,9' }, 'c2');
+  assert.deepEqual(ids(c2.here), ['other', 'wide']);
+  assert.deepEqual(ids(c2.earlier), ['far', 'here']);
+  assert.deepEqual(ids(revealedFor(all, party, null).earlier), ['far']);
 });

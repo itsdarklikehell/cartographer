@@ -5,7 +5,7 @@ import {
   toggleRevealed,
   handoutsFor,
   handoutRevealLine,
-  readHandouts,
+  revealedFor,
 } from '../handout/Handouts.js';
 import {
   describeHandout,
@@ -16,7 +16,6 @@ import {
 } from '../handout/HandoutForm.js';
 import { replaceById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
-import { recordReadHandouts } from '../view/ReadHandouts.js';
 import { wireEntityList } from './entityList.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -96,9 +95,9 @@ export function patchHandout(handout, title, values) {
 /**
  * Wires the Story tab's handouts panel, its add and edit dialog, and the
  * `addHandoutAt` action that the tile inspector calls. The panel lists what
- * `handoutsFor` returns for this tab. A GM gets every handout of the
- * party's node. A player tab gets the revealed ones that apply to the
- * party's tile and to the tab's own character.
+ * `handoutsFor` or `revealedFor` returns for this tab. A GM gets every handout of the
+ * party's node. A player tab gets every revealed handout for the tab's own
+ * character, with the ones of the party's spot first.
  * @param {AppContext} app
  */
 export function wireHandouts(app) {
@@ -106,8 +105,8 @@ export function wireHandouts(app) {
   /** The tile the next new handout starts on, set only while the inspector's
    * dialog is open. @type {HandoutPlace | null} */
   let preset = null;
-  /** The ids of the rows in the "Read earlier" group. @type {Set<string>} */
-  let readIds = new Set();
+  /** The ids of the rows in the "Revealed earlier" group. @type {Set<string>} */
+  let earlierIds = new Set();
 
   const handoutList = wireEntityList(app, {
     key: 'handouts',
@@ -122,24 +121,13 @@ export function wireHandouts(app) {
     getHandouts: () => {
       const gm = isGM(state.role);
       const boundCharacterId = gm ? null : (app.actions.getBoundCharacterId?.() ?? null);
-      const here = handoutsFor(state.handouts, app.partyTracker.getPosition(), {
-        gm,
-        boundCharacterId,
-      });
-      if (gm) return here;
-      // The handouts this viewer listed, kept per browser, list under "Read
-      // earlier" after the party leaves their spot.
-      const seen = recordReadHandouts(
-        localStorage,
-        boundCharacterId,
-        here.map((h) => h.id),
-        new Set(state.handouts.map((h) => h.id)),
-      );
-      const read = readHandouts(state.handouts, here, seen, boundCharacterId);
-      readIds = new Set(read.map((h) => h.id));
-      return [...here, ...read];
+      const position = app.partyTracker.getPosition();
+      if (gm) return handoutsFor(state.handouts, position, { gm, boundCharacterId });
+      const { here, earlier } = revealedFor(state.handouts, position, boundCharacterId);
+      earlierIds = new Set(earlier.map((h) => h.id));
+      return [...here, ...earlier];
     },
-    groupOf: (handout) => (readIds.has(handout.id) ? 'Read earlier' : null),
+    groupOf: (handout) => (earlierIds.has(handout.id) ? 'Revealed earlier' : null),
     describe: (handout) =>
       describeHandout(handout, (id) => state.characters.find((c) => c.id === id)?.name),
     // The notes name characters, which the handout rows do not change with.

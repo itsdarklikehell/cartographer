@@ -130,8 +130,8 @@ export function inAudience(handout, boundId) {
  * only the revealed handouts that are campaign-wide, bound to the party's
  * node, or bound to the tile the party stands on. Of those, it gets only
  * the ones whose audience includes the tab's character. The player panel
- * renders from this list alone, so the body and image of any other handout
- * never reach that tab's DOM.
+ * adds the other revealed handouts of the same audience (see `revealedFor`),
+ * so the body and image of a hidden handout never reach that tab's DOM.
  * @param {Handout[]} handouts
  * @param {{ nodeId: string, tileId: string }} position
  * @param {HandoutViewer} viewer
@@ -149,20 +149,21 @@ export function handoutsFor(handouts, position, viewer) {
 }
 
 /**
- * The handouts a Player tab showed earlier and does not show at the party's
- * current spot, in list order. Each one is still revealed and still for this
- * tab, so a handout the GM hides again, or deletes, drops out of the list.
+ * Every handout a Player tab bound to `boundId` may read: the revealed
+ * handouts in its audience, wherever they are bound. The handouts of the
+ * party's spot (see `handoutsFor`) come first, and the rest follow in list
+ * order. A Player tab opened late, or on a new device, gets the same list
+ * as a tab that was open when the GM revealed each handout.
  * @param {Handout[]} handouts
- * @param {Handout[]} shown the tab's list for the current spot
- * @param {ReadonlySet<string>} seen the ids the tab has listed before
- * @param {string | null} boundId the tab's character
- * @returns {Handout[]}
+ * @param {{ nodeId: string, tileId: string }} position
+ * @param {string | null} boundId
+ * @returns {{ here: Handout[], earlier: Handout[] }}
  */
-export function readHandouts(handouts, shown, seen, boundId) {
-  const here = new Set(shown.map((h) => h.id));
-  return handouts.filter(
-    (h) => h.revealed && seen.has(h.id) && !here.has(h.id) && inAudience(h, boundId),
-  );
+export function revealedFor(handouts, position, boundId) {
+  const here = handoutsFor(handouts, position, { gm: false, boundCharacterId: boundId });
+  const ids = new Set(here.map((h) => h.id));
+  const earlier = handouts.filter((h) => h.revealed && !ids.has(h.id) && inAudience(h, boundId));
+  return { here, earlier };
 }
 
 /**

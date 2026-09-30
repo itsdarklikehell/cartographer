@@ -35,7 +35,7 @@ function appendRevealedContent(row, handout) {
  * table. A player sees only revealed handouts, read-only. The panel owns
  * no state. getHandouts supplies the visible rows, already cut to what this
  * tab may see, and every mutation flows back through a callback, matching
- * the other panels. `groupOf` names the group of a Player row, such as "Read earlier".
+ * the other panels. `groupOf` names the group of a Player row, such as "Revealed earlier".
  * `describe` gives the GM a short note under a row, for
  * example the tile the handout waits on. `dependsOn` names what that note
  * reads besides the row. Modals live in main.js.

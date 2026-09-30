@@ -2488,7 +2488,8 @@ again.
 The GM sees every handout of the node where the party stands. A line under
 each row names the tile of the handout and the characters who see it.
 
-A Player tab lists a handout only when all of these conditions are true:
+A Player tab lists a handout under the current spot only when all of these
+conditions are true:
 
 - The GM revealed it.
 - It is campaign-wide, or bound to the node of the party, or bound to the
@@ -2496,11 +2497,11 @@ A Player tab lists a handout only when all of these conditions are true:
 - It has no chosen characters, or the tab plays one of them. A spectator
   tab never lists a handout that has chosen characters.
 
-A Player tab keeps listing a handout after the party leaves its spot. The
-handout moves to a **Read earlier** group below the handouts of the current
-spot. It leaves the group when the GM hides or deletes it. The browser stores this
-list for each character, so the group is still there after a reload of the
-Player tab. New, Load example, and Import empty it.
+A Player tab also lists every other revealed handout for its character in a
+**Revealed earlier** group below the handouts of the current spot. The group
+comes from the campaign, so a Player tab that opens late, or opens on a new
+device, lists the same handouts as a tab that was open all along. A handout
+leaves the group when the GM hides or deletes it.
 An erase stroke, a smaller node size, or a regeneration of the node can
 remove the tile of a handout. The handout then binds to the whole node. An
 undo of the erase or the regeneration binds it to its tile again.
