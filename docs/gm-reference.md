@@ -823,7 +823,9 @@ the map.
 | A building interior | None |
 
 The minutes add up across walks, and the Time panel shows the next watch
-once 4 hours have passed. A split character's walk spends no time. A
+once 4 hours have passed. When a walk moves the clock into a new watch, a message and a Travelogue
+entry name the length of the walk and the new time, for example "The walk
+took 4 hours. Now Day 2, Midday." A split character's walk spends no time. A
 teleport, a way out of a map, and a forced move from another map spend no
 time either.
 

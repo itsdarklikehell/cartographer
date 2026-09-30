@@ -7,6 +7,7 @@ import {
   advanceMinutes,
   advanceToDawn,
   formatClock,
+  formatMinutes,
 } from '../src/time/GameClock.js';
 
 test('advanceMinutes adds up inside a watch and rolls over into the next', () => {
@@ -104,4 +105,14 @@ test('a long rest that heals a dying character clears the dying state', () => {
     'the Unconscious chip goes with the tracker',
   );
   assert.equal(isDying(shortRest(dying)), true, 'a short rest heals nothing, so it stays');
+});
+
+test('formatMinutes reads a walk in hours and minutes', () => {
+  assert.equal(formatMinutes(30), '30 minutes');
+  assert.equal(formatMinutes(1), '1 minute');
+  assert.equal(formatMinutes(60), '1 hour');
+  assert.equal(formatMinutes(240), '4 hours');
+  assert.equal(formatMinutes(270), '4 hours 30 minutes');
+  assert.equal(formatMinutes(0), '0 minutes');
+  assert.equal(formatMinutes(-5), '0 minutes');
 });

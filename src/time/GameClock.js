@@ -90,3 +90,19 @@ export function formatClock(clock) {
 export function watchesBetween(from, to) {
   return Math.max(0, (to.day - from.day) * WATCHES.length + to.watch - from.watch);
 }
+
+/**
+ * A spoken length of time, in hours and minutes: "30 minutes", "1 hour",
+ * "4 hours 30 minutes". Zero or less reads "0 minutes".
+ * @param {number} minutes
+ * @returns {string}
+ */
+export function formatMinutes(minutes) {
+  const total = Math.max(0, Math.floor(minutes));
+  const hours = Math.floor(total / 60);
+  const rest = total % 60;
+  /** @param {number} n @param {string} unit */
+  const count = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+  const parts = [hours ? count(hours, 'hour') : '', rest || !hours ? count(rest, 'minute') : ''];
+  return parts.filter(Boolean).join(' ');
+}
