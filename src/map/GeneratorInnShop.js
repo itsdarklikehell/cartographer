@@ -1,5 +1,5 @@
 import { tileIdAt } from './MapGeometry.js';
-import { DOOR_H, FLOOR, maskTiles, tileStamper, WALL } from './GeneratorInteriorMask.js';
+import { DOOR_H, DOOR_V, FLOOR, maskTiles, tileStamper, WALL } from './GeneratorInteriorMask.js';
 import { dress, furnisher } from './GeneratorFurnish.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -7,16 +7,18 @@ import { dress, furnisher } from './GeneratorFurnish.js';
 /** @typedef {import('./GeneratorFurnish.js').Place} Place */
 
 /**
- * The fixed floor plans of an inn and a shop. Each plan starts from the
- * wall ring and the south door of `hallLayout`. A wall across the north
- * part of the building makes the back rooms, with a door at its west end.
- * The front room behind the south door is the common room of an inn or the
- * sales floor of a shop. A row of tables two cells in front of that wall is
- * the bar or the counter. The strip of floor behind it joins the door of
- * the back room to the front room past the east end of the row.
+ * The fixed floor plans of an inn, a shop, and a tavern. Each plan starts
+ * from the wall ring and the south door of `hallLayout`. A wall across the
+ * north part of the building makes the back rooms. In an inn and a shop,
+ * the door of that wall sits at its west end. The front room behind the
+ * south door is the common room of an inn or the sales floor of a shop. A
+ * row of tables two cells in front of that wall is the bar or the counter.
+ * The strip of floor behind it joins the door of the back room to the front
+ * room past the east end of the row. A tavern turns its bar to run along
+ * the east wall, so its back door sits at the east end of the back wall.
  */
 
-/** The smallest building side that fits a plan. A smaller inn or shop uses the room split. */
+/** The smallest building side that fits a plan. A smaller inn, shop, or tavern uses the room split. */
 export const PLAN_MIN_SIZE = 8;
 
 /**
@@ -131,6 +133,63 @@ export function furnishShop(place, rng, size) {
   if (size >= 12) place(size >> 1, depth + 6, 'table');
 }
 
+/** The column where the storeroom of a tavern ends. @param {number} size */
+const storeEnd = (size) => Math.floor((size - 2) / 3);
+
+/** The column of the bar of a tavern, two cells in from the east wall. @param {number} size */
+export const barColumn = (size) => size - 3;
+
+/**
+ * Lay out the walls of a tavern: the storeroom in the north-west, the
+ * kitchen in the north-east, and the taproom in front. The kitchen door sits
+ * at the east end of the back wall and opens behind the bar. The storeroom
+ * opens only into the kitchen, through a door in the wall between them.
+ * @param {number[]} cells a wall ring with its south door @param {number} size
+ */
+export function tavernWalls(cells, size) {
+  const depth = backDepth(size);
+  const sx = storeEnd(size);
+  wall(cells, size, depth + 1, 1, size - 2);
+  cells[(depth + 1) * size + size - 2] = DOOR_H;
+  wall(cells, size, sx + 1, 1, depth, true);
+  cells[depth * size + sx + 1] = DOOR_V;
+}
+
+/**
+ * Furnish a tavern laid out by `tavernWalls`. The bar runs down
+ * `barColumn` from the back wall and stops two cells short of the south
+ * wall. The strip between the bar and the east wall joins the kitchen door
+ * to the taproom past the south end of the bar. The taproom has a hearth
+ * against the back wall and rows of long tables, each two tables wide, with
+ * an aisle in front of the bar. The kitchen has a hearth, a work table, and
+ * a barrel, and the storeroom has barrels and a chest.
+ * @param {Place} place @param {() => number} rng @param {number} size
+ */
+export function furnishTavern(place, rng, size) {
+  const depth = backDepth(size);
+  const sx = storeEnd(size);
+  const bx = barColumn(size);
+  for (let y = depth + 2; y <= size - 4; y++) place(bx, y, 'table');
+  // Long tables start in columns 2, 5, 8, and so on, and end one cell
+  // before the aisle. The hearth takes the middle gap between them.
+  const starts = [];
+  for (let x = 2; x + 1 <= bx - 2; x += 3) starts.push(x);
+  place(1 + 3 * (starts.length >> 1), depth + 2, 'hearth');
+  for (let y = size - 3; y >= depth + 3; y -= 2) {
+    for (const x of starts) {
+      if (rng() >= 0.85) continue;
+      place(x, y, 'table');
+      place(x + 1, y, 'table');
+    }
+  }
+  const kx = (sx + size) >> 1;
+  place(kx, 1, 'hearth');
+  place(kx, depth, 'table');
+  place(size - 2, 1, 'barrel');
+  for (let x = 1; x <= sx; x++) if (rng() < 0.6) place(x, 1, 'barrel');
+  place(1, depth, 'chest');
+}
+
 /**
  * Generate the guest floor above an inn: a corridor from west to east along
  * `stairsRow`, with the stairs down at its east end, and guest rooms north
@@ -180,4 +239,50 @@ export function generateGuestFloor(palette, size, rng) {
   }
   dress(tiles, palette, size, placed);
   return { tiles, entry };
+}
+
+/**
+ * @typedef {{
+ *   walls: (cells: number[], size: number) => number | null,
+ *   furnish: (place: Place, rng: () => number, size: number) => void,
+ * }} FloorPlan
+ * One fixed floor plan. `walls` adds the inner walls and doors to a wall
+ * ring, and its result is the cell index of the stairs up, or null for a
+ * building with no upper floor. `furnish` then places the furnishings.
+ */
+
+/**
+ * The fixed floor plans by building environ.
+ * @type {Readonly<Record<string, FloorPlan>>}
+ */
+export const FLOOR_PLANS = Object.freeze({
+  inn: { walls: innWalls, furnish: furnishInn },
+  shop: {
+    walls: (cells, size) => {
+      shopWalls(cells, size);
+      return null;
+    },
+    furnish: furnishShop,
+  },
+  tavern: {
+    walls: (cells, size) => {
+      tavernWalls(cells, size);
+      return null;
+    },
+    furnish: furnishTavern,
+  },
+});
+
+/**
+ * The floor plan of a building, or null when its environ has no plan or the
+ * building is smaller than `PLAN_MIN_SIZE`.
+ * @param {number} size @param {string} [environ]
+ * @returns {FloorPlan | null}
+ */
+export function floorPlan(size, environ = '') {
+  // An own-key test, so an environ such as "constructor" has no plan.
+  if (size < PLAN_MIN_SIZE || !Object.prototype.hasOwnProperty.call(FLOOR_PLANS, environ)) {
+    return null;
+  }
+  return FLOOR_PLANS[environ];
 }

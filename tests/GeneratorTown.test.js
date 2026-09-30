@@ -314,6 +314,8 @@ test('each building with an inside is a site over its four cells', () => {
       assert.equal(site.archetype, 'building');
       assert.equal(site.label, inside[i].art);
       assert.ok(!open.includes(site.label));
+      // An inn and a tavern get the medium size, so the front room has space for tables.
+      if (site.label === 'inn' || site.label === 'tavern') assert.equal(site.size, 'medium');
     });
   }
 });

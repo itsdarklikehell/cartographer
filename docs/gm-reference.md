@@ -555,6 +555,7 @@ A town building takes its furnishings from what it is.
 | Building | Furnishings |
 | --- | --- |
 | Inn | A kitchen, a pantry, a bar, and a common room of tables. Stairs up lead to a guest floor of bedrooms |
+| Tavern | A taproom with a hearth and long tables, and a bar along one wall. A kitchen and a storeroom sit behind the bar |
 | Temple | One open nave with an altar and pillars |
 | Barracks | Rows of beds |
 | Shop | A storeroom behind a counter, and shelves on the sales floor |

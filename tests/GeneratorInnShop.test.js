@@ -2,7 +2,15 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { doorColumn, generateBuilding } from '../src/map/GeneratorHalls.js';
-import { backDepth, generateGuestFloor, stairsRow } from '../src/map/GeneratorInnShop.js';
+import {
+  backDepth,
+  barColumn,
+  floorPlan,
+  FLOOR_PLANS,
+  generateGuestFloor,
+  PLAN_MIN_SIZE,
+  stairsRow,
+} from '../src/map/GeneratorInnShop.js';
 import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { FLOOR, VOID, WALL, walkDistances } from '../src/map/GeneratorInteriorMask.js';
 import { isBlocked, tileKind } from '../src/map/TileKinds.js';
@@ -82,8 +90,8 @@ test('a shop has a counter, a stocked storeroom, and shelves, and every tile is 
   }
 });
 
-test('an inn and a shop are the same for the same seed and differ from a house', () => {
-  for (const environ of ['inn', 'shop']) {
+test('an inn, a shop, and a tavern are the same for the same seed and differ from a house', () => {
+  for (const environ of ['inn', 'shop', 'tavern']) {
     const a = generateBuilding(palette, 14, mulberry32(4), environ);
     const b = generateBuilding(palette, 14, mulberry32(4), environ);
     assert.deepEqual(a, b);
@@ -151,4 +159,60 @@ test('an inn with a cellar keeps its trapdoor off the stairs up', () => {
     assert.match(String(at(inn.tiles, inn.stairsDown).overlayRef), /trapdoor/);
   }
   assert.ok(cellars > 0);
+});
+
+test('a tavern has a bar along the east wall, a kitchen, a storeroom, and tables', () => {
+  for (const size of SIZES) {
+    for (const seed of SEEDS) {
+      const tavern = generateBuilding(palette, size, mulberry32(seed), 'tavern');
+      const why = `size ${size} seed ${seed}`;
+      const depth = backDepth(size);
+      const bx = barColumn(size);
+      assert.equal(tavern.entry, `${doorColumn(size)},${size - 1}`, why);
+      assert.deepEqual(stranded(tavern.tiles, size, tavern.entry), [], why);
+      assert.equal(tavern.stairsUp, null, why);
+      const overlay = (/** @type {number} */ x, /** @type {number} */ y) =>
+        String(at(tavern.tiles, `${x},${y}`).overlayRef ?? '');
+      // The bar runs from the back wall to two cells short of the south wall.
+      for (let y = depth + 2; y <= size - 4; y++) assert.match(overlay(bx, y), /table/, why);
+      assert.equal(overlay(bx, size - 3), '', why);
+      // The strip behind the bar stays clear from the kitchen door down.
+      for (let y = depth + 2; y < size - 1; y++) assert.equal(overlay(size - 2, y), '', why);
+      // The back wall has one door, at its east end, into the kitchen.
+      const back = tavern.tiles.filter((t) => t.id.endsWith(`,${depth + 1}`));
+      const doors = back.filter((t) => /door/.test(t.imageRef)).map((t) => t.id);
+      assert.deepEqual(doors, [`${size - 2},${depth + 1}`], why);
+      // The storeroom opens into the kitchen through a door in the wall between them.
+      const side = tavern.tiles.filter(
+        (t) => /door-v/.test(t.imageRef) && t.id.endsWith(`,${depth}`),
+      );
+      assert.equal(side.length, 1, why);
+      // One hearth in the taproom against the back wall, and one in the kitchen.
+      assert.equal(count(tavern.tiles, 'hearth'), 2, why);
+      assert.equal(
+        tavern.tiles.filter(
+          (t) => t.id.endsWith(`,${depth + 2}`) && /hearth/.test(String(t.overlayRef)),
+        ).length,
+        1,
+        why,
+      );
+      assert.ok(count(tavern.tiles, 'barrel') >= 1, why);
+      if (size >= 14) assert.ok(count(tavern.tiles, 'table') >= size - depth - 5 + 4, why);
+    }
+  }
+});
+
+test('a tavern below the plan size uses the room split', () => {
+  const tavern = generateBuilding(palette, PLAN_MIN_SIZE - 2, mulberry32(2), 'tavern');
+  assert.deepEqual(stranded(tavern.tiles, PLAN_MIN_SIZE - 2, tavern.entry), [], 'reachable');
+  assert.equal(count(tavern.tiles, 'hearth'), 1);
+});
+
+test('floorPlan names a plan only for a planned environ of the plan size or more', () => {
+  assert.equal(floorPlan(14, 'tavern'), FLOOR_PLANS.tavern);
+  assert.equal(floorPlan(PLAN_MIN_SIZE, 'shop'), FLOOR_PLANS.shop);
+  assert.equal(floorPlan(PLAN_MIN_SIZE - 1, 'inn'), null);
+  assert.equal(floorPlan(14, 'house'), null);
+  assert.equal(floorPlan(14, 'constructor'), null);
+  assert.equal(floorPlan(14), null);
 });

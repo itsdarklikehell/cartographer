@@ -685,11 +685,12 @@ goes beside it, and a building with no cellar leaves the cell bare. The
 `cellar` archetype in `MapGenerator.js` generates the cellar as a small
 dungeon level that the party enters by its stairs up.
 
-An inn and a shop of at least `PLAN_MIN_SIZE` (8) cells a side follow fixed
-floor plans in `src/map/GeneratorInnShop.js` instead of the split. A wall
-across the north of the building makes the back rooms, and its door sits at
-the west end. A row of tables two cells in front of that wall is the bar of
-an inn or the counter of a shop. The strip behind the row joins the back
+An inn, a shop, and a tavern of at least `PLAN_MIN_SIZE` (8) cells a side
+follow fixed floor plans in `src/map/GeneratorInnShop.js` instead of the
+split. `floorPlan` picks the plan by environ from `FLOOR_PLANS`. A wall
+across the north of the building makes the back rooms. In an inn and a shop,
+its door sits at the west end. A row of tables two cells in front of that
+wall is the bar of an inn or the counter of a shop. The strip behind the row joins the back
 door to the front room past the east end of the row, so the furnisher never
 has to drop a table to keep the back rooms reachable.
 
@@ -700,8 +701,18 @@ the `inn` environ. `generateGuestFloor` lays that floor out as a corridor
 along the same row, with the stairs down at its east end above the stairs
 up, and a row of guest rooms on each side. Each guest room has a door onto
 the corridor and a bed. The back of a shop is one storeroom of barrels and
-chests, and shelves line the side walls of its sales floor. A town gives its
-inn the medium size, so the common room has space for tables.
+chests, and shelves line the side walls of its sales floor.
+
+A tavern turns its bar to run down `barColumn`, two cells in from the east
+wall, from the back wall to two cells short of the south wall. The door of
+the back wall sits at its east end and opens into the kitchen behind the bar.
+The strip between the bar and the east wall joins that door to the taproom
+past the south end of the bar. The storeroom sits in the north-west and opens
+only into the kitchen, so a cellar trapdoor, which goes on the cell farthest
+from the door, usually lands in the storeroom. The taproom has a hearth
+against the back wall and rows of long tables, each two tables wide, with an
+aisle in front of the bar. A tavern has no upper floor. A town gives its inn
+and its tavern the medium size, so the front room has space for tables.
 
 ### Furnishings
 
@@ -728,6 +739,7 @@ from.
 | Environ | Furnishings |
 | --- | --- |
 | Inn | A kitchen with a hearth, a pantry, a bar, and a common room of tables, with stairs up to a guest floor of bedrooms |
+| Tavern | A taproom with a hearth, long tables, and a bar along the east wall, with a kitchen and a storeroom behind it |
 | Temple | One open nave with an altar and a colonnade, and no inner walls |
 | Barracks | A row of beds |
 | Shop | A storeroom of stock behind a counter, and shelves on the sales floor |
