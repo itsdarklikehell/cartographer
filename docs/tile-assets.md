@@ -14,6 +14,7 @@ files the app loads, so read those tables before you add or rename a file.
 | `deep-water/`, `jungle/`, `taiga/`, `savanna/`, `badlands/`, `volcanic/`, `glacier/`, `snow-hills/`, `snow-mountain/` | The other biomes of the climate model |
 | `plaza/` | The cobbled town square |
 | `road/`, `river/`, `coast/`, `dock/` | The connector and transition overlays |
+| `lighthouse/` | The lighthouse overlay, which stands on a coast piece |
 | One folder for each POI marker, such as `castle/` and `tavern/` | The single-image markers |
 | `town/` | The town buildings and the town wall pieces |
 | `interior/` | The interior pieces and the furnishings |
@@ -179,6 +180,21 @@ walk out along a pier. When a GM paints a dock piece, it stacks over the
 coast and road overlays of its tile. See `stackOverlay` in
 `src/map/TilePaint.js`.
 
+## Lighthouse
+
+`lighthouse/lighthouse.svg` is an overlay with a transparent ground. It
+draws a stone tower with a signal fire on a rock footing, and a soft
+contact shadow under the footing. The footing sits at the middle of the
+tile. Every coast piece draws its strand or the land beside it there, so
+the tower stands on the shoreline of any straight, corner, or inner corner
+piece, over any terrain. `stackOverlay` draws the lighthouse above every
+other overlay family, and painting a second lighthouse on a tile replaces
+the first. The lighthouse is `plain`, so the party can walk onto its tile.
+
+The wilderness generator puts a lighthouse only on a land cell whose only
+overlay is a coast piece and that has open water within two cells. See
+`placeLandmarks` in `src/map/GeneratorWilds.js`.
+
 ## POI markers
 
 The single-image markers (`MARKER_TYPES`) are `settlement`, `dungeon`,
@@ -187,7 +203,7 @@ The single-image markers (`MARKER_TYPES`) are `settlement`, `dungeon`,
 `alchemist`, `temple`, `shrine`, `wizard-tower`, `ruined-wizard-tower`,
 `academy`, `barracks`, `ruins`, `cave-entrance`, `mine`, `port`, `farm`,
 `burned-farm`, `graveyard`, `camp`, `standing-stones`, `village`, `city`,
-`oasis`, `lighthouse`, `watchtower`, and `burned-watchtower`.
+`oasis`, `watchtower`, and `burned-watchtower`.
 
 The `burned-` and `ruined-` markers show a building after an attack. Each
 one uses the footprint, palette, and stroke widths of its intact marker, so
@@ -204,9 +220,7 @@ art stays inset from the tile edges.
 The exceptions to the grass background are these:
 
 - `dungeon` has a stone background, `#565064`.
-- `port` and `lighthouse` fill their south half with water. The shoreline
-  of `lighthouse` mirrors the shoreline of `port`, so the two join on
-  either side.
+- `port` fills its south half with water.
 
 A new marker uses the grass background.
 

@@ -1,4 +1,5 @@
-import { tilesById } from './TileGrid.js';
+import { overlayList, tilesById } from './TileGrid.js';
+import { stackOverlay } from './TilePaint.js';
 import { tileIdAt } from './MapGeometry.js';
 import { ARMS } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
@@ -26,17 +27,18 @@ import { clamp } from '../util/num.js';
  */
 
 /**
- * @typedef {{ near?: string[], road?: boolean, on?: string, shore?: boolean }} LandmarkNeeds
+ * @typedef {{ near?: string[], road?: boolean, on?: string, coast?: boolean }} LandmarkNeeds
  * `near` lists the terrain the landmark prefers as a neighbor, and `road`
  * makes it prefer a cell beside a road. `on` is the terrain class that its
- * cell must have, and `shore` makes it need open water within two cells.
+ * cell must have. `coast` makes it need a coast piece on its cell and open
+ * water within two cells, and it goes on as an overlay over the coast piece.
  */
 
 /**
  * Landmark markers and where each one belongs. A mine or a cave sits at the
  * foot of the hills, a camp at the edge of a wood, and a watchtower beside
- * a road. An oasis stands only in the desert, and a lighthouse only near
- * open water. A landmark with no needs fits anywhere.
+ * a road. An oasis stands only in the desert, and a lighthouse only on a
+ * shoreline that faces open water. A landmark with no needs fits anywhere.
  * @type {Record<string, LandmarkNeeds>}
  */
 const LANDMARK_AFFINITY = {
@@ -48,7 +50,7 @@ const LANDMARK_AFFINITY = {
   graveyard: {},
   watchtower: { road: true },
   oasis: { on: 'desert' },
-  lighthouse: { shore: true },
+  lighthouse: { coast: true },
 };
 
 /**
@@ -56,6 +58,9 @@ const LANDMARK_AFFINITY = {
  * @type {Record<string, string>}
  */
 const LANDMARK_MAPS = { 'cave-entrance': 'cave', mine: 'cave', ruins: 'dungeon' };
+
+/** A coast piece image path. */
+const COAST_PIECE = /\/tiles\/coast\//;
 
 /** The fewest water cells within two cells that count as open water. */
 const OPEN_WATER = 4;
@@ -70,7 +75,9 @@ const FORD_DISTANCE = 3;
  * to. A map with no free grass, such as a desert, still gets its landmarks
  * on other open ground, where the grass under the marker reads as a
  * clearing. A landmark with a need that no free cell meets, or with no art
- * in the palette, gives its turn to the next landmark in the order.
+ * in the palette, gives its turn to the next landmark in the order. A
+ * lighthouse is an overlay, so it keeps the terrain and the coast piece of
+ * its cell and has no grass under it.
  * Landmarks keep at least three cells from each other and from every marker
  * already on the map, such as a settlement.
  * @param {TilePalette} palette
@@ -83,12 +90,21 @@ const FORD_DISTANCE = 3;
 export function placeLandmarks(palette, terrain, tiles, count, rng) {
   const { size, cells, roads } = terrain;
   const byId = tilesById(tiles);
-  /** @param {number} x @param {number} y */
-  const free = (x, y) => {
+  /**
+   * Whether a landmark can go on (x, y). A marker needs a cell with no
+   * overlay, and a coast landmark needs a cell whose only overlay is a coast
+   * piece, so it never covers a road or a river mouth.
+   * @param {number} x @param {number} y @param {boolean} [coast]
+   */
+  const free = (x, y, coast = false) => {
     const type = cells[y * size + x];
     const tile = byId.get(tileIdAt(x, y));
+    const overlays = tile ? overlayList(tile) : [];
+    const fits = coast
+      ? overlays.length === 1 && COAST_PIECE.test(overlays[0])
+      : overlays.length === 0;
     return (
-      Boolean(tile && !tile.overlayRef && !tile.childNodeId && !tile.metadata.poiType) &&
+      Boolean(tile && fits && !tile.childNodeId && !tile.metadata.poiType) &&
       type !== 'water' &&
       type !== 'mountain'
     );
@@ -111,11 +127,11 @@ export function placeLandmarks(palette, terrain, tiles, count, rng) {
     const spots = [];
     for (let y = 1; y < size - 1; y++) {
       for (let x = 1; x < size - 1; x++) {
-        if (!free(x, y)) continue;
+        if (!free(x, y, needs.coast)) continue;
         if (placed.some(([px, py]) => chebyshev(px, py, x, y) < 3)) continue;
         if (needs.on && cells[y * size + x] !== needs.on) continue;
-        if (needs.shore && countNear(cells, size, x, y, 2, 'water') < OPEN_WATER) continue;
-        let score = cells[y * size + x] === 'grass' ? 2 : 0;
+        if (needs.coast && countNear(cells, size, x, y, 2, 'water') < OPEN_WATER) continue;
+        let score = !needs.coast && cells[y * size + x] === 'grass' ? 2 : 0;
         if (needs.near?.some((t) => countNear(cells, size, x, y, 1, t))) score += 1;
         if (needs.road && ARMS.some(([, dx, dy]) => roads.has(x + dx, y + dy))) score += 1;
         spots.push({ x, y, score });
@@ -126,7 +142,8 @@ export function placeLandmarks(palette, terrain, tiles, count, rng) {
     const top = spots.filter((s) => s.score === best);
     const { x, y } = top[randInt(rng, top.length)];
     const tile = /** @type {Tile} */ (byId.get(tileIdAt(x, y)));
-    tile.imageRef = ref;
+    if (needs.coast) tile.overlayRef = stackOverlay(tile.overlayRef, ref);
+    else tile.imageRef = ref;
     tile.metadata = { ...tile.metadata, poiType: 'landmark' };
     placed.push([x, y]);
     return true;

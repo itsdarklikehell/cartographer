@@ -124,7 +124,6 @@ test('TilePalette ships with single-image POI markers', () => {
     'village',
     'city',
     'oasis',
-    'lighthouse',
     'watchtower',
     'burned-inn',
     'ruined-castle',
@@ -136,6 +135,9 @@ test('TilePalette ships with single-image POI markers', () => {
   ]) {
     assert.ok(palette.get(type), `missing marker "${type}"`);
   }
+  const lighthouse = palette.get('lighthouse');
+  assert.equal(lighthouse.type, 'lighthouse');
+  assert.ok(isOverlayType(lighthouse.type), 'the lighthouse paints as an overlay');
 });
 
 test('TilePalette ships with building-interior pieces', () => {
@@ -232,7 +234,7 @@ test('listBuiltins excludes custom entries, and listCustom the built-ins', () =>
 });
 
 test('isOverlayType flags the terrain-crossing overlay types only', () => {
-  for (const type of ['road', 'river', 'coast', 'dock', 'town-wall', 'furnishing']) {
+  for (const type of ['road', 'river', 'coast', 'dock', 'lighthouse', 'town-wall', 'furnishing']) {
     assert.equal(isOverlayType(type), true);
   }
   for (const type of ['grass', 'poi-town', 'interior', 'house']) {

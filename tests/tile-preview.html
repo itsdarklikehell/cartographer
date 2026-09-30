@@ -37,8 +37,12 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="wall-ring"></div>
 </div>
 
-<h2>Shore landmarks (a lighthouse abuts a port on either side)</h2>
-<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="shore"></div>
+<h2>Lighthouse (an overlay over every coast piece, on grass and on snow)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="shore"></div>
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="shore-snow"></div>
+  <div class="grid" style="grid-template-columns: repeat(2, 64px);" id="shore-inner"></div>
+</div>
 
 <h2>Interior floor (mixed variants)</h2>
 <div class="grid" style="grid-template-columns: repeat(6, 64px);" id="interior-floors"></div>
@@ -128,7 +132,7 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine',
     'wizard-tower', 'academy', 'barracks', 'ruins', 'cave-entrance',
     'mine', 'port', 'farm', 'burned-farm', 'graveyard', 'camp',
-    'standing-stones', 'village', 'city', 'oasis', 'lighthouse',
+    'standing-stones', 'village', 'city', 'oasis',
     'watchtower', 'burned-inn', 'ruined-castle', 'burned-watchtower',
     'burned-tavern', 'burned-blacksmith', 'burned-general-store',
     'ruined-wizard-tower',
@@ -189,13 +193,23 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['grass/grass-2', W('corner-ne')], ['grass/grass-3', W('h')], ['grass/grass-1', W('h')], ['grass/grass-2', W('h')], ['grass/grass-3', W('corner-nw')],
   ].map(([base, ...over]) => cell(base, ...over)).join('');
 
-  // The lighthouse shoreline mirrors the port shoreline, so the edge heights
-  // match in both orders along the row.
-  document.getElementById('shore').innerHTML = [
-    'grass/grass-1', 'grass/grass-2', 'grass/grass-3', 'grass/grass-1',
-    'port/port', 'lighthouse/lighthouse', 'port/port', 'lighthouse/lighthouse',
-    'water/water-1', 'water/water-2', 'water/water-3', 'water/water-1',
-  ].map(img).join('');
+  // An island ringed by coast pieces, with a lighthouse over each one, and
+  // the four inner corners around a small bay.
+  const island = (land) => {
+    const W = ['water/water-1'];
+    const L = (k) => [`${land}-1`, `coast/coast-${k}`, 'lighthouse/lighthouse'];
+    return [
+      W, W, W, W, W,
+      W, L('corner-nw'), L('n'), L('corner-ne'), W,
+      W, L('w'), [`${land}-2`], L('e'), W,
+      W, L('corner-sw'), L('s'), L('corner-se'), W,
+      W, W, W, W, W,
+    ].map(([base, ...over]) => cell(base, ...over)).join('');
+  };
+  document.getElementById('shore').innerHTML = island('grass/grass');
+  document.getElementById('shore-snow').innerHTML = island('snow/snow');
+  document.getElementById('shore-inner').innerHTML = ['inner-se', 'inner-sw', 'inner-ne', 'inner-nw']
+    .map((k) => cell('grass/grass-1', `coast/coast-${k}`, 'lighthouse/lighthouse')).join('');
 
   document.getElementById('interior-floors').innerHTML =
     layout.flat().map((v) => img(`interior/interior-floor-${v}`)).join('');

@@ -231,13 +231,13 @@ export const DOCK_KINDS = [
 /**
  * Palette types painted as a tile's overlayRef, layered over terrain, rather
  * than as its base image. This lets a path or shoreline cross sand, snow, or
- * other terrain, a pier stand on any water, and a furnishing stand on any
- * floor.
+ * other terrain, a pier stand on any water, a lighthouse stand on any
+ * coast, and a furnishing stand on any floor.
  * @param {string} type
  * @returns {boolean}
  */
 export function isOverlayType(type) {
-  return ['road', 'river', 'coast', 'dock', 'town-wall', 'furnishing'].includes(type);
+  return ['road', 'river', 'coast', 'dock', 'lighthouse', 'town-wall', 'furnishing'].includes(type);
 }
 
 /**
@@ -307,7 +307,6 @@ const MARKER_TYPES = [
   'village',
   'city',
   'oasis',
-  'lighthouse',
   'watchtower',
   'burned-watchtower',
 ];
@@ -377,6 +376,15 @@ export function buildBuiltins() {
       custom: false,
     });
   }
+
+  // The lighthouse is an overlay, so it stands on any coast piece.
+  entries.push({
+    id: 'lighthouse',
+    type: 'lighthouse',
+    label: 'Lighthouse',
+    imageRef: `${TILE_ROOT}/lighthouse/lighthouse.svg`,
+    custom: false,
+  });
 
   for (const type of MARKER_TYPES) {
     entries.push({

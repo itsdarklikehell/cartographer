@@ -5,7 +5,9 @@ import { ArmNetwork } from '../src/map/Autotile.js';
 import { fordCrossings, generateWilds, placeLandmarks } from '../src/map/GeneratorWilds.js';
 import { terrainTiles, wildTerrain } from '../src/map/GeneratorGround.js';
 import { mulberry32 } from '../src/util/Rng.js';
+import { overlayList } from '../src/map/TileGrid.js';
 
+/** @typedef {import('../src/types/map.js').Tile} Tile */
 const palette = new TilePalette();
 const WILDS = ['wilderness', 'highlands', 'frontier', 'desert', 'wetlands', 'island'];
 const LANDMARKS = [
@@ -48,7 +50,13 @@ test('every climate archetype fills the grid and marks landmarks on open ground'
       const spots = landmarks.map((t) => t.id.split(',').map(Number));
       for (const [i, [x, y]] of spots.entries()) {
         assert.ok(x > 0 && y > 0 && x < size - 1 && y < size - 1, `${label}: inner landmark`);
-        assert.equal(landmarks[i].overlayRef, null, `${label}: no landmark on a river or shore`);
+        const overlays = overlayList(landmarks[i]);
+        if (overlays.some((r) => r.includes('/lighthouse/'))) {
+          assert.match(overlays[0], /\/coast\//, `${label}: a lighthouse on a coast piece`);
+          assert.equal(overlays.length, 2, `${label}: a lighthouse on a plain shore`);
+        } else {
+          assert.deepEqual(overlays, [], `${label}: no landmark on a river or shore`);
+        }
         for (const [ox, oy] of spots.slice(i + 1)) {
           assert.ok(Math.max(Math.abs(ox - x), Math.abs(oy - y)) >= 3, `${label}: spaced`);
         }
@@ -154,7 +162,7 @@ test('a road crossing far from every town draws as a ford', () => {
   assert.equal(bridged?.overlayRef, 'assets/tiles/river/river-bridge-h.svg');
 });
 
-test('an oasis needs desert, a lighthouse open water, and a watchtower likes a road', () => {
+test('an oasis needs desert, a lighthouse a coast, and a watchtower likes a road', () => {
   /** @param {string} keep */
   const only = (keep) => {
     const p = new TilePalette();
@@ -177,8 +185,15 @@ test('an oasis needs desert, a lighthouse open water, and a watchtower likes a r
   assert.deepEqual(place(lighthouse, meadow(size)), [], 'no lighthouse inland');
   const bay = meadow(size);
   for (let y = 0; y < size; y++) for (let x = 0; x < 3; x++) bay.cells[y * size + x] = 'water';
-  const [spot] = place(lighthouse, bay);
-  assert.equal(Number(spot.split(',')[0]), 4, 'two cells from the water, clear of the shore');
+  const tiles = terrainTiles(lighthouse, bay, mulberry32(3));
+  const [spot] = placeLandmarks(lighthouse, bay, tiles, 1, mulberry32(3));
+  assert.equal(Number(spot.split(',')[0]), 3, 'on the shore');
+  const shore = overlayList(/** @type {Tile} */ (tiles.find((t) => t.id === spot)));
+  assert.deepEqual(
+    shore,
+    ['assets/tiles/coast/coast-w.svg', 'assets/tiles/lighthouse/lighthouse.svg'],
+    'the lighthouse stands over the coast piece',
+  );
 
   const tower = only('watchtower');
   const road = meadow(size);

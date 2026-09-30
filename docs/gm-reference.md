@@ -325,7 +325,7 @@ that the pointer crosses.
 | Swatch section | Contents |
 | --- | --- |
 | Terrain | Ground types. This section opens by default |
-| Overlays | Roads, paths, and rivers |
+| Overlays | Roads, paths, rivers, coasts, docks, town walls, and the lighthouse |
 | Buildings | Settlement and site markers |
 | Interior | Floors, walls, doors, and stairs |
 | Furnishings | Furniture and decoration |
@@ -474,7 +474,8 @@ In each outdoor archetype, the north edge is colder than the south edge.
 Rivers run down from the hills to water or to the map edge. Landmarks such
 as ruins, mines, and camps stand on open ground.
 
-An oasis stands only in the desert, and a lighthouse only near open water. A
+An oasis stands only in the desert. A lighthouse stands only on a shoreline
+that faces open water, over the coast piece of its cell. A
 watchtower usually stands beside a road. The climate can also give jungle,
 savanna, taiga, glacier, badlands, snowy hills and peaks, volcanic peaks,
 and deep sea, each with its own tiles.

@@ -9,9 +9,10 @@ import { clamp } from '../util/num.js';
 
 /**
  * Overlay families in draw order: shoreline under channel under road under
- * dock. A quay draws its own street, so it goes on top of any road piece.
+ * dock under lighthouse. A quay draws its own street, so it goes on top of
+ * any road piece. A lighthouse stands on the shoreline, so it draws last.
  */
-const OVERLAY_ORDER = ['coast', 'river', 'road', 'dock'];
+const OVERLAY_ORDER = ['coast', 'river', 'road', 'dock', 'lighthouse'];
 
 /**
  * The overlay family of a built-in piece, taken from its asset path. Returns
@@ -20,7 +21,7 @@ const OVERLAY_ORDER = ['coast', 'river', 'road', 'dock'];
  * @returns {string | null}
  */
 function overlayFamily(ref) {
-  const match = /\/tiles\/(coast|river|road|dock)\//.exec(ref);
+  const match = /\/tiles\/(coast|river|road|dock|lighthouse)\//.exec(ref);
   return match ? match[1] : null;
 }
 
@@ -28,7 +29,7 @@ function overlayFamily(ref) {
  * Merge a newly painted overlay into a tile's existing overlay or overlays.
  * A piece replaces any existing piece of its own family. For example,
  * repainting a road corrects the road. A piece stacks with other families in
- * the fixed draw order (coast under river under road under dock), so a channel painted
+ * the fixed draw order (coast under river under road under dock under lighthouse), so a channel painted
  * across a shoreline drains through it instead of erasing it. A piece from no
  * known family, such as custom overlay art, replaces the whole stack. This
  * matches the previous behavior.
