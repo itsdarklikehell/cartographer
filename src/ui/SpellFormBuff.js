@@ -1,4 +1,5 @@
 import { setTip } from './Tooltip.js';
+import { el } from './dom.js';
 import { labeled, fieldRow, numberField, checkbox, select } from './formFields.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import { DIE_SIZES } from '../entities/Equipment.js';
@@ -26,7 +27,9 @@ function number(value, min, max, tip) {
  * body armor (Mage Armor), a floor under the holder's AC (Barkskin), a raise
  * to the HP maximum (Aid), temporary HP at the cast (False Life) or at the
  * start of each turn (Heroism), a condition the holder can't take, and the
- * save advantage and extra action of Haste.
+ * save advantage and extra action of Haste. The immunity select shows the
+ * first stored condition, and the form keeps any further ones as stored. The
+ * form does not show `blocks` (Shield's Magic Missile), and keeps it as stored.
  * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
  * changes, and reads the values back with `read`. `entities/ChipMods.js` and
  * `entities/SpellFields.js` decide what they mean.
@@ -89,6 +92,7 @@ export function buildBuffControls(spell) {
     "The holder gains the caster's spell modifier as temporary HP at the start of each of its turns, as with Heroism",
   );
   const stored = mods.immune?.[0] ?? '';
+  const moreImmune = mods.immune?.slice(1) ?? [];
   const immune = select(
     [
       { value: '', label: 'None' },
@@ -99,12 +103,14 @@ export function buildBuffControls(spell) {
   );
   const immuneField = labeled('Immune to', immune);
   setTip(immuneField, 'The holder ends this condition and cannot take it again, as with Heroism');
-  const advantage = select(
-    [{ value: '', label: 'None' }, ...ABILITY_SCORES],
-    mods.saveAdvantage?.[0] ?? '',
+  const advantage = ABILITY_SCORES.map((key) =>
+    checkbox(key, (mods.saveAdvantage ?? []).includes(key)),
   );
-  const advantageField = labeled('Save advantage', advantage);
-  setTip(advantageField, 'The holder rolls saves in this ability with advantage, as with Haste');
+  const advantageField = labeled(
+    'Save advantage',
+    el('div', 'u-row u-wrap u-g2', ...advantage.map((box) => box.label)),
+  );
+  setTip(advantageField, 'The holder rolls saves in these abilities with advantage, as with Haste');
   const extra = checkbox('Extra action', !!mods.extraAction);
   setTip(
     extra.label,
@@ -129,7 +135,7 @@ export function buildBuffControls(spell) {
       labeled('Per slot level', tempPerStep),
       eachTurn.label,
     ),
-    turn: fieldRow(advantageField, extra.label),
+    turn: fieldRow(advantageField, labeled('Action', extra.label)),
   };
 
   /** @param {string} kind */
@@ -145,8 +151,9 @@ export function buildBuffControls(spell) {
         acBase: acBase.value,
         acMin: acMin.value,
         maxHP: maxHP.value,
-        immune: immune.value ? [immune.value] : [],
-        saveAdvantage: advantage.value ? [advantage.value] : [],
+        immune: [...(immune.value ? [immune.value] : []), ...moreImmune],
+        saveAdvantage: ABILITY_SCORES.filter((_, i) => advantage[i].input.checked),
+        blocks: mods.blocks ?? [],
         extraAction: extra.input.checked,
       },
       modsPerStep: { maxHP: maxHPPerStep.value },

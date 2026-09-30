@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  blockerOf,
   heldBoost,
   hasExtraAction,
   heldMods,
@@ -107,4 +108,16 @@ test('modsSummary names the save advantage and the extra action', () => {
     modsSummary({ ac: 2, saveAdvantage: ['DEX'], extraAction: true }),
     '+2 AC, advantage on DEX saves, an extra action for one weapon attack',
   );
+});
+
+test('blocks keeps lowercase spell ids, and blockerOf finds the chip', () => {
+  assert.deepEqual(normalizeChipMods({ blocks: [' Magic-Missile ', 'magic-missile', 3, ''] }), {
+    blocks: ['magic-missile'],
+  });
+  assert.equal(normalizeChipMods({ blocks: 'magic-missile' }), null);
+  const shield = createCondition('Shield', 1, { mods: { ac: 5, blocks: ['magic-missile'] } });
+  assert.equal(blockerOf([shield], 'magic-missile'), shield);
+  assert.equal(blockerOf([shield], 'fire-bolt'), undefined);
+  assert.equal(blockerOf(undefined, 'magic-missile'), undefined);
+  assert.equal(modsSummary(shield.mods), '+5 AC, blocks magic missile');
 });
