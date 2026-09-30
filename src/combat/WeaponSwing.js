@@ -5,6 +5,8 @@ import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { sneakAttackDice } from '../entities/Features.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
+import { hitRiderNote, hitRiderParts, hitRiders } from '../entities/HitRiders.js';
+import { pactDamage } from '../entities/PactWeapon.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
@@ -211,12 +213,13 @@ export function attackLine(setup, roll) {
  * Roll the damage of a hit. A crit rolls every damage die twice, including
  * the dialog's added dice. The ability modifier still adds only once, and
  * proficiency never reaches damage. `sneakDice` is how many d6 Sneak Attack
- * added, so the caller can spend the flag for the turn.
+ * added, so the caller can spend the flag for the turn. `riderNote` names the
+ * hit riders and the Lifedrinker damage that the hit added, for the log.
  * @param {SwingSetup} setup
- * @param {{ attacker: any, weapon: Weapon, tweaks: AttackTweaks, crit: boolean, rng: () => number }} hit
- * @returns {{ damage: ReturnType<typeof rollDamage>, sneakDice: number }}
+ * @param {{ attacker: any, defender?: { conditions?: import('../types/entities.js').Condition[] }, weapon: Weapon, tweaks: AttackTweaks, crit: boolean, rng: () => number }} hit
+ * @returns {{ damage: ReturnType<typeof rollDamage>, sneakDice: number, riderNote: string }}
  */
-export function hitDamage(setup, { attacker, weapon, tweaks, crit, rng }) {
+export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit, rng }) {
   // A two-handed swing of a versatile weapon reads the two-handed dice
   // instead of the one-handed ones. The live attacker must still have the
   // other hand free, because the dialog read the equipment before its await.
@@ -239,8 +242,18 @@ export function hitDamage(setup, { attacker, weapon, tweaks, crit, rng }) {
   // negative modifier still applies, so the swing of a weak character is still
   // weak.
   const damageMod = tweaks.offhand ? offhandDamageModifier(setup.abilityMod) : setup.abilityMod;
-  const damage = rollDamage(parts, damageModifier(damageMod, tweaks.damageFlat ?? 0), rng);
-  return { damage, sneakDice };
+  // Hit riders (Divine Favor, Hunter's Mark) add dice that a crit doubles.
+  // Lifedrinker adds a flat amount, which a crit leaves alone.
+  const riders = hitRiders(attacker, defender, { weapon: true });
+  const baseType = parts[0]?.damageType ?? 'bonus';
+  const drink = pactDamage(attacker, weapon, attackerStats(attacker));
+  const damage = rollDamage(
+    [...parts, ...hitRiderParts(riders, crit, baseType), ...(drink ? [drink.part] : [])],
+    damageModifier(damageMod, tweaks.damageFlat ?? 0),
+    rng,
+  );
+  const drinkNote = drink ? `, ${drink.name} +${drink.part.bonus} ${drink.part.damageType}` : '';
+  return { damage, sneakDice, riderNote: hitRiderNote(riders, crit) + drinkNote };
 }
 
 /**
@@ -254,11 +267,12 @@ export function hitDamage(setup, { attacker, weapon, tweaks, crit, rng }) {
  *   crit: boolean,
  *   damage: ReturnType<typeof rollDamage>,
  *   sneakDice: number,
+ *   riderNote?: string,
  *   taken: { total: number, notes: string[] },
  * }} hit
  * @returns {{ log: string, toast: string }}
  */
-export function hitLines({ weapon, defenderName, crit, damage, sneakDice, taken }) {
+export function hitLines({ weapon, defenderName, crit, damage, sneakDice, riderNote = '', taken }) {
   const inflicts =
     'statusEffects' in weapon && weapon.statusEffects?.length
       ? `, inflicting ${weapon.statusEffects.join(', ')}`
@@ -271,7 +285,7 @@ export function hitLines({ weapon, defenderName, crit, damage, sneakDice, taken 
   const defended = defenseNote(taken.notes, taken.total);
   const text = defended ? `${taken.total} damage` : damage.text || 'no damage';
   return {
-    log: `${weapon.name} ${blow} ${defenderName} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}${defended}.`,
+    log: `${weapon.name} ${blow} ${defenderName} for ${damage.detail || '0 damage'}${sneakNote}${riderNote}${inflicts}${defended}.`,
     toast: `${crit ? 'Critical hit!' : 'Hit!'} ${defenderName} takes ${text}${inflicts}.`,
   };
 }

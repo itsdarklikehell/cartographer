@@ -35,7 +35,7 @@ import { splitTrimmedList } from '../util/text.js';
 export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
   if (targetFree(kind)) return [];
-  const reached = combatantsAsTargets(app, combat, caster, { allies: helps(kind) });
+  const reached = combatantsAsTargets(app, combat, caster, { allies: aids(spell) });
   return selfOnly(spell) ? reached.filter((t) => t.id === caster.id) : reached;
 }
 
@@ -58,6 +58,18 @@ export function selfOnly(spell) {
  */
 export function helps(kind) {
   return kind === 'heal' || kind === 'buff';
+}
+
+/**
+ * Whether a spell reaches its own side. A buff that marks a foe (Hunter's
+ * Mark) is the exception to the rule of `helps`, because its chip goes on a
+ * foe and pays off in the caster's hits against it.
+ * @param {Spell} spell
+ * @returns {boolean}
+ */
+export function aids(spell) {
+  const { effect } = spell;
+  return helps(effect.kind) && !(effect.kind === 'buff' && effect.hit?.mark);
 }
 
 /**
@@ -93,7 +105,7 @@ export function rosterTargets(app, spell, casterId) {
   const { state } = app;
   const kind = spell.effect.kind;
   if (targetFree(kind)) return [];
-  if (helps(kind)) {
+  if (aids(spell)) {
     const party = selfOnly(spell)
       ? state.characters.filter((c) => c.id === casterId)
       : state.characters;

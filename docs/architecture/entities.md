@@ -618,7 +618,9 @@ Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
 `entities/Features.js` reads the names of level-scaling features as numbers.
 `attacksPerAction` gives 2 for 'Extra Attack', and 3 or 4 for the numbered
 Fighter features that follow it. It takes the best count across the class
-list, because Extra Attack does not stack in 5e. `sneakAttackDice` gives the
+list, because Extra Attack does not stack in 5e. It also takes the higher of that count and
+`PactWeapon.pactAttacks`, so a warlock with Thirsting Blade swings twice, and
+a fighter 5 / warlock 5 with the invocation still swings twice. `sneakAttackDice` gives the
 number of d6 that Sneak Attack adds, from the level in the class that granted
 it. `hasFeature` and `featureSource` are the exact-name lookups under both.
 
@@ -714,6 +716,19 @@ warlock that knows an at-will spell can cast it at will or with a slot.
 answer to `castPlan` as its `route`. A fresh cast of a repeat spell removes
 the old repeat chip with `SpellRepeat.dropRepeat`, because the old chip can
 outlast the new one.
+
+`entities/PactWeapon.js` reads the pact weapon of a Pact of the Blade
+warlock. The character stores the inventory id of that weapon in
+`pactWeapon`, and `pactWeapon` returns the item only while the character has
+the Blade boon and still carries a weapon or bow with that id.
+`CharacterInventory.removeItem` clears the id when the stack leaves, so a
+given or discarded weapon never keeps the mark. `pactAttacks` gives 2 for a
+warlock with Thirsting Blade (the `pactAttack` effect) and a marked pact
+weapon. `pactDamage` gives the flat necrotic term of Lifedrinker (the
+`pactDamage` effect), equal to the CHA modifier with a minimum of 1, for a hit
+with the pact weapon. The weapon swing adds that term after the crit
+doubling, because a crit doubles only dice. The equipment model has no
+magic flag, so the pact weapon does not count as magical for resistance.
 
 ### Load-time defaults
 
@@ -1994,6 +2009,49 @@ source and its rider.
 The hand-add dialog in `ui/ConditionsBar.js` takes only a name and a duration.
 A chip that a GM adds by hand has no rider, so a chip named `Bless` by hand
 changes no roll. For that case, the dice tray already takes a bonus die.
+
+## Riders on hits
+
+A chip can also add damage dice to hits. Divine Favor puts a chip on its
+caster, and each weapon hit of the caster deals 1d4 radiant more. Hunter's
+Mark puts a chip on a foe, and each weapon hit of the caster against that foe
+deals 1d6 more. `Condition.hit` records this as a `HitRider`:
+`{ count, sides, damageType, weaponOnly, mark }`. A rider with no
+`damageType` takes the type of the hit's first damage term, which is how
+Hunter's Mark deals the weapon's own type. `weaponOnly` limits the rider to
+weapon hits, so a spell attack does not add it. `mark` puts the chip on the
+target instead of the attacker, and only the caster that the chip's
+`source.casterId` names gets the dice. A mark from one ranger therefore adds
+nothing to the hits of another.
+
+`entities/HitRiders.js` owns the model:
+
+- `normalizeHitRider(value)` cleans a written block. A rider with no dice, or
+  with a die that the dice tray does not know, reads as absent.
+- `hitRiders(attacker, defender, { weapon })` lists the riders of one hit:
+  the attacker's own chips without `mark`, and the defender's chips with a
+  `mark` that the attacker cast.
+- `hitRiderParts(riders, crit, baseType)` turns them into damage terms. A
+  critical hit doubles the dice, like every other damage die of the hit.
+- `hitRiderNote` names the riders for the damage line of the log, and
+  `hitRiderSummary` describes one for the spell detail and the cast log.
+
+A buff spell writes the rider through `SpellBuffEffect.hit`, and
+`BuffCast.buffOutcomes` copies it onto each outcome, so the chip of the cast
+contains it. A buff with `mark` set reaches foes rather than allies, because
+`app/spellTargets.aids` excludes it from the helping kinds. The weapon swing
+(`WeaponSwing.hitDamage`) reads the riders with `weapon: true`.
+`CastRolls.resolveAttack` reads them with `weapon: false` for each attack
+roll, and reports the note as `hitNote` on a single-attack outcome. A spell
+with `autoHit` projectiles (Magic Missile) makes no attack roll, so it takes
+no rider. A GM authors Hex as a buff with a `mark` rider of 1d6 necrotic and
+no `weaponOnly`.
+
+Hunter's Mark has `repeat: { cost: 'bonus' }`. The first cast opens a repeat
+on the caster (see `SpellRepeat.js`), and a later turn offers **Repeat (no
+slot)** for a bonus action, which marks a new creature under the same
+concentration. The app does not check that the old target dropped to 0 HP,
+and it leaves the old chip in place.
 
 ## The UI layer over entities
 

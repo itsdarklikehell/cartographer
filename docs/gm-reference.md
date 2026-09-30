@@ -1149,6 +1149,22 @@ combatant. So a rogue that spent the dice on its own swing can spend them
 again on an opportunity attack, which is the 5e reading of once per turn. A
 miss leaves the box, because Sneak Attack applies only on a hit.
 
+### Damage riders on hits
+
+Some spell chips add damage dice to hits, and the app rolls them with the
+hit. Divine Favor adds 1d4 radiant to each weapon hit of the paladin who
+holds it. Hunter's Mark goes on a foe, and each weapon hit of the ranger who
+cast it adds 1d6 of the weapon's damage type. The mark does nothing for the
+hits of anyone else. A critical hit doubles the rider dice, and the damage
+line of the log names each rider, as in `, Hunter's Mark +2d6`.
+
+When the marked creature drops to 0 HP, cast Hunter's Mark again on a later
+turn and pick **Repeat (no slot)**. The repeat costs a bonus action and no
+slot, and it marks the new target under the same concentration. The app does
+not check that the old target is at 0 HP, so you check it. The advantage on
+Wisdom checks to find the target, and the longer duration of a 3rd-level or
+higher slot, stay with you.
+
 ### Combat rules
 
 The app follows the 5e rules for the rolls in this section.
@@ -1814,6 +1830,8 @@ Invocation rules list under the rows shows what each picked invocation does.
 | A once-per-rest spell, such as Thief of Five Fates | The spell casts with a pact slot, and then it refuses until a long rest. The slot picker offers only the pact slot level, and the cast refuses when no pact slot is left. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
 | Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives. A warlock that drops below 2nd level loses the skills, and gets them back at 2nd level |
 | Book of Ancient Secrets | Casts the rituals in the Book of Shadows as rituals. See [Pact of the Tome](#pact-of-the-tome) |
+| Thirsting Blade | One Attack action buys two swings, when the warlock has marked a pact weapon. It does not add to Extra Attack from another class, so a fighter 5 / warlock 5 still swings twice. The second swing works with any weapon, so you check that it is the pact weapon |
+| Lifedrinker | Each hit with the pact weapon adds necrotic damage equal to the CHA modifier, at least 1. A critical hit does not double it. The damage line of the log names it, as in `, Lifedrinker +4 necrotic` |
 | Any other invocation, such as Devil's Sight | Text in the rules list only |
 
 The spells that the invocations cast list on the character sheet and in
@@ -1823,6 +1841,13 @@ struck through while it is spent, and its tooltip says "spent" or
 "available". A cast through an invocation uses the
 warlock save DC and attack bonus, and the log names the invocation, as in
 "Wren casts Mage Armor (Armor of Shadows)."
+
+A Pact of the Blade warlock marks its pact weapon in the Inventory tab. Each
+weapon or bow row has a sword button, labeled **Make (weapon) the pact
+weapon**, that marks it, and the same button clears the mark. The marked row shows a
+**Pact weapon** badge. One weapon at a time is the pact weapon, and the mark
+goes away when the weapon leaves the inventory. Thirsting Blade and Lifedrinker
+read the mark.
 
 The app does not enforce these invocation rules, so you enforce them:
 
@@ -1836,8 +1861,9 @@ The app does not enforce these invocation rules, so you enforce them:
 - The switch away from the Pact of the Tome. The Book of Shadows cantrips
   stay in the spellbook and count against the cantrip limit, so forget
   them in the Spellbook tab.
-- The pact weapon of the Pact of the Blade, and the familiar of the Pact of
-  the Chain, with the invocations that use them.
+- How the Pact of the Blade summons the pact weapon, and the familiar of the
+  Pact of the Chain with the invocations that use it. The pact weapon does not
+  count as magical against resistance to nonmagical damage.
 
 ### Pact of the Tome
 

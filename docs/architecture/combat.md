@@ -424,6 +424,22 @@ Attack. That condition is advantage on the attack, or an ally next to the
 target. The second half needs a map distance that the app does not have, so
 the ticked box is the GM's answer.
 
+### Hit riders and the pact weapon
+
+`WeaponSwing.hitDamage` adds the dice of the hit riders in
+`entities/HitRiders.js` (Divine Favor on the attacker, Hunter's Mark on the
+defender), and a critical hit doubles them. Lifedrinker
+adds a flat necrotic term from `PactWeapon.pactDamage` when the weapon is the
+attacker's pact weapon, and a crit leaves it single. The function returns a
+`riderNote` that names each one, and `hitLines` puts the note after the
+damage detail, as in `Longsword hits Goblin Scout for 17 slashing [8,6 +3],
+Hunter's Mark +1d6.` The defender's resistances then apply per damage type,
+the same as for the weapon's own dice.
+
+Thirsting Blade works through `Features.attacksPerAction`, which the budget
+reads as the swings of one Attack action. The count does not know which
+weapon swings, so the second swing works with any weapon.
+
 ## The combat view
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a

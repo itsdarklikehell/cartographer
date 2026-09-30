@@ -1,4 +1,4 @@
-import type { ChipMods, DamagePart, RollRider } from './entities.js';
+import type { ChipMods, DamagePart, HitRider, RollRider } from './entities.js';
 
 /** The six ability scores, the keys of a character's stat block. */
 export type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
@@ -189,6 +189,10 @@ export interface SpellBuffEffect {
   /** When the chip ends, as a turn boundary (Shield's start of the caster's
    * next turn). Absent means the spell's own duration. */
   until?: ChipUntil;
+  /** Extra damage the chip adds to hits (Divine Favor). With `mark` set, the
+   * chip goes on a foe, and only the caster's hits against it deal the
+   * damage (Hunter's Mark). */
+  hit?: HitRider;
 }
 
 /** The temporary hit points a buff grants at the cast: `count` dice of

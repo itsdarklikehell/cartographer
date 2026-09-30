@@ -155,6 +155,8 @@ export interface Condition {
   ongoing?: OngoingDamage;
   /** What the chip changes besides a d20 roll, such as the holder's AC. */
   mods?: ChipMods;
+  /** Extra damage dice on a hit (Divine Favor, Hunter's Mark). */
+  hit?: HitRider;
 }
 
 /** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */
@@ -561,6 +563,9 @@ export interface Character extends HPBuffFields {
    * from any class list, and the rituals of Book of Ancient Secrets (see
    * PactTome.js). Absent reads as an empty book. */
   bookOfShadows?: { cantrips: string[]; rituals: string[] };
+  /** The inventory id of the weapon a Pact of the Blade warlock marked as
+   * its pact weapon (see PactWeapon.js). Absent reads as none. */
+  pactWeapon?: string;
   level: number;
   xp: number;
   stats: Record<string, number>;
@@ -598,4 +603,19 @@ export interface Character extends HPBuffFields {
   /** Learned cantrips and spells (spell ids). Absent on non-casters and on
    * older saves. */
   spellbook?: Spellbook;
+}
+
+/** Extra damage that a chip adds to hits. On a chip without `mark`, the
+ * holder's own hits deal it (Divine Favor on its caster). On a chip with
+ * `mark`, the holder is the target, and the hits of the caster that the
+ * chip's source names deal it (Hunter's Mark). `weaponOnly` limits it to
+ * weapon attacks. A spell attack does not count. A critical hit doubles
+ * the dice. */
+export interface HitRider {
+  count: number;
+  sides: number;
+  /** Absent means the type of the hit's own first damage term. */
+  damageType?: string;
+  weaponOnly?: boolean;
+  mark?: boolean;
 }

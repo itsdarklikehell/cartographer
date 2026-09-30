@@ -209,6 +209,7 @@ export function castSpell(caster, spell, options = {}) {
     spellModifier,
     attackMode,
     casterConditions,
+    casterId: caster.id,
     rng,
   });
 
@@ -296,6 +297,7 @@ function payForCast(caster, spell, slotLevel, ritual, granted, pactOnly) {
  *   spellModifier: number,
  *   attackMode: RollMode,
  *   casterConditions: import('./Riders.js').RiderSource[],
+ *   casterId?: string,
  *   rng: RandomFn,
  * }} ctx
  * @returns {object[]}
@@ -328,6 +330,7 @@ function resolveEffect(spell, ctx) {
       spellModifier,
       attackMode,
       casterConditions,
+      casterId: ctx.casterId,
       rng,
     });
   }

@@ -1,3 +1,4 @@
+import { hitRiderSummary } from '../entities/HitRiders.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
@@ -72,6 +73,7 @@ export function effectSummary(spell, saveDC) {
     const changes = [
       effect.rider ? riderSummary(effect.rider) : '',
       modsSummary(effect.mods),
+      hitRiderSummary(effect.hit),
       effect.modsPerStep?.maxHP ? `${effect.modsPerStep.maxHP} more max HP per slot level` : '',
       effect.tempHP ? tempHPText(effect.tempHP) : '',
       effect.tempEachTurn ? 'spell modifier as temp HP each turn' : '',

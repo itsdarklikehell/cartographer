@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 86. Three built-in spells come from
+lists 319 spells, and the app ships 88. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -18,14 +18,14 @@ spells for all six full caster classes: bard, cleric, druid, sorcerer,
 warlock, and wizard. It also uses all six effect kinds that the resolver
 handles: `attack`, `save`, `heal`, `buff`, `summons`, and `utility`.
 
-The paladin and the ranger share leveled spells with the other classes.
-The paladin also has one spell of its own, Destructive Wave, which comes
-from the Player's Handbook.
+The paladin and the ranger share leveled spells with the other classes. The
+paladin also has Divine Favor and Destructive Wave, which comes from the
+Player's Handbook. The ranger has Hunter's Mark.
 
 | Level | Spells |
 | ----- | ------ |
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
-| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
+| 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
@@ -200,6 +200,15 @@ current HP drops only where it sits above the new maximum. A GM who types a
 new maximum while Aid lasts types the raised value, and the end of the
 spell still takes the 5 off. Aid on a character at 0 HP brings the
 character back up with 5 HP.
+
+Divine Favor and Hunter's Mark add damage dice to weapon hits. Divine Favor
+adds 1d4 radiant to each weapon hit of its caster. Hunter's Mark puts a chip
+on a foe, and each weapon hit of the caster against it adds 1d6 of the
+weapon's damage type. A critical hit doubles both. When the marked foe drops
+to 0 HP, the **Repeat (no slot)** cast moves the mark for a bonus action. The
+GM checks that the old target dropped, and rules the advantage on Wisdom
+checks to find the target. The longer duration of Hunter's Mark from a 3rd-level
+or higher slot is text only, because the app has no duration scaling.
 
 False Life gives its caster 1d4 + 4 temporary hit points, and 5 more for each
 slot level above 1st. Heroism gives its target temporary hit points equal to

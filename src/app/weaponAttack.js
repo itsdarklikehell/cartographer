@@ -177,12 +177,27 @@ export function rollWeaponAttack(
       app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
       return;
     }
-    const { damage, sneakDice } = hitDamage(setup, { attacker, weapon, tweaks, crit, rng });
+    const { damage, sneakDice, riderNote } = hitDamage(setup, {
+      attacker,
+      defender,
+      weapon,
+      tweaks,
+      crit,
+      rng,
+    });
     // Sneak Attack adds its dice only on a hit, so the flag is spent here
     // rather than beside the swing.
     if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
     const taken = defendedDamage(app, defender.id, damage.byType);
-    const lines = hitLines({ weapon, defenderName: defender.name, crit, damage, sneakDice, taken });
+    const lines = hitLines({
+      weapon,
+      defenderName: defender.name,
+      crit,
+      damage,
+      sneakDice,
+      riderNote,
+      taken,
+    });
     app.actions.logEvent('combat', lines.log);
     // Applies the damage on the spot through the shared write path. Every
     // combatant tracks HP, and the function logs a defeat or a drop to 0

@@ -75,6 +75,7 @@ export function buffOutcomes(spell, effect, targets, { steps, spellModifier, rng
     condition,
     rider: effect.rider ?? null,
     mods,
+    ...(effect.hit ? { hit: effect.hit } : {}),
     ...(effect.tempHP ? { tempHP: rollTempHP(effect.tempHP, steps, rng) } : {}),
   }));
 }

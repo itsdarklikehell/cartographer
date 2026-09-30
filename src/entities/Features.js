@@ -17,6 +17,7 @@
 
 import { classLevelOf } from './Multiclass.js';
 import { unlockedFeatures } from './LevelUp.js';
+import { pactAttacks } from './PactWeapon.js';
 
 /**
  * What these readers need of a combatant: its class list. A party character
@@ -73,7 +74,8 @@ export function featureSource(character, name) {
  * swing, and the Fighter's numbered follow-ups grant a third and a fourth.
  * Extra Attack does not stack across classes in 5e, so a multiclass character
  * takes the best count rather than the sum, which reading the highest
- * numbered feature does on its own.
+ * numbered feature does on its own. The warlock's Thirsting Blade counts
+ * as one more such feature.
  * @param {Featured} character
  * @returns {number} at least 1
  */
@@ -86,7 +88,8 @@ export function attacksPerAction(character) {
       if (match) extra = Math.max(extra, Number(match[1]));
     }
   }
-  return 1 + extra;
+  // Thirsting Blade is an Extra Attack of its own, so the two do not add up.
+  return Math.max(1 + extra, pactAttacks(asCharacter(character)));
 }
 
 /**

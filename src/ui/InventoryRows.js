@@ -6,6 +6,8 @@ import { chip, iconButton, textButton } from './buttons.js';
 import { numberField, select } from './formFields.js';
 import { confirmModal } from './Modal.js';
 import { clampInt } from '../util/num.js';
+import { getPactBoon } from '../entities/Invocations.js';
+import { isPactWeapon, setPactWeapon } from '../entities/PactWeapon.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -68,7 +70,9 @@ export function buildRow(item, playable, ctx) {
     );
   }
 
-  const effects = itemEffects(item);
+  const pact = isPactWeapon(getCharacter(), item);
+  // The pact weapon mark leads the badges, so it reads first.
+  const effects = [...(pact ? ['Pact weapon'] : []), ...itemEffects(item)];
   const main = el(
     'div',
     'inventory-panel__item',
@@ -89,6 +93,9 @@ export function buildRow(item, playable, ctx) {
   const row = el('div', 'inventory-panel__row u-row u-g2', main);
 
   if (!playable) return row;
+
+  const pactButton = pactToggle(item, pact, ctx);
+  if (pactButton) row.appendChild(pactButton);
 
   if (canEdit()) {
     row.appendChild(
@@ -208,4 +215,26 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
     cancelButton,
     giveButton,
   );
+}
+
+/**
+ * The button that marks a weapon as the pact weapon of a Pact of the Blade
+ * warlock, or clears the mark. Thirsting Blade and Lifedrinker read the mark
+ * (see `PactWeapon.js`). A character without the boon, or an item that is no
+ * weapon, gets no button.
+ * @param {InventoryItem} item
+ * @param {boolean} pact whether the item is the pact weapon now
+ * @param {RowContext} ctx
+ * @returns {HTMLButtonElement | null}
+ */
+function pactToggle(item, pact, { getCharacter, commit }) {
+  const character = getCharacter();
+  if (getPactBoon(character) !== 'blade') return null;
+  if (item.type !== 'weapon' && item.type !== 'bow') return null;
+  const label = pact ? `Clear ${item.name} as pact weapon` : `Make ${item.name} the pact weapon`;
+  const button = iconButton('sword', label, () =>
+    commit(setPactWeapon(getCharacter(), pact ? null : item.id)),
+  );
+  button.setAttribute('aria-pressed', String(pact));
+  return button;
 }

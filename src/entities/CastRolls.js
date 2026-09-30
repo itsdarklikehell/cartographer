@@ -1,4 +1,5 @@
 import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
+import { hitRiderNote, hitRiderParts, hitRiders } from './HitRiders.js';
 import { resolveSave } from './Checks.js';
 import { rollRiders } from './Riders.js';
 
@@ -49,6 +50,7 @@ import { rollRiders } from './Riders.js';
  * roll and a blessed caster rolls the d4 again for each one.
  * @param {{
  *   parts: DamagePart[],
+ *   extra?: DamagePart[],
  *   ac: number,
  *   attackBonus: number,
  *   mode: RollMode,
@@ -57,11 +59,13 @@ import { rollRiders } from './Riders.js';
  *   bonus?: number,
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
- * }} shot `parts` is what one projectile deals
+ * }} shot `parts` is what one projectile deals, and `extra` the dice of the
+ *   hit riders, which only a hit with an attack roll takes
  * @returns {ProjectileShot}
  */
 function rollProjectile({
-  parts,
+  parts: base,
+  extra = [],
   ac,
   attackBonus,
   mode,
@@ -77,11 +81,12 @@ function rollProjectile({
       natural: 0,
       crit: false,
       hit: true,
-      damage: rollDamage(parts, bonus, rng),
+      damage: rollDamage(base, bonus, rng),
       rider: null,
     };
   }
   const rider = rollRiders(casterConditions, 'attack', rng);
+  const parts = [...base, ...extra];
   const attack = roll({ counts: { d20: 1 }, modifier: attackBonus + rider.modifier, mode }, rng);
   const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
   const hit = natural !== 1 && (natural === 20 || attack.total >= ac);
@@ -185,8 +190,10 @@ function onHitOutcome(onHit, target, dc, rng) {
  *   spellModifier: number,
  *   attackMode: RollMode,
  *   casterConditions: RiderSource[],
+ *   casterId?: string,
  *   rng: RandomFn,
- * }} ctx
+ * }} ctx `casterId` names the caster, so a mark it left on a target
+ *   (a hit rider with `mark` set) adds its dice to a hit on that target.
  * @returns {object[]}
  */
 export function resolveAttack(effect, ctx) {
@@ -194,9 +201,16 @@ export function resolveAttack(effect, ctx) {
   const bonus = effect.addsModifier ? ctx.spellModifier : 0;
   // The target's own chips can slant the roll aimed at it, so the mode is
   // read per target and falls back to the one the whole cast carries.
+  // A hit rider (Hex) adds its dice to each hit, and a crit doubles them
+  // with the spell's own dice. A rider limited to weapon hits does not count.
+  const ridersOn = (/** @type {CastTarget} */ target) =>
+    hitRiders({ id: ctx.casterId ?? '', conditions: ctx.casterConditions }, target, {
+      weapon: false,
+    });
   const shot = (/** @type {CastTarget} */ target, /** @type {number} */ ac) =>
     rollProjectile({
       parts,
+      extra: hitRiderParts(ridersOn(target), false, parts[0]?.damageType ?? 'bonus'),
       ac,
       attackBonus: ctx.spellAttackBonus,
       mode: target.attackMode ?? ctx.attackMode,
@@ -227,6 +241,7 @@ export function resolveAttack(effect, ctx) {
         ac,
         damage: damage ?? splash,
         rider,
+        ...(hit ? { hitNote: hitRiderNote(ridersOn(target), crit) } : {}),
         ...(splash ? { halved: true } : {}),
         ...(hit ? extras(target) : {}),
       };

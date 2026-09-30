@@ -719,7 +719,7 @@ creature in the current campaign.
 
 ### Add a missing spell
 
-The built-in list has 86 spells. A spell that you write uses the same
+The built-in list has 88 spells. A spell that you write uses the same
 fields as a built-in one, so you do not need to change any code.
 [Curated spells](spells-missing.md) says what the app can and cannot apply
 for you.
@@ -737,6 +737,25 @@ for you.
 If the rules of the spell need more than the app can apply, make it a
 `utility` spell and write the rules in the description. Then apply the
 rules yourself at the table.
+
+A `buff` spell can add damage dice to hits. The **Hit dice**, **Die**, and
+**Type** fields set the dice, and **Same as the hit** takes the damage type
+of the weapon or spell. **Weapon hits only** leaves spell attacks out.
+**Marks a foe** puts the chip on a foe instead of an ally, and only the hits
+of the caster against that foe add the dice. Hex is not in the SRD, but you
+can write it this way:
+
+1. Set the casting time to a bonus action, the range to 90 feet, and the
+   duration to up to 1 hour with concentration.
+2. Pick the `buff` effect kind.
+3. Set **Hit dice** to 1, **Die** to d6, and **Type** to necrotic.
+4. Tick **Marks a foe**, and leave **Weapon hits only** clear, because Hex
+   counts every attack of the caster.
+5. Tick **Repeats on later turns**, and set **Each repeat costs** to a bonus
+   action. When the target drops to 0 HP, the caster moves the curse with
+   **Repeat (no slot)**.
+6. Write the disadvantage on ability checks of one ability in the
+   description, because you apply it at the table.
 
 ### Move your library between browsers
 

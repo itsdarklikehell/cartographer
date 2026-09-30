@@ -159,6 +159,30 @@ export const LEVEL_1 = [
     scaling: { targetsPerLevel: 1 },
   },
   {
+    id: 'hunters-mark',
+    name: "Hunter's Mark",
+    level: 1,
+    school: 'divination',
+    classes: ['ranger'],
+    castingTime: { kind: 'bonus' },
+    range: '90 feet',
+    components: ['V'],
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'You mark a creature you can see. Your weapon hits against it deal an extra 1d6 damage, ' +
+      'and you have advantage on Wisdom (Perception) and Wisdom (Survival) checks to find it, ' +
+      'which the GM rules. If the target drops to 0 hit points, you can use a bonus action on a ' +
+      'later turn to mark a new creature. At higher levels: with a 3rd- or 4th-level slot, the ' +
+      'spell lasts up to 8 hours. With a 5th-level slot or higher, it lasts up to 24 hours.',
+    effect: {
+      kind: 'buff',
+      hit: { count: 1, sides: 6, weaponOnly: true, mark: true },
+    },
+    repeat: { cost: 'bonus' },
+  },
+  {
     id: 'thunderwave',
     name: 'Thunderwave',
     level: 1,
@@ -363,6 +387,21 @@ export const LEVEL_1 = [
     ritual: false,
     description: 'A shimmering field gives one creature +2 AC for the duration.',
     effect: { kind: 'buff', mods: { ac: 2 } },
+  },
+  {
+    id: 'divine-favor',
+    name: 'Divine Favor',
+    level: 1,
+    school: 'evocation',
+    classes: ['paladin'],
+    castingTime: { kind: 'bonus' },
+    range: 'Self',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description: 'Your weapon hits deal an extra 1d4 radiant damage for the duration.',
+    effect: { kind: 'buff', hit: { count: 1, sides: 4, damageType: 'radiant', weaponOnly: true } },
   },
   {
     id: 'mage-armor',

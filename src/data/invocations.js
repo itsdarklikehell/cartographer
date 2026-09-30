@@ -123,6 +123,7 @@ export const INVOCATIONS = deepFreeze([
     pact: 'blade',
     description:
       'Your pact weapon deals extra necrotic damage equal to your CHA modifier (minimum 1) when it hits.',
+    effect: { kind: 'pactDamage', damageType: 'necrotic' },
   },
   {
     id: 'mask-of-many-faces',
@@ -209,6 +210,7 @@ export const INVOCATIONS = deepFreeze([
     level: 5,
     pact: 'blade',
     description: 'You attack twice with your pact weapon when you take the Attack action.',
+    effect: { kind: 'pactAttack' },
   },
   {
     id: 'visions-of-distant-realms',

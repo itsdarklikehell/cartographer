@@ -15,7 +15,13 @@ export type InvocationEffect =
   /** A spell cast once per long rest with a warlock slot. */
   | { kind: 'oncePerRest'; spellId: string }
   /** Skill proficiencies the invocation grants. */
-  | { kind: 'skills'; skills: string[] };
+  | { kind: 'skills'; skills: string[] }
+  /** A second swing with the pact weapon for each Attack action (Thirsting
+   * Blade). It does not stack with Extra Attack. */
+  | { kind: 'pactAttack' }
+  /** Flat damage of `damageType` equal to the CHA modifier (minimum 1) on
+   * each hit with the pact weapon (Lifedrinker). */
+  | { kind: 'pactDamage'; damageType: string };
 
 /** One eldritch invocation from the catalog. */
 export interface Invocation {

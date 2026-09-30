@@ -59,6 +59,7 @@ export const CONDITIONS = [
  *   expires?: import('../types/entities.js').ChipExpiry,
  *   ongoing?: import('../types/entities.js').OngoingDamage,
  *   mods?: import('../types/entities.js').ChipMods,
+ *   hit?: import('../types/entities.js').HitRider,
  * }} ConditionExtras
  */
 
@@ -71,7 +72,7 @@ export const CONDITIONS = [
 export function createCondition(
   name,
   rounds = null,
-  { source, rider, expires, ongoing, mods } = {},
+  { source, rider, expires, ongoing, mods, hit } = {},
 ) {
   return {
     name,
@@ -81,6 +82,7 @@ export function createCondition(
     ...(expires ? { expires } : {}),
     ...(ongoing ? { ongoing } : {}),
     ...(mods ? { mods } : {}),
+    ...(hit ? { hit } : {}),
   };
 }
 

@@ -1,3 +1,4 @@
+import { hitRiderSummary } from '../entities/HitRiders.js';
 import { riderSummary } from '../entities/Riders.js';
 import { modsSummary } from '../entities/ChipMods.js';
 import { formatModifier } from '../entities/Modifiers.js';
@@ -171,9 +172,14 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         {
           ...(timing.expires ? { expires: timing.expires } : {}),
           ...(o.mods ? { mods: o.mods } : {}),
+          ...(o.hit ? { hit: o.hit } : {}),
         },
       );
-      const changes = [o.rider ? riderSummary(o.rider) : '', modsSummary(o.mods)].filter(Boolean);
+      const changes = [
+        o.rider ? riderSummary(o.rider) : '',
+        modsSummary(o.mods),
+        hitRiderSummary(o.hit),
+      ].filter(Boolean);
       const adds = changes.length > 0 ? `: ${changes.join(', ')}` : '';
       app.actions.logEvent(
         'combat',
@@ -284,7 +290,7 @@ function applyAttack(app, spell, result, casterId) {
     const taken = defendedDamage(app, o.target.id, o.damage?.byType ?? []);
     app.actions.logEvent(
       'combat',
-      `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}` +
+      `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}${o.hitNote ?? ''}` +
         `${defenseNote(taken.notes, taken.total)}.`,
     );
     applyToTarget(app, o.target.id, taken.total, false, { crit: o.crit });

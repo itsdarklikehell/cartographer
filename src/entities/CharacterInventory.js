@@ -77,7 +77,8 @@ export function updateItem(character, itemId, next) {
 
 /**
  * Remove quantity from a stack, dropping it from the inventory entirely once
- * it hits 0, and unequipping it from any slot it occupied. The result
+ * it hits 0, and unequipping it from any slot it occupied. A stack that
+ * leaves also clears the pact weapon mark that names it. The result
  * re-derives, so a worn CON item that leaves takes its HP with it.
  * @param {Character} character
  * @param {string} itemId
@@ -89,5 +90,21 @@ export function removeItem(character, itemId, quantity) {
     ...i,
     quantity: Math.max(0, i.quantity - quantity),
   })).filter((i) => i.quantity > 0);
-  return derive(pruneEquipment({ ...character, inventory }));
+  return derive(settlePactWeapon(pruneEquipment({ ...character, inventory })));
+}
+
+/**
+ * The character without a pact weapon mark (see `PactWeapon.js`) that names
+ * no carried item. `removeItem` calls this, so the id of a weapon that left
+ * the inventory never stays in the save. The same object comes back when
+ * nothing changes.
+ * @template {Pick<Character, 'inventory'> & { pactWeapon?: string }} T
+ * @param {T} character
+ * @returns {T}
+ */
+export function settlePactWeapon(character) {
+  const id = character.pactWeapon;
+  if (!id || character.inventory.some((i) => i.id === id)) return character;
+  const { pactWeapon: _old, ...rest } = character;
+  return /** @type {T} */ (rest);
 }

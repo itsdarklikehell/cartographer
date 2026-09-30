@@ -2,7 +2,7 @@ import { setTip } from './Tooltip.js';
 import { el } from './dom.js';
 import { labeled, fieldRow, numberField, checkbox, select } from './formFields.js';
 import { CONDITIONS } from '../entities/Conditions.js';
-import { DIE_SIZES } from '../entities/Equipment.js';
+import { DAMAGE_TYPES, DIE_SIZES } from '../entities/Equipment.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -27,7 +27,8 @@ function number(value, min, max, tip) {
  * body armor (Mage Armor), a floor under the holder's AC (Barkskin), a raise
  * to the HP maximum (Aid), temporary HP at the cast (False Life) or at the
  * start of each turn (Heroism), a condition the holder can't take, and the
- * save advantage and extra action of Haste. The immunity select shows the
+ * save advantage and extra action of Haste, and the damage dice a chip adds
+ * to hits (Divine Favor, Hunter's Mark). The immunity select shows the
  * first stored condition, and the form keeps any further ones as stored. The
  * form does not show `blocks` (Shield's Magic Missile), and keeps it as stored.
  * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
@@ -117,6 +118,32 @@ export function buildBuffControls(spell) {
     'The holder has one more action on each of its turns, good for one weapon attack, as with Haste',
   );
 
+  const hitStored = effect?.hit;
+  const hitCount = number(
+    hitStored?.count ?? 0,
+    0,
+    20,
+    'Dice each hit adds, as with the 1d4 of Divine Favor',
+  );
+  const hitSides = select(
+    DIE_SIZES.map((n) => ({ value: String(n), label: `d${n}` })),
+    String(hitStored?.sides ?? 6),
+  );
+  const hitType = select(
+    [{ value: '', label: 'Same as the hit' }, ...DAMAGE_TYPES],
+    hitStored?.damageType ?? '',
+  );
+  const weaponOnly = checkbox('Weapon hits only', !!hitStored?.weaponOnly);
+  setTip(
+    weaponOnly.label,
+    "Only weapon attacks add the dice, as with Divine Favor and Hunter's Mark",
+  );
+  const mark = checkbox('Marks a foe', !!hitStored?.mark);
+  setTip(
+    mark.label,
+    "The chip goes on a foe, and only the caster's hits against it add the dice, as with Hunter's Mark",
+  );
+
   const rows = {
     ac: fieldRow(
       labeled('AC bonus', ac),
@@ -136,6 +163,13 @@ export function buildBuffControls(spell) {
       eachTurn.label,
     ),
     turn: fieldRow(advantageField, labeled('Action', extra.label)),
+    hit: fieldRow(
+      labeled('Hit dice', hitCount),
+      labeled('Die', hitSides),
+      labeled('Type', hitType),
+      weaponOnly.label,
+      mark.label,
+    ),
   };
 
   /** @param {string} kind */
@@ -164,6 +198,13 @@ export function buildBuffControls(spell) {
         flatPerStep: tempPerStep.value,
       },
       tempEachTurn: eachTurn.input.checked,
+      hit: {
+        count: hitCount.value,
+        sides: hitSides.value,
+        damageType: hitType.value,
+        weaponOnly: weaponOnly.input.checked,
+        mark: mark.input.checked,
+      },
     };
   }
 

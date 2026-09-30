@@ -1,3 +1,4 @@
+import { normalizeHitRider } from './HitRiders.js';
 import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
@@ -196,12 +197,14 @@ export function buffExtras(raw) {
   const perStep = /** @type {Record<string, unknown>} */ (raw.modsPerStep ?? {});
   const raise = clampInt(perStep.maxHP, 0, MAX_HP_BOOST);
   const tempHP = normalizeTempHP(raw.tempHP);
+  const hit = normalizeHitRider(raw.hit);
   return {
     ...(mods ? { mods } : {}),
     ...(raise > 0 ? { modsPerStep: { maxHP: raise } } : {}),
     ...(tempHP ? { tempHP } : {}),
     ...(raw.tempEachTurn === true ? { tempEachTurn: true } : {}),
     ...(until ? { until } : {}),
+    ...(hit ? { hit } : {}),
   };
 }
 
