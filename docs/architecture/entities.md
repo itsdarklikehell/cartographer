@@ -295,6 +295,13 @@ spread `defenseFields`, so a creature with no defenses stores no field. A party
 character has no lists of its own, and `defensesOf` reads its resistances from
 the race snapshot in `raceTraits`.
 
+Both kinds of combatant also resist what their chips name. `defensesOf` adds
+the types in each chip's `mods.resist`. A chip with `mods.resistNonmagical`
+(Stoneskin) adds bludgeoning, piercing, and slashing only when the caller
+passes `nonmagical`. `combatants.defendedDamage` passes it for a weapon hit
+whose weapon has no true `magical` field, and never for a spell, so a spell
+and a magic weapon get through Stoneskin.
+
 `applyDefenses(groups, defenses, { halve })` takes the `byType` groups of a
 damage roll. It returns the total damage taken and a note for each defense
 that changed a type. `halve` means a successful save against a spell that

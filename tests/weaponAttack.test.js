@@ -1537,3 +1537,31 @@ test('a one-shot chip slants the swing and ends on it, on both sides', () => {
   assert.ok(app.log.includes("Hero's Vicious Mockery ends."));
   assert.ok(app.log.includes("Goblin's Guiding Bolt ends."));
 });
+
+test('Stoneskin halves a nonmagical weapon hit, and a magical weapon gets through', () => {
+  for (const [magical, taken] of /** @type {const} */ ([
+    [false, 4],
+    [true, 8],
+  ])) {
+    const hero = makeHero({ STR: 16 });
+    const goblin = {
+      ...createCreature('goblin', 'Goblin', {
+        disposition: 'hostile',
+        maxHP: 20,
+        stats: { AC: 10 },
+        location: HERE,
+        level: 1,
+      }),
+      conditions: [{ name: 'Stoneskin', rounds: 600, mods: { resistNonmagical: true } }],
+    };
+    const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+    rollWeaponAttack(app, {
+      attacker: hero,
+      defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+      weapon: /** @type {any} */ ({ ...SWORD, magical }),
+      rng: scripted([4 / 8]),
+    });
+    // 5 on the die plus STR +3 is 8, which Stoneskin halves to 4.
+    assert.equal(app.state.creatures[0].currentHP, 20 - taken);
+  }
+});

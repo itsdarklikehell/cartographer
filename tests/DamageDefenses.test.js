@@ -101,3 +101,23 @@ test('a creature keeps its defenses through load, edit, and a template', () => {
   });
   assert.deepEqual(lib.creatures[0].defenses, { resist: [], vulnerable: [], immune: ['poison'] });
 });
+
+test('defensesOf adds the resistances of chips, and Stoneskin only against a nonmagical weapon', () => {
+  const holder = {
+    conditions: [
+      { name: 'Protection from Energy', mods: { resist: ['fire'] } },
+      { name: 'Stoneskin', mods: { resistNonmagical: true } },
+      { name: 'Poisoned' },
+    ],
+  };
+  assert.deepEqual(defensesOf(holder).resist, ['fire']);
+  assert.deepEqual(defensesOf(holder, { nonmagical: true }).resist, [
+    'fire',
+    'bludgeoning',
+    'piercing',
+    'slashing',
+  ]);
+  const hit = [{ damageType: 'slashing', subtotal: 9 }];
+  assert.equal(applyDefenses(hit, defensesOf(holder, { nonmagical: true })).total, 4);
+  assert.equal(applyDefenses(hit, defensesOf(holder)).total, 9);
+});

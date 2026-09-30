@@ -75,6 +75,24 @@ export const LEVEL_4_TO_5 = [
     effect: { kind: 'buff', condition: 'Invisible' },
   },
   {
+    id: 'stoneskin',
+    name: 'Stoneskin',
+    level: 4,
+    school: 'abjuration',
+    classes: ['druid', 'ranger', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'diamond dust worth 100 gp', costGP: 100, consumed: true },
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      "The target's flesh turns hard as stone, and it resists bludgeoning, piercing, " +
+      'and slashing damage from nonmagical weapons.',
+    effect: { kind: 'buff', mods: { resistNonmagical: true } },
+  },
+  {
     id: 'phantasmal-killer',
     name: 'Phantasmal Killer',
     level: 4,

@@ -1220,7 +1220,11 @@ damage on a successful save, the save halves first, and the defenses apply
 after that.
 
 A character resists the damage types of its race, such as fire for a
-tiefling. A creature takes its three lists from the creature dialog. The
+tiefling. A creature takes its three lists from the creature dialog. A
+chip can add resistances too. Stoneskin resists bludgeoning, piercing, and
+slashing from a nonmagical weapon, and a spell gets through it. The item
+form has no magic setting, so a weapon counts as nonmagical unless its
+library entry sets `magical: true`. The
 log names each defense that changed the damage, with the amount taken.
 
 The Damage button on the combat screen and on the panels deals the typed
@@ -2141,7 +2145,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 93 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 94 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

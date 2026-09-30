@@ -190,7 +190,11 @@ export function rollWeaponAttack(
     // Sneak Attack adds its dice only on a hit, so the flag is spent here
     // rather than beside the swing.
     if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
-    const taken = defendedDamage(app, defender.id, damage.byType);
+    // A weapon without a true `magical` flag counts as nonmagical, so
+    // Stoneskin resists its hit.
+    const taken = defendedDamage(app, defender.id, damage.byType, {
+      nonmagical: !(/** @type {{ magical?: boolean }} */ (weapon).magical),
+    });
     const lines = hitLines({
       weapon,
       defenderName: defender.name,

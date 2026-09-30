@@ -1,5 +1,6 @@
 import { clampInt } from '../util/num.js';
 import { ABILITY_SCORES } from './Modifiers.js';
+import { DAMAGE_TYPES } from './Equipment.js';
 
 /**
  * What a condition chip changes on its holder besides a d20 roll. A buff
@@ -9,7 +10,8 @@ import { ABILITY_SCORES } from './Modifiers.js';
  * fields work through `entities/HPBuffs.js`, and `app/combatants.js` reads
  * the immunities when a chip lands. `ConditionEffects.rollMode` reads the
  * save advantage and the attack slants (see `ChipSlants.js`), and the weapon
- * swing reads the extra action. The chip goes
+ * swing reads the extra action. `DamageDefenses.defensesOf` reads the
+ * resistances. The chip goes
  * away with its spell, so the change ends with it. Every function here is pure.
  */
 
@@ -65,6 +67,18 @@ function slantOf(value) {
 }
 
 /**
+ * A written list of damage types, lowercased, with unknown types and
+ * repeats dropped.
+ * @param {unknown} value
+ * @returns {string[]}
+ */
+function damageList(value) {
+  return nameList(value)
+    .map((t) => t.toLowerCase())
+    .filter((t) => DAMAGE_TYPES.includes(t));
+}
+
+/**
  * A written mods block, or null when it changes nothing. A flat AC bonus can
  * be negative, for a chip that lowers AC. A base AC, a floor, an HP raise,
  * and a temporary HP grant below 1 name nothing, so they drop.
@@ -85,6 +99,7 @@ export function normalizeChipMods(value) {
   const attacks = slantOf(raw.attacks);
   const attacksAgainst = slantOf(raw.attacksAgainst);
   const attackerTypes = nameList(raw.attackerTypes).map((t) => t.toLowerCase());
+  const resist = damageList(raw.resist);
   const mods = {
     ...(ac !== 0 ? { ac } : {}),
     ...(acBase > 0 ? { acBase } : {}),
@@ -101,6 +116,8 @@ export function normalizeChipMods(value) {
     ...(attacksAgainst ? { attacksAgainst } : {}),
     ...(attacksAgainst && attackerTypes.length > 0 ? { attackerTypes } : {}),
     ...((attacks || attacksAgainst) && raw.once === true ? { once: true } : {}),
+    ...(resist.length > 0 ? { resist } : {}),
+    ...(raw.resistNonmagical === true ? { resistNonmagical: true } : {}),
   };
   return Object.keys(mods).length > 0 ? mods : null;
 }
@@ -208,6 +225,8 @@ export function modsSummary(mods) {
     const from = mods.attackerTypes ? ` by ${mods.attackerTypes.join(', ')}` : '';
     parts.push(`${mods.attacksAgainst} on the${next} attack${plural} against it${from}`);
   }
+  if (mods.resist) parts.push(`resists ${mods.resist.join(', ')}`);
+  if (mods.resistNonmagical) parts.push('resists nonmagical bludgeoning, piercing, slashing');
   return parts.join(', ');
 }
 

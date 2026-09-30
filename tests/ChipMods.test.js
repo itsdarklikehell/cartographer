@@ -154,3 +154,18 @@ test('modsSummary states attack slants, one-shot and standing', () => {
     'disadvantage on the attacks against it by fey, undead',
   );
 });
+
+test('normalizeChipMods keeps known damage resistances and the nonmagical flag', () => {
+  assert.deepEqual(
+    normalizeChipMods({ resist: ['Fire', 'fire', 'lava'], resistNonmagical: true }),
+    {
+      resist: ['fire'],
+      resistNonmagical: true,
+    },
+  );
+  assert.equal(normalizeChipMods({ resist: ['lava'], resistNonmagical: 'yes' }), null);
+  assert.equal(
+    modsSummary({ resist: ['fire', 'cold'], resistNonmagical: true }),
+    'resists fire, cold, resists nonmagical bludgeoning, piercing, slashing',
+  );
+});

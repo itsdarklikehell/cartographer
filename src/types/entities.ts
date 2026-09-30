@@ -124,6 +124,12 @@ export interface ChipMods {
    * applies to (Guiding Bolt, Vicious Mockery). Only kept beside `attacks`
    * or `attacksAgainst`. */
   once?: boolean;
+  /** The damage types the holder resists while the chip lasts (Protection
+   * from Energy). */
+  resist?: string[];
+  /** True when the holder resists bludgeoning, piercing, and slashing damage
+   * from a nonmagical weapon attack (Stoneskin). */
+  resistNonmagical?: boolean;
 }
 
 /** The fields that record what spell chips did to an entity's HP. Both a

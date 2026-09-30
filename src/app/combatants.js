@@ -248,12 +248,14 @@ export function targetConditions(app, id) {
  * @param {AppContext} app
  * @param {string} id
  * @param {import('../dice/DiceRoller.js').DamageGroup[]} groups
- * @param {{ halve?: boolean }} [options]
+ * @param {{ halve?: boolean, nonmagical?: boolean }} [options] `nonmagical`
+ *   marks a hit from a nonmagical weapon, which Stoneskin resists
  * @returns {{ total: number, notes: string[] }}
  */
-export function defendedDamage(app, id, groups, options) {
+export function defendedDamage(app, id, groups, options = {}) {
   const found = findCombatant(app, id);
-  return applyDefenses(groups, defensesOf(found?.entity ?? {}), options);
+  const defenses = defensesOf(found?.entity ?? {}, { nonmagical: !!options.nonmagical });
+  return applyDefenses(groups, defenses, { halve: !!options.halve });
 }
 
 /**

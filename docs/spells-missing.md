@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 93. Three built-in spells come from
+lists 319 spells, and the app ships 94. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -28,7 +28,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
-| 4th | Ice Storm, Blight, Greater Invisibility, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
+| 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
 | 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |

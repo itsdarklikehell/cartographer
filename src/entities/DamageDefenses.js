@@ -54,16 +54,32 @@ export function defenseFields(value) {
   return KEYS.some((key) => defenses[key].length > 0) ? { defenses } : {};
 }
 
+/** The damage types that a `resistNonmagical` chip resists. */
+const WEAPON_TYPES = ['bludgeoning', 'piercing', 'slashing'];
+
 /**
  * The defenses a combatant fights with: a creature's own lists, or the
- * resistances of a character's race.
- * @param {{ defenses?: DamageDefenses, raceTraits?: { resistances?: string[] } }} entity
+ * resistances of a character's race, and the resistances of its chips
+ * (Protection from Energy). A chip with `resistNonmagical` (Stoneskin) adds
+ * bludgeoning, piercing, and slashing only when `nonmagical` says the hit
+ * comes from a nonmagical weapon, because a spell or a magic weapon gets
+ * through it.
+ * @param {{
+ *   defenses?: DamageDefenses,
+ *   raceTraits?: { resistances?: string[] },
+ *   conditions?: { mods?: import('../types/entities.js').ChipMods }[],
+ * }} entity
+ * @param {{ nonmagical?: boolean }} [options]
  * @returns {DamageDefenses}
  */
-export function defensesOf(entity) {
+export function defensesOf(entity, { nonmagical = false } = {}) {
   const own = normalizeDefenses(entity.defenses);
   const race = entity.raceTraits?.resistances ?? [];
-  return { ...own, resist: [...new Set([...own.resist, ...race])] };
+  const chips = (entity.conditions ?? []).flatMap((c) => [
+    ...(c.mods?.resist ?? []),
+    ...(nonmagical && c.mods?.resistNonmagical ? WEAPON_TYPES : []),
+  ]);
+  return { ...own, resist: [...new Set([...own.resist, ...race, ...chips])] };
 }
 
 /**
