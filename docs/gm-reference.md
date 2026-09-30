@@ -1271,14 +1271,17 @@ on the combat screen and on its sheet, and the Unconscious chip.
 - A dead character regains no HP. A heal or a rest has no effect on it, and
   the combat log says so.
 - Only a spell that raises the dead brings a dead character back. Revivify
-  and Raise Dead are the built-in ones. Each clears the tracker and heals the character to
-  1 HP. It has no effect on a character that is not dead, a dying one
+  and Raise Dead are the built-in ones. Each clears the tracker and heals
+  the character to 1 HP. Neither has an effect on a character that is not dead, a dying one
   included. In a custom spell, the **Raises the dead** box of a heal gives
   the same rule.
+- Spare the Dying stabilizes a dying character, the same as the
+  **Stabilize** control. It has no effect on a character that is not dying,
+  or on a creature. In a custom spell, the **Stabilizes the dying** box of a
+  heal gives the same rule.
 - A healing spell has no effect on a creature at 0 HP, because a creature
   rolls no death saves. Revivify and Raise Dead bring a creature at 0 HP
-  back to 1 HP.
-  The heal control of the combat screen still heals a creature at 0 HP,
+  back to 1 HP. The heal control of the combat screen still heals a creature at 0 HP,
   so you can bring back an NPC that was only knocked out.
 - The roll is a button, not an automatic step, so nobody rolls for the
   player when the turn advances.
@@ -2163,7 +2166,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 110 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 111 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

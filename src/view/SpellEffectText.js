@@ -86,6 +86,7 @@ function effectLine(spell, saveDC) {
       ...(effect.removes ? [`ends ${effect.removes.join(', ')}`] : []),
       ...(effect.removesOneOf ? [`ends one of ${effect.removesOneOf.join(', ')}`] : []),
     ];
+    if (effect.stabilizes) return 'Stabilizes a dying character';
     const dice = formatDamage(effect.healing);
     if (!dice && ends.length) return `Restoration — ${ends.join('; ')}`;
     return `Healing — ${dice || 'no dice'}${mod}${ends.map((e) => `; ${e}`).join('')}`;

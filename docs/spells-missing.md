@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 110. Three built-in spells come from
+lists 319 spells, and the app ships 111. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -24,7 +24,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 
 | Level | Spells |
 | ----- | ------ |
-| Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Mage Hand, Prestidigitation, Thaumaturgy, Druidcraft, Mending, Message, Minor Illusion, Dancing Lights, Light |
+| Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Spare the Dying, Guidance, Mage Hand, Prestidigitation, Thaumaturgy, Druidcraft, Mending, Message, Minor Illusion, Dancing Lights, Light |
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Charm Person, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
@@ -52,6 +52,7 @@ full. The resolver applies these rules:
   save. An HP pool reaches the creatures with the lowest HP first, and an
   HP limit fails the save with no roll. A failed save can kill outright.
 - Dice of healing, or a flat amount of healing.
+- A heal that stabilizes a dying character, as Spare the Dying does.
 - A condition chip that adds a die or a flat amount to the later attack
   rolls, saving throws, or ability checks of the target.
 - A condition chip for one of the eleven standard conditions that have

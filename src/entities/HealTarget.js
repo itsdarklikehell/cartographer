@@ -1,4 +1,4 @@
-import { isDead } from './DeathSaves.js';
+import { isDead, isDying } from './DeathSaves.js';
 import { isDefeated } from './Creature.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -23,18 +23,22 @@ export function healingBlockedBy(conditions) {
  * and 0 HP takes it out of the fight. A spell that raises the dead
  * (`revives`) works the other way round: it has no effect on a target that is
  * not dead, and a dying character at 0 HP is not dead. A target with a chip
- * that stops healing (Chill Touch) regains nothing from a heal.
+ * that stops healing (Chill Touch) regains nothing from a heal. A spell that
+ * stabilizes (`stabilizes`) reaches only a dying character.
  * @param {'character' | 'creature'} kind
  * @param {Character | Creature} entity
  * @param {boolean} revives
- * @returns {'dead' | 'defeated' | 'living' | 'noHealing' | null}
+ * @param {boolean} [stabilizes]
+ * @returns {'dead' | 'defeated' | 'living' | 'notDying' | 'noHealing' | null}
  */
-export function healBlocked(kind, entity, revives) {
+export function healBlocked(kind, entity, revives, stabilizes = false) {
   const down =
     kind === 'creature'
       ? isDefeated(/** @type {Creature} */ (entity))
       : isDead(/** @type {Character} */ (entity));
   if (revives) return down ? null : 'living';
+  if (stabilizes)
+    return kind === 'character' && isDying(/** @type {Character} */ (entity)) ? null : 'notDying';
   if (down) return kind === 'creature' ? 'defeated' : 'dead';
   return healingBlockedBy(entity.conditions) ? 'noHealing' : null;
 }
@@ -43,7 +47,7 @@ export function healBlocked(kind, entity, revives) {
  * The log line of a healing spell that has no effect on its target.
  * @param {string} spellName
  * @param {string} targetName
- * @param {'dead' | 'defeated' | 'living' | 'noHealing'} reason
+ * @param {'dead' | 'defeated' | 'living' | 'notDying' | 'noHealing'} reason
  * @returns {string}
  */
 export function healBlockedLine(spellName, targetName, reason) {
@@ -51,6 +55,7 @@ export function healBlockedLine(spellName, targetName, reason) {
     dead: 'is dead',
     defeated: 'is at 0 HP',
     living: 'is not dead',
+    notDying: 'is not dying',
     noHealing: 'cannot regain hit points',
   }[reason];
   return `${spellName} has no effect on ${targetName}, who ${state}.`;

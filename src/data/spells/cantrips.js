@@ -248,6 +248,30 @@ export const CANTRIPS = [
     },
   },
   {
+    id: 'spare-the-dying',
+    name: 'Spare the Dying',
+    level: 0,
+    school: 'necromancy',
+    classes: ['cleric'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'A living creature at 0 hit points becomes stable. The spell has no effect on undead ' +
+      'or constructs.',
+    // A creature dies at 0 HP in the app, so only a dying character can be
+    // stabilized.
+    effect: {
+      kind: 'heal',
+      healing: [],
+      stabilizes: true,
+      typeRules: { skip: ['undead', 'construct'] },
+    },
+  },
+  {
     id: 'guidance',
     name: 'Guidance',
     level: 0,

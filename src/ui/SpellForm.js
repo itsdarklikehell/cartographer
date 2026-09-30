@@ -169,6 +169,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     'Raises the dead',
     spell?.effect.kind === 'heal' && spell.effect.revives === true,
   );
+  const stabilizes = checkbox(
+    'Stabilizes the dying',
+    spell?.effect.kind === 'heal' && spell.effect.stabilizes === true,
+  );
   const later = buildLaterTurnControls(spell);
   const onHit = buildOnHitControls(spell);
   const hp = buildHPControls(spell);
@@ -276,7 +280,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
   const saveEndsRow = fieldRow(saveEnds.label);
-  const healTogglesRow = fieldRow(addsModifier.label, revives.label);
+  const healTogglesRow = fieldRow(addsModifier.label, revives.label, stabilizes.label);
   const scalingRow = fieldRow(scales.label);
   // Keep the multi-line dice editor and the lone targets number on separate
   // rows. A shared flex row leaves the small number field floating beside the
@@ -312,6 +316,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     healField.hidden = kind !== 'heal';
     healTogglesRow.hidden = kind !== 'heal' && kind !== 'attack';
     revives.label.hidden = kind !== 'heal';
+    stabilizes.label.hidden = kind !== 'heal';
     later.sync(kind, conditionSelect.value !== '');
     onHit.sync(kind);
     hp.sync(kind, conditionSelect.value !== '');
@@ -388,6 +393,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         saveEnds: saveEnds.input.checked,
         addsModifier: addsModifier.input.checked,
         revives: revives.input.checked,
+        stabilizes: stabilizes.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
         rider: rider.read(),

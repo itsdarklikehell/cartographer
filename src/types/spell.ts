@@ -206,6 +206,10 @@ export interface SpellHealEffect {
    * target, and it has no effect on a living one. Absent means the heal has no
    * effect on a dead target. */
   revives?: boolean;
+  /** True for a spell that stabilizes a dying character (Spare the Dying). It
+   * has no effect on a target that is not dying, and it heals no hit points.
+   * Absent means the heal leaves the death saves alone. */
+  stabilizes?: boolean;
   /** The condition chips the heal ends on each target, matched by name
    * without case (Heal ends Blinded and Deafened). `Exhaustion` names one
    * level of exhaustion. Absent means the heal ends nothing. */

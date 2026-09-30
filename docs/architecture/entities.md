@@ -809,9 +809,13 @@ Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure
 Wounds ship with it, and the spell form offers it as the "Add spellcasting
 modifier" box. A heal effect with `revives` raises the dead, and it heals only
 a dead target (see [Damage and healing at 0 HP](#damage-and-healing-at-0-hp)).
-Revivify and Raise Dead ship with it, and the spell form offers it as the "Raises the dead"
-box. `Library.normalizeSpell` and `SpellDraft.assembleEffect` keep the flag
-only when it is true.
+Revivify and Raise Dead ship with it, and the spell form offers it as the
+"Raises the dead" box. A heal effect with `stabilizes` heals nothing and
+stabilizes a dying character through `app/deathSaves.stabilizeCharacter`.
+`HealTarget.healBlocked` gives any other target the reason `notDying`.
+Spare the Dying ships with it, and the spell form offers it as the
+"Stabilizes the dying" box. `Library.normalizeSpell` and
+`SpellDraft.assembleEffect` keep each flag only when it is true.
 
 `DiceRoller.rollDamage` groups the terms by damage type and adds the bonus of
 each term to its own group. The `modifier` argument (the attacker's ability

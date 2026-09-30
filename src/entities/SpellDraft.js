@@ -52,6 +52,7 @@ import { healTypeRules } from './SpellTypeRules.js';
  * @property {boolean} [addsModifier] whether the heal or the attack kind adds
  *   the spellcasting ability modifier
  * @property {boolean} [revives] whether the heal kind raises the dead
+ * @property {boolean} [stabilizes] whether the heal kind stabilizes the dying
  * @property {string} [removes] the chips the heal kind ends, comma-separated
  * @property {string} [removesOneOf] the chips of which the heal kind ends one,
  *   comma-separated
@@ -162,6 +163,7 @@ export function assembleEffect(draft) {
       healing: draft.damage,
       ...(draft.addsModifier ? { addsModifier: true } : {}),
       ...(draft.revives ? { revives: true } : {}),
+      ...(draft.stabilizes ? { stabilizes: true } : {}),
       ...cureFields(draft),
       ...healTypeRules(draft),
     };

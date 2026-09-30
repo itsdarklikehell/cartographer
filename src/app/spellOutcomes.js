@@ -15,6 +15,7 @@ import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
 import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
 import { cureTarget } from './healCure.js';
+import { stabilizeCharacter } from './deathSaves.js';
 import { paren, poolLine, saveDetail, splitLine, unaffectedLine } from '../combat/SaveLines.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -136,6 +137,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
   }
   if (kind === 'heal') {
     const revives = spell.effect.revives === true;
+    const stabilizes = spell.effect.stabilizes === true;
     // A spell with no healing dice (Lesser Restoration) only ends conditions,
     // so it logs no heal line.
     const heals = spell.effect.healing.length > 0;
@@ -155,9 +157,14 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         continue;
       }
       const found = findCombatant(app, o.target.id);
-      const blocked = found ? healBlocked(found.kind, found.entity, revives) : null;
+      const blocked = found ? healBlocked(found.kind, found.entity, revives, stabilizes) : null;
       if (blocked) {
         app.actions.logEvent('combat', healBlockedLine(spell.name, o.target.name, blocked));
+        continue;
+      }
+      // A spell that stabilizes heals nothing, so it skips the heal line.
+      if (stabilizes) {
+        stabilizeCharacter(app, o.target.id);
         continue;
       }
       if (heals) {
@@ -170,7 +177,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       const id = o.target.id;
       cures = cures ? cures.then(() => cureTarget(app, spell, id)) : cureTarget(app, spell, id);
     }
-    app.toasts.show(`${spell.name} heals ${summary}.`);
+    app.toasts.show(`${spell.name} ${stabilizes ? 'on' : 'heals'} ${summary}.`);
     return;
   }
   if (kind === 'buff') {

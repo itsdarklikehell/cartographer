@@ -310,6 +310,7 @@ function normalizeSpell(raw, id) {
       healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES),
       ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
       ...(raw.effect.revives === true ? { revives: true } : {}),
+      ...(raw.effect.stabilizes === true ? { stabilizes: true } : {}),
       ...cureFields(raw.effect),
       ...healTypeRules(raw.effect),
     };
