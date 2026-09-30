@@ -49,7 +49,7 @@ function start() {
     truncated,
   } = loadInitialCampaignSafe();
   const toasts = mountToasts(document.body, {
-    anchor: () => document.getElementById('breadcrumb-container'),
+    anchor: () => document.querySelector('#breadcrumb-container .breadcrumb'),
   });
   // One tooltip for the whole page. Its listeners are delegated, so a widget
   // built later gains a tooltip just by carrying the attribute `setTip` writes.

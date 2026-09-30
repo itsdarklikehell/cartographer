@@ -291,8 +291,9 @@ body.mode-build .map-controls__fog {
 
 /* Transient action-feedback toasts, above everything. ui/Toast.js lines the
    stack up with the right end of the breadcrumb row, where nothing else
-   sits (see view/ToastPlace.js). The top-right corner of the window is the
-   place while that row is out of view. The toasts often land over the map, so they use the pinned-dark overlay palette in
+   sits, or just below the row when a long trail leaves no room (see
+   view/ToastPlace.js). The top-right corner of the window is the place
+   while that row is out of view. The toasts often land over the map, so they use the pinned-dark overlay palette in
    both themes rather than following the page surface. */
 .toast-stack {
   position: fixed;

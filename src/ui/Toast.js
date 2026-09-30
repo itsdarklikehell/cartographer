@@ -17,8 +17,10 @@ import { toastPlace } from '../view/ToastPlace.js';
  * Dismiss button so a keyboard user can close it early. A click on any
  * toast dismisses it early.
  *
- * `anchor` names the element whose right end the stack lines up with when
- * the first toast of a batch appears. Without it, or while it is out of
+ * `anchor` names the row whose right end the stack lines up with when the
+ * first toast of a batch appears. The stack keeps clear of the row's
+ * contents: when they leave no room at the right end, the stack goes below
+ * the row (see view/ToastPlace.js). Without an anchor, or while it is out of
  * view, the stack stays in its CSS place.
  * @param {HTMLElement} container
  * @param {{ duration?: number, anchor?: () => Element | null }} [options]
@@ -36,10 +38,21 @@ export function mountToasts(container, options = {}) {
   root.append(status, alert);
   container.appendChild(root);
 
-  /** Line the stack up with the anchor, or give it back to the stylesheet. */
+  /**
+   * Line the stack up with the anchor, or give it back to the stylesheet.
+   * This runs after the first toast of a batch is in the stack, so the
+   * stack has its width.
+   */
   function placeStack() {
-    const box = options.anchor?.()?.getBoundingClientRect();
-    const place = box ? toastPlace(box, window.innerWidth, window.innerHeight) : null;
+    const anchor = options.anchor?.();
+    let place = null;
+    if (anchor) {
+      const contents = document.createRange();
+      contents.selectNodeContents(anchor);
+      const trailRight = anchor.childElementCount ? contents.getBoundingClientRect().right : 0;
+      const box = anchor.getBoundingClientRect();
+      place = toastPlace(box, trailRight, root.offsetWidth, window.innerWidth, window.innerHeight);
+    }
     root.style.top = place ? `${place.top}px` : '';
     root.style.right = place ? `${place.right}px` : '';
   }
@@ -49,7 +62,7 @@ export function mountToasts(container, options = {}) {
    * @param {ToastOptions} [opts]
    */
   function show(message, opts = {}) {
-    if (!root.querySelector('.toast')) placeStack();
+    const first = !root.querySelector('.toast');
     const error = opts.level === 'error';
     const toast = el('div', error ? 'toast toast--error' : 'toast', message);
     const dismiss = () => {
@@ -62,6 +75,7 @@ export function mountToasts(container, options = {}) {
       toast.appendChild(bareButton(['Dismiss'], dismiss, { className: 'toast__dismiss' }));
     }
     (error ? alert : status).appendChild(toast);
+    if (first) placeStack();
     setTimeout(dismiss, error ? duration * 4 : duration);
   }
 
