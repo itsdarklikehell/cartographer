@@ -75,7 +75,11 @@ test('the undead of the example resist what the rules say, and the dead are trai
 test('every example caster creature knows spells of its own class', () => {
   const byId = new Map(DEFAULT_SPELLS.map((s) => [s.id, s]));
   const casters = campaign.creatures.filter((c) => c.spellbook);
-  assert.deepEqual(casters.map((c) => c.id).sort(), ['castellan-irenne', 'pale-sworn-2']);
+  assert.deepEqual(casters.map((c) => c.id).sort(), [
+    'castellan-irenne',
+    'ostrand',
+    'pale-sworn-2',
+  ]);
   for (const c of casters) {
     const view = toCaster(c);
     assert.ok(view.resources.length > 0, `${c.id} has slots`);

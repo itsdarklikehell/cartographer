@@ -1,6 +1,27 @@
 import { createCreature, defaultEnemyGear } from '../entities/Creature.js';
 import { enemyArmor } from '../entities/EquipmentPresets.js';
 import { defaultEnemyStats } from '../entities/Modifiers.js';
+import {
+  ACOLYTE,
+  BANDIT,
+  BUGBEAR,
+  CULTIST,
+  DROWNED,
+  GOBLIN,
+  GOBLIN_BOSS,
+  GREEN_HAG,
+  HARPY,
+  KNOCKER,
+  OSTRAND,
+  SCORPION,
+  SKELETON,
+  WIGHT,
+  WINTER_WOLF,
+  WOLF,
+  WRAITH,
+  WYVERN,
+  ZOMBIE,
+} from './ExampleStatBlocks.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -65,22 +86,6 @@ const BRUTE_MORNINGSTAR = {
   category: /** @type {'martial'} */ ('martial'),
   damage: [{ count: 2, sides: 8, damageType: 'piercing' }],
 };
-
-// Stat block extras. An armored enemy sets DEX and an AC of 10 + DEX, so its
-// worn armor gives the SRD AC: Leather Armor at DEX 12 is AC 12. A shield
-// adds 2 on top of 10 + DEX. An unarmored enemy states its natural AC. The
-// goblins, the goblin boss, the bugbear, and the wolf take all six scores
-// from their SRD stat blocks.
-const GOBLIN = { STR: 8, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 8, AC: 14 };
-const GOBLIN_BOSS = { STR: 10, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 10, AC: 14 };
-const BUGBEAR = { STR: 15, DEX: 14, CON: 13, INT: 8, WIS: 11, CHA: 9, AC: 14 };
-const BANDIT = { DEX: 12, AC: 11 };
-const SKELETON = { DEX: 14, AC: 12 };
-const WOLF = { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 };
-const ZOMBIE = { AC: 8 };
-const HARPY = { AC: 11 };
-const SCORPION = { AC: 15 };
-const DROWNED = { AC: 11 };
 
 // The gear, training, and defenses of each kind of creature, shared by the
 // placed creatures and the bestiary.
@@ -190,6 +195,16 @@ const template = (id, name, hp, level, cr, extras, kit = {}) => ({
   ...kit,
 });
 
+// The spells of King Ostrand, a wizard of caster level 8.
+const KING_SPELLS = [
+  'ray-of-sickness',
+  'hold-person',
+  'blindness-deafness',
+  'vampiric-touch',
+  'fear',
+  'blight',
+];
+
 /**
  * The enemies of the example world, from the wolves on the Vale Road to King
  * Ostrand in his tomb, each on the story place that `at` names.
@@ -208,45 +223,29 @@ function enemies(at) {
     mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, at('bogZombie2'), ZOMBIE, ROTTING),
     mob('hill-harpy', 'Harpy', 24, 2, 1, at('harpy'), HARPY, HARPY_KIT),
     mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, at('scorpion'), SCORPION, SCORPION_KIT),
-    mob('winter-wolf', 'Winter Wolf', 34, 3, 3, at('winterWolf'), { AC: 13 }, WINTER_KIT),
+    mob('winter-wolf', 'Winter Wolf', 34, 3, 3, at('winterWolf'), WINTER_WOLF, WINTER_KIT),
     // The crew of the Gull, Corvin's lost boat, walk the Saltmere docks.
     mob('drowned-watchman-1', 'Drowned Sailor', 22, 2, 0.5, at('drowned1'), DROWNED, {
       ...DROWNING,
       notes: 'Crew of the Gull. Each one still wears a sack of pale Hollowvein silver on its belt.',
     }),
     mob('drowned-watchman-2', 'Drowned Sailor', 22, 2, 0.5, at('drowned2'), DROWNED, DROWNING),
-    mob(
-      'hollowvein-knocker',
-      'The Knocker in the Vein',
-      30,
-      3,
-      2,
-      at('knocker'),
-      { AC: 14 },
-      {
-        creatureType: 'elemental',
-        conditionImmunities: ['Poisoned', 'Petrified'],
-        ...natural('Claws', 1, 8, 'slashing'),
-        ...trained([], ['perception', 'stealth']),
-        ...guards([], ['bludgeoning']),
-        notes:
-          'A spirit that the wardens bound to the silver of the vein. It sleeps while the vein wards are whole. The diggers of the Castellan broke them, and it killed the last shift. It knocks three times before it strikes. A character who reads the sigils in the notes of Tam Hollowell can bind it again with a DC 13 Arcana check instead of a fight.',
-      },
-    ),
-    legend(
-      'grelka',
-      'Grelka the Mire Hag',
-      45,
-      4,
-      3,
-      at('grelka'),
-      { AC: 15 },
-      {
-        creatureType: 'fey',
-        ...natural('Claws', 2, 8, 'slashing'),
-        ...trained([], ['arcana', 'deception', 'perception', 'stealth']),
-      },
-    ),
+    mob('hollowvein-knocker', 'The Knocker in the Vein', 30, 3, 2, at('knocker'), KNOCKER, {
+      creatureType: 'elemental',
+      conditionImmunities: ['Poisoned', 'Petrified'],
+      ...natural('Claws', 1, 8, 'slashing'),
+      ...trained([], ['perception', 'stealth']),
+      ...guards([], ['bludgeoning']),
+      notes:
+        'A spirit that the wardens bound to the silver of the vein. It sleeps while the vein wards are whole. The diggers of the Castellan broke them, and it killed the last shift. It knocks three times before it strikes. A character who reads the sigils in the notes of Tam Hollowell can bind it again with a DC 13 Arcana check instead of a fight.',
+    }),
+    legend('grelka', 'Grelka the Mire Hag', 45, 4, 3, at('grelka'), GREEN_HAG, {
+      creatureType: 'fey',
+      ...natural('Claws', 2, 8, 'slashing'),
+      ...trained([], ['arcana', 'deception', 'perception', 'stealth']),
+      notes:
+        'Green hag. Illusory Appearance: she wears the face of a lost village girl until she strikes. Mimicry: she calls for help in the voice of anyone the party has lost. Invisible Passage: she turns invisible at will until she attacks.',
+    }),
     // The Northmarch: the raiders who toppled the wardstone.
     mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, at('raider1'), GOBLIN, SNEAK),
     mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, at('raider2'), GOBLIN, SNEAK),
@@ -275,58 +274,43 @@ function enemies(at) {
     }),
     mob('camp-goblin1', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
     mob('camp-goblin2', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
-    legend(
-      'skalvyr',
-      'Skalvyr the Wyvern',
-      68,
-      5,
-      6,
-      at('skalvyr'),
-      { AC: 16 },
-      {
-        creatureType: 'dragon',
-        ...natural('Stinger', 2, 6, 'piercing'),
-        ...trained([], ['perception']),
-      },
-    ),
+    legend('skalvyr', 'Skalvyr the Wyvern', 68, 5, 6, at('skalvyr'), WYVERN, {
+      creatureType: 'dragon',
+      multiattack: 2,
+      ...natural('Stinger', 2, 6, 'piercing'),
+      ...trained([], ['perception']),
+      notes:
+        'Wyvern. Multiattack: one bite (2d6 + 4 piercing) and one sting. A creature hit by the sting makes a DC 15 CON save and takes 7d6 poison damage on a fail, or half as much on a success. It flies at 80 feet.',
+    }),
     // Thornhold: the shade in the hall, and the Pale-sworn in the dungeons.
-    legend(
-      'crypt-shade',
-      'The Crypt Shade',
-      40,
-      4,
-      3,
-      at('shade'),
-      { AC: 14 },
-      {
-        creatureType: 'undead',
-        conditionImmunities: [
-          'Frightened',
-          'Grappled',
-          'Paralyzed',
-          'Petrified',
-          'Poisoned',
-          'Prone',
-          'Restrained',
-        ],
-        ...natural('Withering Touch', 2, 6, 'necrotic'),
-        ...guards(
-          ['necrotic', 'poison'],
-          ['acid', 'cold', 'fire', 'lightning', 'thunder'],
-          ['radiant'],
-        ),
-        ...trained([], ['stealth']),
-        notes:
-          'The shade of Edric Vane, the warden who sealed the barrow. It woke when the pale seal left the crypt, and it attacks anyone who carries House Vane blood or the Vane signet. Once put down, it leaves the crypt ledger open on the high table.',
-      },
-    ),
-    mob('pale-sworn-1', 'Pale-sworn Cultist', 9, 1, 0.125, at('cultist1'), BANDIT, {
+    legend('crypt-shade', 'The Crypt Shade', 67, 5, 5, at('shade'), WRAITH, {
+      creatureType: 'undead',
+      conditionImmunities: [
+        'Frightened',
+        'Grappled',
+        'Paralyzed',
+        'Petrified',
+        'Poisoned',
+        'Prone',
+        'Restrained',
+      ],
+      ...natural('Withering Touch', 4, 8, 'necrotic'),
+      ...guards(
+        ['necrotic', 'poison'],
+        ['acid', 'cold', 'fire', 'lightning', 'thunder'],
+        ['radiant'],
+      ),
+      ...trained([], ['stealth']),
+      notes:
+        'The shade of Edric Vane, the warden who sealed the barrow. It woke when the pale seal left the crypt, and it attacks anyone who carries House Vane blood or the Vane signet. Once put down, it leaves the crypt ledger open on the high table.',
+    }),
+    mob('pale-sworn-1', 'Pale-sworn Cultist', 9, 1, 0.125, at('cultist1'), CULTIST, {
       ...CULTIST_KIT,
       weapon: DAGGER,
       role: 'Pale-sworn',
       notes: 'A Thornhold servant who hears the crown through the Castellan. Guards her ledger.',
     }),
-    mob('pale-sworn-2', 'Pale-sworn Acolyte', 16, 2, 0.25, at('cultist2'), BANDIT, {
+    mob('pale-sworn-2', 'Pale-sworn Acolyte', 16, 2, 0.25, at('cultist2'), ACOLYTE, {
       ...CULTIST_KIT,
       role: 'Pale-sworn',
       class: 'cleric',
@@ -340,41 +324,33 @@ function enemies(at) {
     // The barrow: the pickets, the wight, and King Ostrand at his tomb.
     mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, at('skeleton1'), SKELETON, SKELETAL),
     mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, at('skeleton2'), SKELETON, SKELETAL),
-    // Studded Leather at DEX 14 gives AC 14.
-    legend(
-      'grave-wight',
-      'Grave Wight',
-      45,
-      4,
-      3,
-      at('wight'),
-      { DEX: 14, AC: 12 },
-      {
-        armor: enemyArmor('Studded Leather'),
-        creatureType: 'undead',
-        conditionImmunities: ['Poisoned'],
-        ...guards(['poison'], ['necrotic']),
-        ...trained([], ['perception', 'stealth']),
-      },
-    ),
+    legend('grave-wight', 'Grave Wight', 45, 4, 3, at('wight'), WIGHT, {
+      armor: enemyArmor('Studded Leather'),
+      creatureType: 'undead',
+      conditionImmunities: ['Poisoned'],
+      ...guards(['poison'], ['necrotic']),
+      ...trained([], ['perception', 'stealth']),
+      multiattack: 2,
+      notes:
+        'Wight. Multiattack: two weapon attacks, and it can swap one for Life Drain. Life Drain: +4 to hit, 1d6 + 2 necrotic damage, and the target makes a DC 13 CON save or its hit point maximum drops by the damage until it finishes a long rest. A humanoid that Life Drain kills rises as a zombie at the next dusk.',
+    }),
     // Plate, the legend default from level 5, gives AC 18.
-    legend(
-      'ostrand',
-      'King Ostrand the Risen',
-      110,
-      8,
-      8,
-      at('ostrand'),
-      {},
-      {
-        ...guards(['poison'], ['necrotic']),
-        creatureType: 'undead',
-        conditionImmunities: ['Poisoned'],
-        ...trained(['STR', 'CON', 'WIS'], ['athletics', 'intimidation', 'perception']),
-        notes:
-          'Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton. While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key.',
+    legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, at('ostrand'), OSTRAND, {
+      multiattack: 3,
+      class: 'wizard',
+      casterLevel: 8,
+      spellbook: {
+        cantrips: ['chill-touch'],
+        known: KING_SPELLS,
+        prepared: KING_SPELLS,
       },
-    ),
+      ...guards(['poison'], ['necrotic']),
+      creatureType: 'undead',
+      conditionImmunities: ['Poisoned'],
+      ...trained(['STR', 'CON', 'WIS'], ['athletics', 'intimidation', 'perception']),
+      notes:
+        'Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton. While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key.',
+    }),
   ];
 }
 
@@ -531,10 +507,10 @@ export function exampleBestiary() {
     template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, ZOMBIE, ROTTING),
     template('harpy', 'Harpy', 24, 2, 1, HARPY, HARPY_KIT),
     template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, SCORPION, SCORPION_KIT),
-    template('winter-wolf', 'Winter Wolf', 34, 3, 3, { AC: 13 }, WINTER_KIT),
+    template('winter-wolf', 'Winter Wolf', 34, 3, 3, WINTER_WOLF, WINTER_KIT),
     template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 0.25, SKELETON, SKELETAL),
     template('drowned-sailor', 'Drowned Sailor', 22, 2, 0.5, DROWNED, DROWNING),
-    template('pale-sworn', 'Pale-sworn Cultist', 9, 1, 0.125, BANDIT, {
+    template('pale-sworn', 'Pale-sworn Cultist', 9, 1, 0.125, CULTIST, {
       ...CULTIST_KIT,
       weapon: DAGGER,
       role: 'Pale-sworn',
