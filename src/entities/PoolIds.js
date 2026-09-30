@@ -1,5 +1,5 @@
 /**
- * This module holds the reserved ResourcePool ids and id prefixes.
+ * This module keeps the reserved ResourcePool ids and id prefixes.
  *
  * HP, spell slots, pact slots, and hit dice are resource pools with reserved
  * ids. Each pool gets its own UI and its own rest rules. The app derives each
@@ -28,3 +28,57 @@ export const HIT_DICE_ID_PREFIX = 'hit-dice-d';
 /** Older saves carried one hit-dice pool with no die size, before the app
  * split pools by die size. `HitDice.syncHitDice` converts it. */
 export const LEGACY_HIT_DICE_ID = 'hit-dice';
+
+/*
+ * Class-feature pools. The app derives each of these pools from the class
+ * list and the level (see `ClassPools.js`). Other modules, such as the combat
+ * actions that spend a use, name a pool by these ids.
+ */
+
+/** Fighter: Second Wind, 1 use per short rest. */
+export const SECOND_WIND_ID = 'second-wind';
+
+/** Fighter: Action Surge, 1 use per short rest (2 from level 17). */
+export const ACTION_SURGE_ID = 'action-surge';
+
+/** Cleric and paladin: Channel Divinity uses, per short rest. */
+export const CHANNEL_DIVINITY_ID = 'channel-divinity';
+
+/** Barbarian: Rage uses, per long rest. */
+export const RAGE_ID = 'rage';
+
+/** Paladin: the Lay on Hands pool of hit points, per long rest. */
+export const LAY_ON_HANDS_ID = 'lay-on-hands';
+
+/** Bard: Bardic Inspiration uses, per long rest (short rest from level 5). */
+export const BARDIC_INSPIRATION_ID = 'bardic-inspiration';
+
+/** Monk: ki points, per short rest. */
+export const KI_ID = 'ki';
+
+/** Druid: Wild Shape uses, per short rest. */
+export const WILD_SHAPE_ID = 'wild-shape';
+
+/** Sorcerer: sorcery points, per long rest. */
+export const SORCERY_POINTS_ID = 'sorcery-points';
+
+/** Wizard: Arcane Recovery, 1 use per long rest. */
+export const ARCANE_RECOVERY_ID = 'arcane-recovery';
+
+/** Paladin: Divine Sense uses, per long rest. */
+export const DIVINE_SENSE_ID = 'divine-sense';
+
+/** Every class-feature pool id, in the order the resource card lists them. */
+export const CLASS_POOL_IDS = Object.freeze([
+  SECOND_WIND_ID,
+  ACTION_SURGE_ID,
+  RAGE_ID,
+  BARDIC_INSPIRATION_ID,
+  CHANNEL_DIVINITY_ID,
+  DIVINE_SENSE_ID,
+  LAY_ON_HANDS_ID,
+  KI_ID,
+  WILD_SHAPE_ID,
+  SORCERY_POINTS_ID,
+  ARCANE_RECOVERY_ID,
+]);
