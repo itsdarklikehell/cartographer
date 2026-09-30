@@ -36,7 +36,8 @@ import { isPactWeapon, setPactWeapon } from '../entities/PactWeapon.js';
  *   render: () => void,
  *   canEdit: () => boolean,
  *   transfer?: { recipients: () => { id: string, name: string }[],
- *     send: (item: InventoryItem, count: number, recipientId: string) => void },
+ *     send: (item: InventoryItem, count: number, recipientId: string) => void,
+ *     drink?: (item: InventoryItem) => boolean },
  * }} RowContext
  */
 
@@ -133,13 +134,14 @@ export function buildRow(item, playable, ctx) {
   const usable = isConsumable(item);
   if (usable || item.quantity > 1) {
     row.appendChild(
-      iconButton('minus', usable ? `Use one ${item.name}` : `Drop one ${item.name}`, () =>
+      iconButton('minus', usable ? `Use one ${item.name}` : `Drop one ${item.name}`, () => {
+        if (usable && transfer?.drink?.(item)) return;
         commit(removeItem(getCharacter(), item.id, 1), {
           verb: usable ? 'use' : 'discard',
           itemName: item.name,
           count: 1,
-        }),
-      ),
+        });
+      }),
     );
   }
 

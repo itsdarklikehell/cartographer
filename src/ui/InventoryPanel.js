@@ -37,6 +37,9 @@ import { capitalize, slugify } from '../util/text.js';
  * another party member and a count. The panel hands the stack over
  * through `transfer.send`. The caller owns moving the items and
  * rerendering, since both characters change.
+ * If `transfer.drink` is set, "Use one" on a consumable calls it first. It
+ * returns true when it takes over the use, as for a healing potion, whose
+ * heal and stack change the caller writes.
  * Item stats and what the party owns are GM-adjudicated. The add form and
  * the per-row edit form appear only when `canEdit` returns true, so a
  * player tab can use, give, and discard its items, but never write itself
@@ -46,7 +49,8 @@ import { capitalize, slugify } from '../util/text.js';
  * @param {() => boolean} [canPlay]
  * @param {() => boolean} [canEdit]
  * @param {{ recipients: () => { id: string, name: string }[],
- *   send: (item: InventoryItem, count: number, recipientId: string) => void }} [transfer]
+ *   send: (item: InventoryItem, count: number, recipientId: string) => void,
+ *   drink?: (item: InventoryItem) => boolean }} [transfer]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountInventoryPanel(

@@ -578,7 +578,7 @@
 }
 
 .inventory-panel__give-count {
-  width: 4.5rem;
+  width: 3.5rem;
 }
 
 /* The count form: the captioned Amount field, with its buttons level with
@@ -696,4 +696,8 @@
 .party-binding-hint {
   margin: 0 0 var(--space-2);
   font-size: var(--text-label);
+}
+
+.character-sheet__hp-amount {
+  width: 3.5rem;
 }

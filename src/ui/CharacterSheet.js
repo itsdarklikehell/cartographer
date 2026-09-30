@@ -16,6 +16,7 @@ import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
+import { numberField } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -136,6 +137,9 @@ export function mountCharacterSheet(
   hpStep = null,
 ) {
   let current = initial;
+  // The HP amount field is rebuilt on each render. This value refills it,
+  // so a GM who types 7 can press Heal again without typing it twice.
+  let hpAmount = 1;
 
   const root = el('div', 'character-sheet');
   container.appendChild(root);
@@ -235,20 +239,31 @@ export function mountCharacterSheet(
       /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
       let flank;
       if (perms.hp) {
+        // The amount field sets how many HP each step button moves, so a big
+        // hit or heal is one click. An empty or bad entry counts as 1.
+        const amountInput = numberField(hpAmount, { min: 1 });
+        amountInput.classList.add('character-sheet__hp-amount');
+        amountInput.setAttribute('aria-label', `HP amount for ${character.name}`);
+        const amount = () => (hpAmount = Math.max(1, Math.floor(Number(amountInput.value)) || 1));
         // Bonus HP absorbs the hit before the pool does.
         const damageButton = iconButton(
           'minus',
-          `Damage ${character.name} by 1`,
-          () => (hpStep ? hpStep.onStep(1, false) : commit(damageCharacter(live(), 1))),
+          `Damage ${character.name}`,
+          () =>
+            hpStep ? hpStep.onStep(amount(), false) : commit(damageCharacter(live(), amount())),
           { variant: 'danger', className: 'character-sheet__hp-step' },
         );
         const healButton = iconButton(
           'heal',
-          `Heal ${character.name} by 1`,
-          () => (hpStep ? hpStep.onStep(1, true) : commit(restoreResource(live(), 'hp', 1))),
+          `Heal ${character.name}`,
+          () =>
+            hpStep
+              ? hpStep.onStep(amount(), true)
+              : commit(restoreResource(live(), 'hp', amount())),
           { variant: 'success', className: 'character-sheet__hp-step' },
         );
-        flank = { before: damageButton, after: healButton };
+        const after = el('span', 'u-row u-g1 character-sheet__hp-step', healButton, amountInput);
+        flank = { before: damageButton, after };
       }
       // This reads as "HP - [bar] + current/max +bonus". The steppers sit
       // next to the track, and the numbers sit after them on the right.

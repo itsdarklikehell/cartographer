@@ -33,6 +33,8 @@ import { passTime, passTravelTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
+import { potionHeals } from '../entities/Potions.js';
+import { drinkPotion } from './potions.js';
 import { startingCharacterId } from '../view/ReloadView.js';
 import { characterPosition } from '../party/CharacterTokens.js';
 import { wireSplitParty } from './splitParty.js';
@@ -278,6 +280,15 @@ export function wireParty(app, reloadView = null) {
     () => selectedPermissions().editBase,
     {
       recipients: () => state.characters.map((c) => ({ id: c.id, name: c.name })),
+      // A healing potion asks who drinks it and heals through the shared
+      // write path. The drinker goes to every panel through `scope.set`,
+      // so the heal is not lost under the panel's own copy.
+      drink: (item) => {
+        const drinker = selectedCharacter();
+        if (!drinker || !potionHeals(item.name)) return false;
+        void drinkPotion(app, drinker, item, (next) => scope.set(next));
+        return true;
+      },
       send: (item, count, recipientId) => {
         const giver = selectedCharacter();
         const receiver = state.characters.find((c) => c.id === recipientId);

@@ -548,7 +548,8 @@ that.
 
 1. In the **Party** panel, click the character to open the character sheet.
 2. Click the minus button beside the HP bar to do damage, or the plus
-   button to heal. Each click changes HP by 1.
+   button to heal. Type a number in the field after the plus button to
+   change HP by more than 1 with each click.
 3. Click a filled spell-slot pip to spend the slot. Click an empty pip to
    restore it.
 4. To heal on a short rest, use **Short rest** in the Time panel (see

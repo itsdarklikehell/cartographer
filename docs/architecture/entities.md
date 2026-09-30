@@ -900,6 +900,15 @@ normalize against `HEALING_TYPES` instead, and the authoring form sets them to
 that one type with no picker. A check against the damage list would rewrite
 the dice of a heal spell as slashing each time a GM edited or imported it.
 
+A healing potion is a consumable item with no heal field in the save.
+`entities/Potions.js` finds its dice in the `heals` field of the matching
+`CONSUMABLE_PRESETS` entry by the item name, so a potion that the GM renames
+heals nothing. `app/potions.drinkPotion` asks who drinks it, rolls the dice
+through the tray, takes one potion off the stack with `removeItem`, and heals
+through `applyToTarget`. The inventory panel hands the use to the wiring
+through its `drink` hook, because a heal written during the panel's own
+commit goes under the panel's copy of the character from before the heal.
+
 A heal effect with `addsModifier` adds the caster's spellcasting ability
 modifier to the roll (`Casting.castSpell` takes it as `spellModifier`). Cure
 Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure

@@ -265,17 +265,36 @@ export const GEAR_PRESETS = [
 
 /**
  * Standard consumables: picking one fills a new consumable's name and
- * description. The mechanical effect stays a table ruling. Consumables
- * carry no automated fields.
- * @type {{ name: string, description: string }[]}
+ * description. A healing potion also lists its heal dice in `heals`.
+ * `Potions.js` looks the dice up by the item name, so a saved item stores
+ * no heal field. Every other effect is the GM's call.
+ * @type {{ name: string, description: string, heals?: { count: number, sides: number, bonus: number } }[]}
  */
 export const CONSUMABLE_PRESETS = [
   { name: 'Acid Vial', description: 'Thrown: 2d6 acid damage' },
   { name: "Alchemist's Fire", description: 'Thrown: 1d4 fire damage per round until doused' },
   { name: 'Antitoxin', description: 'Advantage on saves against poison for 1 hour' },
   { name: 'Holy Water', description: 'Thrown: 2d6 radiant damage to fiends and undead' },
-  { name: 'Potion of Healing', description: 'Drink to regain 2d4 + 2 HP' },
-  { name: 'Potion of Greater Healing', description: 'Drink to regain 4d4 + 4 HP' },
+  {
+    name: 'Potion of Healing',
+    description: 'Drink to regain 2d4 + 2 HP',
+    heals: { count: 2, sides: 4, bonus: 2 },
+  },
+  {
+    name: 'Potion of Greater Healing',
+    description: 'Drink to regain 4d4 + 4 HP',
+    heals: { count: 4, sides: 4, bonus: 4 },
+  },
+  {
+    name: 'Potion of Superior Healing',
+    description: 'Drink to regain 8d4 + 8 HP',
+    heals: { count: 8, sides: 4, bonus: 8 },
+  },
+  {
+    name: 'Potion of Supreme Healing',
+    description: 'Drink to regain 10d4 + 20 HP',
+    heals: { count: 10, sides: 4, bonus: 20 },
+  },
 ];
 
 /**

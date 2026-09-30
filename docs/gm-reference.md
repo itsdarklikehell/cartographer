@@ -2074,8 +2074,9 @@ The character detail card below the map has four tabs.
 ### Sheet contents
 
 The collapsed sheet shows the name, the race, a full-width HP bar with
-damage and heal steppers, and one pip group per spell level for a caster. A
-filled pip is an unspent slot. A click spends or restores it.
+damage and heal steppers, and one pip group per spell level for a caster. The
+number field after the heal button sets how many HP each stepper click
+moves. It starts at 1. A filled pip is an unspent slot. A click spends or restores it.
 
 The expanded sheet adds these items:
 
@@ -2492,10 +2493,29 @@ character carries.
 
 | Control | Shows for | What it does |
 | --- | --- | --- |
-| Use one | A consumable | Uses one charge, down to the last one |
+| Use one | A consumable | Uses one charge, down to the last one. A healing potion asks who drinks it first (see below) |
 | Drop one | Any other stacked item | Removes one from the stack |
 | Add or remove (plus) | Every item, for the GM | Opens an **Amount** field under the row. **Add** puts that many on the stack, and the log records a pickup. **Remove** takes that many off, at most the whole stack, and the log records a discard |
 | Discard | Every item | Removes the whole stack. Asks first when the stack has more than one item |
+
+A healing potion heals when a character uses it. **Use one** opens a
+dialog that asks who drinks it. The character who carries it is first,
+and any other party character can take it, so a character can pour a
+potion into a downed ally. The tray rolls the heal with no target, and a
+heal above 0 HP ends the dying state. A dead character cannot take a
+potion, and the potion stays on the stack. In a fight, on the turn of the
+character who carries it, a potion costs the action. The app does not
+check that the two characters stand on the same tile.
+
+| Potion | Heal |
+| --- | --- |
+| Potion of Healing | 2d4 + 2 |
+| Potion of Greater Healing | 4d4 + 4 |
+| Potion of Superior Healing | 8d4 + 8 |
+| Potion of Supreme Healing | 10d4 + 20 |
+
+The app finds the heal by the item name. A renamed potion is a plain
+consumable, and **Use one** only takes it off the stack.
 
 An edit keeps the item equipped, because it is the same item. A type change
 that its slot cannot accept takes the item off. When the last of a stack is
