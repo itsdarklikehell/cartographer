@@ -12,6 +12,12 @@ import {
   tileDistance,
   tileXY,
 } from './ExampleStaging.js';
+import { paintRoadTo } from './ExampleRoads.js';
+
+// The Briarwick Vale and the Barrowdowns share a border. A party that walks
+// off the vale at VALE_EAST_GATE lands on DOWNS_WEST_GATE, and the reverse.
+export const VALE_EAST_GATE = '26,23';
+export const DOWNS_WEST_GATE = '0,16';
 
 /** @typedef {import('./ExampleWorld.js').RegionStage} RegionStage */
 /** @typedef {import('../map/GeneratorTree.js').TreeNode} TreeNode */
@@ -277,6 +283,9 @@ export const REGION_STAGES = {
     );
     put(stage, 'bandit1', besideTile(gen, tower));
 
+    // The road east to the Barrowdowns leaves the vale at the border cell
+    // that crosses into the start of the Barrowdowns road.
+    paintRoadTo(gen, palette, VALE_EAST_GATE, 'e');
     stage.after.push((node) => {
       const briarwick = node('briarwick');
       const fallback = { nodeId: 'briarwick', tileId: briarwick.entry };
@@ -454,6 +463,7 @@ export const REGION_STAGES = {
       siteTile(stage, tomb),
       'The Barrow of the Old King. Warded shut for four hundred years; the ward is failing.',
     );
+    paintRoadTo(gen, stage.palette, DOWNS_WEST_GATE, 'w');
     stage.after.push((node) => {
       const hall = node('thornhold');
       putInside(stage, hall, ['shade'], { fallback: { nodeId: 'thornhold', tileId: hall.entry } });

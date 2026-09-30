@@ -148,6 +148,7 @@ wiring module only loads it:
 | `ExampleWorld.js` | The generated world from one fixed seed, and the region names |
 | `ExampleRegions.js` | The hand edits of each region, and the story places |
 | `ExampleStaging.js` | The helpers that expand sites into sub-maps and pick tiles for the story places |
+| `ExampleRoads.js` | The helper that paints a road spur from a region road to a border cell |
 | `ExampleContent.js` | The populace, combined from the files below |
 | `ExampleParty.js` | The four level-4 characters |
 | `ExampleCast.js` | The foes and the bestiary |

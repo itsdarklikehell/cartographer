@@ -7,7 +7,7 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { getTile, overlayList } from '../src/map/TileGrid.js';
 import { hasOpenPath } from '../src/map/MapPath.js';
 import { tileKind } from '../src/map/TileKinds.js';
-import { authoringWarning } from '../src/map/MapExits.js';
+import { authoringWarning, findExits } from '../src/map/MapExits.js';
 import { buildState, QUOTA_WARN_BYTES, serialize } from '../src/storage/SaveManager.js';
 import { getHP, getClasses } from '../src/entities/Character.js';
 import { isHitDicePool } from '../src/entities/HitDice.js';
@@ -19,8 +19,10 @@ import { DEFAULT_CREATURES } from '../src/data/creatures.js';
 import { attackAbility } from '../src/entities/Weapons.js';
 import { abilityModifier } from '../src/entities/Modifiers.js';
 import { creatureProficiencyBonus } from '../src/entities/CreatureChecks.js';
-import { computeRegionEntryTile } from '../src/map/EntryPoint.js';
+import { computeCrossingEntryTile, computeRegionEntryTile } from '../src/map/EntryPoint.js';
 import { NEIGHBORS4 } from '../src/map/MapGeometry.js';
+import { roadArms } from '../src/campaign/ExampleRoads.js';
+import { DOWNS_WEST_GATE, VALE_EAST_GATE } from '../src/campaign/ExampleRegions.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 const { grid } = campaign;
@@ -449,4 +451,21 @@ test('the example spellcasters follow the school rules of their subclasses', () 
   assert.deepEqual(from('wizard', book.prepared), book.prepared);
   assert.equal(book.prepared.length, 2);
   for (const id of [...book.cantrips, ...book.known]) assert.ok(sources[id], id);
+});
+
+test('a road crosses the border from the Briarwick Vale into the Barrowdowns', () => {
+  const world = nodeOf('world');
+  /** @param {string} from @param {string} gate @param {string} side */
+  const landing = (from, gate, side) => {
+    const [x, y] = gate.split(',').map(Number);
+    const exit = findExits(nodeOf(from), world, null, { at: { x, y }, nodeById: nodeOf }).find(
+      (e) => e.side === side,
+    );
+    assert.ok(exit?.targetNodeId && exit.crossTileId, `${from} crosses at ${gate}`);
+    return computeCrossingEntryTile(world, nodeOf(exit.targetNodeId), exit.crossTileId);
+  };
+  assert.equal(landing('briarwick-vale', VALE_EAST_GATE, 'east'), DOWNS_WEST_GATE);
+  assert.equal(landing('barrowdowns', DOWNS_WEST_GATE, 'west'), VALE_EAST_GATE);
+  assert.ok(roadArms(getTile(nodeOf('briarwick-vale'), VALE_EAST_GATE)).includes('e'));
+  assert.ok(roadArms(getTile(nodeOf('barrowdowns'), DOWNS_WEST_GATE)).includes('w'));
 });
