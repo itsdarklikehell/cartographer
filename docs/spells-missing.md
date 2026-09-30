@@ -62,7 +62,7 @@ full. The resolver applies these rules:
 - A condition chip that a failed save imposes, with a new save at the end
   of each turn of the target.
 - A group of summoned creatures from one library template, which stay while
-  the caster keeps concentration.
+  the caster maintains concentration.
 - Damage that a hit or a failed save leaves on the target, rolled at the
   end of each of the target's turns. With a repeated save, the damage lands
   only when that save fails.
@@ -108,7 +108,7 @@ Acid Arrow, Phantasmal Killer, and Weird leave a chip on the target. The chip de
 its damage at the end of the turns of that creature, and it ends at the
 boundary that the spell names. Phantasmal Killer and Weird deal their damage
 only when the repeated save fails, and a success ends the spell. Each caster's cast
-keeps its own chip, so two Acid Arrows on one ogre both deal their later
+has its own chip, so two Acid Arrows on one ogre both deal their later
 damage, and a target that is already Frightened still takes the chip of
 Phantasmal Killer.
 
@@ -401,7 +401,7 @@ caster selects each creature in the area. Fireball, Shatter, Circle of
 Death, and Fire Storm work this way.
 
 A cast resolves once, and the app has no template for map areas. So no
-rule keeps a zone on the map after the cast.
+rule maintains a zone on the map after the cast.
 
 ### Buffs outside d20 rolls
 
@@ -428,7 +428,7 @@ The app does not have these parts:
 - A menu of templates for the caster to choose from.
 - A summon that a player runs as a companion. A summon takes its own turn
   as a combatant.
-- A summon that no concentration keeps, such as an animated skeleton or a
+- A summon that doesn't require concentration, such as an animated skeleton or a
   familiar. Such a summon stays until the GM removes it by hand.
 
 ### Exploration and social spells

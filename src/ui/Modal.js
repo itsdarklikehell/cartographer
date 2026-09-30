@@ -312,6 +312,10 @@ export function promptModal(title, fields, options = {}) {
           // button itself. The listener reaches `button` at click time, after
           // the binding settles.
           const button = textButton(field.label, () => button.dispatchEvent(new Event('input')));
+          // The field wrapper is a <label> with an empty caption, and
+          // Chromium names a labelled button by that label, so the button
+          // reads as a nameless button. aria-label names it by its text.
+          button.setAttribute('aria-label', field.label);
           labelText.nodeValue = '';
           input = asInput(button);
           getters[field.name] = () => '';
