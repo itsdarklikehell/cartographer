@@ -243,6 +243,11 @@ counter-key from the crates of Dorn into one. When the party gets it, add
 an item of that name to the inventory of one character. You can also unlock
 the barrow at any time.
 
+King Ostrand is the one legendary creature of the example. He takes two
+legendary actions each round and has one use of legendary resistance each
+day. His notes open with the wardstone rule and then say how his legendary
+row works in the fight.
+
 Five quests start revealed: Rumors at the Waystation, Wolves on the Vale
 Road, and the personal quests of Mirelle, Wren, and Brannoc. When you
 complete a quest, the app offers to reveal the quests that it unlocks. For

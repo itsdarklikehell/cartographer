@@ -217,3 +217,16 @@ test('Dorn can join the escort as a companion, but starts at the crossroads', ()
   assert.equal(dorn.travelsWithParty, undefined);
   assert.match(dorn.notes, /Travels with the party/);
 });
+
+test('King Ostrand alone takes legendary actions, and his notes open on the wardstone rule', () => {
+  const king = creature('ostrand');
+  assert.equal(king.legendaryActions, 2);
+  assert.equal(king.legendaryResistance, 1);
+  assert.match(king.notes ?? '', /^While all five wardstones stand/);
+  assert.match(king.notes ?? '', /Legendary action \(N left\)/);
+  const legendary = campaign.creatures.filter((c) => c.legendaryActions || c.legendaryResistance);
+  assert.deepEqual(
+    legendary.map((c) => c.id),
+    ['ostrand'],
+  );
+});

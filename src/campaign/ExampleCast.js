@@ -381,6 +381,8 @@ function enemies(at) {
     // Plate, the legend default from level 5, gives AC 18.
     legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, at('ostrand'), OSTRAND, {
       multiattack: 3,
+      legendaryActions: 2,
+      legendaryResistance: 1,
       class: 'wizard',
       casterLevel: 8,
       spellbook: {
@@ -393,7 +395,7 @@ function enemies(at) {
       conditionImmunities: ['Poisoned'],
       ...trained(['STR', 'CON', 'WIS'], ['athletics', 'intimidation', 'perception']),
       notes:
-        'While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key. Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton.',
+        'While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key. Legendary actions 2 and legendary resistance 1. When the turn of any other combatant ends, his card shows the row Legendary action (N left), and each weapon button there spends one legendary action on a single swing. Take the swing before you click Next turn. He gets both actions back when his own turn starts. When he fails the save of a spell or of Turn Undead, a dialog offers his one legendary resistance, and Succeed instead turns the failure into a success. The use comes back on a long rest. Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton.',
     }),
   ];
 }
