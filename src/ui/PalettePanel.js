@@ -49,7 +49,7 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * @param {(brush: Brush) => void} onBrushChange
  * @param {ReturnType<typeof import('./TileTooltip.js').mountTileTooltip>} [tooltip]
  * @param {import('./RegionPicker.js').RegionSource} [regions] the children the Region brush can paint
- * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, regionPicker: ReturnType<typeof mountRegionPicker> }}
+ * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, show: () => void, regionPicker: ReturnType<typeof mountRegionPicker> }}
  */
 export function mountPalettePanel(
   container,
@@ -238,16 +238,47 @@ export function mountPalettePanel(
             ? 'Interior'
             : 'Buildings';
 
+  /**
+   * One swatch section. `pending` maps each swatch image that has not loaded
+   * yet to its source, and `load` sets those sources when the section can show.
+   * @typedef {{ wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[],
+   *   pending: Map<HTMLImageElement, string>, load: () => void }} Section
+   */
+
+  // A swatch image loads only after the palette is shown and its section is
+  // open. The app mounts the palette hidden in Play mode, and the browser
+  // parses every tile SVG as its own document. Loading all of them at startup
+  // adds tens of thousands of DOM nodes before a GM opens Build mode.
+  let shown = false;
+
   const sectionsEl = el('div', 'palette__sections');
-  /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
+  /** @type {Map<string, Section>} */
   const sections = new Map();
   for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior', 'Furnishings']) {
     const grid = el('div', 'palette__grid');
-    const { head } = buildDisclosure({ label, body: grid, expanded: label === 'Terrain' });
+    /** @type {Map<HTMLImageElement, string>} */
+    const pending = new Map();
+    let open = false;
+    const load = () => {
+      if (!shown || !open) return;
+      for (const [img, src] of pending) img.src = src;
+      pending.clear();
+    };
+    // The disclosure calls onToggle once during its own setup.
+    const { head } = buildDisclosure({
+      label,
+      body: grid,
+      expanded: label === 'Terrain',
+      onToggle: (expanded) => {
+        open = expanded;
+        load();
+      },
+    });
     const wrap = el('div', 'palette__section', head, grid);
 
     sectionsEl.appendChild(wrap);
-    const section = { wrap, grid, swatches: /** @type {HTMLElement[]} */ ([]) };
+    /** @type {Section} */
+    const section = { wrap, grid, swatches: [], pending, load };
     grid.addEventListener('keydown', (event) => onGridKeyDown(section.swatches, event));
     sections.set(label, section);
   }
@@ -256,8 +287,9 @@ export function mountPalettePanel(
   for (const entry of [...palette.listAnyVariants(), ...palette.listAll()]) {
     const label = entry.anyVariant ? `${entry.label} (random variant)` : entry.label;
     const img = el('img');
-    img.src = `/${entry.imageRef}`;
     img.alt = '';
+    // A swatch that the node-kind filter hides waits until it shows.
+    img.loading = 'lazy';
 
     const swatch = el('button', 'palette__swatch palette__item', img);
     swatch.type = 'button';
@@ -286,6 +318,7 @@ export function mountPalettePanel(
       sections.get(sectionFor(entry))
     );
     section.swatches.push(swatch);
+    section.pending.set(img, `/${entry.imageRef}`);
     section.grid.appendChild(swatch);
   }
   root.appendChild(sectionsEl);
@@ -333,5 +366,11 @@ export function mountPalettePanel(
     regionPicker.refresh();
   }
 
-  return { getBrush: () => brush, getScale: () => scale, setKind, regionPicker };
+  /** Load the images of the open sections. Call it when the palette becomes visible. */
+  function show() {
+    shown = true;
+    for (const section of sections.values()) section.load();
+  }
+
+  return { getBrush: () => brush, getScale: () => scale, setKind, show, regionPicker };
 }

@@ -329,7 +329,7 @@ data in place (see [Conventions](conventions.md#frozen-tiles)).
 | Handle | Used by | Why |
 | --- | --- | --- |
 | `{ setCharacter }`, plus `getCharacter` on the sheet and the inventory | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | These three panels are scoped to one selected character, which they keep and draw from. A sibling panel's edit arrives through `setCharacter` |
-| A domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle` (`{ getTheme }`), `PalettePanel` (`{ getBrush, getScale, setKind, regionPicker }`), `TileInspector` (`{ setTile }`), `mountToasts` (`{ show }`) | A control and not a list, so there is nothing to redraw from state |
+| A domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle` (`{ getTheme }`), `PalettePanel` (`{ getBrush, getScale, setKind, show, regionPicker }`), `TileInspector` (`{ setTile }`), `mountToasts` (`{ show }`) | A control and not a list, so there is nothing to redraw from state |
 | DOM plus readers from `build<X>Form(...)` | `buildItemForm`, `buildSpellForm`, `buildFeatForm`, `buildCreatureTemplateForm` | An inline form is built for one edit and then discarded, so it is built and not mounted |
 | `Promise<result>` | `combatSetupModal`, `generateDialog`, `promptSpellDetail`, and every dialog in `Modal.js` | A dialog asks one question and gets one answer |
 | `{ element, get, set }` | `buildDamageEditor`, `buildEffectsEditor` (`ItemFormEditors.js`) | A composite widget inside a form. It keeps a working copy, gives `element` to mount, `get` to read at submit, and `set` so that a preset picker can overwrite it |

@@ -439,6 +439,7 @@ export function wireMapView(app) {
   // after it flips the body classes.
   app.actions.onModeChanged = (mode) => {
     mapCanvas.setRevealAll(mode === 'build');
+    if (mode === 'build') palettePanel.show();
     tileTooltip.hide();
     // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
     // down settles the authoring gesture and the crosshair for the new mode.
