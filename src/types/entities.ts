@@ -389,6 +389,17 @@ export interface InventoryItem {
    * the cast does not destroy it. Any item type can carry the flag, because a
    * staff is an arcane focus and an amulet is a holy symbol. */
   spellFocus?: boolean;
+  /** Consumables only: the heal dice rolled when a character drinks it, for
+   * example 2d4 + 2 on a Potion of Healing. Absent means "Use one" only
+   * takes the item off the stack. */
+  heals?: HealDice;
+}
+
+/** The heal roll of a consumable: `count` dice of `sides` plus `bonus`. */
+export interface HealDice {
+  count: number;
+  sides: number;
+  bonus: number;
 }
 
 /** The wearable slots on a character. Older saves' 'armor' slot reads as

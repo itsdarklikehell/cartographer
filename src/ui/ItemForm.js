@@ -3,7 +3,7 @@ import { setTip } from './Tooltip.js';
 import { ITEM_TYPES, ARMOR_WEIGHTS, SHIELD_AC, WEAPON_TYPES } from '../entities/Equipment.js';
 import { WEAPON_KINDS, WEAPON_PROPERTIES } from '../entities/Weapons.js';
 import { activeEquipment } from '../library/Library.js';
-import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
+import { buildDamageEditor, buildEffectsEditor, buildHealEditor } from './ItemFormEditors.js';
 import { el } from './dom.js';
 import {
   labeled,
@@ -177,6 +177,11 @@ export function buildItemForm({
   const focusBox = checkbox('Component pouch or spellcasting focus', item?.spellFocus ?? false);
   const focusField = labeled('Casting', focusBox.label);
 
+  // A consumable can heal the character who drinks it, for example 2d4 + 2
+  // on a Potion of Healing. The "Use one" button then rolls the heal.
+  const heal = buildHealEditor(item?.heals ?? null);
+  const healField = labeled('Heals when drunk', heal.element);
+
   // This is a library preset to start from: the 5e defaults merged with
   // the GM's Library-tab overrides and custom entries. It appears for
   // every type with at least one entry. Picking a preset fills the
@@ -288,6 +293,7 @@ export function buildItemForm({
     }
     if (preset.acBonus !== undefined) acInput.value = String(preset.acBonus);
     focusBox.input.checked = preset.spellFocus === true;
+    if (type === 'consumable') heal.set(preset.heals ?? null);
     if (preset.statusEffects) effects.set(preset.statusEffects);
     const [buff] = Object.entries(preset.statBonuses ?? {});
     if (buff) {
@@ -318,6 +324,7 @@ export function buildItemForm({
     '5e armor has no helmet, gloves, or greaves slot. This piece and any AC bonus it gives are a house rule.',
   );
   const focusRow = fieldRow(focusField);
+  const healRow = fieldRow(healField);
 
   // The range fields show only for a ranged or thrown weapon, and the
   // two-handed damage editor only with the versatile box. The whole-row
@@ -348,6 +355,7 @@ export function buildItemForm({
     weaponRow.hidden = propertiesRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     acRow.hidden = acField.hidden && buffStatField.hidden;
     houseRuleNote.hidden = !HOUSE_RULE_TYPES.includes(type);
+    healRow.hidden = healField.hidden = type !== 'consumable';
     syncWeaponFields();
     const presets = presetsFor(type);
     presetField.hidden = presets.length === 0;
@@ -390,6 +398,7 @@ export function buildItemForm({
       statusEffects: effects.get(),
       spellFocus: focusBox.input.checked,
       magical: magicBox.input.checked,
+      heals: heal.get(),
     });
 
   return buildInlineForm({
@@ -408,6 +417,7 @@ export function buildItemForm({
       effectsRow,
       acRow,
       houseRuleNote,
+      healRow,
       focusRow,
     ],
     assemble,
@@ -423,6 +433,7 @@ export function buildItemForm({
           descriptionInput.value = '';
           quantityInput.value = '1';
           focusBox.input.checked = false;
+          heal.set(null);
         },
   });
 }

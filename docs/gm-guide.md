@@ -644,6 +644,11 @@ character carries.
 
 To change an item later, click the pencil on its row.
 
+To make a healing item, set the type to **consumable** and fill **Heals when
+drunk** with a dice count, a die size, and a bonus. For example, 3, d6, and 0
+make a Troll Draught that heals 3d6. A potion preset fills these values for
+you. On the sheet, **Use one** asks who drinks the item and rolls the heal.
+
 ### Rest
 
 A rest applies to each character in the party at once, and it moves the

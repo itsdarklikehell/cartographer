@@ -1,3 +1,4 @@
+import { withHeals } from '../entities/HealDice.js';
 import {
   WEAPON_TYPES,
   ITEM_TYPES,
@@ -108,6 +109,7 @@ export function defaultEquipmentTemplates() {
       name: p.name,
       type: /** @type {import('../types/entities.js').ItemType} */ ('consumable'),
       description: p.description,
+      ...(p.heals ? { heals: { ...p.heals } } : {}),
     })),
   ]));
 }
@@ -616,7 +618,7 @@ export function normalizeLibrary(parsed) {
     arrayOf(source.equipment)
       .filter((e) => typeof e.name === 'string' && e.name.trim() && ITEM_TYPES.includes(e.type))
       .map((e) => {
-        const named = /** @type {Record<string, any>} */ ({ ...e, name: e.name.trim() });
+        const named = /** @type {Record<string, any>} */ (withHeals({ ...e, name: e.name.trim() }));
         if (!WEAPON_TYPES.includes(e.type)) return /** @type {EquipmentTemplate} */ (named);
         return /** @type {EquipmentTemplate} */ (withCoercedWeapon(named));
       }),

@@ -262,3 +262,14 @@ test('the magical flag is kept only on a weapon with the box ticked', () => {
   assert.equal('magical' in assembleItem(draft({ ...sword, magical: false })), false);
   assert.equal('magical' in assembleItem(draft({ magical: true })), false, 'rope is not a weapon');
 });
+
+test('a consumable keeps valid heal dice, and other types drop them', () => {
+  const heals = { count: 3, sides: 6, bonus: 2 };
+  assert.deepEqual(assembleItem(draft({ type: 'consumable', heals }))?.heals, heals);
+  assert.equal(
+    assembleItem(draft({ type: 'consumable', heals: { count: 0, sides: 6, bonus: 0 } }))?.heals,
+    undefined,
+  );
+  assert.equal(assembleItem(draft({ type: 'gear', heals }))?.heals, undefined);
+  assert.equal(assembleItem(draft({ type: 'consumable' }))?.heals, undefined);
+});

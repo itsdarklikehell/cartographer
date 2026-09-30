@@ -900,10 +900,16 @@ normalize against `HEALING_TYPES` instead, and the authoring form sets them to
 that one type with no picker. A check against the damage list would rewrite
 the dice of a heal spell as slashing each time a GM edited or imported it.
 
-A healing potion is a consumable item with no heal field in the save.
-`entities/Potions.js` finds its dice in the `heals` field of the matching
-`CONSUMABLE_PRESETS` entry by the item name, so a potion that the GM renames
-heals nothing. `app/potions.drinkPotion` asks who drinks it, rolls the dice
+A healing item is a consumable with a `heals` field: a dice count, a die
+size, and a flat bonus. `entities/HealDice.js` coerces the field, and
+`migrateItem` runs its `withHeals` on every saved item. That step drops a
+broken `heals`, and gives a consumable with no `heals` the dice of the
+`CONSUMABLE_PRESETS` potion with the same name, so a potion from an older
+save still heals. The library normalizer runs the same step on equipment
+templates. `HealDice.js` imports only the presets, because `Equipment.js`
+imports it and a path through the rules modules would form an import cycle.
+`Potions.potionHeals` reads the item's own field, so a renamed or custom
+item heals by its dice. `app/potions.drinkPotion` asks who drinks it, rolls the dice
 through the tray, takes one potion off the stack with `removeItem`, and heals
 through `applyToTarget`. The inventory panel hands the use to the wiring
 through its `drink` hook, because a heal written during the panel's own

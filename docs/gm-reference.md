@@ -2487,18 +2487,19 @@ descriptions, a type filter, and one collapsible heading per item type.
 | Stealth | For body armor: tick it to give the wearer disadvantage on Stealth |
 | AC bonus | A flat bonus on any other item that can be equipped. A shield uses this field too, and it starts at +2 |
 | Ability buff | For example +2 STR, applied while the item is equipped |
+| Heals when drunk | For a consumable: the heal dice, as a count, a die size, and a flat bonus. A count of 0 means the item heals nothing. A potion preset fills it |
 
 Only the GM adds an item. A player uses, gives away, and discards what the
 character carries.
 
 | Control | Shows for | What it does |
 | --- | --- | --- |
-| Use one | A consumable | Uses one charge, down to the last one. A healing potion asks who drinks it first (see below) |
+| Use one | A consumable | Uses one charge, down to the last one. A consumable with heal dice asks who drinks it first (see below) |
 | Drop one | Any other stacked item | Removes one from the stack |
 | Add or remove (plus) | Every item, for the GM | Opens an **Amount** field under the row. **Add** puts that many on the stack, and the log records a pickup. **Remove** takes that many off, at most the whole stack, and the log records a discard |
 | Discard | Every item | Removes the whole stack. Asks first when the stack has more than one item |
 
-A healing potion heals when a character uses it. **Use one** opens a
+A consumable with heal dice heals when a character uses it. **Use one** opens a
 dialog that asks who drinks it. The character who carries it is first,
 and any other party character can take it, so a character can pour a
 potion into a downed ally. The tray rolls the heal with no target, and a
@@ -2514,8 +2515,12 @@ check that the two characters stand on the same tile.
 | Potion of Superior Healing | 8d4 + 8 |
 | Potion of Supreme Healing | 10d4 + 20 |
 
-The app finds the heal by the item name. A renamed potion is a plain
-consumable, and **Use one** only takes it off the stack.
+The heal dice belong to the item, so a renamed potion still heals. To make
+a custom healing item, such as a Troll Draught that heals 3d6, add a
+consumable and set **Heals when drunk**. A consumable with no heal dice is a
+plain consumable, and **Use one** only takes it off the stack. A potion from
+an older save that has no heal dice gets them on load when its name matches
+one of the potions above.
 
 An edit keeps the item equipped, because it is the same item. A type change
 that its slot cannot accept takes the item off. When the last of a stack is

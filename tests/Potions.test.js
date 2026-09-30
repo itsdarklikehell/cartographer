@@ -3,16 +3,12 @@ import assert from 'node:assert/strict';
 import { potionBlocked, potionHeals, potionSelection } from '../src/entities/Potions.js';
 import { createCharacter } from '../src/entities/Character.js';
 
-test('each healing potion lists its heal dice', () => {
-  assert.deepEqual(potionHeals('Potion of Healing'), { count: 2, sides: 4, bonus: 2 });
-  assert.deepEqual(potionHeals('Potion of Greater Healing'), { count: 4, sides: 4, bonus: 4 });
-  assert.deepEqual(potionHeals('Potion of Superior Healing'), { count: 8, sides: 4, bonus: 8 });
-  assert.deepEqual(potionHeals('Potion of Supreme Healing'), { count: 10, sides: 4, bonus: 20 });
-});
+const HEALS = { count: 2, sides: 4, bonus: 2 };
 
-test('an item that is not a healing potion has no heal dice', () => {
-  assert.equal(potionHeals('Antitoxin'), null);
-  assert.equal(potionHeals('Mystery Flask'), null);
+test('a consumable reads its own heal dice, whatever its name', () => {
+  assert.deepEqual(potionHeals({ type: 'consumable', heals: HEALS }), HEALS);
+  assert.equal(potionHeals({ type: 'consumable' }), null);
+  assert.equal(potionHeals({ type: 'gear', heals: HEALS }), null);
 });
 
 test('the heal rolls as a tray selection', () => {

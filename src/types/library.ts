@@ -1,4 +1,5 @@
 import type {
+  HealDice,
   ItemType,
   WeaponKind,
   WeaponCategory,
@@ -35,6 +36,7 @@ export interface EquipmentTemplate {
   acBonus?: number;
   statBonuses?: Record<string, number>;
   spellFocus?: boolean;
+  heals?: HealDice;
 }
 
 /**

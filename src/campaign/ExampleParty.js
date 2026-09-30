@@ -88,6 +88,7 @@ const healingPotion = () => ({
   quantity: 1,
   notes: 'Restores 2d4+2 HP.',
   type: 'consumable',
+  heals: { count: 2, sides: 4, bonus: 2 },
 });
 
 /** Ser Aldric, a knight sworn to House Vane. @returns {Character} */

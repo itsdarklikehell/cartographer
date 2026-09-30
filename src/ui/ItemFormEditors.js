@@ -206,3 +206,58 @@ export function buildEffectsEditor(initial) {
     },
   };
 }
+
+/** The die sizes the heal editor offers. */
+const HEAL_DICE = [4, 6, 8, 10, 12, 20];
+
+/**
+ * The heal dice editor of a consumable: a dice count, a die size, and a flat
+ * bonus. A count of 0 means the item heals nothing. `get` reads the three
+ * controls as numbers, and `set` fills them from a preset or clears them
+ * with null.
+ * @param {import('../types/entities.js').HealDice | null} initial
+ * @returns {{
+ *   element: HTMLElement,
+ *   get: () => { count: number, sides: number, bonus: number },
+ *   set: (heals: import('../types/entities.js').HealDice | null) => void,
+ * }}
+ */
+export function buildHealEditor(initial) {
+  const countInput = numberField(initial?.count ?? 0, {
+    min: 0,
+    className: 'item-form__dice-count',
+    ariaLabel: 'Number of heal dice',
+  });
+  setTip(countInput, 'Dice rolled when a character drinks it. 0 means it heals nothing');
+  const dieSelect = select(
+    HEAL_DICE.map((sides) => ({ value: String(sides), label: `d${sides}` })),
+    String(initial?.sides ?? 4),
+    { ariaLabel: 'Heal die size' },
+  );
+  const bonusInput = numberField(initial?.bonus ?? 0, {
+    min: 0,
+    className: 'item-form__dice-count',
+    ariaLabel: 'Heal bonus',
+  });
+  const element = el(
+    'div',
+    'u-row u-g1',
+    countInput,
+    dieSelect,
+    el('span', 'item-form__damage-plus', '+'),
+    bonusInput,
+  );
+  return {
+    element,
+    get: () => ({
+      count: clampInt(countInput.value, 0, 99, 0),
+      sides: Number(dieSelect.value),
+      bonus: clampInt(bonusInput.value, 0, 999, 0),
+    }),
+    set: (heals) => {
+      countInput.value = String(heals?.count ?? 0);
+      dieSelect.value = String(heals?.sides ?? 4);
+      bonusInput.value = String(heals?.bonus ?? 0);
+    },
+  };
+}

@@ -1,4 +1,5 @@
 import { abilityLabel, hasWeaponProperty, weaponKind } from './Weapons.js';
+import { withHeals } from './HealDice.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clampInt } from '../util/num.js';
@@ -326,7 +327,7 @@ export function migrateItem(item) {
     const { acBonus, ...rest } = item;
     return { ...rest, armorWeight: item.armorWeight ?? 'light', baseAC: 10 + (acBonus ?? 0) };
   }
-  return item;
+  return withHeals(item);
 }
 
 /** Every item currently equipped in some slot.

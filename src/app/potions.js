@@ -26,7 +26,7 @@ import { logName } from './combatants.js';
  * @returns {Promise<boolean>} whether the potion was used
  */
 export async function drinkPotion(app, drinker, item, store, { prompt = promptModal } = {}) {
-  const heals = potionHeals(item.name);
+  const heals = potionHeals(item);
   if (!heals) return false;
   const others = app.state.characters.filter((c) => c.id !== drinker.id);
   let recipientId = drinker.id;

@@ -265,9 +265,9 @@ export const GEAR_PRESETS = [
 
 /**
  * Standard consumables: picking one fills a new consumable's name and
- * description. A healing potion also lists its heal dice in `heals`.
- * `Potions.js` looks the dice up by the item name, so a saved item stores
- * no heal field. Every other effect is the GM's call.
+ * description. A healing potion also lists its heal dice in `heals`, and
+ * adding the preset copies them onto the item. Every other effect is the
+ * GM's call.
  * @type {{ name: string, description: string, heals?: { count: number, sides: number, bonus: number } }[]}
  */
 export const CONSUMABLE_PRESETS = [

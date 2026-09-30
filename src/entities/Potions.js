@@ -1,22 +1,22 @@
-import { CONSUMABLE_PRESETS } from './EquipmentPresets.js';
 import { isDead } from './DeathSaves.js';
 
-/** @typedef {{ count: number, sides: number, bonus: number }} PotionHeal */
+/** @typedef {import('../types/entities.js').HealDice} HealDice */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/dice.js').DiceSelection} DiceSelection */
 
 /**
- * The heal dice of a healing potion, found by the item name. Any other
- * item returns null, and "Use one" then only takes it off the stack.
- * @param {string} name
- * @returns {PotionHeal | null}
+ * The heal dice of a consumable item, or null. Any other item returns null,
+ * and "Use one" then only takes it off the stack.
+ * @param {Pick<InventoryItem, 'type' | 'heals'>} item
+ * @returns {HealDice | null}
  */
-export function potionHeals(name) {
-  return CONSUMABLE_PRESETS.find((p) => p.name === name)?.heals ?? null;
+export function potionHeals(item) {
+  return item.type === 'consumable' ? (item.heals ?? null) : null;
 }
 
 /**
  * The dice tray selection that rolls a potion's heal.
- * @param {PotionHeal} heals
+ * @param {HealDice} heals
  * @returns {DiceSelection}
  */
 export function potionSelection(heals) {

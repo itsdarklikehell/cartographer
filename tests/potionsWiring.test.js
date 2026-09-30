@@ -10,6 +10,7 @@ const POTION = /** @type {any} */ ({
   name: 'Potion of Healing',
   type: 'consumable',
   quantity: 2,
+  heals: { count: 2, sides: 4, bonus: 2 },
 });
 
 /** Two hurt characters, the first holding two potions. */
@@ -87,9 +88,9 @@ test('a cancelled dialog or an unknown pick uses nothing', async () => {
   assert.equal(stack(app), 2);
 });
 
-test('an item that is not a healing potion is left to the inventory panel', async () => {
+test('an item with no heal dice is left to the inventory panel', async () => {
   const { app, wren, store } = party();
-  const flask = { ...POTION, name: 'Antitoxin' };
+  const { heals: _heals, ...flask } = POTION;
   assert.equal(await drinkPotion(app, wren, flask, store), false);
 });
 
@@ -121,4 +122,19 @@ test('on the drinker turn the potion costs the action', async () => {
   assert.equal(await drinkPotion(app, again, POTION, store, { prompt: pick('wren') }), false);
   assert.deepEqual(toasts, ['Wren has no action left this turn.']);
   assert.equal(stack(app), 1);
+});
+
+test('a custom consumable with heal dice drinks under any name', async () => {
+  const draught = { ...POTION, name: 'Troll Draught', heals: { count: 3, sides: 6, bonus: 0 } };
+  const { app, wren, store } = party();
+  app.state.characters[0] = { ...wren, inventory: [draught] };
+  /** @type {any[]} */
+  const rolled = [];
+  app.actions.rollDice = (/** @type {any} */ selection) => {
+    rolled.push(selection);
+    return /** @type {any} */ ({ result: { total: 9 }, text: '' });
+  };
+  assert.equal(await drinkPotion(app, wren, draught, store, { prompt: pick('wren') }), true);
+  assert.deepEqual(rolled, [{ counts: { d6: 3 }, modifier: 0 }]);
+  assert.ok(app.log.includes('Wren drinks a Troll Draught (9 HP).'));
 });

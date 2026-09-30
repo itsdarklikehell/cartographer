@@ -285,7 +285,7 @@ export function wireParty(app, reloadView = null) {
       // so the heal is not lost under the panel's own copy.
       drink: (item) => {
         const drinker = selectedCharacter();
-        if (!drinker || !potionHeals(item.name)) return false;
+        if (!drinker || !potionHeals(item)) return false;
         void drinkPotion(app, drinker, item, (next) => scope.set(next));
         return true;
       },

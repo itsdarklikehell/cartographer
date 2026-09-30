@@ -1,4 +1,5 @@
 import { WEAPON_TYPES } from './Equipment.js';
+import { coerceHeals } from './HealDice.js';
 import { DEFAULT_RANGES, clampWeaponRange } from './Weapons.js';
 import { clampInt } from '../util/num.js';
 
@@ -60,6 +61,8 @@ export const EQUIPPABLE_TYPES = [
  * @property {string[]} statusEffects
  * @property {boolean} spellFocus
  * @property {boolean} [magical] weapons only: the weapon counts as magical
+ * @property {{ count: unknown, sides: unknown, bonus: unknown }} [heals]
+ *   consumables only: the heal dice, with a count of 0 for no heal
  */
 
 /**
@@ -85,6 +88,7 @@ export function assembleItem(draft) {
   const strength = Math.max(0, Math.floor(Number(draft.strength)) || 0);
   const buffStat = EQUIPPABLE_TYPES.includes(type) ? draft.buffStat : '';
   const buffAmount = Number(draft.buffAmount) || 0;
+  const heals = type === 'consumable' && draft.heals ? coerceHeals(draft.heals) : null;
   return {
     name: draft.name.trim(),
     quantity,
@@ -108,6 +112,7 @@ export function assembleItem(draft) {
     // holy symbol, so any item can be one.
     ...(draft.spellFocus ? { spellFocus: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
+    ...(heals ? { heals } : {}),
     ...(WEAPON_TYPES.includes(type) ? weaponFields(draft) : {}),
   };
 }
