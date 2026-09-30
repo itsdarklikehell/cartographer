@@ -1,4 +1,4 @@
-import { WEAPON_TYPES } from './Equipment.js';
+import { ITEM_TYPES, WEAPON_TYPES } from './Equipment.js';
 import { coerceHeals } from './HealDice.js';
 import { DEFAULT_RANGES, clampWeaponRange } from './Weapons.js';
 import { clampInt } from '../util/num.js';
@@ -21,6 +21,13 @@ import { clampInt } from '../util/num.js';
  * the item stores none. Body armor is not, because its AC comes from
  * `baseAC` and its weight class instead. */
 export const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring'];
+
+/** Item types that may be a component pouch or a spellcasting focus. A staff
+ * is an arcane focus, an amulet is a holy symbol, and a holy symbol can be
+ * painted on a shield, so every type counts except a consumable, which the
+ * holder uses up. */
+/** @type {string[]} */
+export const FOCUS_TYPES = ITEM_TYPES.filter((t) => t !== 'consumable');
 
 /** Item types that can be equipped somewhere, and so may buff a stat. */
 export const EQUIPPABLE_TYPES = [
@@ -108,9 +115,7 @@ export function assembleItem(draft) {
         }
       : {}),
     ...(acBonus > 0 ? { acBonus } : {}),
-    // No type gate. A quarterstaff is an arcane focus and an amulet is a
-    // holy symbol, so any item can be one.
-    ...(draft.spellFocus ? { spellFocus: true } : {}),
+    ...(draft.spellFocus && FOCUS_TYPES.includes(type) ? { spellFocus: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
     ...(heals ? { heals } : {}),
     ...(WEAPON_TYPES.includes(type) ? weaponFields(draft) : {}),

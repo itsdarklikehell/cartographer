@@ -20,6 +20,7 @@ import {
   presetLabel,
   EQUIPPABLE_TYPES,
   FLAT_AC_TYPES,
+  FOCUS_TYPES,
 } from '../entities/ItemDraft.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -172,8 +173,8 @@ export function buildItemForm({
   const buffAmountField = labeled('Amount', buffAmountInput);
 
   // A component pouch or a spellcasting focus. Carrying one covers a spell's
-  // cost-free material component. Every type offers the box, because a staff
-  // is an arcane focus and an amulet is a holy symbol.
+  // cost-free material component. Every type in FOCUS_TYPES offers the box,
+  // because a staff is an arcane focus and an amulet is a holy symbol.
   const focusBox = checkbox('Component pouch or spellcasting focus', item?.spellFocus ?? false);
   const focusField = labeled('Casting', focusBox.label);
 
@@ -356,6 +357,7 @@ export function buildItemForm({
     acRow.hidden = acField.hidden && buffStatField.hidden;
     houseRuleNote.hidden = !HOUSE_RULE_TYPES.includes(type);
     healRow.hidden = healField.hidden = type !== 'consumable';
+    focusRow.hidden = focusField.hidden = !FOCUS_TYPES.includes(type);
     syncWeaponFields();
     const presets = presetsFor(type);
     presetField.hidden = presets.length === 0;

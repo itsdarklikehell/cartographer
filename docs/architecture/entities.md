@@ -1334,8 +1334,10 @@ signal, so a stack that a GM named "Component Pouch" without the flag is
 ordinary gear. `Equipment.isSpellFocus(item)` and
 `Equipment.carriesSpellFocus(inventory)` read the flag. `GEAR_PRESETS` has four
 entries with the flag (a component pouch and an arcane, a druidic, and a holy
-focus). The item form offers the checkbox on every item type, because a staff
-can be an arcane focus and an amulet can be a holy symbol. The caster only has
+focus). The item form offers the checkbox on every item type in
+`ItemDraft.FOCUS_TYPES`, because a staff can be an arcane focus and an amulet
+can be a holy symbol. A consumable is left out, since the holder uses it up,
+and `assembleItem` drops the flag from one. The caster only has
 to carry the focus, because the app does not track which hand is free, and
 gear has no equipment slot.
 
