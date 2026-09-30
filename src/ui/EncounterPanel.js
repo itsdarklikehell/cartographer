@@ -360,12 +360,39 @@ export function mountEncounterPanel(container, callbacks) {
             icon: /** @type {const} */ ('sword'),
             label: `Add ${nameOf(encounter)} to the fight`,
             title: 'Add to fight',
-            onClick: () => callbacks.onAddToFight?.(encounter),
+            focusKey: `add-to-fight:${encounter.id}`,
+            onClick: () => {
+              const at = addToFightButtons().findIndex((b) => b === document.activeElement);
+              callbacks.onAddToFight?.(encounter);
+              focusAfterAdd(at);
+            },
           },
         ]
       : []),
     ...actions(encounter, ctx),
   ];
+
+  const addToFightButtons = () =>
+    [...nearbyPanel.querySelectorAll('button[data-focus-key^="add-to-fight:"]')].map(
+      (b) => /** @type {HTMLElement} */ (b),
+    );
+
+  /**
+   * The joined foe leaves the Nearby rows, so its button leaves the
+   * document and focus would fall to the page body. Focus moves to the
+   * "Add to fight" button that now sits at the same place, so the GM can
+   * add the next foe, or to the last one. With none left, it moves to the
+   * selected tab.
+   * @param {number} at the index of the pressed button, or -1
+   */
+  function focusAfterAdd(at) {
+    const buttons = addToFightButtons();
+    const next = buttons[Math.min(Math.max(at, 0), buttons.length - 1)];
+    const tab = /** @type {HTMLElement | null} */ (
+      tabs.tablist.querySelector('[aria-selected="true"]')
+    );
+    (next ?? tab)?.focus();
+  }
 
   const nearbyList = mountListPanel(nearbyPanel, {
     ...rowOptions,

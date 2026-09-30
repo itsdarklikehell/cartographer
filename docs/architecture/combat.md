@@ -932,7 +932,10 @@ Roll initiative and Start. During a fight, the Nearby tab gives each hostile
 row outside the order an "Add to fight" button. `encounterPanels.js` rolls
 initiative for it and calls `app.actions.addCombatant`. The Nearby list
 repaints on the set of joinable ids through its `dependsOn`, so the button
-shows when a fight starts and goes when it ends.
+shows when a fight starts and goes when it ends. The joined row leaves the
+list, so `EncounterPanel.js` moves keyboard focus to the "Add to fight"
+button now at the same place, or to the last one. With no button left,
+focus goes to the selected tab.
 
 Only a hostile creature is a threat, and only a threat opens the arrival modal
 when the party steps next to it or onto its tile. A friendly or neutral
