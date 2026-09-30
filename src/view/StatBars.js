@@ -91,9 +91,16 @@ export function slotColumnLabel(pool) {
  */
 export function pipReadout(pool, available, allowRestore) {
   const noun = `level ${slotLevelOf(pool)} ${isPactPool(pool) ? 'pact slot' : 'slot'}`;
-  if (available) return { ariaLabel: `Spend a ${noun}`, title: 'Click to spend', disabled: false };
+  const left = `(${pool.current} of ${pool.max} left)`;
+  if (available) {
+    return {
+      ariaLabel: `Mark a ${noun} used ${left}`,
+      title: 'Click to mark used',
+      disabled: false,
+    };
+  }
   if (allowRestore) {
-    return { ariaLabel: `Restore a ${noun}`, title: 'Click to restore', disabled: false };
+    return { ariaLabel: `Restore a ${noun} ${left}`, title: 'Click to restore', disabled: false };
   }
   return {
     ariaLabel: `Spent ${noun}, restored by the GM`,

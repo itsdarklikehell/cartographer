@@ -85,17 +85,17 @@ test("a pact pool's column says so; an ordinary one is just its level", () => {
 
 const slots = { id: 'slots-2', name: 'Level 2 slots', current: 1, max: 3 };
 
-test('an unspent pip offers to be spent', () => {
+test('an unspent pip offers to be marked used and says how many are left', () => {
   assert.deepEqual(pipReadout(slots, true, true), {
-    ariaLabel: 'Spend a level 2 slot',
-    title: 'Click to spend',
+    ariaLabel: 'Mark a level 2 slot used (1 of 3 left)',
+    title: 'Click to mark used',
     disabled: false,
   });
 });
 
 test('a spent pip the GM is looking at offers to be put back', () => {
   assert.deepEqual(pipReadout(slots, false, true), {
-    ariaLabel: 'Restore a level 2 slot',
+    ariaLabel: 'Restore a level 2 slot (1 of 3 left)',
     title: 'Click to restore',
     disabled: false,
   });
@@ -110,7 +110,10 @@ test('a spent pip a player may not refill stays visible but stops being a contro
 
 test('a pact pip names itself a pact slot', () => {
   const pact = { id: 'pact-3', name: 'Pact slots', current: 1, max: 2 };
-  assert.equal(pipReadout(pact, true, true).ariaLabel, 'Spend a level 3 pact slot');
+  assert.equal(
+    pipReadout(pact, true, true).ariaLabel,
+    'Mark a level 3 pact slot used (1 of 2 left)',
+  );
 });
 
 test('the read-only line lists every pool in one sentence', () => {
