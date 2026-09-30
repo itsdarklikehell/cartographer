@@ -52,6 +52,33 @@ export const LEVEL_3 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'lightning' }] },
   },
   {
+    id: 'call-lightning',
+    name: 'Call Lightning',
+    level: 3,
+    school: 'conjuration',
+    classes: ['druid'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 10, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'A storm cloud forms above the caster, and a bolt strikes a point under it. Each ' +
+      'creature within 5 feet of that point makes a DEX save: 3d10 lightning on a failure, ' +
+      'half on a success. Each later turn, an action calls down another bolt. Outdoors in a ' +
+      'storm, the spell takes control of that storm and deals 1d10 more, which the GM adds.',
+    targetCount: 0,
+    effect: {
+      kind: 'save',
+      saveAbility: 'DEX',
+      damage: [{ count: 3, sides: 10, damageType: 'lightning' }],
+      halfOnSave: true,
+    },
+    scaling: { damagePerLevel: [{ count: 1, sides: 10, damageType: 'lightning' }] },
+    repeat: {},
+  },
+  {
     id: 'revivify',
     name: 'Revivify',
     level: 3,
@@ -168,6 +195,41 @@ export const LEVEL_3 = [
       damage: [],
       halfOnSave: false,
       condition: 'Frightened',
+    },
+  },
+  {
+    id: 'hypnotic-pattern',
+    name: 'Hypnotic Pattern',
+    level: 3,
+    school: 'illusion',
+    classes: ['bard', 'sorcerer', 'warlock', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: '120 feet',
+    components: ['S', 'M'],
+    materials: {
+      text: 'a glowing stick of incense or a crystal vial filled with phosphorescent material',
+      consumed: false,
+    },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Each creature in a 30-foot cube that sees the pattern makes a WIS save. On a failure ' +
+      'it is charmed, and while charmed it is incapacitated with a speed of 0. The effect ' +
+      'ends on a creature that takes damage. A creature that another uses an action to shake ' +
+      'awake loses its chip when the GM removes it. Creatures immune to being charmed are ' +
+      'not affected, and the GM leaves out a creature that cannot see the pattern.',
+    targetCount: 0,
+    // Charmed has no rules of its own in the app, so the chip is the
+    // Incapacitated condition that the spell imposes with it.
+    effect: {
+      kind: 'save',
+      saveAbility: 'WIS',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Incapacitated',
+      endsOnDamage: true,
+      typeRules: { skipImmuneTo: ['Charmed'] },
     },
   },
   {

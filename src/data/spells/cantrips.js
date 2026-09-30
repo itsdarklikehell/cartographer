@@ -22,6 +22,26 @@ export const CANTRIPS = [
     scaling: { damagePerLevel: [{ count: 1, sides: 10, damageType: 'fire' }] },
   },
   {
+    id: 'produce-flame',
+    name: 'Produce Flame',
+    level: 0,
+    school: 'conjuration',
+    classes: ['druid'],
+    castingTime: { kind: 'action' },
+    range: 'Self',
+    components: ['V', 'S'],
+    duration: { kind: 'minutes', amount: 10 },
+    concentration: false,
+    ritual: false,
+    description:
+      'A flame in your hand hurls at a creature within 30 feet, and a ranged spell attack ' +
+      'deals 1d8 fire on a hit. The flame sheds bright light in a 10-foot radius and dim ' +
+      'light for 10 feet more until the caster hurls it or the spell ends. The GM rules the ' +
+      'light, and a hurl as an action on a later turn is a new cast.',
+    effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'fire' }] },
+    scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'fire' }] },
+  },
+  {
     id: 'ray-of-frost',
     name: 'Ray of Frost',
     level: 0,

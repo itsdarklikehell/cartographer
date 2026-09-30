@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 95. Three built-in spells come from
+lists 319 spells, and the app ships 98. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -24,10 +24,10 @@ Player's Handbook. The ranger has Hunter's Mark.
 
 | Level | Spells |
 | ----- | ------ |
-| Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
+| Cantrip | Fire Bolt, Produce Flame, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
-| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
+| 3rd | Fireball, Lightning Bolt, Call Lightning, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Hypnotic Pattern, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
 | 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
@@ -111,7 +111,7 @@ keeps its own chip, so two Acid Arrows on one ogre both deal their later
 damage, and a target that is already Frightened still takes the chip of
 Phantasmal Killer.
 
-Witch Bolt, Spiritual Weapon, and Sunbeam leave a chip on the caster, named
+Witch Bolt, Spiritual Weapon, Call Lightning, and Sunbeam leave a chip on the caster, named
 after the spell. While the caster has that chip, a cast of the same spell
 is a repeat. The dialog says Repeat, offers no slot, and costs the action or
 bonus action that the spell names. A repeat of Witch Bolt deals 1d12 to the
@@ -156,17 +156,9 @@ A spell can name creature types in `effect.typeRules`. Sleep and Hold
 Monster have no effect on undead, and the healing spells have no effect on
 undead or constructs. Blight has no effect on undead or constructs, and a
 plant saves at disadvantage and takes the maximum damage. Sunburst and
-Sunbeam give undead and oozes disadvantage on the save. A party character
+Sunbeam give undead and oozes disadvantage on the save. Sleep and Hypnotic
+Pattern pass over a creature immune to Charmed. A party character
 counts as humanoid, and a creature with no type matches no rule.
-
-Chill Touch leaves a chip on the creature that it hits, and the creature
-regains no hit points until the start of the next turn of the caster. A heal
-from a spell or from the GM logs that the heal has no effect, and temporary
-hit points still land. An undead target also takes a second chip, and it
-attacks the caster at disadvantage until the end of the next turn of the
-caster. Its weapon attacks and spell attacks against that caster roll at
-disadvantage, and its attacks against other creatures do not.
-
 
 ### Hit-point rules
 
@@ -187,6 +179,11 @@ and a target immune to Charmed, and such a target spends none of the pool.
 The app reads the creature type and the condition immunities of each
 creature, and an untyped creature counts as neither. A creature that an ally
 shakes awake loses its chip when the GM removes it.
+
+Hypnotic Pattern rolls a WIS save for each creature in its area, and a
+failure leaves an Incapacitated chip that ends when its holder takes damage,
+as the chip of Sleep does. The Charmed condition of the spell has no rules
+of its own in the app, so the chip names only the incapacitation.
 
 Power Word Kill reads the current HP of the target. A target with 100 HP
 or fewer dies with no roll, and one with more is unaffected. A creature
@@ -339,6 +336,8 @@ that it can. The description of each entry states the difference:
 - Fear lets a frightened creature retry the save only when it ends its turn
   out of line of sight of the caster. The app has no line of sight, so the
   chip has no automatic retry and the GM rolls it.
+- Call Lightning deals 1d10 more when the caster takes control of a storm
+  outdoors, and Produce Flame sheds light. The GM rules both.
 - Ray of Frost, Shocking Grasp, and Thunderwave deal their damage. The GM
   applies the rest: the lost speed, the lost reactions, and the push.
 - Protection from Evil and Good gives disadvantage only to an attacker whose
