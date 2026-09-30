@@ -151,7 +151,7 @@ a GM tab only.
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The label reads "Save •" while changes are unsaved |
-| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the selected character and the open tabs |
+| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, and the open tabs |
 | Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
 | Import | Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
 

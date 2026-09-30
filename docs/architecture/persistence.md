@@ -957,10 +957,11 @@ direction.
 
 Before the reload, the step compares the live campaign with the restored
 one through `storage/StepSummary.js`, and the queued toast names each part
-that differs. The step also writes the selected character and the open tab
-of each static tab strip to sessionStorage through `view/ReloadView.js`.
-The next start reads that record once, so a plain reload later opens on the
-default view.
+that differs. The step also writes the mode, the selected character, and
+the open tab of each static tab strip to sessionStorage through
+`view/ReloadView.js`. The next start reads that record once, so a plain
+reload later opens on the default view. Combat mode is not written, because
+a reload that finds a running fight opens the combat screen by itself.
 
 ### Storage layout
 

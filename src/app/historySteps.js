@@ -111,6 +111,7 @@ export function wireHistorySteps(
     queueToastAfterReload(restored(before, step.state));
     keepViewForReload(sessionStorage, {
       characterId: app.actions.getSelectedCharacterId(),
+      mode: app.state.mode === 'combat' ? null : app.state.mode,
       tabs: TAB_STRIPS.map(
         (id) => document.querySelector(`#${id} [role=tab][aria-selected="true"]`)?.id ?? '',
       ).filter(Boolean),

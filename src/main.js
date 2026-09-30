@@ -119,6 +119,8 @@ function start() {
   // sheet, so everything it touches must already be registered.
   wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
   wireShortcuts(app);
+  // The mode comes first, so a tab of the Build rail opens on a shown rail.
+  if (reloadView?.mode) app.actions.setMode(reloadView.mode);
   // A click selects a tab through the strip's own handler, so the panel and
   // the roving tabindex follow as they do for a GM's click.
   for (const tabId of reloadView?.tabs ?? []) document.getElementById(tabId)?.click();
