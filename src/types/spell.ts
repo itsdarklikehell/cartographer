@@ -1,4 +1,23 @@
 import type { ChipMods, DamagePart, HitRider, RollRider } from './entities.js';
+import type { CreatureType } from './creature.js';
+
+/**
+ * The creature-type rules of a save or heal spell. The resolver applies each
+ * one by the target's type: a party character counts as humanoid, and an
+ * untyped creature matches no list. Every list is optional.
+ */
+export interface SpellTypeRules {
+  /** Types the spell has no effect on (Sleep's undead, a heal's undead and
+   * constructs). A skipped target spends none of an HP pool. */
+  skip?: CreatureType[];
+  /** Conditions whose immunity puts a target out of reach (Sleep passes over
+   * a creature immune to Charmed). */
+  skipImmuneTo?: string[];
+  /** Types that make the save at disadvantage (Sunburst's undead and oozes). */
+  disadvantage?: CreatureType[];
+  /** Types that take the maximum damage of the dice (Blight's plants). */
+  maxDamage?: CreatureType[];
+}
 
 /** The six ability scores, the keys of a character's stat block. */
 export type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
@@ -140,6 +159,9 @@ export interface SpellSaveEffect {
   /** Damage that a failed save leaves on the target for later turns. With a
    * condition, the damage rides that chip. */
   ongoing?: SpellOngoing;
+  /** Creature-type rules: skipped types, disadvantage on the save, and
+   * maximum damage. */
+  typeRules?: SpellTypeRules;
 }
 
 /** The dice of an HP pool, and how many more dice each scaling increment
@@ -169,6 +191,8 @@ export interface SpellHealEffect {
   /** The chips of which the heal ends one, picked by the caster when the
    * target has more than one (Lesser Restoration). Absent means no pick. */
   removesOneOf?: string[];
+  /** Creature types the heal has no effect on (`skip` only). */
+  typeRules?: Pick<SpellTypeRules, 'skip'>;
 }
 
 /** A spell that puts a condition chip on each willing target, with no roll

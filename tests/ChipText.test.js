@@ -52,7 +52,7 @@ test('the effect summary names a melee attack, its modifier, and a splash', () =
   );
   assert.equal(
     effectSummary(spellById('sunbeam'), 15),
-    "CON save DC 15 — 6d8 radiant (half on save), Blinded until the start of the caster's next turn",
+    "CON save DC 15 — 6d8 radiant (half on save), Blinded until the start of the caster's next turn. Saves at disadvantage: undead, ooze.",
   );
   assert.equal(effectSummary(spellById('light'), null), null);
 });
@@ -97,7 +97,7 @@ test('the effect summary reads projectiles, healing, and buffs', () => {
   );
   assert.equal(
     effectSummary(spellById('cure-wounds'), null),
-    'Healing — 1d8 healing + spellcasting modifier',
+    'Healing — 1d8 healing + spellcasting modifier. No effect on undead, construct.',
   );
   assert.equal(
     effectSummary(spellById('bless'), null),
@@ -131,7 +131,8 @@ test('the detail states what a hit does besides its damage', () => {
 test('a spell that reads HP names its rule in place of the save', () => {
   assert.equal(
     effectSummary(spellById('sleep'), 14),
-    '5d8 HP pool (+2d8 per level), lowest HP first — no damage, Unconscious (ends on damage)',
+    '5d8 HP pool (+2d8 per level), lowest HP first — no damage, Unconscious (ends on damage). ' +
+      'No effect on undead, Charmed-immune.',
   );
   assert.equal(
     effectSummary(spellById('color-spray'), null),

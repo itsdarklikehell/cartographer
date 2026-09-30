@@ -5,6 +5,7 @@ import { copySpellbook } from './CharacterSpellbook.js';
 import { casterTemplateFields } from './Caster.js';
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
+import { creatureTypeFields } from './CreatureType.js';
 import { DISPOSITIONS, createCreature } from './Creature.js';
 
 /**
@@ -39,6 +40,7 @@ export function toTemplate(id, creature) {
     ...(cr === undefined ? {} : { cr }),
     ...creatureProficiencyFields(creature.proficiencies),
     ...defenseFields(creature.defenses),
+    ...creatureTypeFields(creature),
     ...(creature.role !== undefined ? { role: creature.role } : {}),
     ...(creature.notes !== undefined ? { notes: creature.notes } : {}),
     ...casterTemplateFields(creature),
@@ -76,6 +78,8 @@ export function fromTemplate(template, id, location = null) {
     // the shared template entry.
     proficiencies: template.proficiencies,
     defenses: template.defenses,
+    creatureType: template.creatureType,
+    conditionImmunities: template.conditionImmunities,
     ...(template.weapon !== undefined
       ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
       : {}),

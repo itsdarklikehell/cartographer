@@ -145,7 +145,15 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     let cures = /** @type {Promise<void> | null} */ (null);
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       // A heal skips a dead target, and a spell that raises the dead skips a
-      // living one. The log names the reason in place of the heal line.
+      // living one. The log names the reason in place of the heal line. A
+      // target of a type the heal skips (undead, construct) is passed over.
+      if (o.unaffectedBy) {
+        app.actions.logEvent(
+          'combat',
+          `${spell.name} has no effect on ${o.target.name} (${o.unaffectedBy}).`,
+        );
+        continue;
+      }
       const found = findCombatant(app, o.target.id);
       const blocked = found ? healBlocked(found.kind, found.entity, revives) : null;
       if (blocked) {
@@ -480,7 +488,10 @@ function applySave(app, spell, result, casterId) {
     const defended = taken.notes.length > 0 ? ` (${taken.notes.join(', ')})` : '';
     // A spell that rolls no save states the HP rule that reached the target
     // instead of a verdict, and names damage only when it deals some.
-    const takes = `takes ${taken.total} damage${defended}`;
+    // A type that takes the maximum damage says so, because its number is
+    // not the rolled one.
+    const top = o.maxDamage ? ' (maximum dice)' : '';
+    const takes = `takes ${taken.total} damage${top}${defended}`;
     /** @param {string} text */
     const line = (text) =>
       o.noRoll

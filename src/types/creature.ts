@@ -14,6 +14,23 @@ import type {
 /** The attitude a creature holds toward the party. */
 export type Disposition = 'friendly' | 'neutral' | 'hostile';
 
+/** An SRD creature type. A party character counts as humanoid. */
+export type CreatureType =
+  | 'aberration'
+  | 'beast'
+  | 'celestial'
+  | 'construct'
+  | 'dragon'
+  | 'elemental'
+  | 'fey'
+  | 'fiend'
+  | 'giant'
+  | 'humanoid'
+  | 'monstrosity'
+  | 'ooze'
+  | 'plant'
+  | 'undead';
+
 /** Which cast put a summoned creature on the map. It is the same stamp that a
  * spell-imposed condition chip carries, so the one sweep that ends a spell
  * finds both. It is present only on a creature that a cast spawned. */
@@ -105,6 +122,12 @@ export interface Creature extends HPBuffFields {
   /** Damage resistances, vulnerabilities, and immunities. Absent on a
    * creature that has none. */
   defenses?: DamageDefenses;
+  /** The SRD creature type. Absent means untyped, which no type rule of a
+   * spell matches. */
+  creatureType?: CreatureType;
+  /** Conditions that do not land on this creature, by name from
+   * `Conditions.CONDITIONS`. Absent means none. */
+  conditionImmunities?: string[];
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -152,6 +175,8 @@ export interface CreatureTemplate {
   cr?: number;
   proficiencies?: CreatureProficiencies;
   defenses?: DamageDefenses;
+  creatureType?: CreatureType;
+  conditionImmunities?: string[];
   role?: string;
   notes?: string;
   class?: string;

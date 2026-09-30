@@ -4,6 +4,7 @@ import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
 import { modsSummary } from '../entities/ChipMods.js';
 import { UNTIL_LABELS, rollsNoSave } from '../entities/SpellFields.js';
+import { typeRulesSummary } from '../entities/SpellTypeRules.js';
 
 /**
  * The lines of the spell detail modal that say what a spell does in play: the
@@ -29,6 +30,20 @@ const COST_TEXT = { action: 'an action', bonus: 'a bonus action', reaction: 'a r
  * @returns {string | null}
  */
 export function effectSummary(spell, saveDC) {
+  const line = effectLine(spell, saveDC);
+  const effect = spell.effect;
+  // A save or a heal with type rules states them after the roll.
+  const types = 'typeRules' in effect ? typeRulesSummary(effect.typeRules) : '';
+  return line && types ? `${line}. ${types}` : line;
+}
+
+/**
+ * The effect line of `effectSummary`, without the type rules.
+ * @param {Spell} spell
+ * @param {number | null} saveDC
+ * @returns {string | null}
+ */
+function effectLine(spell, saveDC) {
   const effect = spell.effect;
   if (effect.kind === 'attack') {
     const dice = formatDamage(effect.damage) || 'no damage';

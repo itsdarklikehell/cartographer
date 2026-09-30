@@ -15,6 +15,7 @@ import {
 import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
 import { cureFields } from './HealCure.js';
+import { healTypeRules } from './SpellTypeRules.js';
 
 /**
  * This module turns the spell form's raw control values into a Spell. It is
@@ -54,6 +55,8 @@ import { cureFields } from './HealCure.js';
  * @property {string} [removes] the chips the heal kind ends, comma-separated
  * @property {string} [removesOneOf] the chips of which the heal kind ends one,
  *   comma-separated
+ * @property {Record<string, string[]>} [typeRules] the creature-type rules of a
+ *   save or a heal
  * @property {boolean} [melee] whether the attack kind is a melee spell attack
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
@@ -156,6 +159,7 @@ export function assembleEffect(draft) {
       ...(draft.addsModifier ? { addsModifier: true } : {}),
       ...(draft.revives ? { revives: true } : {}),
       ...cureFields(draft),
+      ...healTypeRules(draft),
     };
   }
   // A summons with no template names nothing to spawn, so it casts nothing and

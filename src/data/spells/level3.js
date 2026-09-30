@@ -133,12 +133,13 @@ export const LEVEL_3 = [
     ritual: false,
     description:
       'Up to six creatures each regain 1d4 + your spellcasting modifier hit points. The ' +
-      'spell has no effect on undead or constructs, which the GM rules.',
+      'spell has no effect on undead or constructs.',
     targetCount: 6,
     effect: {
       kind: 'heal',
       healing: [{ count: 1, sides: 4, damageType: 'healing' }],
       addsModifier: true,
+      typeRules: { skip: ['undead', 'construct'] },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'healing' }] },
   },

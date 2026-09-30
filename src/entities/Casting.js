@@ -2,6 +2,7 @@ import { rollDamage } from '../dice/DiceRoller.js';
 import { resolveAttack, targetSave } from './CastRolls.js';
 import { buffCondition, buffOutcomes } from './BuffCast.js';
 import { rollHpPool, walkHpPool } from './HpPool.js';
+import { takesMaxDamage, typeSkipReason, withTypeSaveMode } from './SpellTypeRules.js';
 import { rollsNoSave } from './SpellFields.js';
 import { spendResource } from './Character.js';
 import { isRitualOnly, isSpellCastable } from './SpellView.js';
@@ -43,7 +44,8 @@ export { buffCondition };
  * `autoCrit` turns any hit on this target into a critical hit, which is what
  * a Paralyzed or Unconscious target takes from a melee spell attack. `hp` is
  * the target's current HP, which only a spell with an HP limit or an HP pool
- * reads.
+ * reads. The type rules of a spell read `creatureType` and
+ * `conditionImmunities` (see `SpellTypeRules.js`).
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -57,8 +59,13 @@ export { buffCondition };
  *   projectiles?: number,
  *   conditions?: import('./Riders.js').RiderSource[],
  *   riders?: import('./Riders.js').RiderSource[],
+ *   creatureType?: import('../types/creature.js').CreatureType,
+ *   conditionImmunities?: string[],
  * }} CastTarget
  */
+
+/** A random source that turns every die up to its top face. */
+const topFace = () => 1 - Number.EPSILON;
 
 /**
  * Whether a caster's spellbook lets it cast this spell. A cantrip must be in
@@ -345,10 +352,25 @@ function resolveEffect(spell, ctx) {
     const damage = rollDamage(parts, 0, rng);
     const ongoing = ongoingParts(effect.ongoing, steps);
     const noRoll = rollsNoSave(effect);
-    const walk = pool
-      ? walkHpPool(targets, pool.total, effect.condition)
-      : targets.map((target) => ({ target, affected: true, reason: '' }));
-    return walk.map(({ target, affected, reason }) => {
+    // The type rules pass over some targets before the pool walks, so a
+    // skipped target spends none of the pool. Skipped targets come last.
+    const rules = effect.typeRules;
+    const skipped = targets.flatMap((target) => {
+      const reason = typeSkipReason(rules, target);
+      return reason ? [{ target, affected: false, reason }] : [];
+    });
+    const reached = targets.filter((target) => !typeSkipReason(rules, target));
+    const walk = [
+      ...(pool
+        ? walkHpPool(reached, pool.total, effect.condition)
+        : reached.map((target) => ({ target, affected: true, reason: '' }))),
+      ...skipped,
+    ];
+    // A type that takes the maximum damage reads every die at its top face.
+    const maxed = rules?.maxDamage ? rollDamage(parts, 0, topFace) : damage;
+    return walk.map(({ target: picked, affected, reason }) => {
+      const target = withTypeSaveMode(rules, picked);
+      const hit = takesMaxDamage(rules, target) ? maxed : damage;
       const extra = { ...(noRoll ? { noRoll: true } : {}), ...(pool ? { pool } : {}) };
       if (!affected) {
         return { target, unaffectedBy: reason, saved: true, taken: 0, condition: null, ...extra };
@@ -379,7 +401,7 @@ function resolveEffect(spell, ctx) {
       // in place of any chip that would have failed the save.
       const autoFailedBy = noRoll ? reason || limitFails : (target.autoFailSave ?? limitFails);
       const { roll: save, success: saved, rider } = targetSave(target, saveDC, autoFailedBy, rng);
-      const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
+      const taken = saved ? (effect.halfOnSave ? Math.floor(hit.total / 2) : 0) : hit.total;
       const condition = !saved ? (effect.condition ?? null) : null;
       return {
         target,
@@ -387,7 +409,8 @@ function resolveEffect(spell, ctx) {
         dc: saveDC,
         saved,
         taken,
-        damage,
+        damage: hit,
+        ...(hit === damage ? {} : { maxDamage: true }),
         rider,
         autoFailedBy,
         condition,
@@ -402,7 +425,11 @@ function resolveEffect(spell, ctx) {
   if (effect.kind === 'heal') {
     const bonus = effect.addsModifier ? spellModifier : 0;
     const healing = rollDamage(scaledParts(effect.healing, spell.scaling, steps), bonus, rng);
-    return targets.map((target) => ({ target, healing }));
+    // A heal passes over a target of a type that it has no effect on.
+    return targets.map((target) => {
+      const reason = typeSkipReason(effect.typeRules, target);
+      return reason ? { target, healing, unaffectedBy: reason } : { target, healing };
+    });
   }
 
   // A buff rolls no attack and no save. See `BuffCast.buffOutcomes`.

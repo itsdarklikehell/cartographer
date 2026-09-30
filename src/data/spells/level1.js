@@ -62,11 +62,12 @@ export const LEVEL_1 = [
     ritual: false,
     description:
       'A touched creature regains 1d8 + your spellcasting modifier hit points. The spell ' +
-      'has no effect on undead or constructs, which the GM rules.',
+      'has no effect on undead or constructs.',
     effect: {
       kind: 'heal',
       healing: [{ count: 1, sides: 8, damageType: 'healing' }],
       addsModifier: true,
+      typeRules: { skip: ['undead', 'construct'] },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
@@ -84,11 +85,12 @@ export const LEVEL_1 = [
     ritual: false,
     description:
       'A creature you can see regains 1d4 + your spellcasting modifier hit points. The ' +
-      'spell has no effect on undead or constructs, which the GM rules.',
+      'spell has no effect on undead or constructs.',
     effect: {
       kind: 'heal',
       healing: [{ count: 1, sides: 4, damageType: 'healing' }],
       addsModifier: true,
+      typeRules: { skip: ['undead', 'construct'] },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'healing' }] },
   },
@@ -322,6 +324,7 @@ export const LEVEL_1 = [
       condition: 'Unconscious',
       hpPool: { count: 5, sides: 8, perStep: 2 },
       endsOnDamage: true,
+      typeRules: { skip: ['undead'], skipImmuneTo: ['Charmed'] },
     },
   },
   {

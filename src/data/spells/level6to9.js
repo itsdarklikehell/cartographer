@@ -129,8 +129,7 @@ export const LEVEL_6_TO_9 = [
       'A beam of light fills a line. Each creature in it makes a CON save: 6d8 radiant and ' +
       "blinded until the caster's next turn on a failure, half and not blinded on a " +
       'success. Each later turn, an action makes a new line. Undead and oozes save at ' +
-      'disadvantage. The save mode in the cast dialog applies to every target of one ' +
-      'cast, so the GM rolls that save by hand when the line also catches other creatures.',
+      'disadvantage.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -138,6 +137,7 @@ export const LEVEL_6_TO_9 = [
       halfOnSave: true,
       condition: 'Blinded',
       until: 'caster-start',
+      typeRules: { disadvantage: ['undead', 'ooze'] },
     },
     repeat: {},
   },
@@ -157,11 +157,12 @@ export const LEVEL_6_TO_9 = [
       'The target regains 70 hit points, and its blindness, deafness, and diseases end. ' +
       'A flat amount, so no dice roll behind it. The app ends the Blinded and Deafened ' +
       'chips. It tracks no diseases, so the GM rules those. The spell has no effect on ' +
-      'undead or constructs, which the GM rules.',
+      'undead or constructs.',
     effect: {
       kind: 'heal',
       healing: [{ count: 0, sides: 8, damageType: 'healing', bonus: 70 }],
       removes: ['Blinded', 'Deafened'],
+      typeRules: { skip: ['undead', 'construct'] },
     },
     scaling: { damagePerLevel: [{ count: 0, sides: 8, damageType: 'healing', bonus: 10 }] },
   },
@@ -276,8 +277,7 @@ export const LEVEL_6_TO_9 = [
       'the damage and avoids the blindness. A blinded creature retries the save at the ' +
       'end of each of its turns. The blindness lasts at most 1 minute, and the chip has ' +
       'no round counter, so the GM removes it after 10 rounds. Undead and oozes save at ' +
-      'disadvantage. The save mode in the cast dialog applies to every target of one ' +
-      'cast, so the GM rolls that save by hand when the burst also catches other creatures.',
+      'disadvantage.',
     targetCount: 0,
     effect: {
       kind: 'save',
@@ -286,6 +286,7 @@ export const LEVEL_6_TO_9 = [
       halfOnSave: true,
       condition: 'Blinded',
       saveEnds: true,
+      typeRules: { disadvantage: ['undead', 'ooze'] },
     },
   },
   {

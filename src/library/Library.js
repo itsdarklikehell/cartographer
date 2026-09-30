@@ -20,6 +20,7 @@ import {
   normalizeRepeat,
   saveExtras,
 } from '../entities/SpellFields.js';
+import { healTypeRules } from '../entities/SpellTypeRules.js';
 import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
@@ -43,6 +44,7 @@ import { castsAs } from '../entities/ClassCasting.js';
 import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
 import { defenseFields } from '../entities/DamageDefenses.js';
+import { creatureTypeFields } from '../entities/CreatureType.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -306,6 +308,7 @@ function normalizeSpell(raw, id) {
       ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
       ...(raw.effect.revives === true ? { revives: true } : {}),
       ...cureFields(raw.effect),
+      ...healTypeRules(raw.effect),
     };
   } else if (kind === 'buff') {
     // An unnamed chip stays absent, and the cast falls back to the spell's
@@ -676,6 +679,8 @@ export function normalizeLibrary(parsed) {
       ...creatureProficiencyFields(e.proficiencies),
       // Unknown damage types drop out the same way.
       ...defenseFields(e.defenses),
+      // An unknown type or condition name drops out too.
+      ...creatureTypeFields(e),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),

@@ -57,17 +57,37 @@ const DROWNED = { AC: 11 };
 // The gear, training, and defenses of each kind of creature, shared by the
 // placed creatures and the bestiary.
 const SNEAK = trained([], ['stealth']);
-const PACK = { ...natural('Bite', 2, 4, 'piercing'), ...trained([], ['perception', 'stealth']) };
-const SKELETAL = guards(['poison'], [], ['bludgeoning']);
+const PACK = {
+  creatureType: /** @type {const} */ ('beast'),
+  ...natural('Bite', 2, 4, 'piercing'),
+  ...trained([], ['perception', 'stealth']),
+};
+const UNDEAD = {
+  creatureType: /** @type {const} */ ('undead'),
+  conditionImmunities: ['Poisoned'],
+};
+const SKELETAL = { ...UNDEAD, ...guards(['poison'], [], ['bludgeoning']) };
 const ROTTING = {
+  ...UNDEAD,
   ...natural('Slam', 1, 6, 'bludgeoning'),
   ...guards(['poison']),
   ...trained(['WIS'], []),
 };
-const DROWNING = { ...natural('Slam', 1, 6, 'bludgeoning'), ...guards(['poison'], ['cold']) };
-const HARPY_KIT = natural('Claws', 2, 4, 'slashing');
-const SCORPION_KIT = natural('Claw', 1, 8, 'bludgeoning');
+const DROWNING = {
+  ...UNDEAD,
+  ...natural('Slam', 1, 6, 'bludgeoning'),
+  ...guards(['poison'], ['cold']),
+};
+const HARPY_KIT = {
+  creatureType: /** @type {const} */ ('monstrosity'),
+  ...natural('Claws', 2, 4, 'slashing'),
+};
+const SCORPION_KIT = {
+  creatureType: /** @type {const} */ ('beast'),
+  ...natural('Claw', 1, 8, 'bludgeoning'),
+};
 const WINTER_KIT = {
+  creatureType: /** @type {const} */ ('monstrosity'),
   ...natural('Bite', 2, 6, 'piercing'),
   ...guards(['cold']),
   ...trained([], ['perception', 'stealth']),
@@ -98,6 +118,7 @@ const foe =
       level,
       tier,
       cr,
+      creatureType: 'humanoid',
       ...kit,
     });
 
@@ -126,6 +147,7 @@ const template = (id, name, hp, level, cr, extras, kit = {}) => ({
   level,
   tier: /** @type {EnemyTier} */ ('mob'),
   cr,
+  creatureType: /** @type {const} */ ('humanoid'),
   ...defaultEnemyGear(level, 'mob'),
   ...kit,
 });
@@ -164,6 +186,8 @@ function enemies(at) {
       at('knocker'),
       { AC: 14 },
       {
+        creatureType: 'elemental',
+        conditionImmunities: ['Poisoned', 'Petrified'],
         ...natural('Claws', 1, 8, 'slashing'),
         ...trained([], ['perception', 'stealth']),
         ...guards([], ['bludgeoning']),
@@ -180,6 +204,7 @@ function enemies(at) {
       at('grelka'),
       { AC: 15 },
       {
+        creatureType: 'fey',
         ...natural('Claws', 2, 8, 'slashing'),
         ...trained([], ['arcana', 'deception', 'perception', 'stealth']),
       },
@@ -211,6 +236,7 @@ function enemies(at) {
       at('skalvyr'),
       { AC: 16 },
       {
+        creatureType: 'dragon',
         ...natural('Stinger', 2, 6, 'piercing'),
         ...trained([], ['perception']),
       },
@@ -225,6 +251,16 @@ function enemies(at) {
       at('shade'),
       { AC: 14 },
       {
+        creatureType: 'undead',
+        conditionImmunities: [
+          'Frightened',
+          'Grappled',
+          'Paralyzed',
+          'Petrified',
+          'Poisoned',
+          'Prone',
+          'Restrained',
+        ],
         ...natural('Withering Touch', 2, 6, 'necrotic'),
         ...guards(
           ['necrotic', 'poison'],
@@ -267,6 +303,8 @@ function enemies(at) {
       { DEX: 14, AC: 12 },
       {
         armor: enemyArmor('Studded Leather'),
+        creatureType: 'undead',
+        conditionImmunities: ['Poisoned'],
         ...guards(['poison'], ['necrotic']),
         ...trained([], ['perception', 'stealth']),
       },
@@ -282,6 +320,8 @@ function enemies(at) {
       {},
       {
         ...guards(['poison'], ['necrotic']),
+        creatureType: 'undead',
+        conditionImmunities: ['Poisoned'],
         ...trained(['STR', 'CON', 'WIS'], ['athletics', 'intimidation', 'perception']),
         notes:
           'Crowned in pale Hollowvein silver. He speaks to the Castellan in her dreams, and he knows what the party has said near any wight or skeleton. While all five wardstones stand, he has disadvantage on attack rolls against a creature that carries the warding key.',
@@ -301,6 +341,7 @@ function enemies(at) {
 function people(at) {
   return [
     createCreature('caravan-master-dorn', 'Dorn', {
+      creatureType: 'humanoid',
       role: 'Caravan master, stranded at the crossroads',
       disposition: 'neutral',
       met: true,
@@ -310,6 +351,7 @@ function people(at) {
       location: at('dorn'),
     }),
     createCreature('innkeeper-bram', 'Bram', {
+      creatureType: 'humanoid',
       role: 'Innkeeper, the Waystation at Briarwick',
       disposition: 'friendly',
       notes:
@@ -318,6 +360,7 @@ function people(at) {
       location: at('bram'),
     }),
     createCreature('reeve-maera', 'Reeve Maera', {
+      creatureType: 'humanoid',
       role: 'Reeve of Briarwick',
       disposition: 'neutral',
       notes:
@@ -326,6 +369,7 @@ function people(at) {
       location: at('maera'),
     }),
     createCreature('sella-the-smith', 'Sella', {
+      creatureType: 'humanoid',
       role: 'Blacksmith of Briarwick',
       disposition: 'friendly',
       notes:
@@ -334,6 +378,7 @@ function people(at) {
       location: at('sella'),
     }),
     createCreature('sister-alwyn', 'Sister Alwyn', {
+      creatureType: 'humanoid',
       role: 'Priestess of the Dawn, Briarwick temple',
       disposition: 'friendly',
       notes:
@@ -342,6 +387,7 @@ function people(at) {
       location: at('alwyn'),
     }),
     createCreature('farmer-hedda', 'Hedda', {
+      creatureType: 'humanoid',
       role: 'Farmer, the big steading on the south road',
       disposition: 'friendly',
       notes:
@@ -350,6 +396,7 @@ function people(at) {
       location: at('hedda'),
     }),
     createCreature('hermit-odo', 'Odo', {
+      creatureType: 'humanoid',
       role: 'Hermit of Graypeak',
       disposition: 'neutral',
       notes:
@@ -358,6 +405,7 @@ function people(at) {
       location: at('odo'),
     }),
     createCreature('harbormaster-petra', 'Harbormaster Petra', {
+      creatureType: 'humanoid',
       role: 'Harbormaster of Saltmere',
       disposition: 'neutral',
       notes:
@@ -366,6 +414,7 @@ function people(at) {
       location: at('petra'),
     }),
     createCreature('corvin-the-smuggler', 'Corvin', {
+      creatureType: 'humanoid',
       role: 'Smuggler, the Drowned Lantern in Saltmere',
       disposition: 'neutral',
       met: true,
@@ -375,6 +424,7 @@ function people(at) {
       location: at('corvin'),
     }),
     createCreature('lord-aldemar', 'Lord Aldemar Vane', {
+      creatureType: 'humanoid',
       role: 'Lord of Thornhold',
       disposition: 'neutral',
       met: true,
@@ -384,6 +434,7 @@ function people(at) {
       location: at('aldemar'),
     }),
     createCreature('castellan-irenne', 'Castellan Irenne Vane', {
+      creatureType: 'humanoid',
       role: 'Castellan of Thornhold, cousin to Lord Aldemar',
       disposition: 'neutral',
       met: true,

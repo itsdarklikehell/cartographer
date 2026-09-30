@@ -45,14 +45,14 @@ export const LEVEL_4_TO_5 = [
     ritual: false,
     description:
       'Life drains from the target for 8d8 necrotic. A CON save halves it. A plant ' +
-      'creature saves at disadvantage, which the GM sets in the cast dialog, and takes the ' +
-      'maximum damage, which the GM applies by hand. The spell has no effect on undead or ' +
-      'constructs.',
+      'creature saves at disadvantage and takes the maximum damage. The spell has no ' +
+      'effect on undead or constructs.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
       damage: [{ count: 8, sides: 8, damageType: 'necrotic' }],
       halfOnSave: true,
+      typeRules: { skip: ['undead', 'construct'], disadvantage: ['plant'], maxDamage: ['plant'] },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
   },
@@ -147,12 +147,13 @@ export const LEVEL_4_TO_5 = [
     ritual: false,
     description:
       'Up to six creatures each regain 3d8 + your spellcasting modifier hit points. The ' +
-      'spell has no effect on undead or constructs, which the GM rules.',
+      'spell has no effect on undead or constructs.',
     targetCount: 6,
     effect: {
       kind: 'heal',
       healing: [{ count: 3, sides: 8, damageType: 'healing' }],
       addsModifier: true,
+      typeRules: { skip: ['undead', 'construct'] },
     },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
@@ -207,6 +208,7 @@ export const LEVEL_4_TO_5 = [
       halfOnSave: false,
       condition: 'Paralyzed',
       saveEnds: true,
+      typeRules: { skip: ['undead'] },
     },
     scaling: { targetsPerLevel: 1 },
   },

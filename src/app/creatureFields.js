@@ -21,6 +21,8 @@ import {
 import { creatureProficiencyFields } from '../entities/Proficiencies.js';
 import { defenseFields } from '../entities/DamageDefenses.js';
 import { DAMAGE_TYPES } from '../entities/Equipment.js';
+import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
+import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
@@ -48,6 +50,8 @@ import { readStats, statFields } from './statFields.js';
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   defenses?: import('../types/creature.js').DamageDefenses,
+ *   creatureType?: import('../types/creature.js').CreatureType,
+ *   conditionImmunities?: string[],
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -129,6 +133,16 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       options: dispositionOptions(),
     },
     {
+      name: 'creatureType',
+      label: 'Creature type',
+      type: 'select',
+      value: seed?.creatureType ?? '',
+      options: [
+        { value: '', label: 'Untyped' },
+        ...CREATURE_TYPES.map((t) => ({ value: t, label: capitalize(t) })),
+      ],
+    },
+    {
       name: 'maxHP',
       label: 'Max HP',
       type: 'number',
@@ -182,6 +196,15 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       options: SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })),
     },
     ...defenseFieldList(seed?.defenses),
+    {
+      name: 'conditionImmunities',
+      label: 'Immune to conditions',
+      type: 'multiselect',
+      full: true,
+      columns: true,
+      value: (seed?.conditionImmunities ?? []).join(','),
+      options: CONDITIONS.filter((c) => c !== CONCENTRATING).map((c) => ({ value: c, label: c })),
+    },
     {
       name: 'weapon',
       label: 'Weapon',
@@ -282,6 +305,8 @@ function readLevel(raw) {
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   defenses?: import('../types/creature.js').DamageDefenses,
+ *   creatureType?: import('../types/creature.js').CreatureType,
+ *   conditionImmunities?: string[],
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -303,6 +328,10 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
       resist: splitList(values.resist),
       vulnerable: splitList(values.vulnerable),
       immune: splitList(values.immune),
+    }),
+    ...creatureTypeFields({
+      creatureType: values.creatureType,
+      conditionImmunities: splitList(values.conditionImmunities),
     }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),

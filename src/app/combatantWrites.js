@@ -13,6 +13,7 @@ import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { dropIfHelpless } from '../entities/Concentration.js';
 import { settleConcentration } from '../entities/CreatureHit.js';
 import { immunityTo } from '../entities/ChipMods.js';
+import { isImmuneToCondition } from '../entities/CreatureType.js';
 import { damageLine, healLine } from '../combat/HPLines.js';
 import { hitEventLine } from '../combat/HitEventLines.js';
 import { settleChips } from './lethargy.js';
@@ -64,8 +65,9 @@ export function logDefeatTransition(app, prev, next) {
  * and `Conditions.sameSlot`). The target is still under the condition, so
  * the function reports that the chip landed.
  *
- * A target with a chip that makes it immune to the condition (Heroism's
- * Frightened) keeps its chips, and the log says why. A new chip that grants
+ * A creature whose `conditionImmunities` list names the condition, or a
+ * target with a chip that makes it immune to the condition (Heroism's
+ * Frightened), keeps its chips, and the log says why. A new chip that grants
  * an immunity ends the conditions it names, and a chip that changes HP
  * settles them (see `HPBuffs.settleHPBuffs`). The function reports true in
  * both cases, because the log already names the result.
@@ -92,6 +94,12 @@ export function applyConditionToTarget(
   const extras = { source, ...(rider ? { rider } : {}), ...more };
   const chip = createCondition(name, rounds, extras);
   const held = found.entity.conditions.find((c) => sameSlot(c, chip));
+  // A creature's own immunity list keeps the chip off, the same way an
+  // immunity chip does.
+  if (isImmuneToCondition(found.entity, name)) {
+    app.actions.logEvent('combat', `${found.entity.name} is immune to ${name}.`);
+    return true;
+  }
   const guard = immunityTo(found.entity.conditions, name);
   if (guard) {
     app.actions.logEvent('combat', `${found.entity.name} is immune to ${name} (${guard.name}).`);

@@ -13,6 +13,7 @@ import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/
 import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
 import { warlockCast } from '../entities/MysticArcanum.js';
 import { findCombatant, hpOf } from './combatants.js';
+import { castTypeFields } from '../entities/CreatureType.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
@@ -196,6 +197,14 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
         ...(hp ? { hp: hp.current } : {}),
         ...(found && effect.hpPool ? { conditions: found.entity.conditions } : {}),
       };
+    });
+  }
+  // The type rules of a spell read each target's creature type and condition
+  // immunities, as the roster keeps them now.
+  if ((effect.kind === 'save' || effect.kind === 'heal') && effect.typeRules) {
+    castTargets = castTargets.map((t) => {
+      const found = findCombatant(app, t.id);
+      return found ? { ...t, ...castTypeFields(found.kind, found.entity) } : t;
     });
   }
   if (resolved.effect.kind === 'attack') {

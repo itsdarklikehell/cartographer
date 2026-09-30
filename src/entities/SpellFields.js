@@ -3,6 +3,7 @@ import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
+import { typeRuleFields } from './SpellTypeRules.js';
 
 /**
  * Normalizers for the spell fields beyond a single roll: damage that stays on
@@ -180,6 +181,7 @@ export function saveExtras(raw, condition) {
     ...(hpPool ? { hpPool } : {}),
     ...(raw.kills === true ? { kills: true } : {}),
     ...(condition && raw.endsOnDamage === true ? { endsOnDamage: true } : {}),
+    ...typeRuleFields(raw),
   };
 }
 

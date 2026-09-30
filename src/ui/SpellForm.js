@@ -8,6 +8,7 @@ import { buildLaterTurnControls } from './SpellFormLater.js';
 import { buildOnHitControls } from './SpellFormOnHit.js';
 import { buildHPControls } from './SpellFormHP.js';
 import { buildCureControls } from './SpellFormCure.js';
+import { buildTypeControls } from './SpellFormTypes.js';
 import { buildBuffControls } from './SpellFormBuff.js';
 import {
   labeled,
@@ -171,6 +172,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const onHit = buildOnHitControls(spell);
   const hp = buildHPControls(spell);
   const cure = buildCureControls(spell);
+  const types = buildTypeControls(spell);
   const buff = buildBuffControls(spell);
   const rider = buildRiderControls(spell);
   const effectDamage = buildDamageEditor(
@@ -310,6 +312,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     onHit.sync(kind);
     hp.sync(kind, conditionSelect.value !== '');
     cure.sync(kind);
+    types.sync(kind);
     buff.sync(kind);
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
@@ -398,6 +401,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         ...onHit.read(),
         ...hp.read(),
         ...cure.read(),
+        ...types.read(),
         ...buff.read(),
       },
       scaling: scales.input.checked
@@ -441,6 +445,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       hp.rows.pools,
       hp.rows.pool,
       hp.rows.endsOnDamage,
+      types.rows.skip,
+      types.rows.immune,
+      types.rows.disadvantage,
+      types.rows.maxDamage,
       later.rows.until,
       buff.rows.ac,
       buff.rows.hp,
