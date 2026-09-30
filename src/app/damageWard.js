@@ -5,7 +5,7 @@ import { isDowned, mayActOn } from '../combat/CombatView.js';
 import { canAct } from '../entities/ConditionEffects.js';
 import { buffCondition } from '../entities/Casting.js';
 import { defensesOf } from '../entities/DamageDefenses.js';
-import { wardType } from '../entities/DamageWard.js';
+import { landingDamage, wardType } from '../entities/DamageWard.js';
 import { isGM } from '../view/ViewRole.js';
 import { findCombatant, spellsOf } from './combatants.js';
 import { combatTargets, rosterTargets } from './spellTargets.js';
@@ -13,13 +13,14 @@ import { castPlan } from './spellCast.js';
 import { resolveCast } from './spellCastResolve.js';
 
 /**
- * The pause after a weapon hit's damage roll, for a defender that can resist
- * the damage with a reaction spell. The spell is a buff with a reaction
- * casting time whose chip resists a type in the hit, through `mods.resist`
- * or a `resistChoice` pick. A yes casts it through the normal cast path,
- * which spends the reaction and the slot and lays down the chip, and the hit
- * then reads the defender's defenses with the new chip. The pause follows
- * the same viewer rule as the Shield pause in `shieldWard.js`.
+ * The pause after the damage roll of a weapon hit, a spell attack hit, or a
+ * save spell, for a defender that can resist the damage with a reaction
+ * spell. The spell is a buff with a reaction casting time whose chip resists
+ * a type in the damage, through `mods.resist` or a `resistChoice` pick. A
+ * yes casts it through the normal cast path, which spends the reaction and
+ * the slot and lays down the chip, and the damage then reads the defender's
+ * defenses with the new chip. The pause follows the same viewer rule as the
+ * Shield pause in `shieldWard.js`.
  */
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -114,4 +115,63 @@ export async function offerDamageWard(app, ward, message, { ask = confirmModal }
     { writeBack: ward.store },
   );
   return true;
+}
+
+/**
+ * The line ahead of the question for one outcome of a damage spell.
+ * @param {import('../types/spell.js').Spell} spell
+ * @param {any} o one outcome of the cast
+ * @param {number} total the damage before defenses
+ * @returns {string}
+ */
+function spellDamageMessage(spell, o, total) {
+  const name = o.target.name;
+  if (spell.effect.kind === 'attack') {
+    const hit = o.shots
+      ? `${spell.name}: ${o.hits} of ${o.fired} hit ${name}`
+      : `${spell.name} hits ${name}`;
+    return `${hit} for ${total} damage.`;
+  }
+  if (o.noRoll) return `${spell.name} deals ${total} damage to ${name}.`;
+  const verdict = o.saved ? 'saves' : 'fails the save';
+  return `${name} ${verdict} against ${spell.name} and takes ${total} damage.`;
+}
+
+/**
+ * Offer the damage reaction to each target of an attack or save spell that
+ * the spell is about to damage, in target order, before `applyOutcomes`
+ * writes the damage. A yes casts the reaction, and the damage then lands
+ * through the defenses with the new chip. The return is null when no target
+ * has a reaction to offer, so the caller applies the result without
+ * waiting. Each question waits for the one before it, and the app looks up
+ * each target's reaction again when its question comes, because an earlier
+ * cast can change what a later target can do.
+ * @template {{ outcomes: object[] }} R
+ * @param {AppContext} app
+ * @param {import('../types/spell.js').Spell} spell
+ * @param {R} result
+ * @param {string} casterId
+ * @param {{ ask?: import('./shieldWard.js').WardAsk }} [opts]
+ * @returns {Promise<R> | null}
+ */
+export function wardSpellDamage(app, spell, result, casterId, opts = {}) {
+  const kind = spell.effect.kind;
+  if (kind !== 'attack' && kind !== 'save') return null;
+  const outcomes = /** @type {any[]} */ (result.outcomes);
+  /** @param {any} o */
+  const guardOf = (o) => {
+    const { groups, total } = landingDamage(kind, o);
+    const ward =
+      o.target.id && total > 0 ? pendingDamageWard(app, o.target.id, casterId, groups) : null;
+    return ward ? { ward, total } : null;
+  };
+  if (!outcomes.some(guardOf)) return null;
+  return (async () => {
+    for (const o of outcomes) {
+      const guard = guardOf(o);
+      if (guard)
+        await offerDamageWard(app, guard.ward, spellDamageMessage(spell, o, guard.total), opts);
+    }
+    return result;
+  })();
 }

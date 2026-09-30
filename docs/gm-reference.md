@@ -1126,14 +1126,23 @@ its reaction control, and undo the damage by hand.
 
 ### Resisting a hit
 
-When a weapon hit deals a damage type that a combatant's reaction spell can
-resist, a Reaction dialog opens after the damage roll and before the damage
-lands. The spell is a buff that casts as a reaction, and its chip resists
-the type through **Resists** or **Caster picks one of**. Press **Cast** to
-cast it with that type picked, so the hit deals half of that type. Press
-**Take the damage** to let the hit land as rolled. The dialog follows the
-same tab rule as Shield. A spell attack or a save spell does not open it,
-so cast the spell from the reaction control and fix the damage by hand.
+When a weapon hit, a spell attack hit, or a save spell deals a damage type
+that a combatant's reaction spell can resist, a Reaction dialog opens after
+the damage roll and before the damage lands. The spell is a buff that casts
+as a reaction, and its chip resists the type through **Resists** or
+**Caster picks one of**. The dialog names the damage before resistance, and
+for a save spell it names the save result too, such as "Mage fails the save
+against Burning Hands and takes 12 damage." Press **Cast** to cast it with
+that type picked, so the damage of that type is halved. Press **Take the
+damage** to let the damage land as rolled. The dialog follows the same tab
+rule as Shield.
+
+A spell that damages several combatants, such as Burning Hands, opens one
+dialog for each combatant that can react, in target order. When the spell
+attack also offers Shield, the Shield dialog comes first. A combatant that
+casts Shield has no reaction left, so it gets no second dialog. If the
+fight ends while a dialog is open, your answer still counts and the damage
+still lands.
 
 ### Cover and Sneak Attack
 

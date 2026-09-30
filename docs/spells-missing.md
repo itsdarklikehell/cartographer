@@ -275,9 +275,10 @@ the cast dialog offers those types.
 Absorb Elements is not in the SRD, so the app does not ship it. To author
 it, add a 1st-level spell with a reaction casting time and a `buff` effect.
 Set **Caster picks one of** to acid, cold, fire, lightning, thunder, and set
-the chip to end at the start of the caster's next turn. A weapon hit of one
-of those types then offers the reaction after its damage roll. The extra
-1d6 on the caster's next melee hit has no field, so add it by hand.
+the chip to end at the start of the caster's next turn. A weapon hit, a spell
+attack hit, or a save spell that deals one of those types then offers the
+reaction after its damage roll. The extra 1d6 on the caster's next melee hit
+has no field, so add it by hand.
 
 ### Speed of action
 

@@ -379,9 +379,10 @@ option in place of `confirmModal`, and a test passes its own answer there.
 
 ### The damage reaction pause
 
-A weapon hit's damage roll is a second trigger that the app sees.
-`src/app/damageWard.js` offers the defender a reaction spell whose buff chip
-resists a damage type in the hit, through `mods.resist` or a
+The damage roll of a weapon hit, a spell attack hit, or a save spell is a
+second trigger that the app sees. `src/app/damageWard.js` offers the
+defender a reaction spell whose buff chip resists a damage type in the
+damage, through `mods.resist` or a
 `resistChoice` pick list. `pendingDamageWard` uses the same gates as
 `pendingWard`. The pure `DamageWard.wardType` picks the type: the one in
 the hit that the spell can resist, that the defender does not resist or
@@ -389,7 +390,24 @@ ignore already, and that deals the most damage. `offerDamageWard` casts the
 spell through `resolveCast` with that type as the `resist-type` answer, so
 the chip resists it. `rollWeaponAttack` asks after `hitDamage` rolls and
 before `defendedDamage` reads the defenses, so the new chip halves the hit.
-A spell attack and a save spell do not pause for this reaction yet.
+
+`resolveCast` asks through `wardSpellDamage`, after the Shield pass of
+`wardSpellAttack` and before `applyOutcomes` writes anything. A hit that
+Shield turned into a miss deals nothing, so it asks nothing, and a defender
+that spent its reaction on Shield has none left for this question. The pure
+`DamageWard.landingDamage` reads the damage that one outcome is about to
+deal before defenses: the damage of a hit, half of a splash on a miss, the
+sum of the rays that hit, and the damage of a save spell, halved on a
+success. A save that negates the damage and a target that the spell passes
+over deal nothing. Each damaged target of a multi-target spell, such as
+Burning Hands, gets its own question in target order. Each question waits
+for the one before it, and `wardSpellDamage` looks up each target's
+reaction again when its question comes. `applyOutcomes` then reads each
+target's defenses with any new chip.
+
+A fight that ends while the question is open does not stop the damage, on
+either path. The cast of the reaction still goes ahead on a yes, and the
+damage then lands the same way it lands outside a fight.
 
 ### Weapon options in the attack dialog
 

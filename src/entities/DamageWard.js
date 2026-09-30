@@ -38,3 +38,54 @@ export function wardType(spell, groups, defenses) {
     .sort((a, b) => b.subtotal - a.subtotal)[0];
   return best ? best.damageType : null;
 }
+
+/**
+ * The damage that one outcome of an attack or save spell is about to deal,
+ * before the target's defenses, for the damage reaction question. An attack
+ * hit deals its damage, a miss that splashes deals half, and a multi-shot
+ * outcome adds up the rays that hit, per type. A save outcome deals its
+ * damage, or half on a success, and nothing when the save negates it or the
+ * spell passes the target over. Halving floors each type and the total, the
+ * same way `applyDefenses` halves a save.
+ * @param {string} kind the spell effect's kind
+ * @param {any} o one outcome of the cast
+ * @returns {{ groups: DamageGroup[], total: number }}
+ */
+export function landingDamage(kind, o) {
+  /** @type {DamageGroup[]} */
+  let groups = [];
+  let halve = false;
+  if (kind === 'attack' && o.shots) {
+    /** @type {Map<string, DamageGroup>} */
+    const byType = new Map();
+    for (const s of o.shots) {
+      for (const g of s.damage?.byType ?? []) {
+        const had = byType.get(g.damageType);
+        byType.set(
+          g.damageType,
+          had
+            ? {
+                ...had,
+                rolls: [...had.rolls, ...g.rolls],
+                bonus: had.bonus + g.bonus,
+                subtotal: had.subtotal + g.subtotal,
+              }
+            : g,
+        );
+      }
+    }
+    groups = [...byType.values()];
+  } else if (kind === 'attack') {
+    groups = o.hit || o.halved ? (o.damage?.byType ?? []) : [];
+    halve = !o.hit;
+  } else if (kind === 'save' && !o.unaffectedBy && o.taken > 0) {
+    groups = o.damage?.byType ?? [];
+    halve = !!o.saved;
+  }
+  const sum = groups.reduce((n, g) => n + g.subtotal, 0);
+  if (!halve) return { groups, total: sum };
+  return {
+    groups: groups.map((g) => ({ ...g, subtotal: Math.floor(g.subtotal / 2) })),
+    total: Math.floor(sum / 2),
+  };
+}

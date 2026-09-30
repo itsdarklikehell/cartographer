@@ -21,6 +21,7 @@ import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
+import { wardSpellDamage } from './damageWard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -62,8 +63,8 @@ import { wardSpellAttack } from './shieldWard.js';
  * }} opts
  *   `writeBack` stores the updated entity. `rng` is the
  *   source for every roll the cast makes, injected the way the pure modules
- *   take theirs. `ask` puts the question of a target's ward (Shield), and a
- *   test passes its own answer.
+ *   take theirs. `ask` puts the question of a target's ward (Shield, or a
+ *   reaction that resists the damage), and a test passes its own answer.
  * @returns {void | Promise<void>} a promise when a target's ward paused the
  *   cast, which settles once the cast has landed
  */
@@ -380,11 +381,18 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     notePush(app, spell, live, landed);
   };
   // A target that can raise its AC with a reaction (Shield) gets the chance
-  // after the attack rolls and before its damage lands. With no such target
-  // the cast finishes here, without waiting.
+  // after the attack rolls and before its damage lands. A target that can
+  // resist the damage with a reaction (Absorb Elements) gets its chance
+  // next, on the damage that remains. With neither, the cast finishes here,
+  // without waiting.
+  /** @param {typeof result} checked */
+  const guard = (checked) => {
+    const guarding = wardSpellDamage(app, resolved, checked, entity.id, { ask });
+    return guarding ? guarding.then(finish) : finish(checked);
+  };
   const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
-  if (warding) return warding.then(finish);
-  finish(result);
+  if (warding) return warding.then(guard);
+  return guard(result);
 }
 
 /**
