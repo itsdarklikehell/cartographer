@@ -43,7 +43,11 @@ export const LEVEL_4_TO_5 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Life drains from the target for 8d8 necrotic. A CON save halves it.',
+    description:
+      'Life drains from the target for 8d8 necrotic. A CON save halves it. A plant ' +
+      'creature saves at disadvantage, which the GM sets in the cast dialog, and takes the ' +
+      'maximum damage, which the GM applies by hand. The spell has no effect on undead or ' +
+      'constructs.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -117,7 +121,9 @@ export const LEVEL_4_TO_5 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Up to six creatures each regain 3d8 + your spellcasting modifier hit points.',
+    description:
+      'Up to six creatures each regain 3d8 + your spellcasting modifier hit points. The ' +
+      'spell has no effect on undead or constructs, which the GM rules.',
     targetCount: 6,
     effect: {
       kind: 'heal',
@@ -194,7 +200,9 @@ export const LEVEL_4_TO_5 = [
     ritual: false,
     description:
       'The ground pulses for 5d6 thunder and 5d6 radiant, and knocks the target prone. ' +
-      'A CON save halves the damage and keeps the target on its feet.',
+      'A CON save halves the damage and keeps the target on its feet. The printed spell ' +
+      'lets the caster pick radiant or necrotic for the second pool, and this version ' +
+      'always deals radiant, so the GM changes the damage type by hand for necrotic.',
     targetCount: 0,
     effect: {
       kind: 'save',

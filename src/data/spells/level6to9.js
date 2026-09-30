@@ -77,7 +77,9 @@ export const LEVEL_6_TO_9 = [
     ritual: false,
     description:
       'A thin green ray deals 10d6 + 40 force on a failed DEX save, and nothing on a ' +
-      'successful one. A target reduced to 0 hit points crumbles to dust.',
+      'successful one. A target reduced to 0 hit points crumbles to dust, which the GM ' +
+      'rules. A character left as dust returns only through a spell such as True ' +
+      'Resurrection or Wish.',
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -127,7 +129,8 @@ export const LEVEL_6_TO_9 = [
       'A beam of light fills a line. Each creature in it makes a CON save: 6d8 radiant and ' +
       "blinded until the caster's next turn on a failure, half and not blinded on a " +
       'success. Each later turn, an action makes a new line. Undead and oozes save at ' +
-      'disadvantage, which the GM sets in the cast dialog.',
+      'disadvantage. The save mode in the cast dialog applies to every target of one ' +
+      'cast, so the GM rolls that save by hand when the line also catches other creatures.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -152,7 +155,8 @@ export const LEVEL_6_TO_9 = [
     ritual: false,
     description:
       'The target regains 70 hit points, and its blindness, deafness, and diseases end. ' +
-      'A flat amount, so no dice roll behind it.',
+      'A flat amount, so no dice roll behind it. The spell has no effect on undead or ' +
+      'constructs, which the GM rules.',
     effect: { kind: 'heal', healing: [{ count: 0, sides: 8, damageType: 'healing', bonus: 70 }] },
     scaling: { damagePerLevel: [{ count: 0, sides: 8, damageType: 'healing', bonus: 10 }] },
   },
@@ -168,7 +172,10 @@ export const LEVEL_6_TO_9 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Negative energy deals 7d8+30 necrotic; a CON save halves it.',
+    description:
+      'Negative energy deals 7d8+30 necrotic; a CON save halves it. A humanoid killed by ' +
+      "the spell rises at the start of the caster's next turn as a zombie that obeys the " +
+      'caster, which the GM adds by hand.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -262,7 +269,10 @@ export const LEVEL_6_TO_9 = [
     description:
       'Brilliant sunlight deals 12d6 radiant and blinds for 1 minute. A CON save halves ' +
       'the damage and avoids the blindness. A blinded creature retries the save at the ' +
-      'end of each of its turns.',
+      'end of each of its turns. The blindness lasts at most 1 minute, and the chip has ' +
+      'no round counter, so the GM removes it after 10 rounds. Undead and oozes save at ' +
+      'disadvantage. The save mode in the cast dialog applies to every target of one ' +
+      'cast, so the GM rolls that save by hand when the burst also catches other creatures.',
     targetCount: 0,
     effect: {
       kind: 'save',

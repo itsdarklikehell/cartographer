@@ -91,7 +91,11 @@ export const LEVEL_3 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Interrupt a creature casting a spell of 3rd level or lower.',
+    description:
+      'Interrupt a creature casting a spell of 3rd level or lower. For a higher-level ' +
+      'spell, the caster makes an ability check with its spellcasting ability against ' +
+      'DC 10 + the spell level, and a success interrupts it. The GM rolls the check. A ' +
+      'higher slot interrupts spells up to its own level with no check.',
     effect: { kind: 'utility' },
   },
   {
@@ -107,11 +111,13 @@ export const LEVEL_3 = [
     concentration: true,
     ritual: false,
     description:
-      'Summon four wolves that fight beside the caster while the caster holds the spell. ' +
-      'The printed spell offers a choice of beasts and doubles the count at higher ' +
-      'levels. This version always summons wolves, and each slot level above 3rd adds ' +
-      'two more.',
-    effect: { kind: 'summons', creature: 'Wolf', count: 4, countPerStep: 2 },
+      'Summon eight wolves that fight beside the caster while it concentrates on the spell. ' +
+      'A 5th-level slot doubles the count, a 7th-level slot triples it, and a 9th-level ' +
+      'slot quadruples it. The printed spell offers a choice of beasts, and this version ' +
+      'always summons wolves (eight beasts of challenge rating 1/4).',
+    // Eight more wolves for every two slot levels above 3rd: 8, 16, 24, 32.
+    effect: { kind: 'summons', creature: 'Wolf', count: 8, countPerStep: 8 },
+    scaling: { levelsPerStep: 2 },
   },
   {
     id: 'mass-healing-word',
@@ -125,7 +131,9 @@ export const LEVEL_3 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Up to six creatures each regain 1d4 + your spellcasting modifier hit points.',
+    description:
+      'Up to six creatures each regain 1d4 + your spellcasting modifier hit points. The ' +
+      'spell has no effect on undead or constructs, which the GM rules.',
     targetCount: 6,
     effect: {
       kind: 'heal',
@@ -148,9 +156,10 @@ export const LEVEL_3 = [
     concentration: true,
     ritual: false,
     description:
-      'Each creature in the cone that fails a WIS save is frightened, retrying the save at ' +
-      'the end of each of its turns. A frightened creature also drops what it holds and ' +
-      'flees, which the GM rules.',
+      'Each creature in the cone that fails a WIS save is frightened. A frightened ' +
+      'creature also drops what it holds and flees, which the GM rules. It retries the ' +
+      'save only when it ends its turn out of line of sight of the caster, so the GM rolls ' +
+      'that retry and removes the chip on a success.',
     targetCount: 0,
     effect: {
       kind: 'save',
@@ -158,7 +167,6 @@ export const LEVEL_3 = [
       damage: [],
       halfOnSave: false,
       condition: 'Frightened',
-      saveEnds: true,
     },
   },
   {

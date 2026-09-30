@@ -1542,7 +1542,8 @@ creatures end, and the creatures that it summoned leave.
 
 A summoning spell puts creatures from a library template on the tile of
 the party, at full health. The built-in example is Conjure Animals, which
-brings four Wolf creatures. If the library has no template with the name
+brings eight Wolf creatures, sixteen with a 5th-level slot, twenty-four
+with a 7th-level slot, and thirty-two with a 9th-level slot. If the library has no template with the name
 that the spell gives, the cast dialog refuses the spell.
 
 The side that a summon fights on is the disposition of its template. A

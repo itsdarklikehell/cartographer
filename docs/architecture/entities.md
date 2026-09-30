@@ -1571,7 +1571,7 @@ A spell allows the repeated save with `saveEnds` on its save effect.
 `Library.normalizeSpell` keeps the flag when the effect names a condition and
 drops it otherwise. The spell form offers it as the "Save ends each turn" box,
 which shows once a save names a condition, and `SpellDraft.assembleEffect`
-follows the same rule. Hold Person, Blindness/Deafness, Fear, Hold Monster,
+follows the same rule. Hold Person, Blindness/Deafness, Hold Monster,
 Phantasmal Killer, Power Word Stun, and Sunburst ship with it.
 
 The repeated save, the condition-effect table, and the rider are the rules
@@ -1734,7 +1734,9 @@ ends both the chips and the summons of a spell. A creature that the GM placed
 has no such field.
 
 - `summonCount(effect, steps)`, in `Casting.js`, is the base `count` plus
-  `countPerStep` for each scaling step.
+  `countPerStep` for each scaling step. The spell's `scaling.levelsPerStep`
+  sets how many slot levels make one step, so Conjure Animals (count 8,
+  `countPerStep` 8, `levelsPerStep` 2) brings 8, 16, 24, or 32 wolves.
 - `stampSummon(creature, source)` writes the record onto a new creature.
 - `isSummonedBy(creature, casterId, spellId)` matches one cast, on both the
   caster and the spell, for the same reason as `removeImposed`.

@@ -60,7 +60,9 @@ export const LEVEL_1 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A touched creature regains 1d8 + your spellcasting modifier hit points.',
+    description:
+      'A touched creature regains 1d8 + your spellcasting modifier hit points. The spell ' +
+      'has no effect on undead or constructs, which the GM rules.',
     effect: {
       kind: 'heal',
       healing: [{ count: 1, sides: 8, damageType: 'healing' }],
@@ -80,7 +82,9 @@ export const LEVEL_1 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A creature you can see regains 1d4 + your spellcasting modifier hit points.',
+    description:
+      'A creature you can see regains 1d4 + your spellcasting modifier hit points. The ' +
+      'spell has no effect on undead or constructs, which the GM rules.',
     effect: {
       kind: 'heal',
       healing: [{ count: 1, sides: 4, damageType: 'healing' }],
@@ -100,7 +104,9 @@ export const LEVEL_1 = [
     duration: { kind: 'rounds', amount: 1 },
     concentration: false,
     ritual: false,
-    description: 'A flash of light deals 4d6 radiant on a hit and lights the target.',
+    description:
+      'A flash of light deals 4d6 radiant on a hit. The next attack roll against the ' +
+      "target before the end of the caster's next turn has advantage, which the GM rules.",
     effect: { kind: 'attack', damage: [{ count: 4, sides: 6, damageType: 'radiant' }] },
     scaling: { damagePerLevel: [{ count: 1, sides: 6, damageType: 'radiant' }] },
   },
@@ -164,7 +170,9 @@ export const LEVEL_1 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A wave of thunder deals 2d8 and pushes creatures back; a CON save halves it.',
+    description:
+      'A wave of thunder deals 2d8 thunder; a CON save halves it. A creature that fails ' +
+      'the save is also pushed 10 feet away from the caster, which the GM rules.',
     targetCount: 0,
     effect: {
       kind: 'save',

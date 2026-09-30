@@ -3,11 +3,13 @@
 *Explanation. To add a spell of your own, follow the steps in the
 [GM guide](gm-guide.md#add-a-missing-spell).*
 
-The built-in spell list in `src/data/spells/` is a curated part of the
-System Reference Document (SRD), not the complete SRD. The SRD 5.1 lists
-319 spells, and the app ships 86. Each shipped spell has rules that the
-spell resolver applies in full, or a description that names the clause
-that the resolver leaves to the GM.
+The built-in spell list in `src/data/spells/` is a curated selection, and
+most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
+lists 319 spells, and the app ships 86. Three built-in spells come from
+outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
+only in the Player's Handbook. Each shipped spell has rules that the spell
+resolver applies in full, or a description that names the clause that the
+resolver leaves to the GM.
 
 ## The built-in list
 
@@ -17,7 +19,8 @@ warlock, and wizard. It also uses all six effect kinds that the resolver
 handles: `attack`, `save`, `heal`, `buff`, `summons`, and `utility`.
 
 The paladin and the ranger share leveled spells with the other classes.
-The paladin also has one spell of its own, Destructive Wave.
+The paladin also has one spell of its own, Destructive Wave, which comes
+from the Player's Handbook.
 
 | Level | Spells |
 | ----- | ------ |
@@ -260,13 +263,30 @@ that it can. The description of each entry states the difference:
   app.
 - Flame Strike raises its fire dice at a higher slot. The printed spell
   lets the caster choose the fire dice or the radiant dice.
-- Conjure Animals always summons wolves.
+- Destructive Wave always deals radiant damage beside its thunder. The
+  Player's Handbook lets the caster pick radiant or necrotic.
+- Conjure Animals always summons wolves: eight, doubled with a 5th-level
+  slot, tripled with a 7th-level slot, and quadrupled with a 9th-level slot.
 - Witch Bolt ends when the caster uses its action for something else, or
   when the target moves out of range. The GM ends it by hand.
 - Spiritual Weapon moves up to 20 feet before each attack. The GM tracks
   where it is.
-- Sunbeam gives undead and oozes disadvantage on the save. The GM sets the
-  mode in the cast dialog.
+- Sunbeam and Sunburst give undead and oozes disadvantage on the save, and
+  Shatter gives it to a creature of stone, crystal, or metal. The save mode
+  of the cast dialog applies to every target of one cast, so the GM rolls
+  that save by hand when the cast also catches other creatures.
+- Fear lets a frightened creature retry the save only when it ends its turn
+  out of line of sight of the caster. The app has no line of sight, so the
+  chip has no automatic retry and the GM rolls it.
+- Vicious Mockery, Guiding Bolt, Ray of Frost, Shocking Grasp, and
+  Thunderwave deal their damage. The GM applies the rest: the disadvantage,
+  the advantage, the lost speed, the lost reactions, and the push.
+- Disintegrate turns a target at 0 HP to dust, and Finger of Death raises a
+  slain humanoid as a zombie. The GM rules both.
+- Revivify raises only a dead target. The GM checks that the target died
+  within the last minute.
+- The healing spells have no effect on undead or constructs, which the GM
+  rules.
 
 ## Spells that need a missing mechanic
 

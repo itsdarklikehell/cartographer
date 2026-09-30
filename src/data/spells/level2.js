@@ -82,7 +82,7 @@ export const LEVEL_2 = [
     ritual: false,
     description:
       'A creature that fails a CON save is blinded, retrying the save at the end of each ' +
-      'of its turns. The printed spell also offers deafness, which carries no rule here, ' +
+      'of its turns. The printed spell also offers deafness, which has no rule here, ' +
       'so this version always blinds.',
     effect: {
       kind: 'save',
@@ -107,7 +107,11 @@ export const LEVEL_2 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A ringing burst deals 3d8 thunder in a 10-foot sphere. A CON save halves it.',
+    description:
+      'A ringing burst deals 3d8 thunder in a 10-foot sphere. A CON save halves it. A ' +
+      'creature made of inorganic material such as stone, crystal, or metal saves at ' +
+      'disadvantage. The save mode in the cast dialog applies to every target of one ' +
+      'cast, so the GM rolls that save by hand when the burst also catches other creatures.',
     targetCount: 0,
     effect: {
       kind: 'save',
@@ -129,7 +133,9 @@ export const LEVEL_2 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Up to six creatures each regain 2d8 + your spellcasting modifier hit points.',
+    description:
+      'Up to six creatures each regain 2d8 + your spellcasting modifier hit points. The ' +
+      'spell has no effect on undead or constructs, which the GM rules.',
     targetCount: 6,
     effect: {
       kind: 'heal',

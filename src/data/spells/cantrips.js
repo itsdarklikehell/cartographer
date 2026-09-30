@@ -33,7 +33,9 @@ export const CANTRIPS = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A frigid beam deals 1d8 cold damage and slows the target.',
+    description:
+      'A frigid beam deals 1d8 cold damage on a hit. The target also loses 10 feet of ' +
+      "speed until the start of the caster's next turn, which the GM rules.",
     effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'cold' }] },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'cold' }] },
   },
@@ -49,7 +51,10 @@ export const CANTRIPS = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Lightning springs from your hand for 1d8 lightning damage.',
+    description:
+      'Lightning springs from your hand for 1d8 lightning damage on a hit. The attack has ' +
+      'advantage against a target in metal armor, and a target that is hit takes no ' +
+      'reactions until the start of its next turn. The GM rules both.',
     effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'lightning' }] },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'lightning' }] },
   },
@@ -66,7 +71,8 @@ export const CANTRIPS = [
     concentration: false,
     ritual: false,
     description:
-      'A crackling beam of force deals 1d10 damage. Higher levels fire more beams, each at its own target.',
+      'A crackling beam of force deals 1d10 damage. Higher levels fire more beams, and ' +
+      'the caster aims each beam at the same creature or at a different one.',
     // One beam at 1st level and one more at each cantrip breakpoint, which is
     // exactly the SRD's beam schedule, so the damage below is per beam.
     effect: {
@@ -108,7 +114,10 @@ export const CANTRIPS = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Stinging words deal 1d4 psychic on a failed WIS save and impose disadvantage.',
+    description:
+      'Stinging words deal 1d4 psychic on a failed WIS save. The target also has ' +
+      'disadvantage on its next attack roll before the end of its next turn, which the ' +
+      'GM rules.',
     effect: {
       kind: 'save',
       saveAbility: 'WIS',
@@ -176,8 +185,8 @@ export const CANTRIPS = [
     ritual: false,
     description:
       'A skeletal hand deals 1d8 necrotic on a hit. The target regains no hit points until ' +
-      "the start of the caster's next turn, and an undead target attacks the caster at " +
-      'disadvantage for the same time. The GM rules both.',
+      "the start of the caster's next turn. An undead target also attacks the caster at " +
+      "disadvantage until the end of the caster's next turn. The GM rules both.",
     effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'necrotic' }] },
   },

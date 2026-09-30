@@ -342,7 +342,7 @@ function normalizeSpell(raw, id) {
   const scalingTargets = clampInt(raw.scaling?.targetsPerLevel, 0);
   const levelsPerStep = normalizeLevelsPerStep(raw.scaling?.levelsPerStep);
   const scaling =
-    scalingDamage.length > 0 || scalingTargets > 0
+    scalingDamage.length > 0 || scalingTargets > 0 || levelsPerStep
       ? {
           ...(scalingDamage.length > 0 ? { damagePerLevel: scalingDamage } : {}),
           ...(scalingTargets > 0 ? { targetsPerLevel: scalingTargets } : {}),
