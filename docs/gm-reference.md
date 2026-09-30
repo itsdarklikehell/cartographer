@@ -1494,7 +1494,8 @@ The saving throw of a creature against a spell is a number that you type
 into the cast dialog. The app does not apply exhaustion to it, so subtract
 the penalty as you type it.
 
-A row of six pips sets the level. The row is on the character sheet under
+A row of six numbered pips sets the level, and the pips up to the current
+level are filled. The row is on the character sheet under
 the chips, and on each creature row in the Encounters and NPCs panels. The
 top line of the character sheet also names the level, beside AC and speed.
 
