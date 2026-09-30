@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { passTime } from '../src/app/passTime.js';
+import { passTime, passTravelTime } from '../src/app/passTime.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { createCondition } from '../src/entities/Conditions.js';
@@ -46,4 +46,19 @@ test('a creature timed chip that runs out refreshes the creature panels', () => 
   passTime(app, 1);
   assert.deepEqual(app.state.creatures[0].conditions, []);
   assert.ok(app.refreshes.includes('encounterPanel'));
+});
+
+test('a walk that crosses a watch logs and announces its length and the new time', () => {
+  /** @type {string[]} */
+  const toasts = [];
+  const app = stubApp({ toasts: { show: (/** @type {string} */ m) => toasts.push(m) } });
+  assert.equal(passTravelTime(app, 90), true);
+  assert.deepEqual(app.state.clock, { day: 1, watch: 0, minutes: 90 });
+  assert.deepEqual([...app.log, ...toasts], [], 'inside one watch: no message');
+  passTravelTime(app, 240);
+  const text = 'The walk took 4 hours. Now Day 1, Morning.';
+  assert.deepEqual(app.log, [text]);
+  assert.deepEqual(toasts, [text]);
+  assert.equal(passTravelTime(app, 0), false, 'a free walk changes nothing');
+  assert.deepEqual(app.state.clock, { day: 1, watch: 1, minutes: 90 });
 });

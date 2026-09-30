@@ -509,7 +509,7 @@ The helper modules below contain the rest of the character flows:
 | `deathSaves.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
 | `exhaustion.js` | The exhaustion write for a character or a creature, including the death at level 6 |
 | `slay.js` | The kill of a character or a creature with no damage roll, for Power Word Kill |
-| `passTime.js` | Spending game time on every timed effect, for the Time panel's Advance button and both rests |
+| `passTime.js` | Spending game time on every timed effect, for the Time panel's Advance button, both rests, and a party walk. `passTravelTime` also logs and announces a walk that crosses into a new watch |
 
 `checkRolls.js` and `deathSaves.js` take the bonus from the pure rules in
 `entities/Checks.js` and `entities/DeathSaves.js`, but the dice tray throws

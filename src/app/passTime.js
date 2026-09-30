@@ -1,3 +1,4 @@
+import { advanceMinutes, formatClock, formatMinutes, watchesBetween } from '../time/GameClock.js';
 import { ROUNDS_PER_WATCH, elapseCharacter, elapseCreature } from '../entities/TimedEffects.js';
 import { commitCreatures } from './combatants.js';
 import { endSpellEffects } from './combatantWrites.js';
@@ -43,4 +44,28 @@ export function passTime(app, watches) {
   for (const { casterId, spellId } of ended) endSpellEffects(app, casterId, spellId);
   // The sight radius follows the watch, and the exit arrows show by sight.
   app.actions.syncExits();
+}
+
+/**
+ * Spend the minutes of a whole-party walk. Timed effects count whole
+ * watches, so they tick only when the walk crosses into a new watch. A walk
+ * that crosses one also logs under 'travel' and shows a toast with its
+ * length and the new time, so a GM who also advances the clock by hand for
+ * travel does not count the watch twice.
+ * @param {AppContext} app
+ * @param {number} minutes
+ * @returns {boolean} whether the clock moved
+ */
+export function passTravelTime(app, minutes) {
+  if (minutes <= 0) return false;
+  const before = app.state.clock;
+  app.state.clock = advanceMinutes(before, minutes);
+  const watches = watchesBetween(before, app.state.clock);
+  passTime(app, watches);
+  if (watches > 0) {
+    const text = `The walk took ${formatMinutes(minutes)}. Now ${formatClock(app.state.clock)}.`;
+    app.actions.logEvent('travel', text);
+    app.toasts.show(text);
+  }
+  return true;
 }

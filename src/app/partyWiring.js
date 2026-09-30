@@ -24,13 +24,12 @@ import {
   advanceToDawn,
   advanceWatches,
   formatClock,
-  formatMinutes,
   longRestClock,
   MINUTES_PER_WATCH,
   offersRestUntilDawn,
   watchesBetween,
 } from '../time/GameClock.js';
-import { passTime } from './passTime.js';
+import { passTime, passTravelTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
@@ -368,21 +367,7 @@ export function wireParty(app, reloadView = null) {
   });
 
   app.actions.passTravelTime = (minutes) => {
-    if (minutes <= 0) return;
-    const before = state.clock;
-    state.clock = advanceMinutes(state.clock, minutes);
-    // Timed effects count whole watches, so they tick only when the walk
-    // crosses into a new watch.
-    const watches = watchesBetween(before, state.clock);
-    passTime(app, watches);
-    timePanel.update();
-    // A walk that crosses into a new watch says so, so a GM who also
-    // advances the clock by hand for travel does not count the watch twice.
-    if (watches > 0) {
-      const text = `The walk took ${formatMinutes(minutes)}. Now ${formatClock(state.clock)}.`;
-      app.actions.logEvent('travel', text);
-      app.toasts.show(text);
-    }
+    if (passTravelTime(app, minutes)) timePanel.update();
   };
 
   // This is one entry point for "the campaign under these panels was
