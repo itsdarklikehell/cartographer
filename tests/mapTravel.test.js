@@ -216,6 +216,16 @@ test('currentExits reports the node in view, and nothing while authoring', () =>
   assert.deepEqual(building.travel.currentExits(), [], 'Build mode offers no ways out');
 });
 
+test('shownExits keeps the edges within three sight radii of the traveler', () => {
+  const { travel, partyTracker, clickTile } = world();
+  clickTile('2,4');
+  const sides = () =>
+    travel.shownExits(travel.currentExits()).map((e) => (e.kind === 'edge' ? e.side : e.kind));
+  assert.deepEqual(sides(), ['north', 'east', 'south', 'west'], 'a small map shows every edge');
+  partyTracker.setSight(() => 0);
+  assert.deepEqual(sides(), ['south'], 'a sight of 0 shows only the edge the party stands on');
+});
+
 test('an exit moves the party into the parent beside the block and logs the return', () => {
   const { travel, partyTracker, navigator, log, clickTile } = world();
   clickTile('2,4');

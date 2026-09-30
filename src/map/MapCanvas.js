@@ -84,6 +84,8 @@ export class MapCanvas {
     /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
      * border arrows and tile badges. This applies only in Play mode. The wiring supplies none while authoring. */
     this.exits = [];
+    /** @type {import('../types/map.js').ExitSide[]} sides that a fit keeps room for an arrow on */
+    this.exitSides = [];
     /** @type {import('./ExitBands.js').Rect[]} rects in buffer px that HTML over the
      * canvas covers, such as the mini-map. Edge exit bands move off them. */
     this.occluders = [];
@@ -153,6 +155,7 @@ export class MapCanvas {
     // point at the wrong parent. Drawing them before the wiring recomputes
     // them offers a click that travels to a place where the party is not.
     this.exits = [];
+    this.exitSides = [];
     this.disarmExit();
     this.selectedTileId = null;
     this.cursorCellId = null;
@@ -414,11 +417,18 @@ export class MapCanvas {
    * that leads back, and as a badge on each door or stairway that leads
    * back. An empty list draws none. This is how Build mode shows nothing,
    * because authoring a map is not travelling it.
+   *
+   * `all` is the full list, from which `exits` keeps the ways out near the
+   * traveler. A fit keeps room for the arrow of every side in `all`, so an
+   * arrow that appears as the party walks toward an edge does not rezoom
+   * the map.
    * @param {import('../types/map.js').MapExit[]} exits
+   * @param {import('../types/map.js').MapExit[]} [all]
    */
-  setExits(exits) {
+  setExits(exits, all = exits) {
     const before = this._fitKey();
     this.exits = exits;
+    this.exitSides = all.flatMap((e) => (e.kind === 'edge' ? [e.side] : []));
     // The armed side can no longer be a way out; requiring a fresh first press
     // is cheaper than checking, and rearming costs the user one keystroke.
     this.disarmExit();
@@ -449,7 +459,7 @@ export class MapCanvas {
     return fitSides({
       lead: 64 * ratio,
       trail: 16 * ratio,
-      exitSides: this.exits.flatMap((e) => (e.kind === 'edge' ? [e.side] : [])),
+      exitSides: this.exitSides,
       bandDepth: exitBandDepth(ratio),
       occluders: this.occluders,
       canvasWidth: this.canvas.width,

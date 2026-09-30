@@ -46,6 +46,7 @@ const ACTION_NAMES = [
   'endCombat',
   'syncCombatLocation',
   'syncPartyMarker',
+  'syncExits',
   'syncCreatureMarkers',
   'meetCreatures',
   'refreshMapDescription',

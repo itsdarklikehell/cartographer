@@ -1,7 +1,7 @@
 import { updateTileMetadata } from '../map/TileGrid.js';
 import { parseCoords } from '../map/MapGeometry.js';
 import { computeRegionEntryTile } from '../map/EntryPoint.js';
-import { exitForTile, findExits } from '../map/MapExits.js';
+import { EXIT_REACH_SIGHTS, exitForTile, exitsInReach, findExits } from '../map/MapExits.js';
 import {
   entryFor,
   forgetCharacterEntries,
@@ -94,11 +94,33 @@ export function createMapTravel(app, env) {
     const node = navigator.getCurrentNode();
     const parent = grid.getParent(node);
     const through = entryThrough();
+    return findExits(node, parent, through, {
+      at: travelerCell(),
+      nodeById: (id) => grid.getNode(id),
+    }).map((exit) => veilCrossing(exit, parent));
+  }
+
+  /**
+   * The exits from currentExits that the arrows and the exit buttons show.
+   * An edge shows while the traveler stands within EXIT_REACH_SIGHTS sight
+   * radii of it, measured with the sight of the current watch.
+   * @param {import('../types/map.js').MapExit[]} exits
+   * @returns {import('../types/map.js').MapExit[]}
+   */
+  function shownExits(exits) {
+    const node = navigator.getCurrentNode();
+    const reach = EXIT_REACH_SIGHTS * partyTracker.sightFor(node);
+    return exitsInReach(node, exits, travelerCell(), reach);
+  }
+
+  /**
+   * The cell of this tab's traveler in the node in view, or null when the
+   * traveler stands in another node.
+   * @returns {{ x: number, y: number } | null}
+   */
+  function travelerCell() {
     const here = moverPosition() ?? partyTracker.getPosition();
-    const at = here.nodeId === node.id ? parseCoords(here.tileId) : null;
-    return findExits(node, parent, through, { at, nodeById: (id) => grid.getNode(id) }).map(
-      (exit) => veilCrossing(exit, parent),
-    );
+    return here.nodeId === navigator.getCurrentNode().id ? parseCoords(here.tileId) : null;
   }
 
   /**
@@ -464,6 +486,7 @@ export function createMapTravel(app, env) {
     discoverTile,
     clickSubject,
     currentExits,
+    shownExits,
     entryThrough,
     exitToParent,
     moveOneCharacter,

@@ -375,14 +375,48 @@ const warningFor = memoizeByIdentity2((node, parent) => {
  * @returns {ExitSide}
  */
 export function nearestSide(node, coords) {
-  /** @type {{ side: ExitSide, d: number }[]} */
-  const distances = [
+  const distances = sideDistances(node, coords);
+  return distances.reduce((best, entry) => (entry.d < best.d ? entry : best)).side;
+}
+
+/**
+ * The distance in tiles from a cell to each side of a node, with the sides
+ * in the tie-break order of nearestSide.
+ * @param {MapNode} node
+ * @param {{ x: number, y: number }} coords
+ * @returns {{ side: ExitSide, d: number }[]}
+ */
+function sideDistances(node, coords) {
+  return [
     { side: 'north', d: coords.y },
     { side: 'west', d: coords.x },
     { side: 'south', d: node.height - 1 - coords.y },
     { side: 'east', d: node.width - 1 - coords.x },
   ];
-  return distances.reduce((best, entry) => (entry.d < best.d ? entry : best)).side;
+}
+
+/**
+ * How near an edge the traveler stands before its arrow shows, in sight
+ * radii. A traveler in the middle of a large map sees no arrows, so the
+ * gutter does not frame the whole map with ways out that are far away.
+ */
+export const EXIT_REACH_SIGHTS = 3;
+
+/**
+ * The exits to show while the traveler stands at `at`. An edge exit shows
+ * only when the traveler is at most `reach` tiles from its side. A tile
+ * exit or the fallback always shows. With no traveler in the node, every
+ * exit shows, because no distance can be measured.
+ * @param {MapNode} node
+ * @param {MapExit[]} exits
+ * @param {{ x: number, y: number } | null} at
+ * @param {number} reach
+ * @returns {MapExit[]}
+ */
+export function exitsInReach(node, exits, at, reach) {
+  if (!at) return exits;
+  const near = new Set(sideDistances(node, at).flatMap((e) => (e.d <= reach ? [e.side] : [])));
+  return exits.filter((exit) => exit.kind !== 'edge' || near.has(exit.side));
 }
 
 /** Which axis a side runs along: sides on the north/south run along x. */

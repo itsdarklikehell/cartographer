@@ -1241,6 +1241,13 @@ modules read it:
 
 - `MapDecorations` draws an outward chevron and a "Leave to {name}" or
   "Cross into {name}" label in the gutter beyond each `edge` exit.
+  `syncExits` in `mapWiring.js` passes the canvas only the edges that
+  `exitsInReach` keeps: the sides within `EXIT_REACH_SIGHTS` sight radii
+  of the traveler. The exit buttons get the same list. The canvas also
+  gets the full list, and a fit keeps room for every side in it, so an
+  arrow that appears as the party walks does not rezoom the map.
+  `passTime` reruns `syncExits`, because the sight radius changes with
+  the watch.
   `MapMarkers` draws a small chevron badge on each `tile` exit.
 - `MapCanvasPointer` hit-tests the same bands on a click.
 - `MapCanvasKeyboard` arms an exit when a cursor key leaves the cursor

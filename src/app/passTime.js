@@ -41,4 +41,6 @@ export function passTime(app, watches) {
   // The sweep runs after both collections are written. It writes to the same
   // two collections, and run earlier, the write above would restore them.
   for (const { casterId, spellId } of ended) endSpellEffects(app, casterId, spellId);
+  // The sight radius follows the watch, and the exit arrows show by sight.
+  app.actions.syncExits();
 }

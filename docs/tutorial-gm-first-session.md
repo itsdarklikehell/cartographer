@@ -66,7 +66,7 @@ If a dialog says that walls or obstacles block every path, click
 
 The map changes to the map of the town. The party stands on the border of
 the town, on the side that it came from. An arrow that reads **Leave to
-Briarwick Vale** sits at the edge of the map on each side.
+Briarwick Vale** sits at each edge of the map that is near the party.
 
 3. Walk one or two tiles inside the town.
 4. Click one of the **Leave to Briarwick Vale** arrows.

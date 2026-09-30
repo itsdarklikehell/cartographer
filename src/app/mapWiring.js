@@ -111,6 +111,7 @@ export function wireMapView(app) {
     refreshMapDescription();
   }
   app.actions.syncPartyMarker = syncPartyMarker;
+  app.actions.syncExits = syncExits;
 
   /** Where this tab's view follows: the party, or a bound player's own
    * character while the party is split. */
@@ -134,8 +135,9 @@ export function wireMapView(app) {
    * Play-only exit list, which is empty while authoring. */
   function syncExits() {
     const exits = travel.currentExits();
-    mapCanvas.setExits(exits);
-    exitList?.update(exits);
+    const shown = travel.shownExits(exits);
+    mapCanvas.setExits(shown, exits);
+    exitList?.update(shown);
     // The mini-map marks the same parent block the exits come from, and every
     // path that can move the party, change the node in view, or repaint the
     // parent runs this function.

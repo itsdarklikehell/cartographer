@@ -819,7 +819,7 @@ return arrows. A click on an arrow travels.
 
 | Kind | Where it shows | Where it leads |
 | --- | --- | --- |
-| Edge | A side of an outdoor sub-map that touches painted tiles on the parent map | Back to the parent tile that the party crossed. If another region of the same parent map borders that side, the party crosses into that region at the matching spot |
+| Edge | A side of an outdoor sub-map that touches painted tiles on the parent map. The arrow shows while the party is at most three times its sight from that side | Back to the parent tile that the party crossed. If another region of the same parent map borders that side, the party crosses into that region at the matching spot |
 | Tile | An outer door, or a staircase with no link, in an interior | Back to the parent level |
 | Fallback | A node with neither kind | A plain "Return to (parent)" button |
 
@@ -855,7 +855,7 @@ that you pick. If you cancel, the party stays split.
 
 | Range | Distance from the party (tiles) | What it sets |
 | --- | --- | --- |
-| Sight | See the table below | The radius that movement reveals. A revealed tile stays revealed |
+| Sight | See the table below | The radius that movement reveals. A revealed tile stays revealed. An edge exit arrow shows within three times this distance of its side |
 | Detection range | 4 | The range at which encounter, NPC, and point-of-interest markers show |
 | Nearby range | 8 | The range of the GM lists of nearby encounters and NPCs |
 

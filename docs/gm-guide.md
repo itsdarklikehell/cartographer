@@ -353,8 +353,9 @@ controls.
 ### Leave a sub-region
 
 1. Find a way out. An arrow at the edge of the map reads **Leave to** and
-   the name of the map above. A door or a staircase that leads out has a
-   chevron badge.
+   the name of the map above. The arrow shows when the party is at most
+   three times its sight from that edge, so walk toward an edge to find
+   it. A door or a staircase that leads out has a chevron badge.
 2. Click the arrow, or click the door or the staircase.
 
 A click on a door or a staircase walks the party to it and out in one

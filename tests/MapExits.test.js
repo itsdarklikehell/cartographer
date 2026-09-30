@@ -6,6 +6,7 @@ import {
   exitForSide,
   exitForTile,
   exitLabel,
+  exitsInReach,
   findExits,
   isSealedInterior,
   nearestSide,
@@ -564,6 +565,27 @@ test('nearestSide picks the closest border', () => {
   assert.equal(nearestSide(n, { x: 0, y: 3 }), 'west');
   assert.equal(nearestSide(n, { x: 9, y: 3 }), 'east');
   assert.equal(nearestSide(n, { x: 5, y: 5 }), 'south');
+});
+
+test('exitsInReach keeps the edges near the traveler, and every other exit', () => {
+  const n = node({ id: 'n', width: 20, height: 12 });
+  const target = { targetNodeId: 'p', targetName: 'P' };
+  /** @type {import('../src/types/map.js').MapExit[]} */
+  const exits = [
+    ...['north', 'east', 'south', 'west'].map((side) => ({
+      kind: /** @type {const} */ ('edge'),
+      side: /** @type {import('../src/types/map.js').ExitSide} */ (side),
+      ...target,
+    })),
+    { kind: 'tile', tileId: '9,5', via: 'door', ...target },
+  ];
+  const sides = (/** @type {{ x: number, y: number } | null} */ at, /** @type {number} */ reach) =>
+    exitsInReach(n, exits, at, reach).map((e) => (e.kind === 'edge' ? e.side : e.kind));
+  assert.deepEqual(sides({ x: 10, y: 6 }, 3), ['tile'], 'the middle of the map is out of reach');
+  assert.deepEqual(sides({ x: 3, y: 3 }, 3), ['north', 'west', 'tile'], 'a reach of 3 includes 3');
+  assert.deepEqual(sides({ x: 16, y: 8 }, 3), ['east', 'south', 'tile'], 'the far sides count too');
+  assert.deepEqual(sides({ x: 4, y: 4 }, 3), ['tile'], 'a distance of 4 is past a reach of 3');
+  assert.equal(exitsInReach(n, exits, null, 0), exits, 'no traveler shows every exit');
 });
 
 test('labels name the region and, for assistive tech, the way out', () => {

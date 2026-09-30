@@ -151,6 +151,9 @@ export interface AppActions {
   syncCombatLocation(): void;
   // mapWiring
   syncPartyMarker(): void;
+  // mapWiring: recompute the ways out of the node in view. The arrows show
+  // by distance in sight radii, so a change of watch reruns this.
+  syncExits(): void;
   syncCreatureMarkers(): void;
   // mapWiring: mark placed creatures on the party's tile as met, on GM tabs
   // only, and log each introduction. This runs wherever the party lands

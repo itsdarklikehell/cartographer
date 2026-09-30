@@ -33,10 +33,11 @@ test('no time, or nothing timed, leaves every collection as it was', () => {
   });
   const { characters, creatures } = app.state;
   passTime(app, 0);
+  assert.deepEqual(app.calls, [], 'no time passes, so nothing runs');
   passTime(app, 2);
   assert.equal(app.state.characters, characters);
   assert.equal(app.state.creatures, creatures);
-  assert.deepEqual(app.calls, []);
+  assert.deepEqual(app.calls, ['syncExits'], 'only the exit arrows follow the new sight');
 });
 
 test('a creature timed chip that runs out refreshes the creature panels', () => {
