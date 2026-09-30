@@ -102,3 +102,20 @@ test('Protection from Evil and Good gives an undead attacker disadvantage', () =
   // A party character attacks as a humanoid, which the ward does not list.
   assert.equal(rollMode({ ...query, rollerType: attackerType({ name: 'Hero' }) }), null);
 });
+
+test('the chips of Hypnotic Pattern and Charm Person give no slant and stay on a spent roll', () => {
+  const pattern = {
+    name: 'Incapacitated',
+    source: { spellName: 'Hypnotic Pattern', endsOnDamage: true },
+  };
+  const charm = { name: 'Charmed', source: { spellName: 'Charm Person' } };
+  const target = [BOLT, pattern, charm];
+  const found = chipSlants({ target });
+  assert.deepEqual(
+    found.map((f) => f.condition),
+    [BOLT],
+  );
+  const spent = spentOnce({ target });
+  assert.deepEqual(spent.target, ['Guiding Bolt']);
+  assert.deepEqual(dropOnce(target, spent.target), [pattern, charm]);
+});
