@@ -149,7 +149,12 @@ character, and one at 0 HP with no tracker, still skip.
 A defeated goblin never gets a turn, but its chip stays in the ribbon, struck
 through. A stunned goblin also keeps its place, marked with a dashed edge
 instead of a strike, because it is still in the fight and only its turn is
-gone. If the predicate rejects every participant, the pointer walks one full
+gone. A dying or stable character at 0 HP gets the dashed edge too, with no
+strike. `downState` in `view/DeathSaveView.js` picks the mark and the words
+of the accessible name for the ribbon chip and the card. It returns "dying"
+or "stable at 0 HP" for a character with a death save tracker, "defeated"
+for any other defeated combatant, and "cannot act" for a combatant whose
+chips cost it the turn. If the predicate rejects every participant, the pointer walks one full
 cycle and stops where it started. The round counter and the timed effects
 then keep moving until the GM closes the fight.
 
