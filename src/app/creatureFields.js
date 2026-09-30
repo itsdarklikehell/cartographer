@@ -278,7 +278,7 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
                 ? defaultEnemyStats(/** @type {number} */ (seed.level), seed.tier ?? 'mob')
                 : {}),
           ),
-        )
+        ).map((f, i) => (i === 0 ? { ...f, newRow: true } : f))
       : []),
     ...casterFields(seed),
   ];
