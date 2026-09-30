@@ -288,9 +288,22 @@ fields.
 | Height (tiles) | 6 | 1 or more |
 | Kind | Region | Region or Interior |
 | Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags |
+| Lock | No lock | No lock, Locked, or Unlocked |
+| Key item (name) | (blank) | The name of the item that opens the lock |
 
 The environment tag is a description only. It has no effect on painting,
 generation, or rules.
+
+A locked node stops every move of the party or a character into it: a
+click on a tile that links to it, a walk across a border into it, and a
+teleport from the World panel. The GM view still zooms into a locked node
+where nobody moves. In a GM tab, a dialog names the key item and the
+character who carries it, for example "Locked. Requires the warding key;
+Aldric carries it." The match is on the item name, without regard to
+case, across all characters. Click **Unlock** to open the lock and go on,
+or **Unlock anyway** when nobody carries the key. Unlocking sets the lock
+to Unlocked and writes a travelogue line. A Player tab shows the toast
+"The way into the Barrow is locked." and nobody moves.
 
 ### World tree
 

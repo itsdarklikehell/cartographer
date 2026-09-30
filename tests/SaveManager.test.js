@@ -914,3 +914,12 @@ test('onExternalSave fires at the save mark of another tab save, until unsubscri
 
   delete globalThis.window;
 });
+
+test('the lock of a map survives a round trip', () => {
+  const grid = sampleGrid();
+  const region = /** @type {any} */ (grid.getNode('region'));
+  grid.updateNode({ ...region, lock: { requires: 'warding key', open: false } });
+  const back = toTileGrid(deserialize(serialize(buildState({ grid }))));
+  assert.deepEqual(back.getNode('region')?.lock, { requires: 'warding key', open: false });
+  assert.equal('lock' in /** @type {any} */ (back.getNode('world')), false);
+});

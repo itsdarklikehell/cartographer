@@ -1,5 +1,6 @@
 import { collectSubtreeIds } from './WorldTree.js';
 import { parseCoords } from './MapGeometry.js';
+import { readLock } from './NodeLock.js';
 import {
   tileAt,
   tilePosition,
@@ -216,9 +217,12 @@ function unknownFields(tile) {
  */
 export function withNodeDefaults(node) {
   const tiles = Array.isArray(node.tiles) ? node.tiles : [];
+  const { lock: rawLock, ...rest } = node;
+  const lock = readLock(rawLock);
   return withNodeTiles(
     {
-      ...node,
+      ...rest,
+      ...(lock ? { lock } : {}),
       name: typeof node.name === 'string' ? node.name : node.id,
       parentId: node.parentId ?? null,
       width: dimension(node.width),

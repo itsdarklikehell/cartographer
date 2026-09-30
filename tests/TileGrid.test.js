@@ -297,3 +297,11 @@ test('withRepairedLinks clears tile links to nodes that do not exist', () => {
   assert.equal(getTile(repaired, '0,0')?.childNodeId, 'cave');
   assert.equal(getTile(repaired, '1,0')?.childNodeId, null);
 });
+
+test('withNodeDefaults keeps a readable lock and drops a missing one', () => {
+  const locked = withNodeDefaults(
+    /** @type {any} */ ({ id: 'n', lock: { requires: ' Key ', open: false } }),
+  );
+  assert.deepEqual(locked.lock, { requires: 'Key', open: false });
+  assert.equal('lock' in withNodeDefaults(/** @type {any} */ ({ id: 'n', lock: 'x' })), false);
+});

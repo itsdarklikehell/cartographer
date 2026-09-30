@@ -160,6 +160,18 @@ make the node larger, the app keeps the existing tiles. If you make it
 smaller, the app removes the tiles outside the new size, and it asks first
 when that removes painted tiles.
 
+### Lock a map
+
+1. In the World tree, click the actions button on the node, and then
+   click **Edit settings**.
+2. Set **Lock** to **Locked**.
+3. In **Key item (name)**, type the name of the item that opens it, for
+   example "Warding Key". Leave it blank for a lock that only you open.
+4. Click **Save**.
+
+When the party tries to enter, a dialog tells you who carries the key.
+Click **Unlock** to let the party in.
+
 ### Paint tiles
 
 1. Open the **Paint** tab of the right rail.

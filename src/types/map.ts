@@ -56,6 +56,18 @@ export interface MapNode {
   /** Environment tag, for example "forest" or "cave" for a region, "inn" or
    * "temple" for an interior. Null if unset. */
   environ: string | null;
+  /** A lock on the way in, or absent for an open map. Every move of the
+   * party or a character into the node stops at a lock that is not open.
+   * The GM view can still zoom in. */
+  lock?: NodeLock;
+}
+
+/** The lock of a map. `requires` is the item name that opens it, matched
+ * without regard to case across every character, or null. `open` turns
+ * true when the GM unlocks it. */
+export interface NodeLock {
+  requires: string | null;
+  open: boolean;
 }
 
 /** A side of a node's grid, as an exit leads away from it. */

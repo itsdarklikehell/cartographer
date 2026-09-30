@@ -283,6 +283,15 @@ The canvas's `onTileClick` callback and the breadcrumb's click handler
 navigator has no DOM dependency, so plain unit tests cover all of the zoom
 and breadcrumb behavior.
 
+A node can keep a `lock` (`src/map/NodeLock.js`), on the child node and
+not on a tile, because one link is often a block of many tiles with the
+same `childNodeId`. `withNodeDefaults` reads the lock with `readLock`.
+Every move into a node runs `passLock` (`src/app/lockGuard.js`) first:
+the move branch of `travelTo` in `app/mapTravel.js`, `crossBorder` in
+`app/mapExitTravel.js`, and the teleport in `app/mapTeleport.js`. The
+GM view-only zoom into a child where the mover already stands skips the
+check.
+
 A crumb opens a map above the party without moving it. On that map,
 `ancestorMarkerTile` (`src/map/AncestorMarker.js`) picks the tile that
 links down toward the party's map, and the party marker and the fit focus

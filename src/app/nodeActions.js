@@ -9,6 +9,7 @@ import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
 import { resyncMapViews } from './mapResync.js';
 import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
+import { lockFields, readLockFields } from '../map/NodeLock.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -218,6 +219,7 @@ export function createNodeActions(app, env) {
         { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
         { name: 'height', label: 'Height (tiles)', type: 'number', value: node.height, min: 1 },
         ...nodeKindFields(node.kind, node.environ),
+        ...lockFields(node.lock),
       ],
       { submitLabel: 'Save' },
     );
@@ -233,8 +235,11 @@ export function createNodeActions(app, env) {
       if (!ok) return;
     }
     const kind = coerceNodeKind(values.kind, node.kind);
+    const lock = readLockFields(values);
+    const { lock: _old, ...resized } = resizeNode(node, width, height);
     grid.updateNode({
-      ...resizeNode(node, width, height),
+      ...resized,
+      ...(lock ? { lock } : {}),
       name: values.name.trim() || node.name,
       kind,
       environ: values.environ || null,

@@ -827,3 +827,39 @@ test('a companion NPC moves to the party in the GM tab and is not met again', ()
   player.travel.refreshLocationPanels();
   assert.equal(player.state.creatures[0], dorn, 'only the GM tab moves companions');
 });
+
+test('a locked region stops a player move, and an open lock lets the party in', async () => {
+  const hero = createCharacter('hero', 'Hero');
+  const player = world({ role: 'player', characters: [hero], splitParty: true, selected: 'hero' });
+  const lock = { requires: 'key', open: false };
+  player.grid.updateNode({ ...player.grid.getNode('child'), lock });
+  /** @type {string[]} */
+  const toasts = [];
+  player.app.toasts = /** @type {any} */ ({ show: (/** @type {string} */ m) => toasts.push(m) });
+  player.clickTile('2,4');
+  await Promise.resolve();
+  assert.deepEqual(toasts, ['The way into Saltmere is locked.']);
+  assert.equal(player.navigator.getCurrentNode().id, 'world');
+  assert.equal(player.state.characters[0].location, null, 'the character does not move');
+
+  const gm = world();
+  gm.grid.updateNode({ ...gm.grid.getNode('child'), lock: { ...lock, open: true } });
+  gm.clickTile('2,4');
+  assert.equal(gm.navigator.getCurrentNode().id, 'child');
+  assert.equal(gm.partyTracker.getPosition().nodeId, 'child');
+});
+
+test('the GM view zooms into a locked region where the party already stands', () => {
+  const gm = world();
+  gm.clickTile('2,4');
+  gm.grid.updateNode({ ...gm.grid.getNode('child'), lock: { requires: null, open: false } });
+  gm.travel.exitToParent({
+    kind: 'edge',
+    side: 'south',
+    targetNodeId: 'world',
+    targetName: 'World',
+  });
+  gm.partyTracker.moveTo('child', '0,0');
+  gm.clickTile('2,4');
+  assert.equal(gm.navigator.getCurrentNode().id, 'child');
+});

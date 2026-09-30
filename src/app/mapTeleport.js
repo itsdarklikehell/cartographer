@@ -6,6 +6,7 @@ import { textButton } from '../ui/buttons.js';
 import { el } from '../ui/dom.js';
 import { openDialog } from '../ui/Modal.js';
 import { isGM } from '../view/ViewRole.js';
+import { passLock } from './lockGuard.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -66,6 +67,7 @@ export function createTeleport(app, env, travel) {
     const choice = await askViewOrTeleport(node.name);
     if (choice === 'view') env.goToNode(nodeId);
     if (choice !== 'teleport') return;
+    if (!(await passLock(app, node))) return;
     // Resolve the landing spot against the node's real tiles. This makes
     // sure that a teleport into a sparse or walled node, for example a
     // generated dungeon, never strands the party on a wall or an empty

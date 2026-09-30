@@ -9,6 +9,8 @@ import {
 import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { isGM } from '../view/ViewRole.js';
+import { passLock } from './lockGuard.js';
+import { isLocked } from '../map/NodeLock.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -160,6 +162,13 @@ export function createExitTravel(app, env, travel) {
     // region that the fog still hides only as far as the parent map.
     if ((!gm && !subject) || from.nodeId !== child.id) {
       env.goToNode(gm || tile.revealed ? target.id : parent.id);
+      return;
+    }
+    // A locked region stops the crossing until the GM unlocks it.
+    if (isLocked(target)) {
+      void passLock(app, target).then((ok) => {
+        if (ok) crossBorder(targetNodeId, crossTileId);
+      });
       return;
     }
     // Check this before the move reveals entry fog. An all-fogged region has

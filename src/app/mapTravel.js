@@ -19,6 +19,8 @@ import { createWalkGate } from './mapNightWalk.js';
 import { createExitTravel } from './mapExitTravel.js';
 import { createSightingLog } from './mapSightings.js';
 import { createTeleport } from './mapTeleport.js';
+import { passLock } from './lockGuard.js';
+import { isLocked } from '../map/NodeLock.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -324,6 +326,16 @@ export function createMapTravel(app, env, dialogs) {
     const gm = isGM(state.role);
     const subject = clickSubject();
     if (tile.childNodeId) {
+      // A locked child stops a move into it. The GM view of a child where
+      // the mover already stands, or a GM click that moves nobody, only
+      // zooms in, so the lock does not apply.
+      const locked = grid.getNode(tile.childNodeId);
+      if ((gm || subject) && positionOf(subject).nodeId !== locked?.id && isLocked(locked)) {
+        void passLock(app, /** @type {import('../types/map.js').MapNode} */ (locked)).then((ok) => {
+          if (ok) travelTo(tile, path);
+        });
+        return;
+      }
       const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
