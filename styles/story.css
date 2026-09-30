@@ -96,6 +96,9 @@
 .quest-panel__body {
   flex: 1 1 auto;
   min-width: 0;
+  /* The title line is 24px tall and the status toggle 1.75rem (28px), so
+     this centers the first line of a long title on the toggle. */
+  padding-top: calc((1.75rem - 24px) / 2);
 }
 
 .quest-panel__title {

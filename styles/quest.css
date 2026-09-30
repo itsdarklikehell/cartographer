@@ -18,9 +18,12 @@
   padding: 0;
 }
 
+/* The controls sit at the top of a long objective, beside its first line.
+   The text and the player's status icon take a top padding that centers
+   the first line in the 1.5rem band of the row's buttons. */
 .quest-objective {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: var(--space-1);
   font-size: var(--text-label);
 }
@@ -37,6 +40,7 @@
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
+  padding-top: calc((1.5rem - var(--text-label) * var(--line-body)) / 2);
   gap: var(--space-1);
   flex: 1 1 auto;
   min-width: 0;
@@ -53,6 +57,7 @@
 .quest-objective__status {
   display: inline-flex;
   flex: 0 0 auto;
+  padding-top: calc((1.5rem - 14px) / 2);
   color: var(--text-muted);
 }
 
