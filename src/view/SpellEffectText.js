@@ -66,7 +66,14 @@ export function effectSummary(spell, saveDC) {
   }
   if (effect.kind === 'heal') {
     const mod = effect.addsModifier ? ' + spellcasting modifier' : '';
-    return `Healing — ${formatDamage(effect.healing) || 'no dice'}${mod}`;
+    // A heal that ends chips names them, and one with no dice says only that.
+    const ends = [
+      ...(effect.removes ? [`ends ${effect.removes.join(', ')}`] : []),
+      ...(effect.removesOneOf ? [`ends one of ${effect.removesOneOf.join(', ')}`] : []),
+    ];
+    const dice = formatDamage(effect.healing);
+    if (!dice && ends.length) return `Restoration — ${ends.join('; ')}`;
+    return `Healing — ${dice || 'no dice'}${mod}${ends.map((e) => `; ${e}`).join('')}`;
   }
   if (effect.kind === 'buff') {
     const chip = buffCondition(spell);

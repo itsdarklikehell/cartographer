@@ -203,3 +203,23 @@ test('chipOrigin names the caster and the spell of the cast that wrote a chip', 
   assert.equal(chipOrigin(createCondition('Paralyzed', 10, { source })), 'Hold Person');
   assert.equal(chipOrigin(createCondition('Prone')), '');
 });
+
+test('effectSummary names the chips a heal ends', () => {
+  const heal = (/** @type {object} */ effect) =>
+    /** @type {any} */ ({ effect: { kind: 'heal', healing: [], ...effect } });
+  assert.equal(
+    effectSummary(heal({ removesOneOf: ['Blinded', 'Poisoned'] }), 13),
+    'Restoration — ends one of Blinded, Poisoned',
+  );
+  assert.equal(
+    effectSummary(
+      heal({
+        healing: [{ count: 0, sides: 8, damageType: 'healing', bonus: 70 }],
+        removes: ['Blinded', 'Deafened'],
+      }),
+      13,
+    ),
+    'Healing — +70 healing; ends Blinded, Deafened',
+  );
+  assert.equal(effectSummary(heal({}), 13), 'Healing — no dice');
+});
