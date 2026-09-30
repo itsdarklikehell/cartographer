@@ -53,3 +53,35 @@ test('the spell form keeps the raise-the-dead flag of a heal when it is ticked',
   assert.equal(/** @type {any} */ (assembleEffect(draft({ revives: true }))).revives, true);
   assert.equal('revives' in assembleEffect(draft({})), false);
 });
+
+test('the library and the spell form keep the conditions a heal ends', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Mend',
+        effect: { kind: 'heal', healing: [], removes: ['Blinded', ''], removesOneOf: 'Charmed, x' },
+      },
+      { name: 'Plain', effect: { kind: 'heal', healing: [], removes: 7 } },
+    ],
+  });
+  assert.deepEqual(/** @type {any} */ (lib.spells[0].effect).removes, ['Blinded']);
+  assert.deepEqual(/** @type {any} */ (lib.spells[0].effect).removesOneOf, ['Charmed', 'x']);
+  assert.equal('removes' in lib.spells[1].effect, false);
+  // The built-in restorations round-trip through the library unchanged.
+  for (const id of ['lesser-restoration', 'greater-restoration', 'heal']) {
+    const again = normalizeLibrary({ spells: [byId(id)] }).spells[0];
+    assert.deepEqual(again.effect, byId(id).effect, id);
+  }
+  const effect = /** @type {any} */ (
+    assembleEffect(
+      /** @type {any} */ ({
+        kind: 'heal',
+        damage: [],
+        removes: 'Blinded, Deafened',
+        removesOneOf: '',
+      }),
+    )
+  );
+  assert.deepEqual(effect.removes, ['Blinded', 'Deafened']);
+  assert.equal('removesOneOf' in effect, false);
+});

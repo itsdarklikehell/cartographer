@@ -155,9 +155,14 @@ export const LEVEL_6_TO_9 = [
     ritual: false,
     description:
       'The target regains 70 hit points, and its blindness, deafness, and diseases end. ' +
-      'A flat amount, so no dice roll behind it. The spell has no effect on undead or ' +
-      'constructs, which the GM rules.',
-    effect: { kind: 'heal', healing: [{ count: 0, sides: 8, damageType: 'healing', bonus: 70 }] },
+      'A flat amount, so no dice roll behind it. The app ends the Blinded and Deafened ' +
+      'chips. It tracks no diseases, so the GM rules those. The spell has no effect on ' +
+      'undead or constructs, which the GM rules.',
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 0, sides: 8, damageType: 'healing', bonus: 70 }],
+      removes: ['Blinded', 'Deafened'],
+    },
     scaling: { damagePerLevel: [{ count: 0, sides: 8, damageType: 'healing', bonus: 10 }] },
   },
   {

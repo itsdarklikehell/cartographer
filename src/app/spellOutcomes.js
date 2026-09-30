@@ -14,6 +14,7 @@ import { spendRollRiders } from './riderSpend.js';
 import { grantTempTo } from './tempHP.js';
 import { slayCombatant } from './slay.js';
 import { healBlocked, healBlockedLine } from '../entities/HealTarget.js';
+import { cureTarget } from './healCure.js';
 import { paren, poolLine, saveDetail, splitLine, unaffectedLine } from '../combat/SaveLines.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -135,6 +136,13 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
   }
   if (kind === 'heal') {
     const revives = spell.effect.revives === true;
+    // A spell with no healing dice (Lesser Restoration) only ends conditions,
+    // so it logs no heal line.
+    const heals = spell.effect.healing.length > 0;
+    // Each target's pick waits for the one before it, so two dialogs never
+    // open at once. The first target's cure runs at once, and it writes
+    // before this function returns unless it has to ask.
+    let cures = /** @type {Promise<void> | null} */ (null);
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       // A heal skips a dead target, and a spell that raises the dead skips a
       // living one. The log names the reason in place of the heal line.
@@ -144,11 +152,15 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         app.actions.logEvent('combat', healBlockedLine(spell.name, o.target.name, blocked));
         continue;
       }
-      app.actions.logEvent(
-        'combat',
-        `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
-      );
+      if (heals) {
+        app.actions.logEvent(
+          'combat',
+          `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
+        );
+      }
       applyToTarget(app, o.target.id, o.healing.total, true, { revives });
+      const id = o.target.id;
+      cures = cures ? cures.then(() => cureTarget(app, spell, id)) : cureTarget(app, spell, id);
     }
     app.toasts.show(`${spell.name} heals ${summary}.`);
     return;

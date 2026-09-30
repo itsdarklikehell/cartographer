@@ -162,6 +162,13 @@ export interface SpellHealEffect {
    * target, and it has no effect on a living one. Absent means the heal has no
    * effect on a dead target. */
   revives?: boolean;
+  /** The condition chips the heal ends on each target, matched by name
+   * without case (Heal ends Blinded and Deafened). `Exhaustion` names one
+   * level of exhaustion. Absent means the heal ends nothing. */
+  removes?: string[];
+  /** The chips of which the heal ends one, picked by the caster when the
+   * target has more than one (Lesser Restoration). Absent means no pick. */
+  removesOneOf?: string[];
 }
 
 /** A spell that puts a condition chip on each willing target, with no roll

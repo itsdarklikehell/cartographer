@@ -110,6 +110,30 @@ export const LEVEL_4_TO_5 = [
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'cold' }] },
   },
   {
+    id: 'greater-restoration',
+    name: 'Greater Restoration',
+    level: 5,
+    school: 'abjuration',
+    classes: ['bard', 'cleric', 'druid'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'diamond dust worth 100 gp', costGP: 100, consumed: true },
+    duration: { kind: 'instantaneous' },
+    concentration: false,
+    ritual: false,
+    description:
+      'End one effect on the target: one level of exhaustion, the charmed or petrified ' +
+      'condition, one curse, a reduction to one ability score, or a reduction to its hit ' +
+      'point maximum. The app ends a Charmed, Petrified, or Bestow Curse chip, or one ' +
+      'level of exhaustion. The GM rules a curse without a chip and the two reductions.',
+    effect: {
+      kind: 'heal',
+      healing: [],
+      removesOneOf: ['Exhaustion', 'Charmed', 'Petrified', 'Bestow Curse'],
+    },
+  },
+  {
     id: 'mass-cure-wounds',
     name: 'Mass Cure Wounds',
     level: 5,

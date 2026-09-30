@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 88. Three built-in spells come from
+lists 319 spells, and the app ships 89. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -29,7 +29,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
 | 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
-| 5th | Cone of Cold, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
+| 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
 | 7th | Finger of Death, Fire Storm |
 | 8th | Power Word Stun, Sunburst |
@@ -143,9 +143,11 @@ sorts the chosen targets by current HP, lowest first. Each target whose HP
 fits in what the pool has left takes the condition, and its HP comes out of
 the pool. The pool passes over a target at 0 HP, an Unconscious target, and
 a target that already has the condition of the spell. The log states the
-pool roll, and for each target whether the pool reached it. The log names
-no HP number per target, because a Player tab reads the same log, and the
-HP left in the pool would give away the exact HP of a foe.
+pool roll, and for each target whether the pool reached it. These lines are
+GM-only, because the pool total and the order of the walk bound the HP of
+each foe. A Player tab reads the dice of the pool and whether each target
+is affected, with no reason (see
+[GM-only lines](architecture/combat.md#gm-only-lines)).
 
 Sleep ends on a creature when that creature takes damage, including damage
 that its temporary hit points absorb. The printed spell does not affect
@@ -250,10 +252,10 @@ that the GM removes by hand. Outside a fight the chip lasts one round.
 
 ### Spells described in prose
 
-Eighteen built-in spells have the `utility` effect kind. Their rules exist
+Seventeen built-in spells have the `utility` effect kind. Their rules exist
 only as text in the description of each spell, and the GM applies them.
-Light, Lesser Restoration, and Counterspell are in the list because a GM
-notices when a spell this common is missing.
+Light and Counterspell are in the list because a GM notices when a spell
+this common is missing.
 
 The other fifteen are in `src/data/spells/utility.js`: Detect Magic,
 Disguise Self, Jump, Silent Image, Speak with Animals, Alter Self,
@@ -296,6 +298,15 @@ that it can. The description of each entry states the difference:
   within the last minute.
 - The healing spells have no effect on undead or constructs, which the GM
   rules.
+- Lesser Restoration ends a Blinded, Deafened, Paralyzed, or Poisoned chip,
+  and the caster picks one when the target has more than one. Heal ends the
+  Blinded and Deafened chips beside its 70 HP. The app tracks no diseases,
+  so the GM ends a disease.
+- Greater Restoration ends one level of exhaustion, or a Charmed, Petrified,
+  or Bestow Curse chip. The GM rules a curse without a chip, an ability score
+  reduction, and an HP maximum reduction.
+- A restoration that ends a chip from a concentration spell leaves the
+  caster concentrating.
 
 ## Spells that need a missing mechanic
 

@@ -65,8 +65,15 @@ export const LEVEL_2 = [
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'End one disease or the blinded, deafened, paralyzed, or poisoned condition.',
-    effect: { kind: 'utility' },
+    description:
+      'End one disease or the blinded, deafened, paralyzed, or poisoned condition. ' +
+      'The caster picks the condition when the target has more than one. The app tracks ' +
+      'no diseases, so the GM rules a disease.',
+    effect: {
+      kind: 'heal',
+      healing: [],
+      removesOneOf: ['Blinded', 'Deafened', 'Paralyzed', 'Poisoned'],
+    },
   },
   {
     id: 'blindness-deafness',

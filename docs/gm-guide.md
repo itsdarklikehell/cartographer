@@ -73,7 +73,9 @@ forward again.
 ## Drive a player-facing display
 
 A Player tab shows the world as your players see it: no GM notes, no exact
-HP for foes, and only the tiles that the party has revealed.
+HP for foes, and only the tiles that the party has revealed. Its log shows a
+version of each GM-only line without the secret number, such as the total of
+a Sleep pool or the save bonus of a foe.
 
 1. Click **Save** in your GM tab. Other tabs show only what you saved.
 2. In the **Party** panel below the map, click **Spectator tab** below the
@@ -719,7 +721,7 @@ creature in the current campaign.
 
 ### Add a missing spell
 
-The built-in list has 88 spells. A spell that you write uses the same
+The built-in list has 89 spells. A spell that you write uses the same
 fields as a built-in one, so you do not need to change any code.
 [Curated spells](spells-missing.md) says what the app can and cannot apply
 for you.
@@ -733,6 +735,13 @@ for you.
 4. Set how the spell scales: by slot level, or by caster level for a
    cantrip.
 5. Submit the form.
+
+A `heal` spell can also end condition chips. Type chip names, separated by
+commas, in **Ends** for the chips that the spell always ends, or in **Ends one
+of** for the chips of which it ends one. When the target has more than one
+chip of the second list, the app asks the caster which one to end. The name
+`Exhaustion` ends one level of exhaustion. Leave the healing dice empty for a
+spell that heals no HP, such as Lesser Restoration.
 
 If the rules of the spell need more than the app can apply, make it a
 `utility` spell and write the rules in the description. Then apply the

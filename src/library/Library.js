@@ -48,6 +48,7 @@ import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
 import { normalizeFeatRequirement } from '../entities/FeatRequirement.js';
+import { cureFields } from '../entities/HealCure.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -304,6 +305,7 @@ function normalizeSpell(raw, id) {
       healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES),
       ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
       ...(raw.effect.revives === true ? { revives: true } : {}),
+      ...cureFields(raw.effect),
     };
   } else if (kind === 'buff') {
     // An unnamed chip stays absent, and the cast falls back to the spell's

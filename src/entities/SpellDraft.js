@@ -14,6 +14,7 @@ import {
 } from './SpellFields.js';
 import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
+import { cureFields } from './HealCure.js';
 
 /**
  * This module turns the spell form's raw control values into a Spell. It is
@@ -50,6 +51,9 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [addsModifier] whether the heal or the attack kind adds
  *   the spellcasting ability modifier
  * @property {boolean} [revives] whether the heal kind raises the dead
+ * @property {string} [removes] the chips the heal kind ends, comma-separated
+ * @property {string} [removesOneOf] the chips of which the heal kind ends one,
+ *   comma-separated
  * @property {boolean} [melee] whether the attack kind is a melee spell attack
  * @property {boolean} [halfOnMiss] whether a miss of the attack kind deals half
  * @property {string} [until] the turn boundary that ends a save's condition
@@ -151,6 +155,7 @@ export function assembleEffect(draft) {
       healing: draft.damage,
       ...(draft.addsModifier ? { addsModifier: true } : {}),
       ...(draft.revives ? { revives: true } : {}),
+      ...cureFields(draft),
     };
   }
   // A summons with no template names nothing to spawn, so it casts nothing and
