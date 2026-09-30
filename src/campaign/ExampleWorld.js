@@ -109,6 +109,20 @@ export const REGIONS = [
 const START_REGION = 'briarwick-vale';
 
 /**
+ * The name of the key item that opens the barrow. Odo gives the warding key,
+ * or Sella recasts the counter-key into one, and the GM then adds an item of
+ * this name to the inventory of the character who takes it.
+ */
+export const WARDING_KEY = 'Warding Key';
+
+/**
+ * The locks of the example maps, by node id. A locked map stops the party at
+ * the way in until a character carries the key item or the GM unlocks it.
+ * @type {Record<string, import('../types/map.js').NodeLock>}
+ */
+const LOCKS = { barrow: { requires: WARDING_KEY, open: false } };
+
+/**
  * One region's plan for its story, filled by a stage function of
  * `ExampleRegions.js`. `overrides` gives the fixed id and choices of each
  * story site, keyed by site index. `places` collects the spots on the
@@ -202,7 +216,8 @@ export function buildExampleWorld(palette) {
   );
   for (const { id, name, parentId, width, height, kind, environ, tiles } of nodes) {
     const node = createMapNode(id, name, parentId, width, height, { kind, environ });
-    grid.addNode(withNodeTiles(node, tiles));
+    const lock = LOCKS[id];
+    grid.addNode(withNodeTiles(lock ? { ...node, lock: { ...lock } } : node, tiles));
   }
   return { grid, places };
 }

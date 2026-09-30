@@ -237,6 +237,12 @@ The story is about King Ostrand, who has risen in his barrow. Castellan
 Irenne Vane of Thornhold secretly works to free him. Each side quest gives
 a clue about the Castellan or a tool for the fight in the barrow.
 
+The Barrow of the Old King starts locked. Its lock needs an item named
+Warding Key. The hermit Odo gives the key, or the smith Sella recasts the
+counter-key from the crates of Dorn into one. When the party gets it, add
+an item of that name to the inventory of one character. You can also unlock
+the barrow at any time.
+
 The quest steps that would expose the Castellan stay hidden from the
 players until you reveal them. Her secret is only in GM notes. The party
 already knows four contacts: Dorn, Corvin, Lord Aldemar, and the Castellan.

@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
-import { REGIONS, WORLD_SEED } from '../src/campaign/ExampleWorld.js';
+import { REGIONS, WARDING_KEY, WORLD_SEED } from '../src/campaign/ExampleWorld.js';
 import { isStandable, tileDistance } from '../src/campaign/ExampleStaging.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { getTile, overlayList } from '../src/map/TileGrid.js';
@@ -128,6 +128,18 @@ test('every linked tile names a node, and every node but the world is linked', (
     }
   }
   assert.equal(linked.size, grid.nodes.size - 1);
+});
+
+test('only the barrow starts locked, and both routes to its key name the key item', () => {
+  const locked = [...grid.nodes.values()].filter((n) => n.lock);
+  assert.deepEqual(
+    locked.map((n) => n.id),
+    ['barrow'],
+  );
+  assert.deepEqual(nodeOf('barrow').lock, { requires: WARDING_KEY, open: false });
+  for (const id of ['hermit-odo', 'sella-the-smith']) {
+    assert.ok(creature(id).notes.includes(`an item named ${WARDING_KEY}`), id);
+  }
 });
 
 test('the story places are the expected generated maps', () => {

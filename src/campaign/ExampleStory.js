@@ -178,7 +178,7 @@ export function exampleQuests(at) {
     quest(
       'the-barrow-king',
       'The Barrow of the Old King',
-      'King Ostrand has risen in his tomb, and the ward is all that keeps him there. Open the door with the warding key, go down through his court of skeletons and the grave wight, and end him at his tomb. If Irenne recasts the counter-key and opens the door first (on day 8, unless the party stops her), the dead of the barrow walk the Barrowdowns until he falls.',
+      'King Ostrand has risen in his tomb, and the ward is all that keeps him there. The barrow map starts locked and needs an item named Warding Key. Odo gives one, or Sella recasts the counter-key into one. Open the door with the warding key, go down through his court of skeletons and the grave wight, and end him at his tomb. If Irenne recasts the counter-key and opens the door first (on day 8, unless the party stops her), the dead of the barrow walk the Barrowdowns until he falls.',
       {
         steps: [
           step('Open the barrow door with the warding key'),

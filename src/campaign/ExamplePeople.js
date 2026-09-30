@@ -48,7 +48,7 @@ export function people(at) {
       role: 'Blacksmith of Briarwick',
       disposition: 'friendly',
       notes:
-        'Buys ore and sells and repairs arms. She can recast a broken warding key, but only from pale silver out of Hollowvein or the lost tithe of the Silver Road. She sold a key mold of the old pattern to a Thornhold rider last spring and regrets it. If the Castellan or the Pale-sworn bring her the counter-key on day 6, she recasts it under threat.',
+        'Buys ore and sells and repairs arms. She can recast a broken warding key, but only from pale silver out of Hollowvein or the lost tithe of the Silver Road. She sold a key mold of the old pattern to a Thornhold rider last spring and regrets it. When she recasts the counter-key for the party, add an item named Warding Key to the inventory of the character who takes it, because the barrow lock opens for that name. If the Castellan or the Pale-sworn bring her the counter-key on day 6, she recasts it under threat.',
       stats: { STR: 15, CON: 14 },
       location: at('sella'),
     }),
@@ -75,7 +75,7 @@ export function people(at) {
       role: 'Hermit of Graypeak',
       disposition: 'neutral',
       notes:
-        'The last of the warden line that keeps the warding key. Half-deaf and stubborn. He will not come down while Skalvyr hunts over the hermitage, and he gives the key only to someone who swears the oath of the wardens. He knows that a counter-key cut from the same silver can also open the door, but only after a smith recasts it whole with more pale silver.',
+        'The last of the warden line that keeps the warding key. Half-deaf and stubborn. He will not come down while Skalvyr hunts over the hermitage, and he gives the key only to someone who swears the oath of the wardens. He knows that a counter-key cut from the same silver can also open the door, but only after a smith recasts it whole with more pale silver. When he gives the key, add an item named Warding Key to the inventory of the character who swears the oath, because the barrow lock opens for that name.',
       stats: { CON: 13, INT: 13, WIS: 16 },
       location: at('odo'),
     }),
