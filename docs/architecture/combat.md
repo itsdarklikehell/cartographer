@@ -375,6 +375,20 @@ no ward in reach finishes before it returns, so a suite that calls one
 without `await` reads the result on the next line. Each takes an `ask`
 option in place of `confirmModal`, and a test passes its own answer there.
 
+### The damage reaction pause
+
+A weapon hit's damage roll is a second trigger that the app sees.
+`src/app/damageWard.js` offers the defender a reaction spell whose buff chip
+resists a damage type in the hit, through `mods.resist` or a
+`resistChoice` pick list. `pendingDamageWard` uses the same gates as
+`pendingWard`. The pure `DamageWard.wardType` picks the type: the one in
+the hit that the spell can resist, that the defender does not resist or
+ignore already, and that deals the most damage. `offerDamageWard` casts the
+spell through `resolveCast` with that type as the `resist-type` answer, so
+the chip resists it. `rollWeaponAttack` asks after `hitDamage` rolls and
+before `defendedDamage` reads the defenses, so the new chip halves the hit.
+A spell attack and a save spell do not pause for this reaction yet.
+
 ### Weapon options in the attack dialog
 
 `src/combat/AttackOptions.js` decides which per-swing options a weapon

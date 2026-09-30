@@ -1124,6 +1124,17 @@ or the Player tab bound to that character. When a player attacks a foe
 that knows Shield, the attack does not pause. Cast the foe's Shield from
 its reaction control, and undo the damage by hand.
 
+### Resisting a hit
+
+When a weapon hit deals a damage type that a combatant's reaction spell can
+resist, a Reaction dialog opens after the damage roll and before the damage
+lands. The spell is a buff that casts as a reaction, and its chip resists
+the type through **Resists** or **Caster picks one of**. Press **Cast** to
+cast it with that type picked, so the hit deals half of that type. Press
+**Take the damage** to let the hit land as rolled. The dialog follows the
+same tab rule as Shield. A spell attack or a save spell does not open it,
+so cast the spell from the reaction control and fix the damage by hand.
+
 ### Cover and Sneak Attack
 
 You decide both of these in the attack dialog. The app tracks no distance

@@ -10,6 +10,7 @@ import { findCombatant, combatantsAsTargets, defendedDamage } from './combatants
 import { applyToTarget } from './combatantWrites.js';
 import { spendRollRiders, spendOnceChips } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
+import { offerDamageWard, pendingDamageWard } from './damageWard.js';
 import { attackDialog } from './attackFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -193,30 +194,37 @@ export function rollWeaponAttack(
     if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
     // A weapon that is neither flagged magical nor a pact weapon counts as
     // nonmagical, so Stoneskin resists its hit.
-    const taken = defendedDamage(app, defender.id, damage.byType, {
-      nonmagical: !weaponIsMagical(attacker, weapon),
-    });
-    const lines = hitLines({
-      weapon,
-      defenderName: defender.name,
-      crit,
-      damage,
-      sneakDice,
-      riderNote,
-      taken,
-    });
-    app.actions.logEvent('combat', lines.log);
-    // Applies the damage on the spot through the shared write path. Every
-    // combatant tracks HP, and the function logs a defeat or a drop to 0
-    // only once.
-    applyToTarget(app, defender.id, taken.total, false, { crit });
-    app.toasts.show(lines.toast);
+    const defense = { nonmagical: !weaponIsMagical(attacker, weapon) };
+    const strike = () => {
+      const taken = defendedDamage(app, defender.id, damage.byType, defense);
+      const lines = hitLines({
+        weapon,
+        defenderName: defender.name,
+        crit,
+        damage,
+        sneakDice,
+        riderNote,
+        taken,
+      });
+      app.actions.logEvent('combat', lines.log);
+      // Applies the damage on the spot through the shared write path. Every
+      // combatant tracks HP, and the function logs a defeat or a drop to 0
+      // only once.
+      applyToTarget(app, defender.id, taken.total, false, { crit });
+      app.toasts.show(lines.toast);
+    };
+    // A defender with a reaction spell that resists a type in the hit gets
+    // the question after the damage roll and before the damage lands.
+    const guard = pendingDamageWard(app, defender.id, attacker.id, damage.byType, defense);
+    if (!guard) return strike();
+    const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} for ${damage.total} damage.`;
+    return offerDamageWard(app, guard, hitLine, { ask }).then(strike);
   };
   if (ward && result.total < ac + ward.bonus) {
     const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} (${result.total} vs AC ${ac}).`;
     return offerWard(app, ward, hitLine, { ask }).then(land);
   }
-  land(0);
+  return land(0);
 }
 
 /**
