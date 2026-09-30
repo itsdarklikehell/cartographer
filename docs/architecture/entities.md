@@ -304,7 +304,9 @@ and a magic weapon get through Stoneskin. The `magical` field is a plain
 boolean on an inventory weapon, a library weapon template, and an
 `EnemyWeapon`. `assembleItem`, `normalizeLibrary`, and `copyEnemyWeapon`
 keep it only when it is `true`, so any code that sets the field to `true`
-marks a weapon magical.
+marks a weapon magical. `MagicWeapon.weaponIsMagical(attacker, weapon)`
+makes the call for a weapon hit. It also counts the pact weapon of a Pact
+of the Blade warlock, through `PactWeapon.isPactWeapon`.
 
 A buff effect with a `resistChoice` list (Protection from Energy) adds a
 Resist select to the cast dialog in `app/spellCastFields.js`.
@@ -764,8 +766,9 @@ warlock with Thirsting Blade (the `pactAttack` effect) and a marked pact
 weapon. `pactDamage` gives the flat necrotic term of Lifedrinker (the
 `pactDamage` effect), equal to the CHA modifier with a minimum of 1, for a hit
 with the pact weapon. The weapon swing adds that term after the crit
-doubling, because a crit doubles only dice. The equipment model has no
-magic flag, so the pact weapon does not count as magical for resistance.
+doubling, because a crit doubles only dice. `MagicWeapon.weaponIsMagical`
+calls `isPactWeapon`, so the pact weapon counts as magical against
+Stoneskin.
 
 ### Load-time defaults
 

@@ -1565,3 +1565,32 @@ test('Stoneskin halves a nonmagical weapon hit, and a magical weapon gets throug
     assert.equal(app.state.creatures[0].currentHP, 20 - taken);
   }
 });
+
+test('Stoneskin does not resist a hit from a Pact of the Blade pact weapon', () => {
+  const hero = {
+    ...makeHero({ STR: 16 }),
+    classes: [{ classId: 'warlock', level: 3 }],
+    level: 3,
+    pactBoon: 'blade',
+    pactWeapon: SWORD.id,
+    inventory: [SWORD],
+  };
+  const goblin = {
+    ...createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 20,
+      stats: { AC: 10 },
+      location: HERE,
+      level: 1,
+    }),
+    conditions: [{ name: 'Stoneskin', rounds: 600, mods: { resistNonmagical: true } }],
+  };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.state.creatures[0].currentHP, 12);
+});

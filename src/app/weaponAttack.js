@@ -1,4 +1,5 @@
 import { promptModal } from '../ui/Modal.js';
+import { weaponIsMagical } from '../entities/MagicWeapon.js';
 import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
@@ -190,10 +191,10 @@ export function rollWeaponAttack(
     // Sneak Attack adds its dice only on a hit, so the flag is spent here
     // rather than beside the swing.
     if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
-    // A weapon without a true `magical` flag counts as nonmagical, so
-    // Stoneskin resists its hit.
+    // A weapon that is neither flagged magical nor a pact weapon counts as
+    // nonmagical, so Stoneskin resists its hit.
     const taken = defendedDamage(app, defender.id, damage.byType, {
-      nonmagical: weapon.magical !== true,
+      nonmagical: !weaponIsMagical(attacker, weapon),
     });
     const lines = hitLines({
       weapon,

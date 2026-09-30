@@ -1225,7 +1225,9 @@ chip can add resistances too. Stoneskin resists bludgeoning, piercing, and
 slashing from a nonmagical weapon, and a spell gets through it. Protection
 from Energy resists the one type that the caster picks at the cast. A weapon
 counts as magical when the **Magical weapon** box in its item form is
-ticked. A creature takes the flag from the library weapon that arms it. The
+ticked, and the pact weapon of a Pact of the Blade warlock counts as
+magical too. A creature takes the flag from the library weapon that arms
+it. The
 log names each defense that changed the damage, with the amount taken.
 
 The Damage button on the combat screen and on the panels deals the typed
