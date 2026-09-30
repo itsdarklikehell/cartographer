@@ -336,7 +336,9 @@ export function readableScale(tileSize) {
  * east band is wide, and room for it shrinks a map on a narrow canvas far
  * more than the band needs, so that band slides clear of the map instead. A
  * tall occluder at the top corner, such as the mini-map, pushes the left or
- * right side past it. A wide occluder at the top, such as the zoom toolbar,
+ * right side past it. On the left, the side also keeps `lead` past the
+ * occluder for the row labels. With only a small inset there, the labels of
+ * the first rows of a map taller than the canvas draw under the mini-map. A wide occluder at the top, such as the zoom toolbar,
  * pushes the top side below it, with half of `lead` left for the column
  * labels.
  * @param {{
@@ -364,7 +366,7 @@ export function fitSides(opts) {
   for (const o of opts.occluders ?? []) {
     if (o.y > inset * 2) continue;
     if (o.w > o.h) sides.top = Math.max(sides.top, o.y + o.h + lead / 2);
-    else if (o.x <= inset * 2) sides.left = Math.max(sides.left, o.x + o.w + inset);
+    else if (o.x <= inset * 2) sides.left = Math.max(sides.left, o.x + o.w + lead);
     else if (o.x + o.w >= canvasWidth - inset * 2) {
       sides.right = Math.max(sides.right, canvasWidth - o.x + inset);
     }

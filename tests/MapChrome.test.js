@@ -119,7 +119,7 @@ test('fitSides keeps the map clear of chrome at the top of the canvas', () => {
     occluders: [miniMap, toolbar, rightPanel, low, middle],
     canvasWidth: 900,
   });
-  assert.deepEqual(sides, { top: 80, right: 128, bottom: 16, left: 170 });
+  assert.deepEqual(sides, { top: 80, right: 128, bottom: 16, left: 226 });
 });
 
 test('fitToExtent uses the sides it is given', () => {
