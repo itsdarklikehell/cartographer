@@ -7,8 +7,9 @@ import { endSpellEffects } from './combatantWrites.js';
 /**
  * Spend game time on every timed effect in the campaign: the Time panel's
  * Advance button and both rests call this with the watches that passed. A
- * condition, a creature stat modifier, or a concentration that runs out
- * ends, and a concentration that ends also ends the chips and summons its
+ * short rest passes a quarter watch, which is one hour. A condition, a
+ * creature stat modifier, or a concentration that runs out ends, and a
+ * concentration that ends also ends the chips and summons its
  * spell holds on other entities. A collection with nothing timed in it
  * keeps its identity, so the roster caches keyed on it stay warm.
  * @param {AppContext} app

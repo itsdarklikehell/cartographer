@@ -23,6 +23,7 @@ import {
   advanceToDawn,
   advanceWatches,
   formatClock,
+  MINUTES_PER_WATCH,
   watchesBetween,
 } from '../time/GameClock.js';
 import { passTime } from './passTime.js';
@@ -35,6 +36,9 @@ import { rosterActions } from './rosterActions.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
+
+/** The length of a 5e short rest. */
+const SHORT_REST_MINUTES = 60;
 
 /**
  * This module builds the party's panels: the roster, character sheet,
@@ -315,8 +319,10 @@ export function wireParty(app) {
         }
         return out.character;
       });
-      state.clock = advanceWatches(state.clock, 1);
-      passTime(app, 1);
+      // A short rest lasts one hour. The timed effects lose that hour even
+      // when the clock stays inside one watch, so a 10-minute spell ends.
+      state.clock = advanceMinutes(state.clock, SHORT_REST_MINUTES);
+      passTime(app, SHORT_REST_MINUTES / MINUTES_PER_WATCH);
       scope.reselect();
       timePanel.update();
       app.actions.logEvent(

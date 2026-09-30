@@ -2150,7 +2150,7 @@ on, by the time that [Party movement](#party-movement) lists for each map.
 | Button | Time passed | Effect |
 | --- | --- | --- |
 | Advance | One watch | None beyond the time |
-| Short rest | One watch | Refills pact slots and each short-rest feature pool (see [Class feature pools](#class-feature-pools)). Restores no HP, because in 5e only spent hit dice heal on a short rest |
+| Short rest | One hour | Refills pact slots and each short-rest feature pool (see [Class feature pools](#class-feature-pools)). Restores no HP, because in 5e only spent hit dice heal on a short rest |
 | Long rest | Until the next Dawn, at least two watches | Restores HP and every resource, refills the spell slots, and takes one level of exhaustion off each character |
 
 | Unit | Length |
