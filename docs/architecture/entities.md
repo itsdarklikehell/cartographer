@@ -1445,8 +1445,8 @@ back into its parts. A roll from the sheet has no DC.
 A character gets expertise in two ways. The Expertise features of the Rogue
 and the Bard grant it through the pending-grant flow (see
 [Class features](#class-features)). The Set expertise button in the Progression
-section lets the GM grant it by hand, for subclasses and homebrew. The button
-opens a multiselect over the character's proficient skills and commits through
+section lets the GM grant it by hand to any character with a skill
+proficiency, for subclasses and homebrew. The button opens a multiselect over the character's proficient skills and commits through
 `Progression.withExpertise`. A creature has no expertise, so its bonus comes
 from its training alone.
 

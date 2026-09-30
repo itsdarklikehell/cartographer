@@ -1903,9 +1903,10 @@ The picks show in the class features list with a Change button. An
 unclaimed grant waits in the Progression block as a pending feature choice
 with a Choose button. The **Set expertise** button is a manual grant with
 no maximum, for a subclass or homebrew feature that the class catalog does
-not model. The button shows only for a character with a class feature or a
-feat that grants expertise, or with expertise already on record, so a
-Fighter with none of these does not see it.
+not model. The button shows to the GM for any character with at least
+one skill proficiency, and it offers only the proficient skills. The line
+"No expertise chosen" shows only for a character with a class feature or a
+feat that grants expertise.
 
 ### Creation and progression
 

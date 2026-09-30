@@ -203,7 +203,8 @@ export function buildProgressSection(getCharacter, opts) {
   // Expertise doubles a skill proficiency. The Bard and Rogue features grant
   // it through the pending-grant flow above. This row is the GM's hand grant
   // for subclasses and homebrew, with no maximum. Only proficient skills are
-  // offered, which is the one rule the normalizer enforces anyway. The row
+  // offered, which is the one rule the normalizer enforces anyway. The
+  // button shows for any character with a skill proficiency. The status text
   // shows only for a character with a source of expertise (see
   // ExpertiseSources.js), so a Fighter does not read "No expertise chosen".
   async function runExpertise() {
@@ -226,14 +227,16 @@ export function buildProgressSection(getCharacter, opts) {
   }
 
   const { skills, expertise } = getProficiencies(character);
-  if (opts.editBase && skills.length > 0 && hasExpertiseSource(character)) {
+  if (opts.editBase && skills.length > 0) {
     const row = addRow();
-    addText(
-      row,
-      expertise.length > 0
-        ? `Expertise: ${expertise.map(skillName).join(', ')}`
-        : 'No expertise chosen',
-    );
+    if (hasExpertiseSource(character)) {
+      addText(
+        row,
+        expertise.length > 0
+          ? `Expertise: ${expertise.map(skillName).join(', ')}`
+          : 'No expertise chosen',
+      );
+    }
     row.appendChild(
       textButton('Set expertise', runExpertise, {
         ariaLabel: 'Choose which skills have expertise',
