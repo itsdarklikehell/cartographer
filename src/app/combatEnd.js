@@ -70,8 +70,9 @@ const fateField = (/** @type {string} */ id) => `fate:${id}`;
  * unplaced, because an unplaced creature shows on every tile.
  * @param {AppContext} app
  * @param {FightEnd} end
+ * @param {{ prompt?: typeof promptModal }} [opts] `prompt` renders the dialog, and a test passes its own
  */
-export async function offerFightXP(app, end) {
+export async function offerFightXP(app, end, { prompt = promptModal } = {}) {
   const count = end.earners.length;
   if (end.outcome === 'defeat' || count === 0) return;
   const foes = end.standingFoes;
@@ -80,7 +81,7 @@ export async function offerFightXP(app, end) {
   const totalOf = (get) => end.xp + sortFates(foes, (id) => get(fateField(id))).xp;
   const caption = (/** @type {number} */ total) =>
     `XP per character (${splitCaption(total, count)})`;
-  const values = await promptModal(
+  const values = await prompt(
     'Award XP for the fight',
     [
       ...foes.map((foe) => ({
