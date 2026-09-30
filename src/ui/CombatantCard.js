@@ -26,6 +26,16 @@ import { deathSaveStatus } from '../view/DeathSaveView.js';
  */
 
 /**
+ * The legendary actions a creature can take on somebody else's turn: how many
+ * are left before its own turn, and one attack button per weapon.
+ * @typedef {{
+ *   left: number,
+ *   weapons: (InventoryItem | EnemyWeapon)[],
+ *   onAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ * }} LegendaryControl
+ */
+
+/**
  * The word each death-save position wears as a chip.
  * @type {Record<import('../view/DeathSaveView.js').DeathSaveStatus, string>}
  */
@@ -63,6 +73,7 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  *   onSelect?: (id: string) => void,
  *   loadout?: Loadout | null,
  *   reaction?: ReactionControl | null,
+ *   legendary?: LegendaryControl | null,
  * }} [selection]
  * @returns {HTMLElement}
  */
@@ -138,8 +149,9 @@ export function combatantCard(row, selection = {}) {
   }
 
   const reaction = selection.reaction ? reactionRow(row, selection.reaction) : null;
-  if (!reaction) return card;
-  return el('div', 'combatant-slot', card, reaction);
+  const legendary = selection.legendary ? legendaryRow(row, selection.legendary) : null;
+  if (!reaction && !legendary) return card;
+  return el('div', 'combatant-slot', card, reaction, legendary);
 }
 
 /**
@@ -178,6 +190,36 @@ function reactionRow(row, reaction) {
     'combatant-card__reaction',
     sectionLabel('Reaction', { className: 'combatant-card__reaction-label' }),
     el('div', 'combatant-card__reaction-buttons u-row u-wrap u-g1', ...buttons),
+  );
+}
+
+/**
+ * The legendary action controls: one attack button per weapon, under a label
+ * that counts the legendary actions left. Each attack spends one of them.
+ * Returns null for a creature with no weapon.
+ * @param {CombatantRow} row
+ * @param {LegendaryControl} legendary
+ * @returns {HTMLElement | null}
+ */
+function legendaryRow(row, legendary) {
+  if (legendary.weapons.length === 0) return null;
+  const name = row.name ?? 'Unknown combatant';
+  const label = `Legendary action (${legendary.left} left)`;
+  return el(
+    'div',
+    'combatant-card__reaction combatant-card__legendary',
+    sectionLabel(label, { className: 'combatant-card__reaction-label' }),
+    el(
+      'div',
+      'combatant-card__reaction-buttons u-row u-wrap u-g1',
+      ...legendary.weapons.map((weapon) =>
+        textButton(weapon.name, () => legendary.onAttack(weapon), {
+          icon: 'sword',
+          ariaLabel: `Legendary action by ${name}: attack with ${weapon.name}, ${legendary.left} left`,
+          title: `Attack with ${weapon.name}, which spends one legendary action of ${name}`,
+        }),
+      ),
+    ),
   );
 }
 

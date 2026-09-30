@@ -158,6 +158,9 @@ export interface Creature extends HPBuffFields {
   /** The legendary resistances the creature has each day, from 1 to 5.
    * Absent means none. */
   legendaryResistance?: number;
+  /** How many uses of Legendary Resistance the creature spent since the last
+   * long rest. Absent means none. */
+  legendaryResistanceUsed?: number;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;

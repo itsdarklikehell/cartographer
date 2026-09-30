@@ -7,7 +7,13 @@ import {
 } from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
-import { SWINGS, isWeakSwing, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
+import {
+  SWINGS,
+  isWeakSwing,
+  legendarySwing,
+  readAttackTweaks,
+  swingKind,
+} from '../combat/AttackTweaks.js';
 import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponSwing.js';
 import { conditionsOf, isDowned } from '../combat/CombatView.js';
 import { canAct } from '../entities/ConditionEffects.js';
@@ -139,10 +145,11 @@ export function rollWeaponAttack(
   // attack bank. `freeAction` comes from the dialog's opt-out and skips the
   // whole question. Outside a running fight there is no turn to spend, and the
   // action reports success.
-  const swing = SWINGS[swingKind(tweaks)];
+  const kind = swingKind(tweaks);
+  const swing = kind === 'legendary' ? legendarySwing(attacker, self) : SWINGS[kind];
   if (!tweaks.freeAction && app.actions.spendBudget) {
-    // Only the Attack action banks swings behind it, so only that cost carries
-    // the count.
+    // Only the Attack action banks swings behind it, so only that cost passes
+    // the count. A legendary swing passes the legendary actions per round.
     const spent = app.actions.spendBudget(
       attacker.id,
       swing.cost,
@@ -151,7 +158,9 @@ export function rollWeaponAttack(
             attacksPerAction: swingsPerAction(attacker, weapon),
             extraAction: hasExtraAction(attacker.conditions),
           }
-        : {},
+        : swing.cost === 'legendary'
+          ? { legendaryActions: attacker.legendaryActions }
+          : {},
     );
     if (!spent) {
       app.toasts.show(`${logName(app, attacker)} ${swing.blocked}.`);
@@ -314,6 +323,7 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
  *   defenderId?: string | null,
  *   offhand?: boolean,
  *   reaction?: boolean,
+ *   legendary?: boolean,
  *   prompt?: typeof promptModal,
  * }} [options] If a defender is already picked on the combat board, it pre-fills
  *   [options] If a defender is already picked on the combat board, it pre-fills
@@ -321,7 +331,8 @@ function swingAt(app, { attacker, defender, weapon, tweaks, rng, ask, swing }) {
  *   then press Enter. `offhand` makes this the second swing of two-weapon
  *   fighting, which costs the bonus action and drops the ability bonus from its
  *   damage. `reaction` makes it an opportunity attack, which costs the reaction
- *   and can come on another combatant's turn.
+ *   and can come on another combatant's turn. `legendary` makes it a legendary
+ *   action of a creature, which costs one of its legendary actions.
  *   `prompt` renders the dialog, and a test passes its own answers.
  */
 export async function weaponAttack(
@@ -329,7 +340,13 @@ export async function weaponAttack(
   combat,
   participant,
   weapon,
-  { defenderId = null, offhand = false, reaction = false, prompt = promptModal } = {},
+  {
+    defenderId = null,
+    offhand = false,
+    reaction = false,
+    legendary = false,
+    prompt = promptModal,
+  } = {},
 ) {
   const sides = attackParticipants(app, combat, participant);
   if (!sides) return;
@@ -346,10 +363,11 @@ export async function weaponAttack(
     defenderId,
     offhand,
     reaction,
+    legendary,
   });
   const values = await prompt(dialog.title, dialog.fields, dialog.options);
   if (!values) return;
-  const tweaks = { ...readAttackTweaks(values), offhand, reaction };
+  const tweaks = { ...readAttackTweaks(values), offhand, reaction, legendary };
   // A ticked Multiattack box rolls each swing in turn against the same
   // target. Each swing reads both sides again, so a defender that drops
   // stops the rest with no toast of its own, and each swing logs its own

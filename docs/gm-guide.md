@@ -505,6 +505,24 @@ tab.
 [Combat screen](gm-reference.md#combat-screen) in the GM reference describes
 each area of the screen.
 
+### Run a legendary creature
+
+1. In the creature dialog, type **Legendary actions per round** and
+   **Legendary resistance per day** from the stat block.
+2. In the fight, when the turn of another combatant ends, look at the card
+   of the creature. The row **Legendary action (N left)** has one button per
+   weapon.
+3. Click a weapon to attack. The swing spends one legendary action. Do this
+   before you click **Next turn**.
+4. When the creature fails the save of a spell or of Turn Undead, a dialog
+   asks whether it uses legendary resistance. Click **Succeed instead** to
+   spend one use.
+
+The legendary actions come back when the turn of the creature starts. The
+uses of legendary resistance come back when the party takes a long rest.
+See [Legendary actions](gm-reference.md#legendary-actions) and
+[Legendary resistance](gm-reference.md#legendary-resistance).
+
 ### Adjust a stat for a few rounds
 
 1. In Play mode, find the row of the creature in the **Encounters** panel.

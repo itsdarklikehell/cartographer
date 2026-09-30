@@ -78,6 +78,11 @@ export interface ActionBudget {
    * the action stays free for one more full action.
    */
   spare: boolean;
+  /**
+   * How many legendary actions the creature spent since the start of its own
+   * turn. The count goes back to 0 when its next turn starts.
+   */
+  legendary: number;
 }
 
 /** How a participant is presented, derived from the entity holding its id. */

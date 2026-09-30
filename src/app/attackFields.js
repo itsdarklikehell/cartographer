@@ -42,6 +42,7 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
  *   defenderId: string | null,
  *   offhand: boolean,
  *   reaction: boolean,
+ *   legendary?: boolean,
  * }} request
  * @returns {{
  *   title: string,
@@ -57,6 +58,7 @@ export function attackDialog({
   defenderId,
   offhand,
   reaction,
+  legendary = false,
 }) {
   // Every attack pauses at a pre-roll dialog. The dialog picks the defender
   // and applies any situational overrides: bonus or penalty dice on the
@@ -98,10 +100,11 @@ export function attackDialog({
           { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
         ]
     : [];
-  const swing = SWINGS[swingKind({ offhand, reaction })];
+  const kind = swingKind({ offhand, reaction, legendary });
+  const swing = SWINGS[kind];
   const cannotPay = !canSwing(
     participant,
-    swingKind({ offhand, reaction }),
+    kind,
     swingsPerAction(attacker, weapon),
     hasExtraAction(attacker.conditions),
   );
@@ -110,7 +113,7 @@ export function attackDialog({
   // The box shows only while the Attack action is unspent, because a spent
   // action leaves only the banked swings.
   const volley =
-    !offhand && !reaction && canSpend(participant, 'action')
+    kind === 'main' && canSpend(participant, 'action')
       ? coerceMultiattack(attacker.multiattack)
       : undefined;
   return {

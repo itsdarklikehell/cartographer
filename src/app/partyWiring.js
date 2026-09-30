@@ -1,5 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
 import { shortRest, longRest, transferItem } from '../entities/Character.js';
+import { restoreResistance } from '../combat/LegendaryResistance.js';
 import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
@@ -369,6 +370,9 @@ export function wireParty(app, reloadView = null) {
         if (choice === 'dawn') after = dawn;
       }
       state.characters = state.characters.map(longRest);
+      // A legendary creature gets its uses of Legendary Resistance back.
+      const rested = state.creatures.map(restoreResistance);
+      if (rested.some((c, i) => c !== state.creatures[i])) state.creatures = rested;
       state.clock = after;
       passTime(app, watchesBetween(before, after));
       scope.reselect();

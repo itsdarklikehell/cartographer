@@ -44,6 +44,8 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  *   onOffhandAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onOpportunityAttack: (id: string, weapon: InventoryItem | EnemyWeapon) => void,
  *   onReactionCast: (id: string, spell: Spell) => void,
+ *   getWeapons?: (id: string) => (InventoryItem | EnemyWeapon)[],
+ *   onLegendaryAttack?: (id: string, weapon: InventoryItem | EnemyWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
@@ -86,6 +88,9 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  * still free. An opportunity attack or a reaction spell reports through
  * `onOpportunityAttack` and `onReactionCast`, with the id, because the
  * combatant that reacts is not the one taking the turn.
+ * A creature with legendary actions left gets a second row on those cards.
+ * Its buttons attack with each weapon from `getWeapons`, and report through
+ * `onLegendaryAttack` with the id.
  *
  * `diceDock` is an empty slot under the active column. The host parks the
  * app's dice-tray card there while the mode is active. The right column
@@ -314,6 +319,26 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
+   * The legendary action controls for one card, or null. 5e spends a
+   * legendary action at the end of another combatant's turn, so the active
+   * card gets none. The creature also has to be able to act, and have a
+   * legendary action left.
+   * @param {CombatantRow} row
+   * @param {string | null} activeId
+   * @returns {import('./CombatantCard.js').LegendaryControl | null}
+   */
+  function legendaryFor(row, activeId) {
+    const { getWeapons, onLegendaryAttack } = callbacks;
+    if (!getWeapons || !onLegendaryAttack || row.legendaryLeft <= 0) return null;
+    if (row.id === activeId || !row.mayAct || row.defeated || row.incapacitated) return null;
+    return {
+      left: row.legendaryLeft,
+      weapons: getWeapons(row.id),
+      onAttack: (weapon) => onLegendaryAttack(row.id, weapon),
+    };
+  }
+
+  /**
    * @param {string} label
    * @param {CombatantRow[]} rows
    * @param {string | null} selectedId
@@ -334,6 +359,7 @@ export function mountCombatScreen(container, callbacks) {
                 selected: row.id === selectedId,
                 loadout: loadoutOf(row.id),
                 reaction: reactionFor(row, activeId),
+                legendary: legendaryFor(row, activeId),
                 onSelect: (id) => {
                   callbacks.onSelectTarget(id);
                   render();

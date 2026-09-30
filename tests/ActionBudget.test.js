@@ -50,6 +50,7 @@ test('freshBudget spends nothing', () => {
     extra: false,
     surged: false,
     spare: false,
+    legendary: 0,
   });
 });
 
@@ -83,6 +84,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       extra: false,
       surged: false,
       spare: false,
+      legendary: 0,
     },
   );
 });

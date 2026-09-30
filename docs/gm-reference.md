@@ -1073,8 +1073,8 @@ Build mode, from Play mode, and from the tile menu.
 | Multiattack: attack with disadvantage | Blank (none) | The swing of the Multiattack that rolls with disadvantage, such as 2 for the second attack. Blank, or a number past the last swing, stores none |
 | Redirect Attack (reaction: an ally becomes the target) | Off | When an attack targets the creature, the app offers to make an ally the target instead. See [Redirect Attack](#redirect-attack) |
 | Turn Resistance (advantage on saves against Turn Undead) | Off | The creature rolls its WIS save against Turn Undead with advantage. Use it for Turn Resistance and for Turn Defiance |
-| Legendary actions per round | Blank | The legendary actions of the stat block, from 1 to 5. Blank means none. The app stores the count, and the combat screen does not spend it |
-| Legendary resistance per day | Blank | The uses of Legendary Resistance, from 1 to 5. Blank means none. The app stores the count, and the combat screen does not spend it |
+| Legendary actions per round | Blank | The legendary actions of the stat block, from 1 to 5. Blank means none. Each one is an attack that the creature takes on the turn of another combatant. See [Legendary actions](#legendary-actions) |
+| Legendary resistance per day | Blank | The uses of Legendary Resistance, from 1 to 5. Blank means none. A long rest of the party gives them back. See [Legendary resistance](#legendary-resistance) |
 | Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
 | Surprise Attack: dice, Surprise Attack: die | Blank, d6 | Extra damage dice on a hit against a surprised target in round 1. Blank stores none |
 | On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |
@@ -1318,6 +1318,7 @@ combatant with Extra Attack also shows how many swings are left.
 | A cast | What the casting time of the spell names: an action, a bonus action, or a reaction |
 | An off-hand swing | The bonus action |
 | An opportunity attack | The reaction |
+| A legendary action | One legendary action of the creature. The creature gets them all back when its own turn starts |
 | A standard action (Dash, Disengage, Dodge, Help, Hide, Ready) | The action |
 | Dash, Disengage, or Hide under **Cunning Action** | The bonus action, for a Rogue of 2nd level or higher |
 | **Second Wind** | The bonus action and one use of the Second Wind pool |
@@ -1430,6 +1431,44 @@ Its defender starts as the combatant that takes the turn, because that is
 who the reaction interrupts. A card that you pick on the board overrides
 that. A reaction spell opens the usual cast dialog and spends the reaction
 instead of the action.
+
+### Legendary actions
+
+A creature with **Legendary actions per round** set in the creature dialog
+takes that many legendary actions each round. Its board card shows a row
+named **Legendary action (N left)** when all of these conditions are true:
+
+- The card is not the current turn.
+- You can act for the creature.
+- The creature can still act.
+- It has a legendary action left.
+
+The row has one button per weapon of the creature. A button opens the
+attack dialog, titled "Legendary action: attack with", and the swing costs
+one legendary action instead of the Attack action. It offers no Multiattack
+box, because a legendary attack is one swing. The log marks each swing with
+its number, as in "legendary action 2 of 3". The creature gets every
+legendary action back when its own turn starts.
+
+The 5e rule allows a legendary action only at the end of the turn of
+another creature. The app does not enforce that timing, so take the action
+when the turn ends and before you click **Next turn**. A legendary action
+that is not an attack, such as a move, has no button, so describe it at
+the table.
+
+### Legendary resistance
+
+A creature with **Legendary resistance per day** set can turn a failed
+saving throw into a success. When such a creature fails the save of a save
+spell, or its save against Turn Undead, a dialog asks "Use legendary
+resistance? N left today". Click **Succeed instead** to spend one use, or
+**Let it fail** to keep the failure. A success takes half damage from a
+spell that halves on a save and no damage from any other, and no condition
+lands. The log records each use and the uses left.
+
+The uses come back when the party takes a long rest. The app does not ask
+about the save that a weapon hit forces, such as the poison of a giant
+spider. Handle that one by hand.
 
 ### Shield against a hit
 

@@ -23,6 +23,7 @@ import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
 import { redirectSpellTargets } from './redirectWard.js';
 import { wardSpellDamage } from './damageWard.js';
+import { resistSpellSaves } from './legendaryResistance.js';
 import { healingBonus } from '../entities/HealingBonus.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -405,9 +406,16 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       const guarding = wardSpellDamage(app, resolved, checked, entity.id, { ask });
       return guarding ? guarding.then(finish) : finish(checked);
     };
+    // A legendary creature that failed the save of a save spell can turn it
+    // into a success first, which changes the damage the reaction sees.
+    /** @param {typeof result} checked */
+    const resist = (checked) => {
+      const resisting = resistSpellSaves(app, resolved, checked, { ask });
+      return resisting ? resisting.then(guard) : guard(checked);
+    };
     const warding = wardSpellAttack(app, resolved, result, entity.id, { ask });
-    if (warding) return warding.then(guard);
-    return guard(result);
+    if (warding) return warding.then(resist);
+    return resist(result);
   };
   // An attack spell aimed at a creature with Redirect Attack asks first, after
   // the cast pays and before the attack roll (see `redirectWard.js`).

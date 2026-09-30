@@ -46,6 +46,8 @@ src/combat/AttackOptions.js .. pure: which per-swing options a weapon allows
                                (Sneak Attack, the two-handed grip)
 src/combat/TwoWeapon.js ...... pure: the off-hand swing of two-weapon fighting
 src/combat/Reactions.js ...... pure: what a reaction can spend itself on
+src/combat/LegendaryResistance.js  pure: the uses of Legendary Resistance left,
+                               spent, and given back
 src/combat/Cover.js .......... pure: the AC bonus of half and three-quarters
                                cover
 src/combat/Loadout.js ........ pure: what a combatant wears, swings, and
@@ -275,6 +277,8 @@ keeps one writer. The cost of a spend is one of these values:
 - `'attack'`, for a weapon swing
 - `'sneak'`, for the once-per-turn Sneak Attack flag, which costs no part of
   the turn
+- `'legendary'`, for one legendary action of a creature. The options pass
+  `legendaryActions`, the count per round of the creature
 
 The action returns false when the budget does not have the cost. With no
 fight running, the action reports success and writes nothing. A cast from the
@@ -402,8 +406,9 @@ turn that can take the swing. The button sends `offhand: true` to
 positive ability modifier and keeps a negative one, because the rule removes
 the bonus and a penalty is not a bonus.
 
-`combat/AttackTweaks.js` has one table of the three swings a combatant can take: the
-main-hand swing, the off-hand swing, and the opportunity attack. Each row
+`combat/AttackTweaks.js` has one table of the swings a combatant can take: the
+main-hand swing, the off-hand swing, the opportunity attack, and the
+legendary action. Each row
 states what the swing spends, the dialog title, the text of the opt-out box,
 what the log adds to the attack line, and the toast for a turn that cannot
 pay. `swingKind` picks the row from the dialog's answers, and `canSwing` asks
@@ -442,6 +447,47 @@ reaction interrupts. A card that the GM picked on the board replaces that
 default. The cast goes to the same `castSpellAction` that the action bar
 uses. That path already spends what the casting time names, and `castPlan`
 finds the caster's participant by id and not by whose turn it is.
+
+### Legendary actions
+
+The budget of a participant has a `legendary` count, the legendary actions
+spent since the start of its own turn. `refresh` sets it back to 0 when
+`advanceTurn` lands on the creature, so the count refills once per round
+at the right point. `legendaryLeft(participant, max)` reads what is left,
+and `spendLegendary` spends one. `buildCombatView` puts `legendaryLeft` on
+each row, which is 0 for anything but a creature.
+
+`CombatScreen.legendaryFor` gives a board card a second row under the
+reaction row, with the same `.combatant-card__reaction` styles. It uses the
+tests of `reactionFor`, except that it asks for a legendary action left in
+place of an unspent reaction. The row lists every weapon from `getWeapons`,
+because a legendary attack can be a ranged one. A button sends
+`legendary: true` to `weaponAttack`. The dialog then leaves out the
+Multiattack box, and `rollWeaponAttack` spends `'legendary'` in place of the
+Attack action. `AttackTweaks.legendarySwing` numbers the log note from the
+budget before the swing pays, as in ", legendary action 2 of 3". The app
+does not enforce the 5e timing (at the end of another creature's turn),
+because it has no event for the end of a turn apart from **Next turn**.
+
+### Legendary resistance
+
+`combat/LegendaryResistance.js` is pure. `resistancesLeft` compares the
+per-day count with `legendaryResistanceUsed` on the creature, and
+`spendResistance` and `restoreResistance` write that field. The long rest
+in `partyWiring.js` maps `restoreResistance` over the creatures, and it
+replaces the array only when a creature changed.
+
+`app/legendaryResistance.js` asks the GM. `resistSpellSaves` runs in
+`resolveCast` after the Shield pause and before the damage reaction pause,
+so Absorb Elements sees the damage that a resisted save leaves. It returns
+null when no failed save belongs to a creature with a use left, and the
+cast then finishes without waiting. `canResist` skips a target that the
+spell left alone and a target of a spell with no save roll (an HP pool such
+as Sleep). `resistedOutcome` rewrites a failed outcome as a success: half
+damage for a spell that halves on a save, no condition, and no later-turn
+damage. Turn Undead calls `offerResistance` on each failed WIS save. The
+save that a weapon hit forces (`rollHitSave`) does not ask, because that
+path is synchronous inside the attack roll.
 
 ### The Shield pause
 

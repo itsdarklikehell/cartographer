@@ -1,4 +1,5 @@
 import { promptModal } from '../ui/Modal.js';
+import { offerResistance } from './legendaryResistance.js';
 import { spendResource } from '../entities/Character.js';
 import { classLevelOf } from '../entities/Multiclass.js';
 import { spellSaveDC } from '../entities/Classes.js';
@@ -90,8 +91,16 @@ export async function turnUndead(app, found, { prompt = promptModal, rng = Math.
       conditions,
       rng,
     });
+    // A legendary creature can turn a failed save into a success.
+    const saved =
+      save.success ||
+      (await offerResistance(
+        app,
+        id,
+        `${target.label} fails the WIS save against Turn Undead (DC ${dc}).`,
+      ));
     const cr = target.kind === 'creature' ? target.entity.cr : undefined;
-    const verdict = turnVerdict(save.success, cr, level);
+    const verdict = turnVerdict(saved, cr, level);
     const rolled = `(WIS save ${save.total} vs DC ${dc})`;
     if (verdict === 'unaffected') {
       app.actions.logEvent('combat', `${target.label} resists the turning ${rolled}.`);

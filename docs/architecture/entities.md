@@ -301,8 +301,10 @@ makes an ally the target of an attack (see the Redirect Attack pause in
 cleans it, so the creature, template, and library paths all copy it.
 `legendaryActions` (per round) and `legendaryResistance` (per day) go
 through `attackTraitFields` for the same reason. `coerceLegendary` drops a
-count below 1 and stops at `MAX_LEGENDARY` (5). No combat code reads either
-count.
+count below 1 and stops at `MAX_LEGENDARY` (5). The combat screen spends
+both (see [Combat](combat.md)). The creature records its spent uses of
+Legendary Resistance in `legendaryResistanceUsed`, and the party long rest
+removes that field.
 A `packTactics` flag stores only `true`. A `surpriseAttack` stores a dice count and a
 die size (d4 to d12), and `coerceSurpriseAttack` drops any other value. A creature weapon can store an
 `onHitSave` of an ability, a DC, and a condition, which `combat/HitSave.js`

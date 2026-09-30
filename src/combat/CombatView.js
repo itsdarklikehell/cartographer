@@ -15,7 +15,7 @@ import { isDead, isDying } from '../entities/DeathSaves.js';
 import { canAct, losesTurn } from '../entities/ConditionEffects.js';
 import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
-import { attacksAvailable, budgetOf } from './ActionBudget.js';
+import { attacksAvailable, budgetOf, legendaryLeft } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -54,6 +54,7 @@ import { attacksAvailable, budgetOf } from './ActionBudget.js';
  *   deathSaves: import('../types/entities.js').DeathSaveState | null,
  *   used: import('../types/combat.js').ActionBudget,
  *   attacksLeft: number,
+ *   legendaryLeft: number,
  * }} CombatantRow
  */
 
@@ -254,6 +255,10 @@ export function buildCombatView(combat, resolve, viewer) {
             hasExtraAction(found.entity.conditions),
           )
         : 0,
+      // The legendary actions a creature has left before its own turn. Only a
+      // creature has them.
+      legendaryLeft:
+        found?.kind === 'creature' ? legendaryLeft(participant, found.entity.legendaryActions) : 0,
     };
   });
   return { round: combat.round, turnIndex: combat.index, rows };

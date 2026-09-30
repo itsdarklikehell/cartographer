@@ -128,12 +128,14 @@ export interface AppActions {
   // attack or a cast pays for itself. 'attack' is the weapon swing, which
   // spends the Attack action and banks the extra swings of Extra Attack.
   // 'sneak' is the once-per-turn Sneak Attack flag, which costs no part of the
-  // turn. The return value is false when the budget no longer holds the cost,
+  // turn. 'legendary' spends one legendary action of a creature, and reads
+  // `legendaryActions` from the options.
+  // The return value is false when the budget no longer holds the cost,
   // and the caller then offers the GM the way past it.
   spendBudget(
     id: string,
-    cost: ActionCost | TurnFlag | 'attack',
-    options?: { attacksPerAction?: number; extraAction?: boolean },
+    cost: ActionCost | TurnFlag | 'attack' | 'legendary',
+    options?: { attacksPerAction?: number; extraAction?: boolean; legendaryActions?: number },
   ): boolean;
   // encounterWiring: the GM's override on one cost of a turn. A free cost
   // becomes spent and a spent one becomes free. The return value is true

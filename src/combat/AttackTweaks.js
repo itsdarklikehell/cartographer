@@ -1,5 +1,5 @@
 import { attacksAvailable, budgetOf, canSpend } from './ActionBudget.js';
-import { coerceMultiattack } from '../entities/CreatureAttacks.js';
+import { coerceLegendary, coerceMultiattack } from '../entities/CreatureAttacks.js';
 
 /**
  * The answers of the weapon attack dialog, read into the overrides that one
@@ -21,6 +21,8 @@ import { coerceMultiattack } from '../entities/CreatureAttacks.js';
  * second swing of two-weapon fighting: it costs the bonus action rather than
  * the Attack action, and its damage carries no ability bonus. `reaction` is an
  * opportunity attack, which costs the reaction and rolls like a normal swing.
+ * `legendary` is a legendary action, which costs one of the legendary
+ * actions of the creature and rolls like a normal swing.
  * `cover` raises the defender's AC for this swing, and `sneak` adds the
  * attacker's Sneak Attack dice to the damage. Both are the GM's call, because
  * nothing here reads a barrel on the map or where the rogue is standing.
@@ -39,6 +41,7 @@ import { coerceMultiattack } from '../entities/CreatureAttacks.js';
  *   freeAction?: boolean,
  *   offhand?: boolean,
  *   reaction?: boolean,
+ *   legendary?: boolean,
  *   cover?: import('./Cover.js').CoverLevel,
  *   sneak?: boolean,
  *   pack?: boolean,
@@ -63,13 +66,14 @@ import { coerceMultiattack } from '../entities/CreatureAttacks.js';
  */
 
 /**
- * The three swings a combatant can take, and what each one costs. `main` draws
+ * The swings a combatant can take, and what each one costs. `main` draws
  * on the Attack action and the swings Extra Attack banks behind it. `offhand`
  * is the second swing of two-weapon fighting. `reaction` is an opportunity
- * attack. Each row carries what the budget spends, what the dialog is titled,
+ * attack. `legendary` is a legendary action of a creature, taken on the turn
+ * of another combatant. Each row carries what the budget spends, what the dialog is titled,
  * what its opt-out box says, what the log adds to the attack line, and what the
  * toast says when the turn cannot pay.
- * @typedef {'main' | 'offhand' | 'reaction'} SwingKind
+ * @typedef {'main' | 'offhand' | 'reaction' | 'legendary'} SwingKind
  */
 export const SWINGS = {
   main: {
@@ -93,15 +97,23 @@ export const SWINGS = {
     note: ', opportunity attack',
     blocked: 'already used their reaction',
   },
+  legendary: {
+    cost: /** @type {const} */ ('legendary'),
+    title: 'Legendary action: attack with',
+    optOut: 'no legendary action left',
+    note: ', legendary action',
+    blocked: 'has no legendary action left this round',
+  },
 };
 
 /**
- * Which of the three swings the dialog's answers describe. A swing is a
+ * Which swing the dialog's answers describe. A swing is a
  * main-hand one unless it says otherwise, and no swing is two of these at once.
  * @param {AttackTweaks} tweaks
  * @returns {SwingKind}
  */
 export function swingKind(tweaks) {
+  if (tweaks.legendary) return 'legendary';
   if (tweaks.reaction) return 'reaction';
   if (tweaks.offhand) return 'offhand';
   return 'main';
@@ -120,6 +132,9 @@ export function swingKind(tweaks) {
  */
 export function canSwing(participant, kind, perAction, extraAction = false) {
   if (kind === 'main') return attacksAvailable(participant, perAction, extraAction) > 0;
+  // The card offers a legendary swing only while one is left, and the write
+  // path refuses a swing past the last one.
+  if (kind === 'legendary') return true;
   return canSpend(participant, SWINGS[kind].cost);
 }
 
@@ -170,4 +185,19 @@ export function isWeakSwing(attacker, participant, tweaks) {
   const used = budgetOf(participant?.used);
   const swing = used.action && used.attacksLeft > 0 ? count - used.attacksLeft + 1 : 1;
   return swing === weak;
+}
+
+/**
+ * The legendary swing row, with the log note numbered for this use, as in
+ * ", legendary action 2 of 3". The number reads the budget before the swing
+ * pays. A swing outside a fight has no budget and reads as use 1.
+ * @param {any} attacker
+ * @param {import('../types/combat.js').Participant | null | undefined} participant
+ * @returns {(typeof SWINGS)['legendary']}
+ */
+export function legendarySwing(attacker, participant) {
+  const max = coerceLegendary(attacker?.legendaryActions) ?? 0;
+  const use = budgetOf(participant?.used).legendary + 1;
+  const note = `${SWINGS.legendary.note} ${use} of ${Math.max(max, use)}`;
+  return { ...SWINGS.legendary, note };
 }

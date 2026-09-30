@@ -5,8 +5,10 @@ import { addParticipant, startCombat, dropParticipant } from '../combat/Initiati
 import {
   attacksAvailable,
   canSpend,
+  legendaryLeft,
   spend,
   spendAttack,
+  spendLegendary,
   surge,
   unspend,
 } from '../combat/ActionBudget.js';
@@ -118,13 +120,19 @@ export function wireEncounters(app) {
    * counts as done: a cast from the character sheet is not part of a turn.
    * @param {string} id
    * @param {import('../types/combat.js').ActionCost
-   *   | import('../types/combat.js').TurnFlag | 'attack'} cost
-   * @param {{ attacksPerAction?: number, extraAction?: boolean }} [options] how
+   *   | import('../types/combat.js').TurnFlag | 'attack' | 'legendary'} cost
+   * @param {{ attacksPerAction?: number, extraAction?: boolean, legendaryActions?: number }} [options] how
    *   many swings one Attack action buys for this combatant, and whether a
-   *   chip such as Haste gives it one more, for the 'attack' cost.
+   *   chip such as Haste gives it one more, for the 'attack' cost. The
+   *   'legendary' cost reads `legendaryActions`, the creature's legendary
+   *   actions per round.
    * @returns {boolean}
    */
-  app.actions.spendBudget = (id, cost, { attacksPerAction = 1, extraAction = false } = {}) => {
+  app.actions.spendBudget = (
+    id,
+    cost,
+    { attacksPerAction = 1, extraAction = false, legendaryActions } = {},
+  ) => {
     const combat = current();
     if (!combat) return true;
     const index = combat.order.findIndex((p) => p.id === id);
@@ -132,6 +140,8 @@ export function wireEncounters(app) {
     const participant = combat.order[index];
     if (cost === 'attack') {
       if (attacksAvailable(participant, attacksPerAction, extraAction) <= 0) return false;
+    } else if (cost === 'legendary') {
+      if (legendaryLeft(participant, legendaryActions) <= 0) return false;
     } else if (!canSpend(participant, cost)) {
       return false;
     }
@@ -139,7 +149,9 @@ export function wireEncounters(app) {
     order[index] =
       cost === 'attack'
         ? spendAttack(participant, attacksPerAction, extraAction)
-        : spend(participant, cost);
+        : cost === 'legendary'
+          ? spendLegendary(participant, legendaryActions)
+          : spend(participant, cost);
     setCombat({ ...combat, order });
     // The pips on the action bar are part of the combat screen, and the
     // sidebar card shows none of this, so only the screen redraws.

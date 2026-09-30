@@ -43,6 +43,7 @@ export function freshBudget() {
     extra: false,
     surged: false,
     spare: false,
+    legendary: 0,
   };
 }
 
@@ -56,15 +57,11 @@ export function freshBudget() {
 export function budgetOf(value) {
   const used =
     value && typeof value === 'object' ? /** @type {Record<string, unknown>} */ (value) : {};
-  const count =
-    typeof used.attacksLeft === 'number' && Number.isFinite(used.attacksLeft)
-      ? used.attacksLeft
-      : 0;
   return {
     action: used.action === true,
     bonus: used.bonus === true,
     reaction: used.reaction === true,
-    attacksLeft: Math.max(0, Math.floor(count)),
+    attacksLeft: countOf(used.attacksLeft),
     attacked: used.attacked === true,
     sneak: used.sneak === true,
     deathSave: used.deathSave === true,
@@ -73,7 +70,17 @@ export function budgetOf(value) {
     extra: used.extra === true,
     surged: used.surged === true,
     spare: used.surged === true && used.spare === true,
+    legendary: countOf(used.legendary),
   };
+}
+
+/**
+ * A whole count of 0 or more. Anything else reads as 0.
+ * @param {unknown} value
+ * @returns {number}
+ */
+function countOf(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.max(0, Math.floor(value)) : 0;
 }
 
 /**
@@ -194,7 +201,8 @@ export function isFresh(participant) {
     !used.sneak &&
     !used.extra &&
     !used.surged &&
-    !used.spare
+    !used.spare &&
+    used.legendary === 0
   );
 }
 
@@ -288,4 +296,31 @@ export function endSurprise(participant) {
   if (!participant.surprised) return participant;
   const { surprised: _, ...rest } = participant;
   return { ...rest, used: { ...budgetOf(participant.used), reaction: false } };
+}
+
+/**
+ * How many legendary actions a creature has left before its next turn.
+ * `max` is the creature's legendary actions per round. A creature with none
+ * has none left.
+ * @param {Participant} participant
+ * @param {number | undefined} max
+ * @returns {number}
+ */
+export function legendaryLeft(participant, max) {
+  return Math.max(0, countOf(max) - budgetOf(participant.used).legendary);
+}
+
+/**
+ * Spend one legendary action. 5e lets a legendary creature take these at the
+ * end of the turns of other combatants, and gives them all back at the start
+ * of its own turn, which `refresh` does. A creature with none left returns
+ * unchanged.
+ * @param {Participant} participant
+ * @param {number | undefined} max the creature's legendary actions per round
+ * @returns {Participant}
+ */
+export function spendLegendary(participant, max) {
+  if (legendaryLeft(participant, max) <= 0) return participant;
+  const used = budgetOf(participant.used);
+  return { ...participant, used: { ...used, legendary: used.legendary + 1 } };
 }

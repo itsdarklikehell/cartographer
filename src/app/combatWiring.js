@@ -184,6 +184,19 @@ export function wireCombatScreen(app) {
         reaction: true,
       });
     },
+    // A legendary action is an attack by a creature on another combatant's
+    // turn. It spends one legendary action, not the action, and defaults to
+    // the combatant whose turn it is, like an opportunity attack.
+    getWeapons: (id) => weaponsOf(app, id),
+    onLegendaryAttack: (id, weapon) => {
+      const combat = state.combat;
+      const participant = combat?.order.find((p) => p.id === id);
+      if (!combat || !participant) return;
+      weaponAttack(app, combat, participant, weapon, {
+        defenderId: selectedTargetId ?? combat.order[combat.index]?.id ?? null,
+        legendary: true,
+      });
+    },
     // The cast dialog reads the caster's own participant for the budget, so a
     // reaction spell spends the reaction without this path saying so.
     onReactionCast: (id, spell) => {
