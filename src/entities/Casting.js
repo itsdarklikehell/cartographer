@@ -168,9 +168,12 @@ function slotPoolToSpend(caster, slotLevel, pactOnly) {
  *   pool?: 'pact',
  *   rng?: RandomFn,
  *   resistPick?: string,
+ *   healBonus?: number,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
  *   carries no conditions, so the call site reads them off the real combatant.
+ *   `healBonus` is the flat bonus that a class feature adds to the healing of
+ *   each target, such as Disciple of Life (see `HealingBonus.healingBonus`).
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
  *   { ok: true, caster: T, spell: Spell, slotLevel: number, spent: boolean,
@@ -195,6 +198,7 @@ export function castSpell(caster, spell, options = {}) {
     pool,
     rng = Math.random,
     resistPick,
+    healBonus = 0,
   } = options;
 
   const paid = free
@@ -221,6 +225,7 @@ export function castSpell(caster, spell, options = {}) {
     casterId: caster.id,
     rng,
     resistPick,
+    healBonus,
   });
 
   return {
@@ -310,6 +315,7 @@ function payForCast(caster, spell, slotLevel, ritual, granted, pactOnly) {
  *   casterId?: string,
  *   rng: RandomFn,
  *   resistPick?: string,
+ *   healBonus?: number,
  * }} ctx
  * @returns {object[]}
  */
@@ -325,6 +331,7 @@ function resolveEffect(spell, ctx) {
     casterConditions,
     rng,
     resistPick,
+    healBonus = 0,
   } = ctx;
 
   if (effect.kind === 'attack') {
@@ -429,11 +436,16 @@ function resolveEffect(spell, ctx) {
 
   if (effect.kind === 'heal') {
     const bonus = effect.addsModifier ? spellModifier : 0;
-    const healing = rollDamage(scaledParts(effect.healing, spell.scaling, steps), bonus, rng);
+    const healing = rollDamage(
+      scaledParts(effect.healing, spell.scaling, steps),
+      bonus + healBonus,
+      rng,
+    );
+    const extra = healBonus > 0 ? { healBonus } : {};
     // A heal passes over a target of a type that it has no effect on.
     return targets.map((target) => {
       const reason = typeSkipReason(effect.typeRules, target);
-      return reason ? { target, healing, unaffectedBy: reason } : { target, healing };
+      return reason ? { target, healing, unaffectedBy: reason } : { target, healing, ...extra };
     });
   }
 

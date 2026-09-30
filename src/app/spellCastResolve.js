@@ -23,6 +23,7 @@ import { effectiveSlot } from './spellCastFields.js';
 import { wardSpellAttack } from './shieldWard.js';
 import { redirectSpellTargets } from './redirectWard.js';
 import { wardSpellDamage } from './damageWard.js';
+import { healingBonus } from '../entities/HealingBonus.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -255,6 +256,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
       spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
       attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
       ritual: asRitual,
+      healBonus: healingBonus(live, resolved, slotLevel),
       ...(values['resist-type'] ? { resistPick: values['resist-type'] } : {}),
       ...(free ? { free: { slotLevel } } : {}),
       ...(invocation?.oncePerRest && !invocation.free ? { granted: true, pool: 'pact' } : {}),

@@ -904,7 +904,13 @@ A heal effect with `addsModifier` adds the caster's spellcasting ability
 modifier to the roll (`Casting.castSpell` takes it as `spellModifier`). Cure
 Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass Cure
 Wounds ship with it, and the spell form offers it as the "Add spellcasting
-modifier" box. A heal effect with `revives` raises the dead, and it heals only
+modifier" box. `castSpell` also takes a `healBonus`, a flat amount that a class
+feature adds to each target. `entities/HealingBonus.js` gives 2 + the slot level
+for a caster with Disciple of Life, on a heal of 1st level or higher that rolls
+dice and neither revives nor stabilizes. The feature comes from the
+`features` field of the Life Domain entry in `data/classes.js`, and
+`LevelUp.unlockedFeatures` adds the features of a catalog subclass to the
+class features. The heal line ends in ", Disciple of Life +N". A heal effect with `revives` raises the dead, and it heals only
 a dead target (see [Damage and healing at 0 HP](#damage-and-healing-at-0-hp)).
 Revivify and Raise Dead ship with it, and the spell form offers it as the
 "Raises the dead" box. A heal effect with `stabilizes` heals nothing and

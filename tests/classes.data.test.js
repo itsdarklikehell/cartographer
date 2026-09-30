@@ -147,3 +147,19 @@ test('the class catalog is frozen to its leaves', () => {
     /** @type {any} */ (rogue).asiLevels.push(20);
   }, TypeError);
 });
+
+test('subclass features sit at class levels 1-20 and name each feature', () => {
+  for (const c of DEFAULT_CLASSES) {
+    for (const s of c.subclasses ?? []) {
+      for (const [lvl, list] of Object.entries(s.features ?? {})) {
+        assert.ok(Number(lvl) >= 1 && Number(lvl) <= 20, `${s.id} feature level ${lvl}`);
+        for (const entry of list) {
+          const name = typeof entry === 'string' ? entry : entry.name;
+          assert.ok(name.length > 0, `${s.id} blank feature name`);
+        }
+      }
+    }
+  }
+  const cleric = DEFAULT_CLASSES.find((c) => c.id === 'cleric');
+  assert.deepEqual(cleric?.subclasses?.[0].features, { 1: ['Disciple of Life'] });
+});

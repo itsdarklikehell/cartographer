@@ -135,6 +135,9 @@ export interface SubclassDef {
   /** Present only for a subclass that grants spellcasting. The fields apply
    * from the class's `subclassLevel` on. */
   casting?: SubclassCasting;
+  /** Features the subclass adds, keyed by class level, in the same format as
+   * `ClassDef.featuresByLevel`. Absent means the subclass adds none. */
+  features?: Record<number, (string | ClassFeatureDef)[]>;
 }
 
 /** One effect of a class feature: a feat effect, or the pick of one fighting

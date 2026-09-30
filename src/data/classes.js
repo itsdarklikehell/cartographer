@@ -212,7 +212,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 1,
       subclassLabel: 'Divine Domain',
-      subclasses: [{ id: 'life', name: 'Life Domain' }],
+      subclasses: [{ id: 'life', name: 'Life Domain', features: { 1: ['Disciple of Life'] } }],
       asiLevels: ASI,
       multiclassPrereq: [{ WIS: 13 }],
       multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),

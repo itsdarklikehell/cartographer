@@ -2153,6 +2153,15 @@ takes a different style each time.
 The attack log line names Archery, and the hit line names Dueling and Great
 Weapon Fighting.
 
+### Disciple of Life
+
+A Life Domain cleric adds 2 + the spell slot level to each target of a
+healing spell of 1st level or higher, such as Cure Wounds or Healing Word.
+An upcast uses the higher slot. The heal line in the log ends in
+", Disciple of Life +N". A spell that rolls no healing dice (Lesser Restoration), a
+revive, and a stabilize get no bonus. The class features list on the sheet
+shows the feature from cleric level 1.
+
 ### Class feature pools
 
 

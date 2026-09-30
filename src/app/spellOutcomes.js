@@ -170,13 +170,15 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         stabilizeCharacter(app, o.target.id);
         continue;
       }
+      // A heal with no dice writes no HP, so it cannot revive a dying target.
       if (heals) {
+        const disciple = o.healBonus ? `, Disciple of Life +${o.healBonus}` : '';
         app.actions.logEvent(
           'combat',
-          `${spell.name} heals ${logName(app, o.target)} for ${o.healing.total} HP.`,
+          `${spell.name} heals ${logName(app, o.target)} for ${o.healing.total} HP${disciple}.`,
         );
+        applyToTarget(app, o.target.id, o.healing.total, true, { revives });
       }
-      applyToTarget(app, o.target.id, o.healing.total, true, { revives });
       const id = o.target.id;
       cures = cures ? cures.then(() => cureTarget(app, spell, id)) : cureTarget(app, spell, id);
     }

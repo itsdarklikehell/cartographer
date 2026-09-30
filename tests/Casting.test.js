@@ -1217,3 +1217,15 @@ test('a summons upcast at a higher slot brings more creatures', () => {
   assert.equal(result.slotLevel, 5);
   assert.deepEqual(result.outcomes, [{ creature: 'Wolf', count: 8 }]);
 });
+
+test('a heal bonus joins the roll and names itself on each outcome', () => {
+  const result = castSpell(caster(), cureWounds, {
+    slotLevel: 1,
+    targets: [{ id: 'a' }],
+    healBonus: 3,
+    rng: seq([face(8, 2)]),
+  });
+  const o = /** @type {any} */ (result.outcomes[0]);
+  assert.equal(o.healing.total, 5, 'a roll of 2 plus Disciple of Life +3');
+  assert.equal(o.healBonus, 3);
+});

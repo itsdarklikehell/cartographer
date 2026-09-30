@@ -2181,3 +2181,29 @@ test('two foes of one name keep their numbers in the save line', () => {
   });
   assert.match(app.log[1], /^Goblin 2 saves DC 14 /);
 });
+
+test('a Life Domain cleric adds Disciple of Life to a heal and names it in the log', () => {
+  const caster = mage({ classes: [{ classId: 'cleric', level: 5, subclass: 'Life Domain' }] });
+  const app = stubApp({ characters: [caster] });
+  const hurt = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 16);
+  app.state.characters = [caster, hurt];
+  const plan = planFor(app, caster, cureWounds);
+  resolveCast(app, plan, submit({ target: 'monk', slot: '1' }), {
+    writeBack: () => {},
+    rng: seq([face(8, 2)]),
+  });
+  assert.match(app.log[1], /Cure Wounds heals Monk for 5 HP, Disciple of Life \+3\./);
+  assert.equal(getHP(app.state.characters[1]).current, 9);
+});
+
+test('a heal with no dice writes no hit points', () => {
+  const caster = mage();
+  const app = stubApp({ characters: [caster] });
+  const hurt = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 16);
+  app.state.characters = [caster, hurt];
+  const restore = { ...cureWounds, effect: { kind: 'heal', healing: [] } };
+  const plan = planFor(app, caster, restore);
+  resolveCast(app, plan, submit({ target: 'monk' }), { writeBack: () => {}, rng: seq([]) });
+  assert.equal(getHP(app.state.characters[1]).current, 4);
+  assert.ok(!app.log.some((l) => /heals Monk/.test(l)));
+});

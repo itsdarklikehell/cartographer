@@ -13,6 +13,7 @@ import { createCharacter, getClasses, getSpellbook } from '../src/entities/Chara
 import { getSlotPools, getPactPool, withSpellSlots } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
 import { cantripLimit } from '../src/entities/Classes.js';
+import { unlockedFeatures } from '../src/entities/LevelUp.js';
 
 const EK = 'Eldritch Knight';
 
@@ -178,4 +179,12 @@ test('a chosen subclass claims its level against the donor move', () => {
     hasChoiceAt(classed([{ classId: 'bogus', level: 3, subclass: 'x' }]), 'bogus', 3),
     false,
   );
+});
+
+test('a Life Domain cleric unlocks Disciple of Life from the subclass entry', () => {
+  const names = (/** @type {any} */ c) => unlockedFeatures(c).map((f) => f.name);
+  const life = classed([{ classId: 'cleric', level: 1, subclass: 'Life Domain' }]);
+  assert.ok(names(life).includes('Disciple of Life'));
+  const plain = classed([{ classId: 'cleric', level: 1 }]);
+  assert.ok(!names(plain).includes('Disciple of Life'));
 });
