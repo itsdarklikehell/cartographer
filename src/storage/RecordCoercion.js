@@ -16,6 +16,7 @@
 import { budgetOf } from '../combat/ActionBudget.js';
 import { MINUTES_PER_WATCH, WATCHES } from '../time/GameClock.js';
 import { clampInt } from '../util/num.js';
+import { readReward } from '../quest/QuestReward.js';
 
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
@@ -238,7 +239,8 @@ export function logEntries(value) {
  * completed reads as active, a title or notes of the wrong type read as
  * empty text, and a quest reads as hidden from players unless its
  * `revealed` flag is exactly true. A save with no objectives or links
- * reads as empty lists, and so does a save with no unlock list.
+ * reads as empty lists, and so does a save with no unlock list. A reward that pays nothing is
+ * dropped (see `readReward`).
  * @param {unknown} value
  * @returns {Quest[]}
  */
@@ -246,9 +248,11 @@ export function quests(value) {
   return records(value).flatMap((quest) => {
     const questId = id(quest.id);
     if (questId === null) return [];
+    const { reward: saved, ...rest } = quest;
+    const reward = readReward(saved);
     return [
       {
-        ...quest,
+        ...rest,
         id: questId,
         title: string(quest.title, ''),
         notes: string(quest.notes, ''),
@@ -257,6 +261,7 @@ export function quests(value) {
         objectives: questObjectives(quest.objectives),
         links: questLinks(quest.links),
         unlocks: questUnlocks(quest.unlocks),
+        ...(reward ? { reward } : {}),
       },
     ];
   });

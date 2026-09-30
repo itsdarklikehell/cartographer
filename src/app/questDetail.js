@@ -84,8 +84,8 @@ export function questDetailCallbacks(app, { prompt = promptModal, confirm = conf
     const latest = current(quest.id);
     if (latest?.status !== 'active' || !allObjectivesDone(latest.objectives)) return;
     const message = `Every objective of ${latest.title} is done. Complete the quest?`;
-    const reveal = await askCompletion(app, latest, message, { prompt, confirm });
-    if (reveal) completeQuest(app, latest, reveal);
+    const done = await askCompletion(app, latest, message, { prompt, confirm });
+    if (done) completeQuest(app, latest, done);
   }
 
   /**

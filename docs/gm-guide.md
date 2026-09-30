@@ -739,6 +739,17 @@ links, the notes, or a GM-only step.
 4. Clear the box of any quest the party did not learn of, and click
    **Complete quest**.
 
+### Pay a quest reward
+
+1. Click the chevron on the quest row, and then click **Edit**.
+2. Type the gold in **Reward gold (gp)** and the experience in **Reward
+   XP**.
+3. In **Pay**, select "To each living character", or "As a total, split
+   evenly" for a sum that the party shares. Save.
+4. When the party finishes the quest, complete it. The dialog shows the
+   reward. Change it if the party bargained for more or less, and click
+   **Complete quest**. Each living character gets the gold and the XP.
+
 ## Curate the library
 
 The library keeps templates that do not belong to one campaign: equipment,

@@ -49,3 +49,12 @@ test('quests reads the unlock list as unique string ids, and a missing list as e
   assert.deepEqual(one.unlocks, ['b', 'c']);
   assert.deepEqual(two.unlocks, []);
 });
+
+test('quests keep a paying reward and drop one that pays nothing', () => {
+  const [paid, empty] = quests([
+    { id: 'a', reward: { gp: 25, xp: 0, per: 'total' } },
+    { id: 'b', reward: { gp: 0, xp: 0 } },
+  ]);
+  assert.deepEqual(paid.reward, { gp: 25, xp: 0, per: 'total' });
+  assert.equal('reward' in empty, false);
+});

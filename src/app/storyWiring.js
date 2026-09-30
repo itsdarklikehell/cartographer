@@ -20,7 +20,8 @@ import {
   toggleQuestStatus,
 } from '../quest/Quests.js';
 import { questDetailCallbacks } from './questDetail.js';
-import { askCompletion, completeQuest } from './questCompletion.js';
+import { askCompletion, completeQuest, rewardFields } from './questCompletion.js';
+import { readReward } from '../quest/QuestReward.js';
 import { parseUnlocks } from '../quest/QuestUnlocks.js';
 import { pruneUnlocks } from './questCleanup.js';
 import { replaceById, removeById } from '../entities/Roster.js';
@@ -33,6 +34,16 @@ import { setCombatantExhaustion } from './exhaustion.js';
 import { addLethargy } from './lethargy.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+
+/**
+ * The reward key of a quest from the dialog values, or nothing when the
+ * reward pays no gold and no XP.
+ * @param {Record<string, string>} values
+ */
+const withReward = (values) => {
+  const reward = readReward(values);
+  return reward ? { reward } : {};
+};
 
 /**
  * Wires the Story tab's panels (travelogue, NPCs, quests, handouts) and the
@@ -228,16 +239,20 @@ export function wireStory(app) {
           .map((q) => ({ value: q.id, label: q.title })),
         emptyText: 'There are no other quests yet.',
       },
+      ...rewardFields(quest?.reward ?? { gp: 0, xp: 0, per: 'each' }),
     ],
     create: (id, title, values) => ({
       ...createQuest(id, title, values.notes.trim()),
       unlocks: parseUnlocks(values.unlocks, id),
+      ...withReward(values),
     }),
-    patch: (quest, title, values) => ({
+    // A reward edited to zero gold and zero XP drops the key.
+    patch: ({ reward: _old, ...quest }, title, values) => ({
       ...quest,
       title,
       notes: values.notes.trim(),
       unlocks: parseUnlocks(values.unlocks, quest.id),
+      ...withReward(values),
     }),
   });
   const deleteQuest = questList.onDelete;
@@ -253,9 +268,9 @@ export function wireStory(app) {
       // Completing writes a toast and a travelogue line. Reopening is quiet.
       if (quest.status === 'active') {
         const message = `Complete ${quest.title}?`;
-        const reveal = await askCompletion(app, quest, message, { askPlain: false });
-        if (!reveal) return app.views.questPanel.update();
-        if (completeQuest(app, quest, reveal)) return;
+        const done = await askCompletion(app, quest, message, { askPlain: false });
+        if (!done) return app.views.questPanel.update();
+        if (completeQuest(app, quest, done)) return;
       }
       state.quests = replaceById(state.quests, toggleQuestStatus(quest));
       app.actions.markDirty();

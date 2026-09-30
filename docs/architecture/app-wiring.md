@@ -848,9 +848,12 @@ quest. Completion goes through `askCompletion` and `completeQuest` in
 `questCompletion.js`, which the complete button of the row in
 `storyWiring.js` also uses. `askCompletion` lists the hidden quests of the
 quest's `unlocks` (see `quest/QuestUnlocks.js`) under "Also reveal", or
-falls back to a plain confirm. `completeQuest` sets the status, shows a
+falls back to a plain confirm. When the quest has a `reward`, the dialog also shows
+its gold, XP, and split, prefilled. `completeQuest` sets the status, shows a
 toast, and logs a travelogue line through `logEvent`. The line is GM-only
-while the quest is hidden from players. It then reveals each ticked quest
+while the quest is hidden from players. `payReward`
+(`quest/QuestReward.js`) then pays the living characters through `addGold`
+and `addXP`, with `partyAward` from `combat/FightEnd.js` for the split. It then reveals each ticked quest
 and logs a line for each. A quest delete calls `pruneUnlocks`
 (`questCleanup.js`), so no unlock list names a quest that is gone.
 

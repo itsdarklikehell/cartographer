@@ -5,6 +5,7 @@ import { questDetailCallbacks } from '../src/app/questDetail.js';
 import { askCompletion, completeQuest } from '../src/app/questCompletion.js';
 import { createQuest } from '../src/quest/Quests.js';
 import { addObjective } from '../src/quest/Objectives.js';
+import { createCharacter } from '../src/entities/Character.js';
 import { stubApp } from './helpers/app.js';
 
 /** @typedef {import('../src/types/quest.js').Quest} Quest */
@@ -170,7 +171,7 @@ function unlockApp() {
 
 test('completeQuest reveals the listed quests that are still hidden, with a line each', () => {
   const { app } = unlockApp();
-  assert.equal(completeQuest(app, quest(app), ['q2', 'q3', 'gone']), true);
+  assert.equal(completeQuest(app, quest(app), { reveal: ['q2', 'q3', 'gone'] }), true);
   assert.equal(app.state.quests[1].revealed, true);
   assert.deepEqual(app.log, [
     'The party completes the quest Rumors.',
@@ -189,7 +190,7 @@ test('askCompletion lists each hidden unlock, ticked, and returns the ticked ids
   const reveal = await askCompletion(app, quest(app), 'Done?', {
     prompt: /** @type {any} */ (prompt),
   });
-  assert.deepEqual(reveal, ['q2']);
+  assert.deepEqual(reveal, { reveal: ['q2'], reward: undefined });
   assert.equal(asked[0].fields[0].value, 'q2');
   assert.deepEqual(asked[0].fields[0].options, [{ value: 'q2', label: 'Goblin Raids' }]);
   assert.equal(asked[0].options.message, 'Done?');
@@ -208,9 +209,60 @@ test('askCompletion without hidden unlocks confirms, or asks nothing when told n
     return labels.length === 1;
   };
   const opts = { confirm: /** @type {any} */ (confirm) };
-  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', opts), []);
+  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', opts), {});
   assert.equal(await askCompletion(app, quest(app), 'Done?', opts), null);
   assert.deepEqual(labels, ['Complete quest', 'Complete quest']);
-  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', { ...opts, askPlain: false }), []);
+  assert.deepEqual(await askCompletion(app, quest(app), 'Done?', { ...opts, askPlain: false }), {});
   assert.equal(labels.length, 2);
+});
+
+/** The stub app with a quest that pays 50 gp and 300 XP each, and two characters. */
+function rewardApp() {
+  const { app, toasts } = fakeApp();
+  app.state.quests = [{ ...quest(app), reward: { gp: 50, xp: 300, per: 'each' } }];
+  app.state.characters = [createCharacter('a', 'Ana'), createCharacter('b', 'Bo')];
+  return { app, toasts };
+}
+
+test('completeQuest pays the reward to each living character with a line', () => {
+  const { app } = rewardApp();
+  const reward = /** @type {const} */ ({ gp: 50, xp: 300, per: 'each' });
+  assert.equal(completeQuest(app, quest(app), { reward }), true);
+  assert.deepEqual(
+    app.state.characters.map((c) => c.xp),
+    [300, 300],
+  );
+  assert.equal(app.log[1], 'The party receives 50 gp and 300 XP each.');
+  assert.ok(app.calls.includes('refreshSelectedCharacter'));
+});
+
+test('completeQuest pays nothing and logs nothing when the share rounds to zero', () => {
+  const { app } = rewardApp();
+  const before = app.state.characters;
+  completeQuest(app, quest(app), { reward: { gp: 1, xp: 0, per: 'total' } });
+  assert.equal(app.state.characters, before);
+  assert.equal(app.log.length, 1);
+});
+
+test('askCompletion shows the reward prefilled and returns the edited reward', async () => {
+  const { app } = rewardApp();
+  /** @type {any[]} */
+  const asked = [];
+  const prompt = async (/** @type {string} */ _t, /** @type {any[]} */ fields) => {
+    asked.push(fields);
+    return { gp: '80', xp: '0', per: 'total' };
+  };
+  const done = await askCompletion(app, quest(app), 'Done?', {
+    prompt: /** @type {any} */ (prompt),
+    askPlain: false,
+  });
+  assert.deepEqual(done, { reveal: [], reward: { gp: 80, xp: 0, per: 'total' } });
+  assert.deepEqual(
+    asked[0].map((/** @type {any} */ f) => [f.name, f.value]),
+    [
+      ['gp', 50],
+      ['xp', 300],
+      ['per', 'each'],
+    ],
+  );
 });

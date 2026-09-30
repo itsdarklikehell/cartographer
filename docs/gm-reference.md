@@ -2455,7 +2455,7 @@ The Quests panel in the Story tab lists active and completed quests.
 
 | Control | What it does |
 | --- | --- |
-| New quest | Opens the quest dialog, with Title, Notes, and Unlocks |
+| New quest | Opens the quest dialog, with Title, Notes, Unlocks, and the reward fields |
 | Status mark | Completes or reopens the quest |
 | Eye | Reveals the quest to players, or hides it again |
 | Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
@@ -2483,6 +2483,17 @@ keep that quest hidden. Each revealed quest gets its own travelogue line.
 This dialog also comes up when you click the status mark of such a quest.
 The Player view never shows the Unlocks list. A deleted quest leaves every
 Unlocks list.
+
+The reward fields of the quest dialog are **Reward gold (gp)**, **Reward
+XP**, and **Pay**. Pay is either "To each living character" or "As a total,
+split evenly". A total splits among the living characters and rounds down.
+When you complete a quest with a reward, the dialog shows the three fields
+with the reward filled in, and you can change them first. The gold goes
+into the Gold stack of each character, or into the first item whose name
+starts with "Gold". A character with neither gets a new "Gold (gp)" item.
+A dead character gets no share. The travelogue line reads, for example,
+"The party receives 50 gp and 300 XP each." Set both amounts to 0 to
+remove the reward.
 
 The Quests panel scrolls once its list is taller than most of the window.
 A click on a control keeps the scroll position of the list, and a revealed

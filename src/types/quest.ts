@@ -43,4 +43,13 @@ export interface Quest {
   links: QuestLink[];
   /** The ids of the quests that completing this one offers to reveal. Only a GM tab shows them. */
   unlocks: string[];
+  /** What completing the quest pays. `per` says whether gp and xp go to each character or split as a total. */
+  reward?: QuestReward;
+}
+
+/** A quest reward in gold pieces and experience points. */
+export interface QuestReward {
+  gp: number;
+  xp: number;
+  per: 'each' | 'total';
 }

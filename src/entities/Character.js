@@ -171,7 +171,7 @@ export {
   prepareSpell,
   unprepareSpell,
 } from './CharacterSpellbook.js';
-export { addItem, transferItem, updateItem, removeItem } from './CharacterInventory.js';
+export { addItem, addGold, transferItem, updateItem, removeItem } from './CharacterInventory.js';
 
 /**
  * Fill in fields that a loaded character can predate: any missing ability
