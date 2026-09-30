@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { deathSaveReadout, deathSaveStatus } from '../src/view/DeathSaveView.js';
+import { deathSaveReadout, deathSaveStatus, downState } from '../src/view/DeathSaveView.js';
 
 /** @param {Partial<import('../src/types/entities.js').DeathSaveState>} [over] */
 function state(over = {}) {
@@ -57,4 +57,26 @@ test('a dead readout says so and offers nothing', () => {
 
 test('dead outranks stable, so a stabilized character that dies reads as dead', () => {
   assert.equal(deathSaveReadout(state({ stable: true, failures: 3 }))?.label, 'Dead');
+});
+
+test('downState marks a dying or stable character apart from a defeated one', () => {
+  const row = (over = {}) => ({ defeated: false, incapacitated: false, deathSaves: null, ...over });
+  assert.equal(downState(row()), null);
+  assert.deepEqual(downState(row({ incapacitated: true })), {
+    kind: 'incapacitated',
+    label: 'cannot act',
+  });
+  assert.deepEqual(downState(row({ defeated: true })), { kind: 'defeated', label: 'defeated' });
+  assert.deepEqual(downState(row({ defeated: true, deathSaves: state() })), {
+    kind: 'down',
+    label: 'dying',
+  });
+  assert.deepEqual(downState(row({ defeated: true, deathSaves: state({ stable: true }) })), {
+    kind: 'down',
+    label: 'stable at 0 HP',
+  });
+  assert.deepEqual(
+    downState(row({ defeated: true, incapacitated: true, deathSaves: state({ failures: 3 }) })),
+    { kind: 'defeated', label: 'defeated' },
+  );
 });

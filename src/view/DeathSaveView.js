@@ -87,3 +87,24 @@ export function deathSaveReadout(state) {
     stabilizable: true,
   };
 }
+
+/**
+ * How the combat ribbon and the combatant cards mark a combatant that is out
+ * of its turns. A party character at 0 HP counts as defeated for the fight
+ * outcome, but a dying or stable one is still alive. Marking it defeated
+ * strikes its name through and tells a screen reader "defeated", which reads
+ * as dead. `defeated` is for a combatant that is gone, `dying` and `stable`
+ * for a character at 0 HP that still has a tracker, and `cannot act` for a
+ * combatant whose conditions take its turn.
+ * @param {{ defeated: boolean, incapacitated: boolean, deathSaves: DeathSaveState | null }} row
+ * @returns {{ kind: 'defeated' | 'down' | 'incapacitated', label: string } | null}
+ */
+export function downState(row) {
+  if (row.defeated) {
+    const status = deathSaveStatus(row.deathSaves);
+    if (status === 'dying') return { kind: 'down', label: 'dying' };
+    if (status === 'stable') return { kind: 'down', label: 'stable at 0 HP' };
+    return { kind: 'defeated', label: 'defeated' };
+  }
+  return row.incapacitated ? { kind: 'incapacitated', label: 'cannot act' } : null;
+}

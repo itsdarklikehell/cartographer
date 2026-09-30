@@ -5,7 +5,7 @@ import { conditionChip } from './ConditionsBar.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { buildStatBar } from './CharacterBars.js';
-import { deathSaveStatus } from '../view/DeathSaveView.js';
+import { deathSaveStatus, downState } from '../view/DeathSaveView.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
@@ -79,11 +79,12 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  */
 export function combatantCard(row, selection = {}) {
   const selectable = Boolean(selection.onSelect);
+  const down = downState(row);
   const classes = [
     'combatant-card',
     `combatant-card--${row.side}`,
-    row.defeated ? 'combatant-card--defeated' : '',
-    row.incapacitated && !row.defeated ? 'combatant-card--incapacitated' : '',
+    down?.kind === 'defeated' ? 'combatant-card--defeated' : '',
+    down && down.kind !== 'defeated' ? 'combatant-card--incapacitated' : '',
     selectable ? 'combatant-card--selectable' : '',
     selection.selected ? 'combatant-card--selected' : '',
   ]
@@ -111,13 +112,11 @@ export function combatantCard(row, selection = {}) {
   } else {
     card = el('article', classes, header);
   }
-  if (row.defeated) {
-    // The strikethrough shows this visually. This label states it for a screen reader.
-    card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, defeated`);
-  } else if (row.incapacitated) {
-    // The chips below say which condition it is. The label says what the
-    // condition costs, which is the turn.
-    card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, cannot act`);
+  if (down) {
+    // The strikethrough or the dashed edge shows this visually. The label
+    // states it for a screen reader: defeated, dying, stable at 0 HP, or
+    // cannot act. The chips below say which condition it is.
+    card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, ${down.label}`);
   }
 
   if (row.hp) card.appendChild(hpLine(row.hp, row.mayAct));

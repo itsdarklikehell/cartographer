@@ -1138,7 +1138,7 @@ The combat screen runs one fight at the full width of the page.
 | Ring | The current turn |
 | Sword on a chip | A foe |
 | Strike-through | A defeated combatant |
-| Dashed edge | A combatant that cannot act, such as a stunned one. It is still in the fight, and only its turn is lost |
+| Dashed edge | A combatant that cannot act, such as a stunned one, which is still in the fight but loses its turn. A dying or stable character at 0 HP shows the same edge, because it is still alive |
 
 A click on a ribbon chip inspects that combatant without a change of turn.
 

@@ -1,6 +1,7 @@
 import { classNames, el } from './dom.js';
 import { icon } from './icons.js';
 import { bareButton, textButton } from './buttons.js';
+import { downState } from '../view/DeathSaveView.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 
@@ -54,6 +55,7 @@ export function mountCombatRibbon(callbacks) {
     view.rows.forEach((row, i) => {
       const current = i === view.turnIndex;
       const name = row.name ?? 'Unknown combatant';
+      const down = downState(row);
       const button = bareButton(
         [
           row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
@@ -66,13 +68,12 @@ export function mountCombatRibbon(callbacks) {
             'combat-ribbon__chip',
             `combat-ribbon__chip--${row.side}`,
             current && 'combat-ribbon__chip--current',
-            row.defeated && 'combat-ribbon__chip--defeated',
-            row.incapacitated && !row.defeated && 'combat-ribbon__chip--incapacitated',
+            down?.kind === 'defeated' && 'combat-ribbon__chip--defeated',
+            down !== null && down.kind !== 'defeated' && 'combat-ribbon__chip--incapacitated',
           ]),
           ariaLabel:
             `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
-            `${row.defeated ? ', defeated' : ''}` +
-            `${row.incapacitated && !row.defeated ? ', cannot act' : ''}`,
+            `${down ? `, ${down.label}` : ''}`,
           title: name,
         },
       );
