@@ -56,10 +56,17 @@ import { castRoutes } from '../entities/CastRoute.js';
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
- * @param {{ targetId?: string | null }} [options] a target already picked on
- *   the combat board pre-fills the dialog target field
+ * @param {{ targetId?: string | null, prompt?: typeof promptModal }} [options]
+ *   a target already picked on the combat board pre-fills the dialog target
+ *   field. `prompt` renders the dialogs, and a test passes its own answers.
  */
-export async function castSpellAction(app, combat, participant, spell, { targetId = null } = {}) {
+export async function castSpellAction(
+  app,
+  combat,
+  participant,
+  spell,
+  { targetId = null, prompt = promptModal } = {},
+) {
   const targets = combatTargets(app, combat, participant, spell);
   const found = findCombatant(app, participant.id);
   if (!found) return;
@@ -70,6 +77,7 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
     targets,
     /** @type {(next: any) => void} */ (found.store),
     targetId,
+    prompt,
   );
 }
 
@@ -81,12 +89,22 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
  * @param {AppContext} app
  * @param {import('../types/entities.js').Character} caster
  * @param {Spell} spell
+ * @param {{ prompt?: typeof promptModal }} [options] `prompt` renders the
+ *   dialogs, and a test passes its own answers.
  */
-export async function castSpellOutOfCombat(app, caster, spell) {
-  await runCast(app, caster, spell, rosterTargets(app, spell, caster.id), (next) => {
-    app.state.characters = replaceById(app.state.characters, next);
-    app.actions.refreshSelectedCharacter();
-  });
+export async function castSpellOutOfCombat(app, caster, spell, { prompt = promptModal } = {}) {
+  await runCast(
+    app,
+    caster,
+    spell,
+    rosterTargets(app, spell, caster.id),
+    (next) => {
+      app.state.characters = replaceById(app.state.characters, next);
+      app.actions.refreshSelectedCharacter();
+    },
+    null,
+    prompt,
+  );
 }
 
 /**
@@ -327,9 +345,18 @@ export function castPlan(app, entity, listed, offered, route = null) {
  * @param {string | null} [preferredTargetId] a target picked before the
  *   dialog opened, from the combat board selection. The dialog pre-fills
  *   this target where it is offered.
+ * @param {typeof promptModal} [prompt] renders the dialogs
  */
-async function runCast(app, entity, spell, offered, writeBack, preferredTargetId) {
-  const route = await pickRoute(spell, castRoutes(entity, spell));
+async function runCast(
+  app,
+  entity,
+  spell,
+  offered,
+  writeBack,
+  preferredTargetId,
+  prompt = promptModal,
+) {
+  const route = await pickRoute(spell, castRoutes(entity, spell), prompt);
   if (route === undefined) return;
   const plan = castPlan(app, entity, spell, offered, route);
   if (!plan.ok) {
@@ -338,7 +365,7 @@ async function runCast(app, entity, spell, offered, writeBack, preferredTargetId
   }
   if (preferredTargetId) prefillTarget(plan.fields, preferredTargetId);
   const verb = plan.free?.repeat ? 'Repeat' : 'Cast';
-  const values = await promptModal(`${verb} ${spell.name}`, plan.fields, {
+  const values = await prompt(`${verb} ${spell.name}`, plan.fields, {
     submitLabel: verb,
     wide: true,
     onChange: castChangeHandler(plan),
@@ -361,13 +388,14 @@ async function runCast(app, entity, spell, offered, writeBack, preferredTargetId
  * resolves to null with no question.
  * @param {Spell} spell
  * @param {{ id: import('../types/cast.js').CastRoute, label: string }[]} routes
+ * @param {typeof promptModal} prompt renders the question
  * @returns {Promise<import('../types/cast.js').CastRoute | null | undefined>}
  *   the picked route, null with nothing to pick, or undefined when the GM
  *   cancels
  */
-async function pickRoute(spell, routes) {
+async function pickRoute(spell, routes, prompt) {
   if (routes.length === 0) return null;
-  const values = await promptModal(
+  const values = await prompt(
     `Cast ${spell.name}`,
     [
       {
