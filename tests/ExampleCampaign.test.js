@@ -22,7 +22,11 @@ import { creatureProficiencyBonus } from '../src/entities/CreatureChecks.js';
 import { computeCrossingEntryTile, computeRegionEntryTile } from '../src/map/EntryPoint.js';
 import { NEIGHBORS4 } from '../src/map/MapGeometry.js';
 import { roadArms } from '../src/campaign/ExampleRoads.js';
-import { DOWNS_WEST_GATE, VALE_EAST_GATE } from '../src/campaign/ExampleRegions.js';
+import {
+  DOWNS_VALE_ENTRIES,
+  DOWNS_WEST_GATE,
+  VALE_EAST_GATE,
+} from '../src/campaign/ExampleRegions.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 const { grid } = campaign;
@@ -470,13 +474,28 @@ test('a road crosses the border from the Briarwick Vale into the Barrowdowns', (
   assert.ok(roadArms(getTile(nodeOf('barrowdowns'), DOWNS_WEST_GATE)).includes('w'));
 });
 
-test('the barrow lies at least 12 tiles from the keep, off the road', () => {
+test('the barrow lies far from the keep and from each way in from the vale, off the road', () => {
+  const world = nodeOf('world');
+  const vale = nodeOf('briarwick-vale');
   const downs = nodeOf('barrowdowns');
   /** @param {string} id */
   const link = (id) => downs.tiles.find((t) => t.childNodeId === id);
   const keep = link('thornhold');
   const barrow = link('barrow');
   assert.ok(keep && barrow);
-  assert.ok(tileDistance(keep.id, barrow.id) >= 12, `${keep.id} to ${barrow.id}`);
+  // Every tile where a party that walks off the vale lands on the downs.
+  const entries = new Set(
+    vale.tiles.flatMap((t) => {
+      const [x, y] = t.id.split(',').map(Number);
+      return findExits(vale, world, null, { at: { x, y }, nodeById: nodeOf })
+        .filter((e) => e.targetNodeId === 'barrowdowns' && e.crossTileId)
+        .map((e) => computeCrossingEntryTile(world, downs, e.crossTileId ?? ''));
+    }),
+  );
+  assert.deepEqual([...entries].sort(), [...DOWNS_VALE_ENTRIES].sort());
+  for (const from of [keep.id, ...entries]) {
+    assert.ok(tileDistance(from, barrow.id) >= 12, `${from} to ${barrow.id}`);
+    assert.ok(hasOpenPath(downs, from, barrow.id), `a walk from ${from} to ${barrow.id}`);
+  }
   assert.equal(roadArms(barrow).length, 0);
 });

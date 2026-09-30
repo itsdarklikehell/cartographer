@@ -687,7 +687,7 @@ represent and writes out of line whatever it does not represent:
   hierarchy fixture or a hand-edited id falls back to the per-cell form.
   Nodes that are sparse but still gridded, as interiors often are, encode
   through a reserved `-1` index that means "no tile here". The example's
-  `barrow` node has 105 tiles in a 14x14 grid.
+  `barrow` node has 99 tiles in a 14x14 grid.
 - **Leftovers by removal.** The leftover list is built by removing the fields
   that the codec represents itself, the same rule that `packTile` follows. A
   `Tile` field added later therefore stays in the leftover record. A

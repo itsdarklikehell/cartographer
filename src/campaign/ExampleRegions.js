@@ -18,6 +18,9 @@ import { paintRoadTo } from './ExampleRoads.js';
 // off the vale at VALE_EAST_GATE lands on DOWNS_WEST_GATE, and the reverse.
 export const VALE_EAST_GATE = '26,23';
 export const DOWNS_WEST_GATE = '0,16';
+// The tiles where a party lands when it walks off the Briarwick Vale into
+// the Barrowdowns, from the road gate and from the open border beside it.
+export const DOWNS_VALE_ENTRIES = [DOWNS_WEST_GATE, '2,13', '3,11'];
 
 /** @typedef {import('./ExampleWorld.js').RegionStage} RegionStage */
 /** @typedef {import('../map/GeneratorTree.js').TreeNode} TreeNode */
@@ -37,11 +40,11 @@ export const DOWNS_WEST_GATE = '0,16';
  * The index of the first site whose label is in `labels`. When no site has
  * one, the stage stamps `marker` on open ground far from the entry and adds
  * a site for it that opens into `archetype`. With `away`, a site counts only
- * when each of its tiles lies at least `away.min` tiles from `away.from` and
- * off the road, and a stamped marker keeps the same distance.
+ * when each of its tiles lies at least `away.min` tiles from every tile in
+ * `away.from` and off the road, and a stamped marker obeys the same rule.
  * @param {RegionStage} stage @param {string[]} labels @param {string} marker
  * @param {{ archetype: string, kind: import('../types/map.js').NodeKind, size: string }} inside
- * @param {{ from: string, min: number }} [away]
+ * @param {{ from: string[], min: number }} [away]
  * @returns {number}
  */
 function ensureSite(stage, labels, marker, { archetype, kind, size }, away) {
@@ -49,7 +52,8 @@ function ensureSite(stage, labels, marker, { archetype, kind, size }, away) {
   /** @param {string} id */
   const far = (id) =>
     !away ||
-    (tileDistance(id, away.from) >= away.min && !onRoad(/** @type {Tile} */ (byId.get(id))));
+    (away.from.every((from) => tileDistance(id, from) >= away.min) &&
+      !onRoad(/** @type {Tile} */ (byId.get(id))));
   const found = stage.gen.sites.findIndex((s) => labels.includes(s.label) && s.tileIds.every(far));
   if (found >= 0) return found;
   const tileId = outdoors(stage.gen, (t) => isOpenGround(t) && far(t.id))();
@@ -445,8 +449,10 @@ export const REGION_STAGES = {
       siteTile(stage, keep),
       'Thornhold, seat of House Vane, sworn wardens of the barrow. Its crypt keeps the ledger of the sealing.',
     );
-    // The barrow lies a long walk from the keep and off the road, so a party
-    // that follows the caravan to Thornhold does not find it on the way.
+    paintRoadTo(gen, stage.palette, DOWNS_WEST_GATE, 'w');
+    // The barrow lies a long walk from the keep, from each place where a
+    // party from the vale comes in, and off the road. A party that follows
+    // the caravan to Thornhold does not find it on the way.
     const tomb = ensureSite(
       stage,
       ['dungeon'],
@@ -456,7 +462,7 @@ export const REGION_STAGES = {
         kind: 'interior',
         size: 'medium',
       },
-      { from: siteTile(stage, keep), min: 12 },
+      { from: [siteTile(stage, keep), ...DOWNS_VALE_ENTRIES], min: 12 },
     );
     stage.overrides.set(tomb, {
       id: 'barrow',
@@ -470,7 +476,6 @@ export const REGION_STAGES = {
       siteTile(stage, tomb),
       'The Barrow of the Old King. Warded shut for four hundred years; the ward is failing.',
     );
-    paintRoadTo(gen, stage.palette, DOWNS_WEST_GATE, 'w');
     stage.after.push((node) => {
       const hall = node('thornhold');
       putInside(stage, hall, ['shade'], { fallback: { nodeId: 'thornhold', tileId: hall.entry } });
