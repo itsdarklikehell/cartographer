@@ -25,7 +25,7 @@ You need [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/)
 
 4. Open `http://127.0.0.1:8080` in a browser.
 
-The app opens in Play mode with a blank campaign. On the first visit, a **Welcome, GM** card offers three ways to start: build by hand, generate a world, or load the example campaign. At any time, click **Load example** in the header to load the example campaign. If port 8080 is in use, the dev server fails to start, so stop the other process first.
+The app opens in Play mode with a blank campaign. On the first visit, a **Welcome, GM** card offers three ways to start: build by hand, generate a world, or load the example campaign. Click **Welcome** in the header to open the card again. At any time, click **Load example** in the header to load the example campaign. If port 8080 is in use, the dev server fails to start, so stop the other process first.
 
 A hosted build runs at <https://cartographer.tbmh.org>. The hosted build can be older than the source in this repository. Each origin has its own local storage, so a campaign that you save on the hosted build does not appear on your dev server. Use **Export** and **Import** to move it.
 

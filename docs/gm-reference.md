@@ -147,6 +147,7 @@ a GM tab only.
 
 | Control | What it does |
 | --- | --- |
+| Welcome | Opens the Welcome card on the map, with its three ways to start: build by hand, generate a world, or load the example campaign. The card opens by itself only on the first visit with a blank campaign |
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The label reads "Save •" while changes are unsaved |
@@ -158,8 +159,9 @@ A save from a stepped-back position discards the steps that were left to
 redo.
 
 New, Load example, and Import each keep a copy of the campaign that they
-replace, as one undo step. If browser storage has no room for the copy, the
-confirmation says that Undo may not restore the current campaign. To keep a
+replace, as one undo step. The confirmation says that Undo in the header
+restores the current campaign. If browser storage has no room for the copy,
+the confirmation says instead that Undo may not restore it. To keep a
 copy in that case, export the campaign first.
 
 ### Autosave

@@ -24,6 +24,9 @@ import { mirrorActive } from '../storage/AssetMirror.js';
 import { confirmShortenedImport } from './shortenedLoadPrompts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+
+/** The confirm line of a replace that Undo can take back. */
+const UNDO_NOTE = 'Undo in the header restores the current one.';
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {ReturnType<typeof import('./assetWait.js').createAssetWait>} AssetWait */
 
@@ -81,6 +84,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
       replacePrompt(
         'Start a new blank campaign? The current campaign is replaced, including anything saved.',
         replaceIsUndoable(state),
+        UNDO_NOTE,
       ),
       { variant: 'danger', confirmLabel: 'New campaign' },
     );
@@ -95,6 +99,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
         replacePrompt(
           'Load the example campaign? The current campaign is replaced, including anything saved.',
           replaceIsUndoable(state),
+          UNDO_NOTE,
         ),
         { variant: 'danger', confirmLabel: 'Load example' },
       ));
@@ -144,7 +149,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
         replacePrompt(
           'Import this campaign? It replaces the current campaign.',
           replaceIsUndoable(state),
-          'Undo in the header restores the current one.',
+          UNDO_NOTE,
         ),
         { variant: 'danger', confirmLabel: 'Import' },
       ));

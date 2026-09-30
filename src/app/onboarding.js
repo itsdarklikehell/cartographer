@@ -11,23 +11,44 @@ const ONBOARDED_KEY = 'campaign-builder:onboarded';
  * First-run onboarding. A blank campaign in Play mode shows a fogged, empty
  * map with no hint that Build mode, generation, or the example campaign
  * exist. This function overlays three ways forward on the map until the GM
- * picks one or dismisses the overlay. After that, the overlay never shows
- * again on this browser. Each way forward is a button with its explanation
- * as visible text under it, and the card heading takes focus on mount, so a
- * keyboard or screen reader user starts inside the card.
+ * picks one or dismisses the overlay. After that, the overlay does not open
+ * by itself again on this browser. The header's Welcome button opens it at
+ * any time.
  * @param {AppContext} app
  */
 export function maybeShowOnboarding(app) {
+  mustGetElement('welcome-btn').addEventListener('click', () => showOnboarding(app));
   const blank = isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
   if (!blank || localStorage.getItem(ONBOARDED_KEY)) return;
+  showOnboarding(app);
+}
 
+/**
+ * Overlay the Welcome card on the map. Each way forward is a button with its
+ * explanation as visible text under it, and the card heading takes focus on
+ * mount, so a keyboard or screen reader user starts inside the card. A
+ * second call while the card is open only moves focus back to it.
+ * @param {AppContext} app
+ */
+function showOnboarding(app) {
+  const viewport = mustGetElement('map-viewport');
+  const open = /** @type {HTMLElement | null} */ (viewport.querySelector('.onboarding h2'));
+  if (open) {
+    open.focus();
+    return;
+  }
+  const blank = isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
   const heading = el('h2', 'card__title', 'Welcome, GM');
   heading.tabIndex = -1;
   const card = el(
     'div',
     'onboarding__card card u-col u-g2',
     heading,
-    el('p', 'onboarding__blurb u-muted', 'Your world is empty. Three ways to start:'),
+    el(
+      'p',
+      'onboarding__blurb u-muted',
+      blank ? 'Your world is empty. Three ways to start:' : 'Three ways to build a campaign:',
+    ),
   );
   const overlay = el('div', 'onboarding', card);
 
@@ -62,6 +83,6 @@ export function maybeShowOnboarding(app) {
 
   card.appendChild(textButton('Dismiss', dismiss, { className: 'onboarding__skip' }));
 
-  mustGetElement('map-viewport').appendChild(overlay);
+  viewport.appendChild(overlay);
   heading.focus();
 }
