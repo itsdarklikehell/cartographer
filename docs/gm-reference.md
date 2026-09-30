@@ -914,6 +914,7 @@ Build mode, from Play mode, and from the tile menu.
 | Name | Empty | The name shown in the panels and the log |
 | Role / faction | Empty | A short description, such as "blacksmith" |
 | Disposition | Neutral. Hostile for **New encounter** and **New foe here** | Hostile, neutral, or friendly. A hostile creature is a foe |
+| Creature type | Untyped | The SRD type, such as undead or beast. Sleep, the healing spells, Blight, Sunburst, and Sunbeam read it. An untyped creature matches no type rule, and a party character counts as humanoid |
 | Max HP | 4 | The full health pool |
 | Notes | Empty | Text for the GM. The Player view does not show it |
 | Level (blank for none) | Blank. 1 for **New encounter** and **New foe here** | Sets the default stat block |
@@ -924,6 +925,7 @@ Build mode, from Play mode, and from the tile menu.
 | Weapon | None (unarmed) | A weapon from the library |
 | Armor | None (unarmored) | Armor from the library |
 | Resistant to, Vulnerable to, Immune to | None | The damage types that the creature takes half, double, or no damage from |
+| Immune to conditions | None | The conditions that do not land on the creature. The log names the immunity in place of the chip |
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
@@ -1501,6 +1503,21 @@ Power Word Kill compares the current HP of the target with its limit of
 100. The dialog lists the targets by name only, because none of them rolls
 a save. The app reads the HP of each target when you click Cast, not when
 the dialog opens. See [Hit-point rules](spells-missing.md#hit-point-rules).
+
+A spell can have creature-type rules, which the spell form in the Library
+sets under **No effect on**, **No effect if immune to**, **Save at
+disadvantage**, and **Maximum damage**. The app applies them to each target
+by its creature type. Sleep passes over undead and creatures immune to
+Charmed, and the log names the reason. The healing spells have no effect on
+undead or constructs. Blight skips undead and constructs, and a plant saves
+at disadvantage and takes the maximum damage. Sunburst and Sunbeam give
+undead and oozes disadvantage on the save. See
+[Creature types](spells-missing.md#creature-types).
+
+A Chill Touch hit stops the target from regaining hit points until the start
+of the next turn of the caster, and a heal on it logs that it has no effect.
+An undead target also attacks the caster at disadvantage until the end of the
+next turn of the caster.
 
 A buff with a range of Self, such as Shield, offers only the caster as its
 target. The chip of Shield, Shield of Faith, Mage Armor, or Barkskin changes

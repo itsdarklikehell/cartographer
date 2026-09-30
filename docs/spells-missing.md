@@ -136,6 +136,32 @@ of the target, so a hit on a creature that resists necrotic damage gives
 back less. Vampiric Touch also repeats on each later turn, as Spiritual
 Weapon does.
 
+Chill Touch leaves a chip on the creature that it hits, and the creature
+regains no hit points until the start of the next turn of the caster. A heal
+from a spell or from the GM has no effect and the log says why, but
+temporary hit points still land. An undead target also takes a second chip,
+so it attacks the caster at disadvantage until the end of the next turn of
+the caster. Its weapon attacks and spell attacks against other creatures
+roll as usual.
+
+### Creature types
+
+A spell can name creature types in `effect.typeRules`. Sleep and Hold
+Monster have no effect on undead, and the healing spells have no effect on
+undead or constructs. Blight has no effect on undead or constructs, and a
+plant saves at disadvantage and takes the maximum damage. Sunburst and
+Sunbeam give undead and oozes disadvantage on the save. A party character
+counts as humanoid, and a creature with no type matches no rule.
+
+Chill Touch leaves a chip on the creature that it hits, and the creature
+regains no hit points until the start of the next turn of the caster. A heal
+from a spell or from the GM logs that the heal has no effect, and temporary
+hit points still land. An undead target also takes a second chip, and it
+attacks the caster at disadvantage until the end of the next turn of the
+caster. Its weapon attacks and spell attacks against that caster roll at
+disadvantage, and its attacks against other creatures do not.
+
+
 ### Hit-point rules
 
 Sleep and Color Spray roll a pool of hit points and roll no save. The app
@@ -150,10 +176,11 @@ is affected, with no reason (see
 [GM-only lines](architecture/combat.md#gm-only-lines)).
 
 Sleep ends on a creature when that creature takes damage, including damage
-that its temporary hit points absorb. The printed spell does not affect
-undead or creatures immune to being charmed. The app does not know which
-creatures those are, so the GM leaves them out of the targets. A creature
-that an ally shakes awake loses its chip when the GM removes it.
+that its temporary hit points absorb. The pool passes over an undead target
+and a target immune to Charmed, and such a target spends none of the pool.
+The app reads the creature type and the condition immunities of each
+creature, and an untyped creature counts as neither. A creature that an ally
+shakes awake loses its chip when the GM removes it.
 
 Power Word Kill reads the current HP of the target. A target with 100 HP
 or fewer dies with no roll, and one with more is unaffected. A creature
@@ -268,8 +295,6 @@ warlock cast most of them.
 Some entries have one clause that the app cannot resolve beside a payload
 that it can. The description of each entry states the difference:
 
-- Chill Touch deals its damage and leaves the clause that stops healing to
-  the GM.
 - Blindness/Deafness always blinds, because deafness has no rule in the
   app.
 - Flame Strike raises its fire dice at a higher slot. The printed spell
@@ -282,10 +307,9 @@ that it can. The description of each entry states the difference:
   when the target moves out of range. The GM ends it by hand.
 - Spiritual Weapon moves up to 20 feet before each attack. The GM tracks
   where it is.
-- Sunbeam and Sunburst give undead and oozes disadvantage on the save, and
-  Shatter gives it to a creature of stone, crystal, or metal. The save mode
-  of the cast dialog applies to every target of one cast, so the GM rolls
-  that save by hand when the cast also catches other creatures.
+- Shatter gives disadvantage on the save to a creature of stone, crystal,
+  or metal. No creature type marks such a creature, so the GM rolls that
+  save by hand when the cast also catches other creatures.
 - Fear lets a frightened creature retry the save only when it ends its turn
   out of line of sight of the caster. The app has no line of sight, so the
   chip has no automatic retry and the GM rolls it.
@@ -296,8 +320,6 @@ that it can. The description of each entry states the difference:
   slain humanoid as a zombie. The GM rules both.
 - Revivify raises only a dead target. The GM checks that the target died
   within the last minute.
-- The healing spells have no effect on undead or constructs, which the GM
-  rules.
 - Lesser Restoration ends a Blinded, Deafened, Paralyzed, or Poisoned chip,
   and the caster picks one when the target has more than one. Heal ends the
   Blinded and Deafened chips beside its 70 HP. The app tracks no diseases,

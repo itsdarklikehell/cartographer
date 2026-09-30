@@ -442,6 +442,22 @@ Thirsting Blade works through `Features.attacksPerAction`, which the budget
 reads as the swings of one Attack action. The count does not know which
 weapon swings, so the second swing works with any weapon.
 
+### Creature-type rules and caster slants
+
+A save or heal spell can carry `effect.typeRules` (see `src/types/spell.ts`).
+`app/spellCastResolve.js` stamps each target with `creatureType` and
+`conditionImmunities` from the roster, and `entities/SpellTypeRules.js`
+applies the lists in `Casting.js`. A skipped target reports `unaffectedBy`
+and spends none of an HP pool, so Sleep passes over undead without losing
+dice. A `disadvantage` type folds a disadvantage into the save mode of that
+target alone, and a `maxDamage` type reads the damage dice at their top face.
+
+A chip with the `disadvantageVsSource` mod slants the attacks of its holder
+against the caster named in `source.casterId`. `entities/SourceSlant.js`
+reads it, and both `combat/WeaponSwing.js` and the spell attack in
+`spellCastResolve.js` fold it into the roll mode. Chill Touch writes this chip
+on an undead target through the typed chip of its `onHit` block.
+
 ## The combat view
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a

@@ -374,8 +374,10 @@ region.
 3. Open the **Encounters** tab, then the **Mobs** tab.
 4. Click **New encounter**. The **New creature** dialog opens, with the
    selected tile already set as its location.
-5. Set **Name**, **Max HP**, **Level**, and **Tier**. The tier and the
-   level set a default stat block and default gear.
+5. Set **Name**, **Creature type**, **Max HP**, **Level**, and **Tier**. The
+   tier and the level set a default stat block and default gear. The type
+   decides which spells affect the foe: Sleep passes over undead, and a
+   healing spell has no effect on an undead or a construct.
 6. Set **Challenge rating**, and select the saving throws and skills that
    the foe is trained in. The rating feeds the difficulty hint, and it sets
    the bonus that the foe adds to each save and check. To leave a foe out

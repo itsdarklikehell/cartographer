@@ -266,6 +266,26 @@ A derived bonus can be lower than the bonus in an SRD stat block. A printed
 bonus can include a trait that this app does not model, such as the goblin's
 Nimble Escape.
 
+### Creature types and condition immunities
+
+A creature has an optional `creatureType`, one of the fourteen SRD types in
+`CreatureType.CREATURE_TYPES`, and an optional `conditionImmunities` list of
+condition names. `entities/CreatureType.js` cleans both, and the write paths,
+load coercion, template capture and spawn, and `Library.normalizeLibrary`
+spread `creatureTypeFields`, so a creature with neither stores no field. An
+unknown type or condition name drops out. A party character stores no type
+and counts as humanoid through `creatureTypeOf`.
+
+`applyConditionToTarget` in `app/combatantWrites.js` checks the immunity list
+before it writes a chip. A creature immune to the condition keeps its chips,
+and the log says so. The spell resolver reads the type through the type rules
+of a spell (see [Combat](combat.md)).
+
+A chip with the `noHealing` mod (Chill Touch) stops its holder from regaining
+hit points. `HealTarget.healBlocked` reports it for a spell heal, and
+`applyToTarget` refuses every other heal of the holder. Temporary HP takes a
+separate path, so the chip does not stop it.
+
 ### Damage defenses
 
 A creature has an optional `defenses` field with three lists of damage types:
