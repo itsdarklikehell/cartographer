@@ -6,12 +6,15 @@ import {
   pendingInvocationCount,
   unpickedInvocations,
 } from '../entities/InvocationLevelUp.js';
+import { arcanumOptions, pendingArcana } from '../entities/MysticArcanum.js';
+import { activeSpells } from '../library/Library.js';
 import { PACT_BOONS } from '../data/invocations.js';
 import { splitList } from '../util/text.js';
 
 /**
  * The warlock dialogs of a level-up and of the sheet's pending row: the pact
- * boon, the new invocations, and one optional swap. `InvocationLevelUp.js`
+ * boon, the new invocations, one optional swap, and the Mystic Arcanum
+ * spells. `InvocationLevelUp.js`
  * keeps the rules. This file is DOM wiring over it, verified visually.
  */
 
@@ -104,9 +107,37 @@ async function askSwap(character) {
 }
 
 /**
+ * Ask for the Mystic Arcanum spell of each listed spell level, from the
+ * warlock spells of that level in the library. A level left at None stays
+ * pending.
+ * @param {number[]} levels
+ * @param {Record<string, string>} [current] the picks the selects start on
+ * @returns {Promise<Record<string, string>>}
+ */
+export async function askArcana(levels, current = {}) {
+  const spells = activeSpells();
+  const fields = levels.map((level) => ({
+    name: String(level),
+    label: `${ordinal(level)}-level spell`,
+    type: /** @type {const} */ ('select'),
+    options: [
+      { value: '', label: 'None' },
+      ...arcanumOptions(spells, level).map((s) => ({ value: s.id, label: s.name })),
+    ],
+    value: current[level] ?? '',
+  }));
+  if (fields.length === 0) return {};
+  const values = await promptModal('Mystic Arcanum', fields, { submitLabel: 'Choose' });
+  return Object.fromEntries(Object.entries(values ?? {}).filter(([, id]) => id));
+}
+
+/** @param {number} n @returns {string} 6th, 7th, 8th, or 9th */
+const ordinal = (n) => `${n}th`;
+
+/**
  * Gather the warlock picks against a preview character. The pact boon comes
  * first, because it changes which invocations qualify, and the swap comes
- * after the new picks. `swap` false skips the swap, as the sheet's pending
+ * after the new picks, then the Mystic Arcanum. `swap` false skips the swap, as the sheet's pending
  * row does, since the rules allow a swap only when a warlock level is gained.
  * @param {Character} preview
  * @param {{ swap: boolean }} opts
@@ -118,11 +149,13 @@ export async function askWarlockPicks(preview, opts) {
   const added = await askNewInvocations(next);
   next = applyWarlockPicks(next, { added });
   const swap = opts.swap ? await askSwap(next) : null;
-  return { boon, added, swap };
+  const arcana = await askArcana(pendingArcana(next));
+  return { boon, added, swap, arcana };
 }
 
 /**
- * The sheet's pending row: ask for the pact boon and the missing invocations
+ * The sheet's pending row: ask for the pact boon, the missing invocations,
+ * and the missing Mystic Arcanum spells,
  * and commit them to the character read after the last dialog closes.
  * @param {() => Character} getCharacter
  * @param {{ onCommit: (character: Character) => void }} opts

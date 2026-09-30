@@ -11,6 +11,7 @@ import { applyDefenses, defensesOf } from '../entities/DamageDefenses.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
+import { arcanumSpellIds } from '../entities/MysticArcanum.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
 import { spellbookIds } from './casterFields.js';
@@ -305,7 +306,8 @@ export function weaponsOf(app, id) {
  * spellsOf gives a combatant's castable spells, resolved from the spellbook
  * ids through the merged library's memoized index. A party character lists
  * its cantrips plus what its classes' known-rule makes castable, and the
- * spells its warlock invocations cast, each as the invocations change it. A
+ * spells its warlock invocations cast, each as the invocations change it. Its
+ * Mystic Arcanum spells list too. A
  * prepared caster's unprepared spells stay off the list. A creature lists its whole
  * spellbook, because its authoring dialog marks every picked spell as
  * castable. A non-caster's empty spellbook lists nothing.
@@ -320,7 +322,7 @@ export function spellsOf(app, id) {
     const character = found.entity;
     const book = getSpellbook(character);
     const known = new Set([...book.cantrips, ...castableLeveledIds(character)]);
-    const ids = [...known, ...invocationSpellIds(character)];
+    const ids = [...known, ...invocationSpellIds(character), ...arcanumSpellIds(character)];
     // A spell the caster also knows lists as the book has it, because the cast
     // dialog offers the at-will cast as a choice and rewrites it there.
     return resolveSpellIds([...new Set(ids)]).map((spell) =>

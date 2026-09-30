@@ -566,13 +566,15 @@ that.
 4. On each warlock level, the app offers one swap. To replace an
    invocation, pick it under **Replace**, pick the new one under **With**,
    and click **Done**. To keep every invocation, leave both at **None**.
-5. Open **Invocation rules** under the Invocations row to read what each
+5. At warlock levels 11, 13, 15, and 17, pick the Mystic Arcanum spell of
+   the new spell level and click **Choose**.
+6. Open **Invocation rules** under the Invocations row to read what each
    pick does.
 
-A cancelled dialog leaves the boon or the invocations pending. The row
+A cancelled dialog leaves the boon, the invocations, or the arcanum pending. The row
 **Warlock choices pending** shows what is left, and its **Choose** button
-asks again. The **GM edit** buttons beside the Pact boon and Invocations
-rows set the picks freely at any time, as a GM override of the level-up
+asks again. The **GM edit** buttons beside the Pact boon, Invocations, and
+Mystic Arcanum rows set the picks freely at any time, as a GM override of the level-up
 rules.
 
 The spells that the invocations cast appear with the other spells of the

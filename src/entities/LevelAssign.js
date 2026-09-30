@@ -4,6 +4,7 @@ import { getProficiencies, withProficiencies } from './Proficiencies.js';
 import { applyFeatureGrant, derive } from './Progression.js';
 import { withSubclass } from './Subclass.js';
 import { invocationsClaim } from './Invocations.js';
+import { arcanaClaim } from './MysticArcanum.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
@@ -59,8 +60,8 @@ export function canMulticlass(character, classId) {
  * its increases and grants with no level to claim them. A subclass claims
  * the class's subclass level, because an Eldritch Knight moved below it
  * would keep its slots and spells with no casting to use them. A warlock's
- * invocations and pact boon claim a level the same way (see
- * `Invocations.invocationsClaim`).
+ * invocations, pact boon, and Mystic Arcanum claim a level the same way (see
+ * `Invocations.invocationsClaim` and `MysticArcanum.arcanaClaim`).
  * @param {Character} character
  * @param {string} classId
  * @param {number} level
@@ -72,7 +73,12 @@ export function hasChoiceAt(character, classId, level) {
     ...Object.values(character.featureChoices ?? {}),
   ];
   if (records.some((r) => r.classId === classId && r.classLevel >= level)) return true;
-  if (classId === 'warlock' && invocationsClaim(character, level)) return true;
+  if (
+    classId === 'warlock' &&
+    (invocationsClaim(character, level) || arcanaClaim(character, level))
+  ) {
+    return true;
+  }
   const ref = getClasses(character).find((r) => r.classId === classId);
   return !!ref?.subclass && (getClass(classId)?.subclassLevel ?? 0) >= level;
 }

@@ -671,6 +671,23 @@ spellbook check and pays from the pact pool only. `resolveCast` reads the use
 again off the live caster, refuses a use that another tab spent while the
 dialog was open, and then marks the use with `markInvocationUsed`.
 
+### Mystic Arcanum
+
+`entities/MysticArcanum.js` defines the Mystic Arcanum. At warlock levels 11,
+13, 15, and 17 the warlock picks one warlock spell of 6th, 7th, 8th, and 9th
+level, and the character stores the picks in `mysticArcanum`, keyed by spell
+level. `getArcana` keeps only the picks that the warlock level still grants.
+`arcanumCast` returns an `InvocationCast` with `oncePerRest` and `free` set,
+and `warlockCast` asks the invocations first and the arcanum second.
+`castPlan`, `resolveCast`, and `castRoutes` read `warlockCast`, so an
+arcanum casts at the spell's own level with no slot and no spellbook check.
+A spent arcanum sits in `invocationUses` under the id `arcanum-<level>`, so
+`markInvocationUsed` spends it and `Character.longRest` gives it back. A
+spent arcanum of a spell that the spellbook also has casts the usual way
+with a slot. The level-up flow asks for each arcanum pick through
+`applyWarlockPicks`, and `arcanaClaim` tells the donor path of
+`LevelAssign` that a warlock level keeps a pick.
+
 `entities/CastRoute.js` lists the ways to pay for a spell that has more
 than one. A caster with an open repeat can repeat it or cast it anew, and a
 warlock that knows an at-will spell can cast it at will or with a slot.

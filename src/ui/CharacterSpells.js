@@ -2,13 +2,19 @@ import { getSpellbook } from '../entities/Character.js';
 import { casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
 import { casterName } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entities/SpellView.js';
-import { invocationCast, invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
+import { invocationSpellIds, invokedSpell } from '../entities/Invocations.js';
+import { arcanumSpellIds, warlockCast } from '../entities/MysticArcanum.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/spell.js').Spell} Spell */
+
+/** The title of the group of Mystic Arcanum spells. */
+const ARCANUM = 'Mystic Arcanum';
+/** The groups whose spells a warlock casts through a class feature. */
+const FEATURE_GROUPS = ['Invocations', ARCANUM];
 
 /**
  * This builds the character-sheet spellbook: a read-only view of the
@@ -19,7 +25,8 @@ import { promptSpellDetail } from './SpellDetail.js';
  * titled as rituals, because the Wizard casts them from the book. The spells
  * that a warlock casts through its invocations and not from the book list in
  * a group of their own, and every spell reads as the invocations change it
- * (Agonizing Blast on Eldritch Blast, for example). A click
+ * (Agonizing Blast on Eldritch Blast, for example). The Mystic Arcanum spells
+ * list in a group of their own too, and a spent one reads struck through. A click
  * on a spell opens its detail, which offers Cast, in play, and Close.
  * Learning, preparing, and
  * forgetting a spell live in the Spellbook tab, not here. A character
@@ -59,6 +66,9 @@ export function buildSpellsSection(character, opts) {
   const invoked = opts
     .resolveSpells(invocationSpellIds(character))
     .filter((spell) => !fromBook.some((s) => s.id === spell.id));
+  const arcana = opts
+    .resolveSpells(arcanumSpellIds(character))
+    .filter((spell) => !fromBook.some((s) => s.id === spell.id));
   const groups = [
     // A book spell that an invocation also casts at will shows as the book
     // has it. The cast dialog offers the at-will cast as a choice.
@@ -68,6 +78,7 @@ export function buildSpellsSection(character, opts) {
     ...(invoked.length > 0
       ? [{ label: 'Invocations', spells: invoked.map((spell) => invokedSpell(character, spell)) }]
       : []),
+    ...(arcana.length > 0 ? [{ label: ARCANUM, spells: arcana }] : []),
   ];
   if (groups.length === 0) {
     section.appendChild(emptyState('Nothing castable'));
@@ -123,7 +134,7 @@ function buildGroup(character, title, spells, opts) {
 }
 
 /**
- * How a spell in the Invocations group is cast, for its chip tooltip, for
+ * How a spell in the Invocations or Mystic Arcanum group is cast, for its chip tooltip, for
  * example ", Armor of Shadows, at will" or ", Mire the Mind, once per long
  * rest, spent". A spell in a level group reads as an empty string.
  * @param {Character} character
@@ -132,7 +143,7 @@ function buildGroup(character, title, spells, opts) {
  * @returns {string}
  */
 function viaText(character, spell, group) {
-  const via = group === 'Invocations' ? invocationCast(character, spell.id) : null;
+  const via = FEATURE_GROUPS.includes(group) ? warlockCast(character, spell.id) : null;
   if (!via) return '';
   const how = via.oncePerRest
     ? `once per long rest, ${via.spent ? 'spent' : 'available'}`
@@ -141,8 +152,8 @@ function viaText(character, spell, group) {
 }
 
 /**
- * Whether a spell in the Invocations group comes from a once-per-rest
- * invocation that is spent until a long rest. Its chip reads muted and
+ * Whether a spell in the Invocations or Mystic Arcanum group comes from a
+ * once-per-rest feature that is spent until a long rest. Its chip reads muted and
  * struck through.
  * @param {Character} character
  * @param {Spell} spell
@@ -150,5 +161,5 @@ function viaText(character, spell, group) {
  * @returns {boolean}
  */
 function spentInvocation(character, spell, group) {
-  return group === 'Invocations' && !!invocationCast(character, spell.id)?.spent;
+  return FEATURE_GROUPS.includes(group) && !!warlockCast(character, spell.id)?.spent;
 }

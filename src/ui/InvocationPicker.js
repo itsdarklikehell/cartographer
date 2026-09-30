@@ -14,7 +14,9 @@ import {
 } from '../entities/Invocations.js';
 import { PACT_BOONS } from '../data/invocations.js';
 import { splitList } from '../util/text.js';
-import { choosePendingWarlockPicks } from './InvocationLevelFlow.js';
+import { askArcana, choosePendingWarlockPicks } from './InvocationLevelFlow.js';
+import { arcanumLevels, getArcana, pendingArcana, setArcana } from '../entities/MysticArcanum.js';
+import { activeSpellIndex } from '../library/Library.js';
 import { pactBoonPending, pendingInvocationCount } from '../entities/InvocationLevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -25,7 +27,9 @@ import { pactBoonPending, pendingInvocationCount } from '../entities/InvocationL
  * each picked invocation does. A row names the pending pact boon and
  * invocations, and its Choose button asks for them. The GM edit buttons set
  * the boon and the invocations freely, as a GM override with no level-up
- * swap limit. `entities/Invocations.js` keeps the rules. This file is DOM
+ * swap limit. From warlock level 11 a row lists the Mystic Arcanum spells,
+ * with a GM edit button. `entities/Invocations.js` and
+ * `entities/MysticArcanum.js` keep the rules. This file is DOM
  * wiring over it, verified visually. A character with no warlock level gets
  * no rows.
  * @param {() => Character} getCharacter
@@ -51,10 +55,12 @@ export function buildInvocationRows(getCharacter, opts) {
   }
 
   const pending = pendingInvocationCount(character);
-  if (pending > 0 || pactBoonPending(character)) {
+  const arcanaPending = pendingArcana(character).length;
+  if (pending > 0 || arcanaPending > 0 || pactBoonPending(character)) {
     const parts = [
       ...(pactBoonPending(character) ? ['pact boon'] : []),
       ...(pending > 0 ? [`${pending} invocation${pending === 1 ? '' : 's'}`] : []),
+      ...(arcanaPending > 0 ? [`${arcanaPending} Mystic Arcanum`] : []),
     ];
     rows.push(
       row(
@@ -62,7 +68,7 @@ export function buildInvocationRows(getCharacter, opts) {
         opts.editBase && [
           'Choose',
           () => choosePendingWarlockPicks(getCharacter, opts),
-          'Choose the pending pact boon and invocations',
+          'Choose the pending pact boon, invocations, and Mystic Arcanum',
         ],
       ),
     );
@@ -94,6 +100,29 @@ export function buildInvocationRows(getCharacter, opts) {
         ),
       );
     }
+  }
+
+  const levels = arcanumLevels(character);
+  if (levels.length > 0) {
+    const index = activeSpellIndex();
+    const picks = getArcana(character).map(
+      (a) => `${index.get(a.spellId)?.name ?? a.spellId} (${a.level}th)`,
+    );
+    rows.push(
+      row(
+        `Mystic Arcanum: ${picks.length > 0 ? picks.join(', ') : 'none'}`,
+        opts.editBase && ['GM edit', chooseArcana, 'GM override: set the Mystic Arcanum freely'],
+      ),
+    );
+  }
+
+  async function chooseArcana() {
+    const from = getCharacter();
+    const current = Object.fromEntries(getArcana(from).map((a) => [a.level, a.spellId]));
+    const picks = await askArcana(arcanumLevels(from), current);
+    const live = getCharacter();
+    const next = setArcana(live, picks);
+    if (next !== live) opts.onCommit(next);
   }
 
   async function choosePactBoon() {

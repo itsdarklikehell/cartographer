@@ -1834,6 +1834,21 @@ The app does not enforce these invocation rules, so you enforce them:
 - The pact weapon of the Pact of the Blade, and the familiar of the Pact of
   the Chain, with the invocations that use them.
 
+### Mystic Arcanum
+
+At warlock levels 11, 13, 15, and 17, the level-up asks for one warlock spell
+of 6th, 7th, 8th, and 9th level. The list offers the warlock spells of that
+level in the library. A level left at None stays pending, and the **Warlock
+choices pending** row asks for it again. The **Mystic Arcanum** row in the
+Progression block lists the picks, and its **GM edit** button changes them.
+
+An arcanum spell casts once per long rest at its own level with no spell
+slot. It lists in a Mystic Arcanum group on the character sheet, and with
+the other spells in combat. While it is spent, its chip shows struck through, and a cast
+refuses until a long rest. If the spellbook also has the spell, the app
+first asks **How to cast**: the arcanum with no slot, or a spell slot. The
+log names the feature, as in "Wren casts Circle of Death (Mystic Arcanum)."
+
 ### Inventory and equipment
 
 The Equipment tab has nine slots: Helmet, Armor, Gloves, Greaves, Main

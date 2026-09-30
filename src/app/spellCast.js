@@ -8,7 +8,8 @@ import { castableSlotLevels, pactSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster } from '../entities/Caster.js';
 import { isRitualOnly } from '../entities/SpellView.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
-import { invocationCast, invokedSpell } from '../entities/Invocations.js';
+import { invokedSpell } from '../entities/Invocations.js';
+import { warlockCast } from '../entities/MysticArcanum.js';
 import { replaceById } from '../entities/Roster.js';
 import { rollsNoSave } from '../entities/SpellFields.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
@@ -144,8 +145,16 @@ export function castPlan(app, entity, listed, offered, route = null) {
   // the usual way, which keeps the use for later. A spent one with no
   // spellbook entry refuses until a long rest. A GM who picked the slot cast
   // of an at-will spell casts it the usual way.
-  let invocation = hold || route === 'slot' ? null : invocationCast(entity, listed.id);
-  if (invocation?.oncePerRest && canCast(caster, listed)) invocation = null;
+  // A Mystic Arcanum casts once per long rest with no slot.
+  let invocation = hold || route === 'slot' ? null : warlockCast(entity, listed.id);
+  // A spent arcanum of a spell the spellbook also has casts with a slot.
+  if (
+    invocation?.oncePerRest &&
+    (!invocation.free || invocation.spent) &&
+    canCast(caster, listed)
+  ) {
+    invocation = null;
+  }
   const spell = invokedSpell(entity, listed, { atWill: !!invocation && !invocation.oncePerRest });
   if (!targetFree(spell.effect.kind) && offered.length === 0) {
     return { ok: false, message: 'No target available.' };
@@ -164,7 +173,7 @@ export function castPlan(app, entity, listed, offered, route = null) {
   /** @type {import('../types/cast.js').CastFree | null} */
   const free = hold
     ? { slotLevel: hold.slotLevel, repeat: true }
-    : invocation && !invocation.oncePerRest
+    : invocation && (!invocation.oncePerRest || invocation.free)
       ? { slotLevel: spell.level }
       : null;
   const repeat = !!free?.repeat;
@@ -225,7 +234,7 @@ export function castPlan(app, entity, listed, offered, route = null) {
   // ritual box opens ticked. A once-per-rest invocation casts with a warlock
   // spell slot, so it offers only the pact slot level.
   const ritualOnly = !free && isRitualOnly(caster, spell);
-  const pactOnly = !!invocation?.oncePerRest;
+  const pactOnly = !!invocation?.oncePerRest && !invocation.free;
   const slotLevels =
     spell.level > 0 && !ritualOnly && !free
       ? (pactOnly ? pactSlotLevels : castableSlotLevels)(caster, spell.level)

@@ -548,6 +548,13 @@ export interface Character extends HPBuffFields {
   invocationUses?: string[];
   /** The pact boon a warlock picked at 3rd level. Absent reads as none. */
   pactBoon?: import('./invocation.js').PactBoon;
+  /** The Mystic Arcanum spell ids of a warlock, keyed by spell level 6 to 9
+   * (see MysticArcanum.js). Absent reads as none. */
+  mysticArcanum?: Record<string, string>;
+  /** The Book of Shadows of a Pact of the Tome warlock: its three cantrips
+   * from any class list, and the rituals of Book of Ancient Secrets (see
+   * PactTome.js). Absent reads as an empty book. */
+  bookOfShadows?: { cantrips: string[]; rituals: string[] };
   level: number;
   xp: number;
   stats: Record<string, number>;

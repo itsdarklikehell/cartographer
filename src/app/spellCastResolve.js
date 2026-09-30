@@ -10,7 +10,8 @@ import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { applyOutcomes } from './spellOutcomes.js';
 import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
-import { blastPush, invocationCast, markInvocationUsed } from '../entities/Invocations.js';
+import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
+import { warlockCast } from '../entities/MysticArcanum.js';
 import { findCombatant, hpOf } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
@@ -82,7 +83,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // can spend it while this dialog sits open, and the plan copy would then
   // spend one use twice.
   const invocation = plan.invocation?.oncePerRest
-    ? invocationCast(/** @type {any} */ (live), spell.id)
+    ? warlockCast(/** @type {any} */ (live), spell.id)
     : (plan.invocation ?? null);
   if (plan.invocation?.oncePerRest && (!invocation?.oncePerRest || invocation.spent)) {
     app.toasts.show(`${plan.invocation.invocation.name} is spent until a long rest.`, {
@@ -225,7 +226,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
     ...(free ? { free: { slotLevel } } : {}),
-    ...(invocation?.oncePerRest ? { granted: true, pool: 'pact' } : {}),
+    ...(invocation?.oncePerRest && !invocation.free ? { granted: true, pool: 'pact' } : {}),
     // The caster's feat riders join its chips for the projectile rolls. The
     // mode folds above keep the plain chip lists on both sides, because the
     // condition-effect table matches entries by name, and a feat that shares

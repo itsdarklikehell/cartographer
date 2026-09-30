@@ -8,11 +8,13 @@ import {
   setInvocations,
   setPactBoon,
 } from './Invocations.js';
+import { pendingArcana, setArcana } from './MysticArcanum.js';
 
 /**
  * The warlock picks that a level-up asks for: the pact boon from 3rd warlock
  * level, the invocations that the level count allows but the character has
- * not picked, and one optional swap of a known invocation for another. The
+ * not picked, one optional swap of a known invocation for another, and the
+ * Mystic Arcanum spell of each spell level the warlock level grants. The
  * level-up dialogs in `ui/InvocationLevelFlow.js` gather the picks against a
  * preview of the new level, and `applyWarlockPicks` applies them again to the
  * character read after the last dialog closes. Every function here is pure.
@@ -75,8 +77,9 @@ export function swapInvocation(character, from, to) {
 /**
  * The character with the picks of a warlock level-up applied: the pact boon
  * first, since an invocation can need it, then the new invocations, and the
- * swap last. A pick that no longer qualifies drops, and the new invocations
- * stop at the count of the warlock level.
+ * swap, and the Mystic Arcanum picks last. A pick that no longer qualifies
+ * drops, the new invocations stop at the count of the warlock level, and an
+ * arcanum pick lands only on a spell level with no pick yet.
  * @param {Character} character
  * @param {WarlockPicks} picks
  * @returns {Character}
@@ -89,5 +92,10 @@ export function applyWarlockPicks(character, picks) {
     next = setInvocations(next, [...known, ...picks.added]);
   }
   if (picks.swap) next = swapInvocation(next, picks.swap.from, picks.swap.to);
+  const open = pendingArcana(next);
+  const arcana = Object.entries(picks.arcana ?? {}).filter(([level]) =>
+    open.includes(Number(level)),
+  );
+  if (arcana.length > 0) next = setArcana(next, Object.fromEntries(arcana));
   return next;
 }

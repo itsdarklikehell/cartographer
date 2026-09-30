@@ -38,6 +38,8 @@ export interface InvocationCast {
   oncePerRest: boolean;
   /** True when a once-per-rest cast is spent until a long rest. */
   spent: boolean;
+  /** True for a once-per-rest cast that spends no slot (Mystic Arcanum). */
+  free?: boolean;
 }
 
 /** The warlock picks of one level-up (see InvocationLevelUp.js). */
@@ -48,4 +50,6 @@ export interface WarlockPicks {
   added: string[];
   /** One known invocation replaced by another, or null for none. */
   swap?: { from: string; to: string } | null;
+  /** The new Mystic Arcanum spell ids, keyed by spell level. */
+  arcana?: Record<string, string>;
 }

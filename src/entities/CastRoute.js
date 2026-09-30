@@ -1,7 +1,7 @@
 import { canCast } from './Casting.js';
 import { toCaster } from './Caster.js';
 import { heldRepeat } from './SpellRepeat.js';
-import { invocationCast } from './Invocations.js';
+import { warlockCast } from './MysticArcanum.js';
 
 /**
  * The ways a caster can pay for one spell, when it has more than one. A
@@ -9,7 +9,8 @@ import { invocationCast } from './Invocations.js';
  * it for free or cast it anew with a slot, on a new target or at a higher
  * level. A warlock that casts a spell at will through an invocation and also
  * knows it can cast it at will or with a slot, and only the slot cast can be
- * upcast or aimed past the invocation's limits. The cast dialog asks first
+ * upcast or aimed past the invocation's limits. A warlock whose Mystic Arcanum
+ * spell the spellbook also has can cast it with no slot or with a slot. The cast dialog asks first
  * when this list is not empty. Every function here is pure.
  */
 
@@ -32,10 +33,15 @@ export function castRoutes(entity, spell) {
       { id: 'anew', label: 'Cast anew with a slot' },
     ];
   }
-  const invocation = invocationCast(entity, spell.id);
-  if (!invocation || invocation.oncePerRest) return [];
+  const invocation = warlockCast(entity, spell.id);
+  if (!invocation || (invocation.oncePerRest && !invocation.free) || invocation.spent) return [];
   return [
-    { id: 'invocation', label: `At will (${invocation.invocation.name})` },
+    {
+      id: 'invocation',
+      label: invocation.free
+        ? `${invocation.invocation.name} (no slot, once per long rest)`
+        : `At will (${invocation.invocation.name})`,
+    },
     { id: 'slot', label: 'With a spell slot' },
   ];
 }
