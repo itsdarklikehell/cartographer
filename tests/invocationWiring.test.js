@@ -164,7 +164,7 @@ test('Agonizing Blast adds CHA to each beam, and Repelling Blast notes the push'
   cast(agonizing, 'eldritch-blast', { allocation: 'ogre:2' }, seq(rolls));
   assert.equal(hp(plain) - hp(agonizing), 6);
   assert.ok(
-    plain.log.includes('Ogre can be pushed up to 20 feet, if Large or smaller (Repelling Blast).'),
+    plain.log.includes('Ogre can be pushed up to 20 feet (Repelling Blast).'),
     plain.log.join('\n'),
   );
 });

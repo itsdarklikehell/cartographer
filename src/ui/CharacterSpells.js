@@ -60,7 +60,11 @@ export function buildSpellsSection(character, opts) {
     .resolveSpells(invocationSpellIds(character))
     .filter((spell) => !fromBook.some((s) => s.id === spell.id));
   const groups = [
-    ...groupSpellsByLevel(fromBook.map((spell) => invokedSpell(character, spell))),
+    // A book spell that an invocation also casts at will shows as the book
+    // has it. The cast dialog offers the at-will cast as a choice.
+    ...groupSpellsByLevel(
+      fromBook.map((spell) => invokedSpell(character, spell, { atWill: false })),
+    ),
     ...(invoked.length > 0
       ? [{ label: 'Invocations', spells: invoked.map((spell) => invokedSpell(character, spell)) }]
       : []),
@@ -105,7 +109,9 @@ function buildGroup(character, title, spells, opts) {
         },
         {
           icon: 'sparkles',
-          className: 'character-sheet__spell-chip',
+          className: spentInvocation(character, spell, title)
+            ? 'character-sheet__spell-chip character-sheet__spell-chip--spent'
+            : 'character-sheet__spell-chip',
           title: `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`}${
             isRitualOnly(character, spell) ? ', ritual only' : ''
           }${viaText(character, spell, title)})`,
@@ -118,8 +124,8 @@ function buildGroup(character, title, spells, opts) {
 
 /**
  * How a spell in the Invocations group is cast, for its chip tooltip, for
- * example ", Armor of Shadows, at will". A spell in a level group reads as an
- * empty string.
+ * example ", Armor of Shadows, at will" or ", Mire the Mind, once per long
+ * rest, spent". A spell in a level group reads as an empty string.
  * @param {Character} character
  * @param {Spell} spell
  * @param {string} group the group title
@@ -128,5 +134,21 @@ function buildGroup(character, title, spells, opts) {
 function viaText(character, spell, group) {
   const via = group === 'Invocations' ? invocationCast(character, spell.id) : null;
   if (!via) return '';
-  return `, ${via.invocation.name}, ${via.oncePerRest ? 'once per long rest' : 'at will'}`;
+  const how = via.oncePerRest
+    ? `once per long rest, ${via.spent ? 'spent' : 'available'}`
+    : 'at will';
+  return `, ${via.invocation.name}, ${how}`;
+}
+
+/**
+ * Whether a spell in the Invocations group comes from a once-per-rest
+ * invocation that is spent until a long rest. Its chip reads muted and
+ * struck through.
+ * @param {Character} character
+ * @param {Spell} spell
+ * @param {string} group the group title
+ * @returns {boolean}
+ */
+function spentInvocation(character, spell, group) {
+  return group === 'Invocations' && !!invocationCast(character, spell.id)?.spent;
 }

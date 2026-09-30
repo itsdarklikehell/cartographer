@@ -325,13 +325,16 @@ export function canCast(caster, spell) {
  * The pool id a cast at this slot level draws from. It is the leveled slot
  * pool when that pool has a charge. Otherwise it is the pact pool at that
  * level, because pact slots are cast at exactly their own level. It is null
- * when neither pool has a charge left.
+ * when neither pool has a charge left. A cast limited to the pact pool skips
+ * the leveled pool.
  * @param {SpellCaster} caster
  * @param {number} slotLevel
+ * @param {boolean} pactOnly
  * @returns {string | null}
  */
-function slotPoolToSpend(caster, slotLevel) {
-  for (const id of [`${SLOT_ID_PREFIX}${slotLevel}`, `${PACT_ID_PREFIX}${slotLevel}`]) {
+function slotPoolToSpend(caster, slotLevel, pactOnly) {
+  const pact = `${PACT_ID_PREFIX}${slotLevel}`;
+  for (const id of pactOnly ? [pact] : [`${SLOT_ID_PREFIX}${slotLevel}`, pact]) {
     const pool = caster.resources.find((r) => r.id === id);
     if (pool && pool.current > 0) return id;
   }
@@ -384,7 +387,8 @@ function slotPoolToSpend(caster, slotLevel) {
  * turn, for example. It resolves at `free.slotLevel`, the level the first
  * cast used. A `granted` cast spends a slot as usual but skips the spellbook
  * check, because a feature grants the spell: a warlock invocation, for
- * example.
+ * example. A `pool: 'pact'` cast pays only from the pact pool, because a
+ * once-per-rest invocation casts with a warlock spell slot.
  *
  * @template {SpellCaster} T
  * @param {T} caster
@@ -401,6 +405,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   casterConditions?: import('./Riders.js').RiderSource[],
  *   free?: { slotLevel: number },
  *   granted?: boolean,
+ *   pool?: 'pact',
  *   rng?: RandomFn,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
@@ -426,12 +431,13 @@ export function castSpell(caster, spell, options = {}) {
     casterConditions = [],
     free = null,
     granted = false,
+    pool,
     rng = Math.random,
   } = options;
 
   const paid = free
     ? freeCast(caster, free)
-    : payForCast(caster, spell, slotLevel, ritual, granted);
+    : payForCast(caster, spell, slotLevel, ritual, granted, pool === 'pact');
   if (!paid.ok) return paid;
   const steps = scalingSteps(spell, paid.slotLevel, casterLevel);
 
@@ -488,12 +494,13 @@ function freeCast(caster, free) {
  * @param {boolean} ritual
  * @param {boolean} granted true when a feature grants the spell, which skips
  *   the spellbook check
+ * @param {boolean} pactOnly true when only the pact pool can pay
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
  *   { ok: true, caster: T, slotLevel: number, spent: boolean, ritual: boolean }
  * )}
  */
-function payForCast(caster, spell, slotLevel, ritual, granted) {
+function payForCast(caster, spell, slotLevel, ritual, granted, pactOnly) {
   // A Wizard's unprepared ritual passes as a ritual cast and nothing else.
   if (!granted && !canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
     return { ok: false, reason: 'not-known' };
@@ -509,7 +516,7 @@ function payForCast(caster, spell, slotLevel, ritual, granted) {
   // level and have a slot of that level free.
   const cantrip = spell.level === 0;
   const asRitual = ritual && !cantrip;
-  const poolId = cantrip || asRitual ? null : slotPoolToSpend(caster, slotLevel);
+  const poolId = cantrip || asRitual ? null : slotPoolToSpend(caster, slotLevel, pactOnly);
   if (!cantrip && !asRitual) {
     if (slotLevel < spell.level) return { ok: false, reason: 'bad-slot-level' };
     if (!poolId) return { ok: false, reason: 'no-slot' };

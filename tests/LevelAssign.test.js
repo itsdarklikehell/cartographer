@@ -393,3 +393,18 @@ test('applyLevelChoices leaves a character with nothing to assign unchanged', ()
   const c = classed([{ classId: 'fighter', level: 5 }]);
   assert.equal(applyLevelChoices(c, { classId: 'fighter', skills: [], stamps: [] }), c);
 });
+
+test('hasChoiceAt counts every invocation pick on a warlock level alike', async () => {
+  const { setInvocations } = await import('../src/entities/Invocations.js');
+  const w = /** @type {any} */ ({
+    id: 'w',
+    name: 'W',
+    classes: [{ classId: 'warlock', level: 2 }],
+    level: 2,
+    resources: [],
+    spellbook: { cantrips: ['eldritch-blast'], known: [], prepared: [] },
+  });
+  assert.equal(hasChoiceAt(setInvocations(w, ['beguiling-influence']), 'warlock', 2), true);
+  assert.equal(hasChoiceAt(setInvocations(w, ['agonizing-blast']), 'warlock', 2), true);
+  assert.equal(hasChoiceAt(w, 'warlock', 2), false);
+});

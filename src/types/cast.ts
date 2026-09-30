@@ -57,3 +57,8 @@ export interface CastFree {
   slotLevel: number;
   repeat?: boolean;
 }
+
+/** How the GM picked to pay for a cast that has more than one way (see
+ * `CastRoute.castRoutes`): repeat an open spell for free or cast it anew, or
+ * cast an invocation's spell at will or with a slot. */
+export type CastRoute = 'repeat' | 'anew' | 'invocation' | 'slot';

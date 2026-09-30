@@ -1,3 +1,5 @@
+import { PACT_BOONS } from '../data/invocations.js';
+
 /**
  * Coercers for the list and record fields of a loaded character or creature.
  * The entity `withDefaults` functions run on data from a save or an imported
@@ -39,10 +41,12 @@ export function conditionList(value) {
 }
 
 /**
+ * A stored list of ids. A value that is not an array reads as empty, and an
+ * entry that is not a string drops.
  * @param {unknown} value
  * @returns {string[]}
  */
-function stringList(value) {
+export function stringList(value) {
   return Array.isArray(value) ? value.filter((entry) => typeof entry === 'string') : [];
 }
 
@@ -67,4 +71,27 @@ export function spellbookOf(value) {
     );
   }
   return book;
+}
+
+/**
+ * A stored warlock's picks: the invocation ids, the once-per-rest uses, and
+ * the pact boon. A string where a list belongs reads as empty, because the
+ * sheet calls list methods on both lists, and `String.includes` would read
+ * a use id inside the string as spent. An unknown pact boon drops. An empty
+ * field stays absent.
+ * @param {{ invocations?: unknown, invocationUses?: unknown, pactBoon?: unknown }} value
+ * @returns {{ invocations?: string[], invocationUses?: string[],
+ *   pactBoon?: import('../types/invocation.js').PactBoon }}
+ */
+export function warlockPicks({ invocations, invocationUses, pactBoon }) {
+  const picks = stringList(invocations);
+  const uses = stringList(invocationUses);
+  const boon = /** @type {import('../types/invocation.js').PactBoon | undefined} */ (
+    PACT_BOONS.find((b) => b.id === pactBoon)?.id
+  );
+  return {
+    ...(picks.length ? { invocations: picks } : {}),
+    ...(uses.length ? { invocationUses: uses } : {}),
+    ...(boon ? { pactBoon: boon } : {}),
+  };
 }

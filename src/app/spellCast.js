@@ -3,7 +3,7 @@ import { canCast, materialCheck } from '../entities/Casting.js';
 import { spellSource } from '../entities/Character.js';
 import { unproficientWear } from '../entities/Armor.js';
 import { spellSaveDC, hasRitualCasting } from '../entities/Classes.js';
-import { castableSlotLevels } from '../entities/SpellSlots.js';
+import { castableSlotLevels, pactSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster } from '../entities/Caster.js';
 import { isRitualOnly } from '../entities/SpellView.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
@@ -23,6 +23,7 @@ import {
 import { combatTargets, rosterTargets, targetFree, prefillTarget } from './spellTargets.js';
 import { castFields, castChangeHandler, castCap, startingSlotLevel } from './spellCastFields.js';
 import { resolveCast } from './spellCastResolve.js';
+import { castRoutes } from '../entities/CastRoute.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -106,33 +107,38 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * @param {any} entity the real combatant that casts the spell
  * @param {Spell} listed the spell as the spell list offers it
  * @param {import('./combatants.js').CombatTarget[]} offered
+ * @param {import('../types/cast.js').CastRoute | null} [route] the way to pay
+ *   that the GM picked, for a spell with more than one (see `castRoutes`)
  * @returns {CastPlan | CastRefused}
  */
-export function castPlan(app, entity, listed, offered) {
-  const spell = invokedSpell(entity, listed);
+export function castPlan(app, entity, listed, offered, route = null) {
   // The pure spell helper functions take a `SpellCaster`: a caster's class,
   // level, stats, resources, and spellbook. This is exactly what `toCaster`
   // returns. The helpers read this view, and the code writes back only to
   // the real entity.
   const caster = toCaster(entity);
+  // A spell the caster still keeps open from an earlier turn repeats for free,
+  // unless the GM picked to cast it anew.
+  const hold = listed.repeat && route !== 'anew' ? heldRepeat(entity, listed.id) : null;
+  // An invocation casts its spell at will with no slot, or once per long rest
+  // with a pact slot. A once-per-rest spell that the spellbook also has casts
+  // the usual way, which keeps the use for later. A spent one with no
+  // spellbook entry refuses until a long rest. A GM who picked the slot cast
+  // of an at-will spell casts it the usual way.
+  let invocation = hold || route === 'slot' ? null : invocationCast(entity, listed.id);
+  if (invocation?.oncePerRest && canCast(caster, listed)) invocation = null;
+  const spell = invokedSpell(entity, listed, { atWill: !!invocation && !invocation.oncePerRest });
   if (!targetFree(spell.effect.kind) && offered.length === 0) {
     return { ok: false, message: 'No target available.' };
   }
-  // A spell the caster still keeps open from an earlier turn repeats for free:
-  // no slot, no component, and no armor check, because the first cast paid
-  // all three. A repeat locked to the creatures it hit offers only those.
-  const hold = spell.repeat ? heldRepeat(entity, spell.id) : null;
+  // A repeat costs no slot, no component, and no armor check, because the
+  // first cast paid all three. A repeat locked to the creatures it hit offers
+  // only those.
   const locked = hold?.targetIds;
   const reachable = locked ? offered.filter((t) => locked.includes(t.id)) : offered;
   if (locked && reachable.length === 0) {
     return { ok: false, message: `${spell.name} has lost its target.` };
   }
-  // An invocation casts its spell at will with no slot, or once per long rest
-  // with a slot. A once-per-rest spell that the spellbook also has casts the
-  // usual way, which keeps the use for later. A spent one with no spellbook
-  // entry refuses until a long rest.
-  let invocation = hold ? null : invocationCast(entity, spell.id);
-  if (invocation?.oncePerRest && canCast(caster, spell)) invocation = null;
   if (invocation?.spent) {
     return { ok: false, message: `${invocation.invocation.name} is spent until a long rest.` };
   }
@@ -197,10 +203,14 @@ export function castPlan(app, entity, listed, offered) {
   // A leveled spell casts from a slot at or above its level that still has a
   // charge, leveled or pact. The picker offers each such level. A Wizard's
   // unprepared ritual casts only as a ritual, so it offers no slot, and the
-  // ritual box opens ticked.
+  // ritual box opens ticked. A once-per-rest invocation casts with a warlock
+  // spell slot, so it offers only the pact slot level.
   const ritualOnly = !free && isRitualOnly(caster, spell);
+  const pactOnly = !!invocation?.oncePerRest;
   const slotLevels =
-    spell.level > 0 && !ritualOnly && !free ? castableSlotLevels(caster, spell.level) : [];
+    spell.level > 0 && !ritualOnly && !free
+      ? (pactOnly ? pactSlotLevels : castableSlotLevels)(caster, spell.level)
+      : [];
   // A multiclass caster's DC and attack bonus use the class the spell was
   // learned under. Without a recorded source, they fall back to the first
   // caster class. A cast through an invocation is a warlock cast.
@@ -276,7 +286,8 @@ export function castPlan(app, entity, listed, offered) {
         : `Ignore action cost (${COST_LABELS[actionCost].toLowerCase()} already used)`,
   });
   if (!fields) {
-    return { ok: false, message: `No level ${spell.level}+ slot left for ${spell.name}.` };
+    const kind = pactOnly ? 'pact' : `level ${spell.level}+`;
+    return { ok: false, message: `No ${kind} slot left for ${spell.name}.` };
   }
   return {
     ok: true,
@@ -318,7 +329,9 @@ export function castPlan(app, entity, listed, offered) {
  *   this target where it is offered.
  */
 async function runCast(app, entity, spell, offered, writeBack, preferredTargetId) {
-  const plan = castPlan(app, entity, spell, offered);
+  const route = await pickRoute(spell, castRoutes(entity, spell));
+  if (route === undefined) return;
+  const plan = castPlan(app, entity, spell, offered, route);
   if (!plan.ok) {
     app.toasts.show(plan.message, { level: 'error' });
     return;
@@ -339,4 +352,34 @@ async function runCast(app, entity, spell, offered, writeBack, preferredTargetId
   });
   if (!values) return;
   await resolveCast(app, plan, values, { writeBack });
+}
+
+/**
+ * Ask the GM how to pay for a spell that has more than one way, before the
+ * cast dialog opens. The answer decides the slot picker, the targets, and
+ * the components of that dialog, so it comes first. A spell with one way
+ * resolves to null with no question.
+ * @param {Spell} spell
+ * @param {{ id: import('../types/cast.js').CastRoute, label: string }[]} routes
+ * @returns {Promise<import('../types/cast.js').CastRoute | null | undefined>}
+ *   the picked route, null with nothing to pick, or undefined when the GM
+ *   cancels
+ */
+async function pickRoute(spell, routes) {
+  if (routes.length === 0) return null;
+  const values = await promptModal(
+    `Cast ${spell.name}`,
+    [
+      {
+        name: 'route',
+        label: 'How to cast',
+        type: 'select',
+        value: routes[0].id,
+        options: routes.map((r) => ({ value: r.id, label: r.label })),
+      },
+    ],
+    { submitLabel: 'Next' },
+  );
+  if (!values) return undefined;
+  return /** @type {import('../types/cast.js').CastRoute} */ (values.route);
 }

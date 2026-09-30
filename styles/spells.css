@@ -151,6 +151,16 @@
   color: var(--mana);
 }
 
+/* A once-per-rest invocation spent until a long rest. */
+.character-sheet__spell-chip--spent {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.character-sheet__spell-chip--spent .icon {
+  color: var(--text-muted);
+}
+
 /* ==========================================================================
    Spellbook tab: a browsable, per-level list of the class's spells with
    known/prepared badges. Rows open the detail modal to learn/prepare/forget.

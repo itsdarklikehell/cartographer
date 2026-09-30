@@ -9,8 +9,10 @@ import {
   invocationCast,
   invocationCount,
   invocationSpellIds,
+  invocationsClaim,
   invokedSpell,
   markInvocationUsed,
+  settleInvocationSkills,
   pactBoonName,
   setInvocations,
   setPactBoon,
@@ -208,4 +210,31 @@ test('invocationCast tells an at-will cast from a once-per-rest one', () => {
 test('a long rest gives back the once-per-rest invocations', () => {
   const used = markInvocationUsed(warlock(2), 'thief-of-five-fates');
   assert.equal('invocationUses' in longRest(used), false);
+});
+
+test('invokedSpell keeps the range and material of a cast with a slot', () => {
+  const c = setInvocations(warlock(2), ['armor-of-shadows']);
+  const armor = spell('mage-armor');
+  assert.equal(invokedSpell(c, armor).range, 'Self');
+  assert.equal(invokedSpell(c, armor, { atWill: false }), armor);
+});
+
+test('the Beguiling Influence skills follow the warlock level', async () => {
+  const { getProficiencies } = await import('../src/entities/Proficiencies.js');
+  const c = setInvocations(warlock(2), ['beguiling-influence']);
+  assert.equal(settleInvocationSkills(c), c);
+  const low = settleInvocationSkills({ ...c, classes: [{ classId: 'warlock', level: 1 }] });
+  assert.deepEqual(getProficiencies(low).skills, []);
+  const back = settleInvocationSkills({ ...low, classes: [{ classId: 'warlock', level: 2 }] });
+  assert.deepEqual(getProficiencies(back).skills, ['deception', 'persuasion']);
+});
+
+test('invocations and the pact boon claim the warlock levels they need', () => {
+  assert.equal(invocationsClaim(warlock(2), 2), false);
+  assert.equal(invocationsClaim(setInvocations(warlock(2), ['agonizing-blast']), 2), true);
+  assert.equal(invocationsClaim(setInvocations(warlock(4), ['agonizing-blast']), 4), false);
+  const five = setInvocations(warlock(5), ['agonizing-blast', 'mire-the-mind']);
+  assert.equal(invocationsClaim(five, 5), true, 'Mire the Mind needs 5th level');
+  assert.equal(invocationsClaim(setPactBoon(warlock(4), 'blade'), 3), true);
+  assert.equal(invocationsClaim(setPactBoon(warlock(4), 'blade'), 4), false);
 });

@@ -9,8 +9,8 @@ import { durationInRounds, formatCastingTime } from '../entities/SpellTiming.js'
 import { COST_LABELS } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { applyOutcomes } from './spellOutcomes.js';
-import { opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
-import { blastPush, markInvocationUsed } from '../entities/Invocations.js';
+import { dropRepeat, heldRepeat, opensRepeat, repeatedSpell } from '../entities/SpellRepeat.js';
+import { blastPush, invocationCast, markInvocationUsed } from '../entities/Invocations.js';
 import { findCombatant, hpOf, applyConditionToTarget, endSpellEffects } from './combatants.js';
 import { targetFree, chosenTargets } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
@@ -77,7 +77,18 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   // An unprepared Wizard ritual has no slot to fall back to, so it casts as
   // a ritual even if the box was unticked.
   const free = plan.free ?? null;
-  const invocation = plan.invocation ?? null;
+  // A once-per-rest use reads again off the live caster, because another tab
+  // can spend it while this dialog sits open, and the plan copy would then
+  // spend one use twice.
+  const invocation = plan.invocation?.oncePerRest
+    ? invocationCast(/** @type {any} */ (live), spell.id)
+    : (plan.invocation ?? null);
+  if (plan.invocation?.oncePerRest && (!invocation?.oncePerRest || invocation.spent)) {
+    app.toasts.show(`${plan.invocation.invocation.name} is spent until a long rest.`, {
+      level: 'error',
+    });
+    return;
+  }
   const asRitual = !free && (values.ritual === '1' || plan.ritualOnly === true);
   const slotLevel = free
     ? free.slotLevel
@@ -213,7 +224,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
     ...(free ? { free: { slotLevel } } : {}),
-    ...(invocation?.oncePerRest ? { granted: true } : {}),
+    ...(invocation?.oncePerRest ? { granted: true, pool: 'pact' } : {}),
     // The caster's feat riders join its chips for the projectile rolls. The
     // mode folds above keep the plain chip lists on both sides, because the
     // condition-effect table matches entries by name, and a feat that shares
@@ -254,10 +265,14 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
   const holds = spell.concentration && !free?.repeat;
   // A once-per-rest invocation is spent until the next long rest.
   const used = invocation?.oncePerRest ? invocation.invocation.id : null;
+  // A fresh cast of a spell with an open repeat closes the old repeat, so the
+  // new cast opens its own at its own slot level and on its own targets.
+  const stale = !!spell.repeat && !free?.repeat && heldRepeat(live, spell.id) !== null;
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
-  if (result.spent || consumed || holds || used) {
+  if (result.spent || consumed || holds || used || stale) {
     let next = result.spent ? withCasterState(live, result.caster) : live;
+    if (stale) next = dropRepeat(next, spell.id);
     // Only a Character reaches here with an inventory. `materialCheck`
     // already requires one.
     if (consumed) {
@@ -377,7 +392,7 @@ function notePush(app, spell, caster, result) {
     if (hits === 0) continue;
     app.actions.logEvent(
       'combat',
-      `${o.target.name} can be pushed up to ${hits * push.feet} feet, if Large or smaller (${push.name}).`,
+      `${o.target.name} can be pushed up to ${hits * push.feet} feet (${push.name}).`,
     );
   }
 }

@@ -566,6 +566,9 @@ that.
    The list offers only the invocations that the warlock qualifies for.
 5. Open **Invocation rules** under the row to read what each pick does.
 
+The app lets you change the picks at any time. The rules allow one swap
+each time the warlock gains a level, so you decide when a swap is allowed.
+
 The spells that the invocations cast appear with the other spells of the
 warlock. The [GM reference](gm-reference.md#eldritch-invocations) lists
 what the app does for each invocation.

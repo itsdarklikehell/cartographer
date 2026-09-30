@@ -20,7 +20,7 @@ import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
-import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
+import { conditionList, recordList, spellbookOf, warlockPicks } from './LoadCoercion.js';
 import { MAX_LEVEL, levelForXp, xpForLevel } from './Experience.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -344,7 +344,8 @@ export function unprepareSpell(character, spellId) {
  * choices are still an array becomes the record keyed by slot, with each
  * choice keeping its position as its order. A save that carries exhaustion as
  * a condition chip, from before it had a level behind it, reads as level 1 and
- * loses the chip.
+ * loses the chip. A warlock's invocation lists and pact boon go through
+ * `warlockPicks`, which drops what is not a string id.
  *
  * Shape is only half the job. The loaded pools are also reconciled against
  * the class list, level, and CON through `Progression.derive`. A save
@@ -359,6 +360,9 @@ export function withDefaults(character) {
     class: legacyClass,
     subclass: legacySubclass,
     expertise: legacyExpertise,
+    invocations: _invocations,
+    invocationUses: _uses,
+    pactBoon: _boon,
     ...rest
   } = /** @type {Character & { class?: string, subclass?: string, expertise?: string[] }} */ (
     character
@@ -398,6 +402,7 @@ export function withDefaults(character) {
         })
       : emptyProficiencies(),
     asiChoices: migrateASIChoices(character.asiChoices ?? {}, classes[0]?.classId ?? ''),
+    ...warlockPicks(character),
   });
 }
 

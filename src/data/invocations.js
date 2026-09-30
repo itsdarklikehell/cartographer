@@ -179,7 +179,7 @@ export const INVOCATIONS = deepFreeze([
     level: 2,
     cantrip: 'eldritch-blast',
     description:
-      'Each Eldritch Blast beam that hits a Large or smaller creature can push it up to 10 feet away from you.',
+      'When you hit a creature with Eldritch Blast, you can push the creature up to 10 feet away from you in a straight line.',
     effect: { kind: 'blast', push: 10 },
   },
   {

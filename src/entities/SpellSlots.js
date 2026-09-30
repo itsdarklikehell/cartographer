@@ -361,6 +361,20 @@ export function castableSlotLevels(character, minLevel) {
 }
 
 /**
+ * The pact slot level that a caster can currently cast a spell of `minLevel`
+ * at, as a one-entry list, or an empty list when the pact pool is empty, too
+ * low, or missing. A once-per-rest invocation offers only this level, because
+ * it casts with a warlock spell slot.
+ * @param {PoolHolder} character
+ * @param {number} minLevel the spell's own level
+ * @returns {number[]}
+ */
+export function pactSlotLevels(character, minLevel) {
+  const pact = getPactPool(character);
+  return pact && pact.current > 0 && slotLevelOf(pact) >= minLevel ? [slotLevelOf(pact)] : [];
+}
+
+/**
  * Make a character a spellcaster: replace any existing slot and pact pools
  * with the ones their class list grants (`characterSlots` and
  * `characterPactSlots`), all at full. Ordered after HP so the card reads

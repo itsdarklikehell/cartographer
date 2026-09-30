@@ -17,6 +17,7 @@ import {
   slotLevelOf,
   highestSlotLevel,
   castableSlotLevels,
+  pactSlotLevels,
 } from '../src/entities/SpellSlots.js';
 import {
   createCharacter,
@@ -365,4 +366,17 @@ test('a class id outside the catalog grants no slots of its own', () => {
   const homebrew = classed([{ classId: 'warlord', level: 5 }]);
   assert.deepEqual(characterSlots(homebrew), []);
   assert.equal(syncSlotsToLevel(homebrew), homebrew);
+});
+
+test('pactSlotLevels offers only the pact level, while the pact pool has a charge', () => {
+  const duo = withSpellSlots(
+    classed([
+      { classId: 'wizard', level: 5 },
+      { classId: 'warlock', level: 5 },
+    ]),
+  );
+  assert.deepEqual(pactSlotLevels(duo, 1), [3]);
+  assert.deepEqual(pactSlotLevels(duo, 4), []);
+  assert.deepEqual(pactSlotLevels(spendResource(duo, 'pact-3', 2), 1), []);
+  assert.deepEqual(pactSlotLevels(classed([{ classId: 'wizard', level: 5 }]), 1), []);
 });

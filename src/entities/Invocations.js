@@ -195,12 +195,15 @@ export function setPactBoon(character, boon) {
  * The spell as the character's invocations change it. Eldritch Blast takes
  * the blast invocations. A spell cast at will on the warlock alone reads its
  * range as Self, and one cast with no material drops the component. A spell
- * no invocation changes comes back as it was.
+ * no invocation changes comes back as it was. A cast of the same spell with
+ * a slot, which a warlock that also knows the spell can pick, passes
+ * `atWill: false` and keeps the range and the material.
  * @param {Character} character
  * @param {Spell} spell
+ * @param {{ atWill?: boolean }} [options]
  * @returns {Spell}
  */
-export function invokedSpell(character, spell) {
+export function invokedSpell(character, spell, { atWill: viaInvocation = true } = {}) {
   const effects = getInvocations(character).flatMap((inv) => (inv.effect ? [inv.effect] : []));
   let next = spell;
   if (spell.id === 'eldritch-blast' && spell.effect.kind === 'attack') {
@@ -212,7 +215,7 @@ export function invokedSpell(character, spell) {
     if (range) next = { ...next, range };
   }
   const atWill = effects.find((e) => e.kind === 'atWill' && e.spellId === spell.id);
-  if (atWill?.kind === 'atWill') {
+  if (viaInvocation && atWill?.kind === 'atWill') {
     if (atWill.self) next = { ...next, range: 'Self' };
     if (atWill.noMaterial) {
       const { materials: _materials, ...rest } = next;
@@ -281,4 +284,36 @@ export function invocationCast(character, spellId) {
 export function markInvocationUsed(character, id) {
   const uses = character.invocationUses ?? [];
   return uses.includes(id) ? character : { ...character, invocationUses: [...uses, id] };
+}
+
+/**
+ * The character with the skill grants of its invocations matched to the
+ * invocations that apply. A warlock that drops below the level of Beguiling
+ * Influence loses its skills, and gets them back when the level returns and
+ * the pick still stands. `Progression.derive` calls this on every reconcile.
+ * A character whose grants already match returns unchanged.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function settleInvocationSkills(character) {
+  return withSkillGrants(
+    character,
+    getInvocations(character).map((inv) => inv.id),
+  );
+}
+
+/**
+ * Whether the character's invocations or pact boon claim this warlock level:
+ * a level whose loss would drop an invocation, by the count or by an
+ * invocation's own level, or drop the pact boon. The donor path of
+ * `LevelAssign` reads this beside the other choice records.
+ * @param {Character} character
+ * @param {number} level the warlock level
+ * @returns {boolean}
+ */
+export function invocationsClaim(character, level) {
+  const picks = getInvocations(character);
+  if (picks.length > invocationCount(level - 1)) return true;
+  if (picks.some((inv) => inv.level >= level)) return true;
+  return level <= PACT_BOON_LEVEL && getPactBoon(character) !== null;
 }

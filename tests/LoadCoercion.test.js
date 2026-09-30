@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { conditionList, recordList, spellbookOf } from '../src/entities/LoadCoercion.js';
+import {
+  conditionList,
+  recordList,
+  spellbookOf,
+  stringList,
+  warlockPicks,
+} from '../src/entities/LoadCoercion.js';
 import {
   createCharacter,
   withDefaults as withCharacterDefaults,
@@ -99,4 +105,34 @@ test('deserialize clears a tile link to a node the save does not hold', () => {
     }),
   );
   assert.equal(state.nodes[0].tiles[0].childNodeId, null);
+});
+
+test('warlockPicks keeps string id lists and a known pact boon', () => {
+  assert.deepEqual(stringList(['a', 1, null, 'b']), ['a', 'b']);
+  assert.deepEqual(warlockPicks({ invocations: 'agonizing-blast', invocationUses: 'x' }), {});
+  assert.deepEqual(
+    warlockPicks({
+      invocations: ['agonizing-blast', 3],
+      invocationUses: ['mire-the-mind'],
+      pactBoon: 'blade',
+    }),
+    { invocations: ['agonizing-blast'], invocationUses: ['mire-the-mind'], pactBoon: 'blade' },
+  );
+  assert.deepEqual(warlockPicks({ pactBoon: 'spoon' }), {});
+});
+
+test('character withDefaults coerces malformed warlock picks', () => {
+  const loaded = withCharacterDefaults(
+    /** @type {any} */ ({
+      ...createCharacter('c1', 'Hero'),
+      classes: [{ classId: 'warlock', level: 5 }],
+      level: 5,
+      invocations: 'agonizing-blast',
+      invocationUses: 'mire-the-mind-x',
+      pactBoon: 'spoon',
+    }),
+  );
+  assert.equal('invocations' in loaded, false);
+  assert.equal('invocationUses' in loaded, false);
+  assert.equal('pactBoon' in loaded, false);
 });

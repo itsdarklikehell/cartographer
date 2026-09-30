@@ -1772,15 +1772,17 @@ Invocation rules list under the rows shows what each picked invocation does.
 | --- | --- |
 | Agonizing Blast | Adds the CHA modifier to the damage of each Eldritch Blast beam that hits |
 | Eldritch Spear | Sets the range of Eldritch Blast to 300 feet |
-| Repelling Blast | Adds a log line for each creature that an Eldritch Blast hits, with how far it can be pushed |
-| An at-will spell, such as Armor of Shadows | The spell casts with no slot, at its own level. An invocation that limits the spell to the warlock offers only the warlock as a target, and one with no material drops the component |
-| A once-per-rest spell, such as Thief of Five Fates | The spell casts with a slot, and then it refuses until a long rest. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
-| Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives |
+| Repelling Blast | Adds a log line for each creature that an Eldritch Blast hits, with how far it can be pushed. The push has no size limit |
+| An at-will spell, such as Armor of Shadows | The spell casts with no slot, at its own level. An invocation that limits the spell to the warlock offers only the warlock as a target, and one with no material drops the component. If the spellbook also has the spell, the app first asks **How to cast**: at will, or with a spell slot. The slot cast works as a usual cast, so it can target others and use a higher slot |
+| A once-per-rest spell, such as Thief of Five Fates | The spell casts with a pact slot, and then it refuses until a long rest. The slot picker offers only the pact slot level, and the cast refuses when no pact slot is left. If the spellbook also has the spell, the cast uses the spellbook and keeps the invocation for later |
+| Beguiling Influence | Adds the Deception and Persuasion skills. A change that removes the invocation removes the skills, except a skill that another grant also gives. A warlock that drops below 2nd level loses the skills, and gets them back at 2nd level |
 | Any other invocation, such as Devil's Sight | Text in the rules list only |
 
 The spells that the invocations cast list on the character sheet and in
 combat. A spell that the spellbook does not have goes in its own
-Invocations group on the sheet. A cast through an invocation uses the
+Invocations group on the sheet. A once-per-rest spell in that group shows
+struck through while it is spent, and its tooltip says "spent" or
+"available". A cast through an invocation uses the
 warlock save DC and attack bonus, and the log names the invocation, as in
 "Wren casts Mage Armor (Armor of Shadows)."
 
@@ -1788,17 +1790,15 @@ The app does not enforce these invocation rules, so you enforce them:
 
 - The creature types of Chains of Carceri, and its limit of one cast on
   each creature per long rest.
-- The size limit of Repelling Blast. The board does not move a token by
-  feet, so you move the token.
+- The push of Repelling Blast. The board does not move a token by feet,
+  so you move the token.
 - The rituals of Book of Ancient Secrets. The app records the Pact of the
   Tome, but it has no Book of Shadows.
 - The pact weapon of the Pact of the Blade, and the familiar of the Pact of
   the Chain, with the invocations that use them.
-- The warlock slot of a once-per-rest cast. The slot picker offers every
-  slot, so a multiclass warlock can spend a slot from another class.
-- An upcast of an at-will spell. An at-will spell always casts at its own
-  level, also when the spellbook has it, so False Life from Fiendish Vigor
-  cannot use a higher slot.
+- The swap of an invocation. The rules allow one swap each time the
+  warlock gains a level. The app lets you change the picks freely at any
+  time, so you decide when a swap is allowed.
 
 ### Inventory and equipment
 

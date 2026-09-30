@@ -638,16 +638,36 @@ the list. `setInvocations` writes the list through the same filter.
 Beguiling Influence grants two skills through the grant ledger. Its record
 sits in `featureChoices` under the key `warlock 2 Beguiling Influence`, so
 `GrantLedger.rebuildGrants` treats it like a claimed class feature. An undo
-of the invocation keeps a skill that a feat also grants.
+of the invocation keeps a skill that a feat also grants. `Progression.derive`
+calls `settleInvocationSkills`, which matches the record to the invocations
+that apply, so a warlock that drops below 2nd level loses the skills. The
+donor path of `LevelAssign` asks `invocationsClaim` whether a warlock level
+keeps an invocation or the pact boon, and it refuses to move such a level,
+the same as a level with any other choice record. `LoadCoercion.warlockPicks`
+coerces the three stored fields on load: a list that is not an array of
+strings reads as empty, and an unknown boon drops.
 
 `invokedSpell` returns a spell as the invocations change it: Eldritch Blast
 with `addsModifier` or a new range, and an at-will spell with a Self range
 or with no material. `app/combatants.spellsOf` and the sheet spell list map
 their spells through it, and `castPlan` in `app/spellCast.js` maps its spell
-again. `invocationCast` tells `castPlan` how the cast is paid. An at-will
-cast is a free cast at the spell's own level. A once-per-rest cast spends a
-slot and passes `granted` to `castSpell`, which skips the spellbook check,
-and `resolveCast` then marks the use with `markInvocationUsed`.
+again. A spell that the caster also knows lists as the book has it, because
+those lists pass `atWill: false`, and `castPlan` applies the at-will
+changes only on the at-will cast. `invocationCast` tells `castPlan` how the
+cast is paid. An at-will cast is a free cast at the spell's own level. A
+once-per-rest cast offers only the pact slot level (`pactSlotLevels`) and
+passes `granted` and `pool: 'pact'` to `castSpell`, which skips the
+spellbook check and pays from the pact pool only. `resolveCast` reads the use
+again off the live caster, refuses a use that another tab spent while the
+dialog was open, and then marks the use with `markInvocationUsed`.
+
+`entities/CastRoute.js` lists the ways to pay for a spell that has more
+than one. A caster with an open repeat can repeat it or cast it anew, and a
+warlock that knows an at-will spell can cast it at will or with a slot.
+`runCast` asks the GM first when the list is not empty, and it passes the
+answer to `castPlan` as its `route`. A fresh cast of a repeat spell removes
+the old repeat chip with `SpellRepeat.dropRepeat`, because the old chip can
+outlast the new one.
 
 ### Load-time defaults
 

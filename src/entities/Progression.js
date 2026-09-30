@@ -1,4 +1,5 @@
 import { syncSlotsToLevel } from './SpellSlots.js';
+import { settleInvocationSkills } from './Invocations.js';
 import { equip as setEquipped } from './Equipment.js';
 import { syncHitDice, reconcileMaxHP } from './HitDice.js';
 import { withClasses as setClassList } from './Multiclass.js';
@@ -41,15 +42,16 @@ import {
  * level, and ability scores. The function reconciles spell-slot maxima, then
  * hit-dice pools, then the HP pool's maximum. Order matters. The HP
  * reconcile reads the class list that the other two also read, and running
- * it last keeps the resource ordering that the slot and hit-dice syncs
- * establish. Spending is preserved throughout, so a pool that grows keeps
+ * it after them keeps the resource ordering that the slot and hit-dice syncs
+ * establish. The skills of an invocation settle last, so a warlock that loses
+ * the level of Beguiling Influence loses its skills. Spending is preserved throughout, so a pool that grows keeps
  * what was spent out of it. A character whose derived state already matches
  * returns unchanged, with identity preserved.
  * @param {Character} character
  * @returns {Character}
  */
 export function derive(character) {
-  return reconcileMaxHP(syncHitDice(syncSlotsToLevel(character)));
+  return settleInvocationSkills(reconcileMaxHP(syncHitDice(syncSlotsToLevel(character))));
 }
 
 /**

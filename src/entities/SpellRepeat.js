@@ -60,3 +60,19 @@ export function opensRepeat(spell, hitIds) {
   if (!spell.repeat) return false;
   return !spell.repeat.damage || hitIds.length > 0;
 }
+
+/**
+ * The caster without the repeat it keeps open for one spell. A fresh cast of
+ * the spell calls this, because the chip of the old repeat can outlast the
+ * new one, and the caster would then keep repeating at the old slot level.
+ * @template {{ id: string, conditions?: Condition[] }} T
+ * @param {T} caster
+ * @param {string} spellId
+ * @returns {T}
+ */
+export function dropRepeat(caster, spellId) {
+  const conditions = (caster.conditions ?? []).filter(
+    (c) => !(c.source?.repeat && c.source.spellId === spellId && c.source.casterId === caster.id),
+  );
+  return { ...caster, conditions };
+}

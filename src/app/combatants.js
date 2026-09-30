@@ -328,12 +328,13 @@ export function spellsOf(app, id) {
   if (found.kind === 'character') {
     const character = found.entity;
     const book = getSpellbook(character);
-    const ids = [
-      ...book.cantrips,
-      ...castableLeveledIds(character),
-      ...invocationSpellIds(character),
-    ];
-    return resolveSpellIds([...new Set(ids)]).map((spell) => invokedSpell(character, spell));
+    const known = new Set([...book.cantrips, ...castableLeveledIds(character)]);
+    const ids = [...known, ...invocationSpellIds(character)];
+    // A spell the caster also knows lists as the book has it, because the cast
+    // dialog offers the at-will cast as a choice and rewrites it there.
+    return resolveSpellIds([...new Set(ids)]).map((spell) =>
+      invokedSpell(character, spell, { atWill: !known.has(spell.id) }),
+    );
   }
   const book = getSpellbook(found.entity);
   return resolveSpellIds(spellbookIds(book));

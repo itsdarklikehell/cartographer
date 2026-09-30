@@ -103,8 +103,10 @@ Witch Bolt, Spiritual Weapon, and Sunbeam leave a chip on the caster, named
 after the spell. While the caster has that chip, a cast of the same spell
 is a repeat. The dialog says Repeat, offers no slot, and costs the action or
 bonus action that the spell names. A repeat of Witch Bolt deals 1d12 to the
-creature that the first cast hit, with no roll. To cast the spell again
-from a new slot, remove the chip first.
+creature that the first cast hit, with no roll. If the caster can also cast
+the spell anew, the app first asks whether to repeat it or cast it anew
+with a slot. A new cast can pick a new target and a higher slot, and it
+replaces the chip of the old repeat.
 
 A chip that ends at a turn boundary shows "next turn" in place of a round
 count. Outside a fight there are no turns, so such a chip lasts one round.
