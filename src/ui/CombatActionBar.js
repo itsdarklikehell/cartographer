@@ -183,15 +183,15 @@ function budgetRow(budget, onToggle) {
       const pip = bareButton([label], () => onToggle(cost), {
         className: `${className} combat-action-bar__pip--toggle`,
         title: spent
-          ? `${label} used. Press to mark it free again`
-          : `${label} free. Press to mark it used`,
+          ? `${label} spent. Press to mark it free again`
+          : `${label} free. Press to mark it spent`,
       });
       pip.setAttribute('aria-pressed', String(spent));
-      pip.setAttribute('aria-label', `${label} used`);
+      pip.setAttribute('aria-label', `${label} spent`);
       return pip;
     }
     const pip = el('span', className, label);
-    pip.appendChild(el('span', 'sr-only', spent ? ': used' : ': available'));
+    pip.appendChild(el('span', 'sr-only', spent ? ': spent' : ': available'));
     return pip;
   });
   // An Action Surge taken before the action leaves a second action behind

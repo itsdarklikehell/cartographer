@@ -178,6 +178,7 @@ export function mountCombatScreen(container, callbacks) {
       log.clear();
       notice.hidden = true;
       announcedTurn = null;
+      announcer.textContent = '';
       showing = false;
       return;
     }
@@ -200,7 +201,13 @@ export function mountCombatScreen(container, callbacks) {
     );
     roveGroup(board, '.combatant-card--selectable', selectedId);
     log.update(callbacks.getLogEntries(), gm ? 'gm' : 'player');
-    announceTurn(view);
+    // A decided fight stays open until the GM ends it. The live region then
+    // says so once, and no longer reads out turns.
+    if (outcome === null) announceTurn(view);
+    else if (announcedTurn !== 'over') {
+      announcedTurn = 'over';
+      announcer.textContent = 'The fight is over.';
+    }
     restoreFocus(inside, previousKey, opened);
   }
 

@@ -2780,7 +2780,10 @@ Old King, through the stairs up at column 11, row 7".
 
 The turn ribbon and the board of the combat screen are one tab stop each.
 Arrow keys move between chips and between cards, and Enter or Space picks a
-target. A live region announces each turn.
+target. A live region announces each turn. When one side is down, it says
+"The fight is over." once and stops reading turns. Each action pip is a
+toggle button named for its cost, such as "Bonus action spent", and a
+screen reader reads whether it is pressed.
 
 ## Mouse and touch control
 

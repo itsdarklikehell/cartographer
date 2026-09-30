@@ -1024,7 +1024,12 @@ a reason to discard what that tab has open.
 
 A visually hidden `aria-live="polite"` region announces each turn, for example
 "Round 2: Mirelle's turn." The region is keyed on the round and the combatant
-id, so an HP edit or another refresh announces nothing extra. The combat log
+id, so an HP edit or another refresh announces nothing extra. When the
+fight has an outcome, the region reads "The fight is over." once and skips
+the turn announcement, and it is emptied when the fight view goes away. Each
+action pip toggle has the fixed name "<cost> spent" with `aria-pressed`, and
+the focus restore of `CombatScreen` keys on that name, so the name stays the
+same when the pip changes state. The combat log
 list is a `role="log"` region. A screen reader speaks each attack result,
 damage line, and defeat as its row is added, because the list only gains rows.
 
