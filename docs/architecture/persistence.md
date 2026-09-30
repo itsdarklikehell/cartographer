@@ -955,6 +955,13 @@ then starts again from the restored state through the ordinary load path.
 Each control is disabled when `historyDepth` reports no step in its
 direction.
 
+Before the reload, the step compares the live campaign with the restored
+one through `storage/StepSummary.js`, and the queued toast names each part
+that differs. The step also writes the selected character and the open tab
+of each static tab strip to sessionStorage through `view/ReloadView.js`.
+The next start reads that record once, so a plain reload later opens on the
+default view.
+
 ### Storage layout
 
 The log uses one key for each record. An index at `campaign-builder:history`

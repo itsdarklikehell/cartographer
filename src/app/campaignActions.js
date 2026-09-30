@@ -309,7 +309,7 @@ export function wireCampaignActions(app) {
 
   const isDirty = () => dirty;
   const externalSaves = wireExternalSaves(app, { isDirty, setDirty, buildCurrentState, patches });
-  wireHistorySteps(app, { isDirty, setDirty, reportSave, assetWait });
+  wireHistorySteps(app, { isDirty, setDirty, reportSave, assetWait, buildCurrentState });
   wireReplaceActions(app, { buildCurrentState, setDirty, assetWait });
 
   // The pack caches key on the identity of a node and an entity, and a load

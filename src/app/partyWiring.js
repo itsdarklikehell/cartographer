@@ -30,6 +30,7 @@ import { passTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions, playerTabHref } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
+import { startingCharacterId } from '../view/ReloadView.js';
 import { characterPosition } from '../party/CharacterTokens.js';
 import { wireSplitParty } from './splitParty.js';
 import { rosterActions } from './rosterActions.js';
@@ -51,8 +52,11 @@ const SHORT_REST_MINUTES = 60;
  * character claim from `view/CharacterClaim.js`, and the split switch from
  * `splitParty.js`.
  * @param {AppContext} app
+ * @param {import('../view/ReloadView.js').ReloadView | null} [reloadView] the
+ *   view an Undo or Redo kept across its reload. Its character is selected
+ *   at start while it is still in the roster.
  */
-export function wireParty(app) {
+export function wireParty(app, reloadView = null) {
   const { state } = app;
 
   // This tab's claim on one party member, for Player view only, with the
@@ -98,7 +102,9 @@ export function wireParty(app) {
       // binding changes the list.
       app.views.handoutPanel.update();
     },
-    selectedId: claim.getBoundId() ?? state.characters[0]?.id ?? null,
+    selectedId:
+      claim.getBoundId() ??
+      startingCharacterId(reloadView, state.characters, state.characters[0]?.id ?? null),
   });
   const selectCharacter = scope.select;
   const selectedCharacter = scope.getSelected;

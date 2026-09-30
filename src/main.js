@@ -17,6 +17,7 @@ import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
 import { wireParty } from './app/partyWiring.js';
+import { takeReloadView } from './view/ReloadView.js';
 import { wireEncounters } from './app/encounterWiring.js';
 import { wireCombatScreen } from './app/combatWiring.js';
 import { wireStory } from './app/storyWiring.js';
@@ -103,7 +104,10 @@ function start() {
   wireCombatScreen(app); // combat mode's full-width board
   wireEncounters(app); // encounter + initiative panels, bestiary
   wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
-  wireParty(app); // roster, sheet, inventory, time
+  // An Undo or Redo reloads the page and keeps the selected character and the
+  // open tabs for this start.
+  const reloadView = takeReloadView(sessionStorage);
+  wireParty(app, reloadView); // roster, sheet, inventory, time
   // This call draws the first map, which also marks the encounter and NPC
   // tiles and rebuilds the Build-rail lists those markers share a node scope
   // with. The two modules that own those lists are wired above.
@@ -115,6 +119,9 @@ function start() {
   // sheet, so everything it touches must already be registered.
   wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
   wireShortcuts(app);
+  // A click selects a tab through the strip's own handler, so the panel and
+  // the roving tabindex follow as they do for a GM's click.
+  for (const tabId of reloadView?.tabs ?? []) document.getElementById(tabId)?.click();
 
   // A loaded save can carry a fight the party no longer stands in, because
   // the campaign was edited elsewhere. The reconcile runs once here, after
