@@ -29,9 +29,9 @@ import { isLocked } from '../map/NodeLock.js';
  * This module builds Play-mode movement and discovery for the map view. It
  * handles cell clicks such as party moves, region zoom-ins, and split-party
  * character moves, sidebar teleports, POI discovery, and NPC introductions.
- * The hover tooltip comes from mapHover.js. The code stays separate from mapWiring, so the wiring
- * module only mounts views and keeps them in sync. Handlers read the shared
- * MapEnv late, after wiring assigns the mounted views.
+ * The hover tooltip comes from mapHover.js. The wiring module only mounts
+ * views and syncs them. Handlers read the shared MapEnv late, after wiring
+ * assigns the mounted views.
  * @param {AppContext} app
  * @param {MapEnv} env
  * @param {import('./mapNightWalk.js').WalkDialogs} [dialogs] stand-ins for the move
@@ -331,8 +331,11 @@ export function createMapTravel(app, env, dialogs) {
       // zooms in, so the lock does not apply.
       const locked = grid.getNode(tile.childNodeId);
       if ((gm || subject) && positionOf(subject).nodeId !== locked?.id && isLocked(locked)) {
-        void passLock(app, /** @type {import('../types/map.js').MapNode} */ (locked)).then((ok) => {
+        const from = navigator.getCurrentNode().id;
+        const lockNode = /** @type {import('../types/map.js').MapNode} */ (locked);
+        void passLock(app, lockNode, { confirm: dialogs?.confirmModal }).then((ok) => {
           if (ok) travelTo(tile, path);
+          else if (gm && !subject) stopShort(from, path);
         });
         return;
       }
@@ -345,13 +348,11 @@ export function createMapTravel(app, env, dialogs) {
         // because nobody walked through the tile.
         const at = positionOf(subject);
         if ((gm || subject) && at.nodeId !== child.id) {
-          // Check this before the move reveals entry fog. An all-fogged
-          // child has never been visited, so stepping in now is its
-          // discovery.
+          // An all-fogged child has never been visited, so stepping in now
+          // is its discovery. Check this before the move reveals entry fog.
           const firstVisit = !child.tiles.some((t) => t.revealed);
           // Drop whoever moves at the edge they approached from and reveal
-          // fog around them. This makes sure that the child does not draw as
-          // a blank fog field with no marker on it.
+          // fog around them, so the child does not draw as blank fog.
           const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at, tile.id);
           // A walk up to the link tile clears the fog of the parent on the
           // way, and the whole party spends the time of it.
@@ -374,15 +375,14 @@ export function createMapTravel(app, env, dialogs) {
             state.entryTiles = forgetCharacterEntries(state.entryTiles);
           }
           // A linked tile can be a discoverable point of interest, such as a
-          // cave mouth over a dungeon. Walking through it reaches it.
+          // cave mouth over a dungeon.
           discoverTile(tile, parent.id);
           // Remember which parent tile this entry was through, so the ways
           // out and the return landing read the block this traveler came in
-          // by. The subject is read back off the roster, because the move
-          // above replaced them, and the key states whether they hold their
-          // own location or stand with the party. Only a tab that moves
-          // somebody writes an entry. A spectator tab moves nobody, and its
-          // neighbours adopt whatever it saves.
+          // by. Read the subject back off the roster, because the move above
+          // replaced them, and the key states whether they have their own
+          // location or stand with the party. A spectator tab moves nobody,
+          // so it writes no entry.
           const traveler = travelerFor(
             subject ? (state.characters.find((c) => c.id === subject.id) ?? subject) : null,
           );
@@ -398,18 +398,15 @@ export function createMapTravel(app, env, dialogs) {
           noteSightings(childBefore);
           app.actions.markDirty(); // position and fog changed
         }
-        // Re-read the node. The move above wrote a new, fog-revealed node
-        // into the grid, so the `child` variable captured earlier is stale
-        // and still fogged.
+        // Re-read the node, because the move above wrote a new, fog-revealed
+        // node into the grid and `child` is still fogged.
         env.mapCanvas.setNode(navigator.getCurrentNode());
         env.breadcrumb.update(navigator.getBreadcrumb());
         env.worldTree.update();
-        // Entering a node for the first time discovers it.
-        env.regionTree.update();
+        env.regionTree.update(); // a first entry discovers the node
         env.syncPartyMarker();
-        // The child node has its own ways out. This code path swaps the node
-        // itself instead of going through resyncMapViews, so it must draw
-        // the ways out explicitly.
+        // This path swaps the node without resyncMapViews, so it draws the
+        // ways out of the child itself.
         env.syncExits();
         refreshLocationPanels();
         if (subject) {
@@ -468,6 +465,20 @@ export function createMapTravel(app, env, dialogs) {
     app.actions.markDirty(); // party position and fog changed
     refreshLocationPanels();
     app.actions.maybeTriggerEncounter();
+  }
+
+  /**
+   * Walk the whole party to the last step before a link tile that a lock
+   * stopped, and spend the time of that walk. A forced move, a walk of one
+   * step, and a view that changed while the dialog was open move nobody.
+   * @param {string} nodeId the node in view when the walk started
+   * @param {string[] | null | undefined} path the walk to the link tile
+   */
+  function stopShort(nodeId, path) {
+    const node = navigator.getCurrentNode();
+    if (!path || path.length < 3 || node.id !== nodeId) return;
+    const stop = node.tiles.find((t) => t.id === path[path.length - 2]);
+    if (stop) walkParty(stop, path.slice(0, -1));
   }
 
   return {

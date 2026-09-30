@@ -319,8 +319,12 @@ character who carries it, for example "Locked. Requires the warding key;
 Aldric carries it." The match is on the item name, without regard to
 case, across all characters. Click **Unlock** to open the lock and go on,
 or **Unlock anyway** when nobody carries the key. Unlocking sets the lock
-to Unlocked and writes a travelogue line. A Player tab shows the toast
-"The way into the Barrow is locked." and nobody moves.
+to Unlocked and writes a travelogue line. Click **Stay out** to keep the
+lock shut. On a walk of the whole party to a linked tile, the party then
+stops on the last tile before the link and spends the time of that walk.
+On a border crossing or a teleport, the party stays where it was. A
+Player tab shows the toast "The way into the Barrow is locked." and
+nobody moves.
 
 ### World tree
 

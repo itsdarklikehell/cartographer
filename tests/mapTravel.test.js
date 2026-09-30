@@ -29,6 +29,7 @@ const INTERIOR = 'assets/tiles/interior/interior';
  * roster, and `selected` is the id the split-party path picks up: the GM's
  * roster selection on a GM tab, and the tab's own character on a player tab.
  * `tooltips` records what the hover handler asked the tooltip to show.
+ * `confirm` answers every confirm dialog, such as the GM question of a lock.
  * @param {{
  *   interior?: boolean,
  *   mode?: 'play' | 'build',
@@ -38,6 +39,7 @@ const INTERIOR = 'assets/tiles/interior/interior';
  *   creatures?: any[],
  *   selected?: string | null,
  *   markerRange?: string[] | null,
+ *   confirm?: boolean,
  * }} [opts]
  */
 function world({
@@ -49,6 +51,7 @@ function world({
   creatures = [],
   selected = null,
   markerRange = null,
+  confirm = true,
 } = {}) {
   const grid = new TileGrid();
   const parent = fillTiles(createMapNode('world', 'World', null, 6, 6), (id) =>
@@ -123,7 +126,7 @@ function world({
   });
   /** @type {any[]} */
   const tooltips = [];
-  const travel = createMapTravel(app, env, walkDialogs());
+  const travel = createMapTravel(app, env, walkDialogs({ confirm }));
   /** @param {string} tileId */
   const clickTile = (tileId) => {
     const node = navigator.getCurrentNode();
@@ -862,4 +865,36 @@ test('the GM view zooms into a locked region where the party already stands', ()
   gm.partyTracker.moveTo('child', '0,0');
   gm.clickTile('2,4');
   assert.equal(gm.navigator.getCurrentNode().id, 'child');
+});
+
+test('a lock the GM keeps shut stops the party one step short of the link', async () => {
+  const gm = world({ confirm: false });
+  gm.grid.updateNode({ ...gm.grid.getNode('child'), lock: { requires: null, open: false } });
+  gm.partyTracker.moveTo('world', '2,1');
+  gm.clickTile('2,4');
+  await settle();
+  assert.equal(gm.navigator.getCurrentNode().id, 'world');
+  assert.deepEqual(gm.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,3' });
+  assert.ok(gm.calls.includes('passTravelTime'), 'the walk to the step before spends time');
+  assert.equal(gm.grid.getNode('child')?.lock?.open, false);
+});
+
+test('a kept lock leaves the party in place when it stands next to the link', async () => {
+  const gm = world({ confirm: false });
+  gm.grid.updateNode({ ...gm.grid.getNode('child'), lock: { requires: null, open: false } });
+  gm.clickTile('2,4');
+  await settle();
+  assert.deepEqual(gm.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,5' });
+  assert.ok(!gm.calls.includes('passTravelTime'));
+});
+
+test('a kept lock moves nobody when the view changes while the GM decides', async () => {
+  const gm = world({ confirm: false });
+  gm.grid.updateNode({ ...gm.grid.getNode('child'), lock: { requires: null, open: false } });
+  gm.partyTracker.moveTo('world', '2,1');
+  gm.clickTile('2,4');
+  gm.grid.addNode(createMapNode('other', 'Other', null, 2, 2));
+  gm.navigator.goTo('other');
+  await settle();
+  assert.deepEqual(gm.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,1' });
 });

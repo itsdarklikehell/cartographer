@@ -170,7 +170,8 @@ when that removes painted tiles.
 4. Click **Save**.
 
 When the party tries to enter, a dialog tells you who carries the key.
-Click **Unlock** to let the party in.
+Click **Unlock** to let the party in. Click **Stay out** to keep the lock
+shut. A party that walked to the link then stops one tile short of it.
 
 ### Paint tiles
 

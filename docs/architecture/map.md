@@ -290,7 +290,11 @@ Every move into a node runs `passLock` (`src/app/lockGuard.js`) first:
 the move branch of `travelTo` in `app/mapTravel.js`, `crossBorder` in
 `app/mapExitTravel.js`, and the teleport in `app/mapTeleport.js`. The
 GM view-only zoom into a child where the mover already stands skips the
-check.
+check. When the GM keeps the lock shut on a whole-party walk to a link
+tile, `stopShort` in `mapTravel.js` walks the party to the next-to-last tile of the path
+through `walkParty`, which spends the time of that shorter walk. A walk
+of one step, a forced move, or a view that changed while the dialog was
+open moves nobody.
 
 A crumb opens a map above the party without moving it. On that map,
 `ancestorMarkerTile` (`src/map/AncestorMarker.js`) picks the tile that
