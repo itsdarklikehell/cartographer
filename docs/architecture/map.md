@@ -1160,7 +1160,13 @@ and the party lands beside the block instead of at the origin.
 The edge and door cases snap through `resolveReturnTile`, the parent-side
 match of `resolveEntryTile`. It picks the nearest painted tile that is not a
 wall and does not belong to the block just left, because a landing back on the
-block reads as never having left. The stairway case skips the snap, because
+block reads as never having left. It also prefers a plain tile over the link
+tile of another block, when a plain tile lies within two steps of the spot. A
+town packs its buildings close, so the spot outside one door can be the block
+of the building next door. In the example town, the Waystation block sits
+right under the south door of The Wandering Kettle. A map that regions cover
+edge to edge has no plain tile near the spot, so there the party lands on the
+link tile. The stairway case skips the snap, because
 the parent's staircase *is* a tile of that block, and the snap rejects every
 tile of that block.
 

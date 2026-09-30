@@ -289,11 +289,24 @@ function distanceSq(node, id, target) {
 }
 
 /**
+ * A returning party steps onto a plain tile rather than the link tile of a
+ * neighbour block when a plain tile lies this close to the computed spot.
+ * The value is a squared distance, so it covers the eight cells around the
+ * spot and the cells two steps away in a straight line. A town packs its
+ * buildings close together. Without this rule, a party that leaves one
+ * building by its door can land on the block of the building next door.
+ */
+const PLAIN_TILE_RANGE_SQ = 4;
+
+/**
  * This function is the parent-side counterpart of resolveEntryTile. The
  * function snaps a computed landing spot to a tile that exists, is painted,
  * and can hold the party. A returning party must land on a cell outside the
  * region block, so the function excludes the block that the party just
  * left. Landing back on that block reads as if the party never left.
+ * The function also prefers a plain tile near the spot over the link tile of
+ * another block. It uses a link tile only when no plain tile lies within
+ * PLAIN_TILE_RANGE_SQ, as on a world map that regions cover edge to edge.
  * The function falls back to any painted tile, then to the preferred id
  * when the parent has no painted tiles.
  * @param {import('../types/map.js').MapNode} parent
@@ -308,18 +321,36 @@ export function resolveReturnTile(parent, preferredId, excludeChildNodeId) {
   const pool = usable.length ? usable : parent.tiles.filter((t) => t.imageRef);
   if (!pool.length) return preferredId;
   const preferred = tileAt(parent, preferredId);
-  if (preferred && (usable.length ? isUsable(preferred) : preferred.imageRef)) return preferredId;
   const target = parseCoords(preferredId);
-  if (!target) return pool[0].id;
-  let best = pool[0];
-  let bestScore = Infinity;
-  for (const tile of pool) {
-    const d = distanceSq(parent, tile.id, target);
-    if (d < 0) continue;
-    if (d < bestScore) {
-      best = tile;
-      bestScore = d;
-    }
+  if (preferred && isUsable(preferred) && !preferred.childNodeId) return preferredId;
+  if (target) {
+    const plain = nearestTile(
+      parent,
+      usable.filter((t) => !t.childNodeId),
+      target,
+    );
+    if (plain && plain.d <= PLAIN_TILE_RANGE_SQ) return plain.tile.id;
   }
-  return best.id;
+  if (preferred && (usable.length ? isUsable(preferred) : preferred.imageRef)) return preferredId;
+  if (!target) return pool[0].id;
+  return (nearestTile(parent, pool, target)?.tile ?? pool[0]).id;
+}
+
+/**
+ * The tile of a list nearest to a cell, with its squared distance. Tiles
+ * whose ids do not parse are skipped. The function returns null when no
+ * tile scores.
+ * @param {import('../types/map.js').MapNode} node
+ * @param {import('../types/map.js').Tile[]} tiles
+ * @param {Coords} target
+ * @returns {{ tile: import('../types/map.js').Tile, d: number } | null}
+ */
+function nearestTile(node, tiles, target) {
+  /** @type {{ tile: import('../types/map.js').Tile, d: number } | null} */
+  let best = null;
+  for (const tile of tiles) {
+    const d = distanceSq(node, tile.id, target);
+    if (d >= 0 && (!best || d < best.d)) best = { tile, d };
+  }
+  return best;
 }
