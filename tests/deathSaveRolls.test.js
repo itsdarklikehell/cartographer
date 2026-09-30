@@ -171,3 +171,42 @@ test('exhaustion joins the modifier the tray rolls with, and the log names it', 
     'Hero rolls a death save (8, exhaustion 2 -4 vs DC 10): Hero slips further.',
   );
 });
+
+test('in a fight, a death save rolls only on the own turn of the character', () => {
+  const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
+  app.state.combat = /** @type {any} */ ({ order: [{ id: 'goblin' }, { id: 'hero' }], index: 0 });
+  rollDeathSaveFor(app, 'hero');
+  assert.deepEqual(app.rolls, []);
+  assert.deepEqual(app.toastMessages, ['Hero rolls a death save at the start of their own turn.']);
+});
+
+test('in a fight, a second death save on one turn is refused', () => {
+  const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
+  app.state.combat = /** @type {any} */ ({ order: [{ id: 'hero' }], index: 0 });
+  let spent = false;
+  app.actions.spendBudget = (/** @type {string} */ id, /** @type {string} */ cost) => {
+    assert.deepEqual([id, cost], ['hero', 'deathSave']);
+    if (spent) return false;
+    spent = true;
+    return true;
+  };
+  rollDeathSaveFor(app, 'hero');
+  rollDeathSaveFor(app, 'hero');
+  assert.equal(app.rolls.length, 1);
+  assert.equal(app.toastMessages.at(-1), 'Hero already rolled a death save this turn.');
+});
+
+test('a death save rolls on the character turn when no budget tracker is wired', () => {
+  const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
+  app.state.combat = /** @type {any} */ ({ order: [{ id: 'hero' }], index: 0 });
+  delete app.actions.spendBudget;
+  rollDeathSaveFor(app, 'hero');
+  assert.equal(app.rolls.length, 1);
+});
+
+test('a character outside the fight order rolls at any time', () => {
+  const app = stubApp({ characters: [dying()], rng: scripted([face(20, 7)]) });
+  app.state.combat = /** @type {any} */ ({ order: [{ id: 'goblin' }], index: 0 });
+  rollDeathSaveFor(app, 'hero');
+  assert.equal(app.rolls.length, 1);
+});

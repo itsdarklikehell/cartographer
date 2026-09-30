@@ -28,10 +28,11 @@ export interface Participant {
 export type ActionCost = 'action' | 'bonus' | 'reaction';
 
 /**
- * A once-per-turn allowance that costs no action. Sneak Attack damage is the
- * only one: it rides an attack that already paid for itself.
+ * A once-per-turn allowance that costs no action. Sneak Attack damage rides an
+ * attack that already paid for itself, and a dying character rolls one death
+ * save on its turn.
  */
-export type TurnFlag = 'sneak';
+export type TurnFlag = 'sneak' | 'deathSave';
 
 /**
  * What one combatant already spent this turn. The three costs are booleans,
@@ -55,6 +56,8 @@ export interface ActionBudget {
   attacked: boolean;
   /** Whether Sneak Attack damage was already added once this turn. */
   sneak: boolean;
+  /** Whether a dying character already rolled its death save this turn. */
+  deathSave: boolean;
   /**
    * Whether the extra action of a chip such as Haste is spent. The extra
    * action buys one weapon swing, and nothing banks behind it.

@@ -125,7 +125,12 @@ that owns it.
 every combatant that the predicate rejects. `CombatView.skipsTurn` is that
 predicate. It covers a downed combatant, a combatant whose chips cost it the
 turn (Stunned or Lethargic, for example), and a participant id that
-resolves to nothing.
+resolves to nothing. A dying character is the exception. Its Unconscious
+chip would cost it the turn, but `skipsTurn` returns false while
+`isDying` is true, so the character gets the turn on which it rolls its
+death save. The `deathSave` flag of the turn budget allows one roll per
+turn, and `rollDeathSaveFor` refuses a roll off that turn. A stable
+character, and one at 0 HP with no tracker, still skip.
 
 A defeated goblin never gets a turn, but its chip stays in the ribbon, struck
 through. A stunned goblin also keeps its place, marked with a dashed edge

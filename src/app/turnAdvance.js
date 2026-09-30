@@ -23,9 +23,10 @@ import { endTurnEffects, startTurnEffects } from './turnEffects.js';
  * act (Paralyzed, Stunned) still has a turn that starts and ends. Its retry
  * rolls then, which is how a Hold Person target gets out: a success ends the
  * chip at the end of that turn, so the combatant still loses the turn it was
- * held for. A downed or missing combatant rolls nothing, and only the chips
- * keyed to its turns count the boundary. The combatant the pointer lands on
- * then starts its turn.
+ * held for. A stable, dead, defeated, or missing combatant rolls nothing, and
+ * only the chips keyed to its turns count the boundary. A dying character is
+ * not skipped: the pointer lands on it, so it rolls its death save. The
+ * combatant the pointer lands on then starts its turn.
  * @param {AppContext} app
  * @param {{
  *   setCombat: (next: CombatState) => void,

@@ -53,6 +53,21 @@ test('liveAttackSides refuses an attacker that can no longer act', () => {
   assert.match(/** @type {any} */ (live).refusal, /can no longer act/);
 });
 
+test('liveAttackSides lets a Lethargic attacker swing, as for an opportunity attack', () => {
+  const hero = {
+    ...withHP(createCharacter('hero', 'Hero'), 12),
+    conditions: [{ name: 'Lethargic', rounds: 1 }],
+  };
+  const live = liveAttackSides(fight({ hero: /** @type {any} */ (hero) }), ORDER[0], 'goblin');
+  assert.ok(!('refusal' in live));
+});
+
+test('liveAttackSides refuses a dying attacker', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 0);
+  const live = liveAttackSides(fight({ hero }), ORDER[0], 'goblin');
+  assert.match(/** @type {any} */ (live).refusal, /can no longer act/);
+});
+
 test('liveAttackSides refuses an attacker that left the fight', () => {
   const live = liveAttackSides(fight(), { id: 'ghost' }, 'goblin');
   assert.match(/** @type {any} */ (live).refusal, /can no longer act/);

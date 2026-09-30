@@ -147,3 +147,17 @@ test('a wrap runs the skipped turns before the wrap, then ticks, then the ones a
     ['Hero', 'tick', 'Mage'],
   );
 });
+
+test('a dying character keeps its turn, and its start asks for a death save', () => {
+  const { app } = fight(99);
+  const hero = app.state.characters[1];
+  app.state.characters[1] = {
+    ...withHP(hero, 10),
+    resources: hero.resources.map((/** @type {any} */ r) => ({ ...r, current: 0 })),
+    deathSaves: { successes: 0, failures: 0, stable: false },
+    conditions: addCondition([], 'Unconscious', null),
+  };
+  const result = advance(app);
+  assert.equal(result?.state.order[result.state.index].id, 'hero');
+  assert.match(app.log.join('\n'), /Hero is dying\. Roll a death save\./);
+});

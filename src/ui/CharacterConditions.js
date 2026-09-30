@@ -113,9 +113,11 @@ export function buildConditionsSection(character, ctx) {
     const state = live().deathSaves;
     shownDeathSaves = state;
     dying.replaceChildren();
+    const mayUse = getPermissions().play && Boolean(deathSaves);
     const block = deathSaveBlock(state, {
       name: live().name,
-      canAct: getPermissions().play && Boolean(deathSaves),
+      canRoll: mayUse,
+      canStabilize: mayUse,
       onRoll: () => deathSaves?.onRoll(),
       onStabilize: () => deathSaves?.onStabilize(),
     });

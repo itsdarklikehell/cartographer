@@ -11,7 +11,7 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
 import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
-import { isDead } from '../entities/DeathSaves.js';
+import { isDead, isDying } from '../entities/DeathSaves.js';
 import { canAct, losesTurn } from '../entities/ConditionEffects.js';
 import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
@@ -107,11 +107,17 @@ export function isGone(found) {
  * out of the fight, and for one whose chips leave it unable to act, such as
  * Stunned or Lethargic. A participant that resolves to nothing, deleted
  * mid-fight or walked off the tile, also has no turn to take.
+ *
+ * A dying character keeps its turn, because a death save rolls at the start
+ * of it. Its Unconscious chip would otherwise skip the turn through
+ * `losesTurn`. A stable character, and one at 0 HP with no tracker, skip.
  * @param {ResolvedCombatant | null} found
  * @returns {boolean}
  */
 export function skipsTurn(found) {
-  return !found || isDowned(found) || losesTurn(conditionsOf(found));
+  if (!found || isGone(found)) return true;
+  if (found.kind === 'character' && isDying(found.entity)) return false;
+  return isDowned(found) || losesTurn(conditionsOf(found));
 }
 
 /**

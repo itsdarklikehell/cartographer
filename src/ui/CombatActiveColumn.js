@@ -102,12 +102,13 @@ export function mountActiveColumn(callbacks, loadoutOf) {
       element.appendChild(line);
     }
 
-    // A dying character shows its tracker under concentration, with the Roll
-    // and Stabilize controls for a viewer who can act for it. The sheet shows
-    // the same block, from the same builder.
+    // A dying character shows its tracker under concentration. Roll shows on
+    // its own turn for a viewer who can act for it, and Stabilize shows to the
+    // GM on any turn. The sheet shows the same block, from the same builder.
     const dying = deathSaveBlock(row.deathSaves, {
       name: row.name ?? 'Unknown combatant',
-      canAct: row.mayAct,
+      canRoll: current && row.mayAct,
+      canStabilize: gm,
       onRoll: () => callbacks.onRollDeathSave(row.id),
       onStabilize: () => callbacks.onStabilize(row.id),
     });
@@ -115,9 +116,10 @@ export function mountActiveColumn(callbacks, loadoutOf) {
 
     // The action bar belongs to the turn, not the inspection. It shows only
     // when the column displays the current combatant and the viewer can act
-    // for them. Inspecting a foe never offers its weapons to a player.
+    // for them, and never for a downed combatant, which has no actions.
+    // Inspecting a foe never offers its weapons to a player.
     const bar =
-      current && row.mayAct
+      current && row.mayAct && !row.defeated
         ? combatActionBar(
             callbacks.getActions(),
             {

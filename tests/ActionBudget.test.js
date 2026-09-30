@@ -44,6 +44,7 @@ test('freshBudget spends nothing', () => {
     attacksLeft: 0,
     attacked: false,
     sneak: false,
+    deathSave: false,
     extra: false,
     surged: false,
     spare: false,
@@ -64,6 +65,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       attacksLeft: 2.7,
       attacked: 'sure',
       sneak: 1,
+      deathSave: true,
       extra: 'yes',
     }),
     {
@@ -73,6 +75,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       attacksLeft: 2,
       attacked: false,
       sneak: false,
+      deathSave: true,
       extra: false,
       surged: false,
       spare: false,

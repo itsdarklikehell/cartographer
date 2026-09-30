@@ -22,6 +22,7 @@ import {
 import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { rollRiders, spendRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
+import { currentParticipant } from '../combat/Initiative.js';
 import { findCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -63,6 +64,10 @@ function dyingCharacter(app, id) {
  * is the riders plus the exhaustion penalty. A natural 20 wakes the character at
  * 1 HP through `applyJudged`.
  *
+ * In a fight, a character in the order rolls on its own turn, once. A roll
+ * off that turn, or a second roll on it, shows a toast and changes nothing,
+ * so a stray click cannot cost the character a failure.
+ *
  * A character who is not dying rolls nothing. This covers a standing
  * character, a stable one, and a dead one, so a stale button cannot move the
  * counters.
@@ -73,7 +78,7 @@ function dyingCharacter(app, id) {
  */
 export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const found = dyingCharacter(app, characterId);
-  if (!found) return;
+  if (!found || !mayRollNow(app, found.entity)) return;
   const character = found.entity;
   const state = character.deathSaves;
   if (!state) return;
@@ -122,4 +127,27 @@ export function stabilizeCharacter(app, characterId) {
   app.actions.markDirty();
   app.actions.logEvent('combat', `${found.entity.name} is stabilized at 0 HP.`);
   app.toasts.show(`${found.entity.name} is stable.`);
+}
+
+/**
+ * Whether a character in a running fight may roll its death save now. It rolls
+ * on its own turn, and only once on that turn, which the `deathSave` flag of
+ * the turn budget records. Outside a fight, or for a character outside the
+ * order, the roll always goes ahead. A refusal shows a toast.
+ * @param {AppContext} app
+ * @param {Character} character
+ * @returns {boolean}
+ */
+function mayRollNow(app, character) {
+  const combat = app.state.combat;
+  if (!combat?.order.some((p) => p.id === character.id)) return true;
+  if (currentParticipant(combat)?.id !== character.id) {
+    app.toasts.show(`${character.name} rolls a death save at the start of their own turn.`);
+    return false;
+  }
+  if (app.actions.spendBudget && !app.actions.spendBudget(character.id, 'deathSave')) {
+    app.toasts.show(`${character.name} already rolled a death save this turn.`);
+    return false;
+  }
+  return true;
 }

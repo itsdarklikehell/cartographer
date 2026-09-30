@@ -9,7 +9,8 @@ import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
 import { SWINGS, isWeakSwing, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
 import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponSwing.js';
-import { skipsTurn } from '../combat/CombatView.js';
+import { conditionsOf, isDowned } from '../combat/CombatView.js';
+import { canAct } from '../entities/ConditionEffects.js';
 import {
   findCombatant,
   combatantsAsTargets,
@@ -66,7 +67,7 @@ export function liveAttackSides(app, participant, defenderId) {
   if (!combat) return { refusal: 'The fight ended before the attack rolled.' };
   const sides = attackParticipants(app, combat, participant);
   const found = findCombatant(app, participant.id);
-  if (!sides || !found || skipsTurn(found)) {
+  if (!sides || !found || isDowned(found) || !canAct(conditionsOf(found))) {
     return { refusal: 'The attacker can no longer act, so the attack did not roll.' };
   }
   const defender = sides.defenders.find((d) => d.id === defenderId);

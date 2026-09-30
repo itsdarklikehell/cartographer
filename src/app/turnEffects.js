@@ -2,6 +2,7 @@ import { rollDamage } from '../dice/DiceRoller.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { dropBoundaryChips, ongoingChips, passBoundary } from '../entities/TurnEffects.js';
 import { isGone } from '../combat/CombatView.js';
+import { isDying } from '../entities/DeathSaves.js';
 import { settleChips } from './lethargy.js';
 import { endedLine } from '../entities/Conditions.js';
 import { grantTempTo } from './tempHP.js';
@@ -54,7 +55,9 @@ export function endTurnEffects(app, id, { rng = Math.random } = {}) {
  * The start of one combatant's turn. Every chip keyed to it counts the
  * boundary, and the ones with none left end, such as a Shield that lasts
  * until the start of the caster's next turn. Then each chip that grants
- * temporary HP at the start of the holder's turn (Heroism) grants them.
+ * temporary HP at the start of the holder's turn (Heroism) grants them. A
+ * dying character gets a log line and a toast that ask for its death save,
+ * because that roll is the whole of its turn.
  * @param {AppContext} app
  * @param {string} id
  */
@@ -64,6 +67,11 @@ export function startTurnEffects(app, id) {
   for (const chip of found ? found.entity.conditions : []) {
     const amount = chip.mods?.tempHPEachTurn ?? 0;
     if (amount > 0) grantTempTo(app, id, amount, chip.name, { quiet: true });
+  }
+  if (found?.kind === 'character' && isDying(found.entity)) {
+    const line = `${found.entity.name} is dying. Roll a death save.`;
+    app.actions.logEvent('combat', line);
+    app.toasts.show(line);
   }
 }
 

@@ -15,6 +15,7 @@ import {
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage, effectiveStatBlock } from '../src/entities/Creature.js';
 import { armorClass } from '../src/entities/Armor.js';
+import { dropToDying, stabilize } from '../src/entities/DeathSaves.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
@@ -339,6 +340,17 @@ test('skipsTurn steps past the downed, the unresolved, and those who cannot act'
     false,
     'Poisoned still takes a turn',
   );
+});
+
+test('skipsTurn keeps the turn of a dying character and skips a stable one', () => {
+  const { hero } = fixtures();
+  const down = withHP(hero, 0);
+  const dying = dropToDying(down);
+  assert.equal(skipsTurn({ kind: 'character', entity: dying }), false, 'a dying character rolls');
+  assert.equal(skipsTurn({ kind: 'character', entity: stabilize(dying) }), true);
+  assert.equal(skipsTurn({ kind: 'character', entity: down }), true, 'no tracker, no turn');
+  const dead = { ...dying, deathSaves: { successes: 0, failures: 3, stable: false } };
+  assert.equal(skipsTurn({ kind: 'character', entity: dead }), true);
 });
 
 test('conditionsOf reads the chips off every kind and empties an older save', () => {

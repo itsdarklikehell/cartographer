@@ -15,19 +15,22 @@ import { deathSaveReadout } from '../view/DeathSaveView.js';
  * usual case. A caller appends whatever comes back and needs no test of its
  * own.
  *
- * `canAct` decides whether the controls appear. On the combat screen that is
- * the viewer who may act for the combatant. On the sheet it is the play
- * permission. A viewer without it still reads the pips.
+ * `canRoll` and `canStabilize` decide whether each control appears. On the
+ * combat screen, Roll shows on the dying character's own turn for a viewer
+ * who may act for it, and Stabilize shows to the GM on any turn, because an
+ * ally stabilizes a friend on the ally's turn. On the sheet both follow the
+ * play permission. A viewer without either still reads the pips.
  * @param {DeathSaveState | null | undefined} state
  * @param {{
  *   name: string,
- *   canAct: boolean,
+ *   canRoll: boolean,
+ *   canStabilize: boolean,
  *   onRoll: () => void,
  *   onStabilize: () => void,
  * }} opts
  * @returns {HTMLElement | null}
  */
-export function deathSaveBlock(state, { name, canAct, onRoll, onStabilize }) {
+export function deathSaveBlock(state, { name, canRoll, canStabilize, onRoll, onStabilize }) {
   const readout = deathSaveReadout(state);
   if (!readout) return null;
   const line = el('div', `death-saves death-saves--${readout.status} u-row u-wrap u-g1`);
@@ -59,14 +62,14 @@ export function deathSaveBlock(state, { name, canAct, onRoll, onStabilize }) {
   } else {
     line.setAttribute('aria-label', readout.ariaLabel);
   }
-  if (canAct && readout.rollable) {
+  if (canRoll && readout.rollable) {
     line.appendChild(
       textButton('Roll death save', onRoll, {
         ariaLabel: `Roll a death save for ${name}`,
       }),
     );
   }
-  if (canAct && readout.stabilizable) {
+  if (canStabilize && readout.stabilizable) {
     line.appendChild(
       textButton('Stabilize', onStabilize, { ariaLabel: `Stabilize ${name} at 0 HP` }),
     );
