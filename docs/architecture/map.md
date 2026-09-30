@@ -284,6 +284,16 @@ The canvas's `onTileClick` callback and the breadcrumb's click handler
 navigator has no DOM dependency, so plain unit tests cover all of the zoom
 and breadcrumb behavior.
 
+A crumb opens a map above the party without moving it. On that map,
+`ancestorMarkerTile` (`src/map/AncestorMarker.js`) picks the tile that
+links down toward the party's map, and the party marker and the fit focus
+use that tile. `MapMarkers.partyDot` shrinks the marker into the lower-left
+corner of a tile with a point of interest, a child link, or a way out, so
+the tile art and the exit badge stay in view. Build mode fits with no focus,
+so a large map starts at its top-left corner past the mini-map. The map
+wiring skips a canvas resize while the map is hidden, so the combat screen
+leaves the pan and zoom as they were.
+
 ## The tile catalog and generation
 
 `TilePalette` (`src/map/TilePalette.js`) is the built-in tile catalog. It is
@@ -1171,7 +1181,7 @@ arrow reads "Cross the border".
 `MapView` has an `exits` field, set through `MapCanvas.setExits`. These
 modules read it:
 
-- `MapDecorations` draws an outward chevron and a "Return to {name}" or
+- `MapDecorations` draws an outward chevron and a "Leave to {name}" or
   "Cross into {name}" label in the gutter beyond each `edge` exit.
   `MapMarkers` draws a small chevron badge on each `tile` exit.
 - `MapCanvasPointer` hit-tests the same bands on a click.

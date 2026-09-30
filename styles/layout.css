@@ -386,7 +386,7 @@ body.mode-build .map-controls__fog {
   max-width: 18rem;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--overlay-bg) 90%, transparent);
+  background: var(--overlay-bg);
   color: var(--overlay-text);
   font-size: var(--text-label);
   pointer-events: none;

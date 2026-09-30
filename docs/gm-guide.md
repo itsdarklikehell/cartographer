@@ -346,12 +346,13 @@ dialog names the sub-map. Click **Enter** to go in, or **Cancel** to stay.
    way.
 4. To put the brush down, press Escape.
 
-To reveal a whole map at once, click **Reveal whole area**. The Player view
-does not show these controls.
+To reveal a whole map at once, click **Reveal whole area**, and then click
+**Reveal** in the confirmation. The Player view does not show these
+controls.
 
 ### Leave a sub-region
 
-1. Find a way out. An arrow at the edge of the map reads **Return to** and
+1. Find a way out. An arrow at the edge of the map reads **Leave to** and
    the name of the map above. A door or a staircase that leads out has a
    chevron badge.
 2. Click the arrow, or move the party onto the door or the staircase.
@@ -368,7 +369,7 @@ at the spot that matches where it left. The arrow label changes as the
 party moves. Walk along the edge to find the part that leads to each
 region.
 
-![Inside the town of Briarwick: a Return to Briarwick Vale arrow in the margin on each side that leads back](images/play-mode-exits.png)
+![Inside the town of Briarwick: a Leave to Briarwick Vale arrow in the margin on each side that leads back](images/play-mode-exits.png)
 
 ### Stage an encounter
 

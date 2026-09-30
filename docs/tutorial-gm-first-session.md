@@ -65,11 +65,11 @@ If a dialog says that walls or obstacles block every path, click
 2. Move the party onto that tile.
 
 The map changes to the map of the town. The party stands on the border of
-the town, on the side that it came from. An arrow that reads **Return to
+the town, on the side that it came from. An arrow that reads **Leave to
 Briarwick Vale** sits at the edge of the map on each side.
 
 3. Walk one or two tiles inside the town.
-4. Click one of the **Return to Briarwick Vale** arrows.
+4. Click one of the **Leave to Briarwick Vale** arrows.
 
 The party walks back out to Briarwick Vale. It stands beside the town tile,
 on the side of the arrow that you clicked. The tile link does this in both

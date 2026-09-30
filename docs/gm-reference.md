@@ -692,7 +692,7 @@ Play mode is where you run a session.
 
 | Area | Contents |
 | --- | --- |
-| Above the map | The breadcrumb trail. A click on a crumb, except the last, opens that map |
+| Above the map | The breadcrumb trail. A click on a crumb, except the last, opens that map without moving the party. The party marker shows on the tile that leads down to the party |
 | Map | The current map, the map controls, the mini-map, and the ways out |
 | Below the map | The Party card, the Dice Tray, and the character detail card |
 | Sidebar | Three tabs of session panels |
@@ -726,7 +726,7 @@ The map controls sit in a row over the map.
 | Zoom readout | Shows the zoom as a percentage |
 | Reveal fog (brush) | GM only. Picks up the reveal brush. A click or Enter on a tile reveals it |
 | Hide fog (brush) | GM only. Picks up the hide brush. A click or Enter on a tile hides it |
-| Reveal whole area | GM only. Reveals every tile of the map in view |
+| Reveal whole area | GM only. Asks first, and then reveals every tile of the map in view |
 
 While a fog brush is picked up, a click paints fog instead of moving the
 party. A second click on the same brush button, or Escape, puts the brush

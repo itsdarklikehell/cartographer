@@ -571,11 +571,8 @@ test('labels name the region and, for assistive tech, the way out', () => {
     child,
     parentWithBlock(() => true),
   );
-  assert.equal(exitLabel(exits[0]), 'Return to Saltmere Coast');
-  assert.equal(
-    exitDescription(exits[0]),
-    'Return to Saltmere Coast, off the north edge of the map',
-  );
+  assert.equal(exitLabel(exits[0]), 'Leave to Saltmere Coast');
+  assert.equal(exitDescription(exits[0]), 'Leave to Saltmere Coast, off the north edge of the map');
   const door = {
     /** @type {'tile'} */ kind: 'tile',
     tileId: '0,1',

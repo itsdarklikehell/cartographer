@@ -212,12 +212,16 @@ export class MapCanvas {
    * default, a focus tile that lies outside the view, or within one tile of
    * its edge, re-fits the view around it. A party that walks toward the
    * edge of a large map then stays in view until the user pans or zooms.
+   * Clearing the focus on a fitted view re-fits it too.
    * @param {string | null} tileId
    */
   setFocusTile(tileId) {
     if (tileId === this.focusTileId) return;
     this.focusTileId = tileId;
-    if (tileId && !this._userView && !this._tileWellInView(tileId)) this.fit();
+    if (this._userView) return;
+    // With no focus, a fit starts a large map at its top-left corner, past
+    // the coordinate labels and the mini-map.
+    if (!tileId || !this._tileWellInView(tileId)) this.fit();
   }
 
   /**

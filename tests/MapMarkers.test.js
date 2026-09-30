@@ -1,6 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { markerAnchors, withinMarkerRange } from '../src/map/MapMarkers.js';
+import { markerAnchors, partyDot, withinMarkerRange } from '../src/map/MapMarkers.js';
+
+test('partyDot moves to a small corner dot on a tile with art or a badge to keep clear', () => {
+  const center = { x: 0.5, y: 0.5, r: 0.22 };
+  const corner = { x: 0.26, y: 0.74, r: 0.15 };
+  const plain = /** @type {any} */ ({ metadata: { poiType: null }, childNodeId: null });
+  assert.deepEqual(partyDot(plain, false), center);
+  assert.deepEqual(partyDot(undefined, false), center);
+  assert.deepEqual(partyDot(plain, true), corner, 'a door or stairs out');
+  assert.deepEqual(partyDot({ ...plain, metadata: { poiType: 'landmark' } }, false), corner);
+  assert.deepEqual(partyDot({ ...plain, childNodeId: 'town' }, false), corner);
+});
 
 test('markerAnchors parses the party tile and every character token', () => {
   assert.deepEqual(

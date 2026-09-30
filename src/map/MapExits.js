@@ -394,7 +394,9 @@ export function sideAxis(side) {
 /**
  * The text on an exit's arrow, and on its button in the accessible exit list.
  * A border crossing with no target name is one that a player tab cannot see
- * past yet, so its label does not name the region.
+ * past yet, so its label does not name the region. An edge that goes up to
+ * the parent map reads "Leave to", so a GM can tell it apart from a crossing
+ * into a neighbour region on the same side.
  * @param {MapExit} exit
  * @returns {string}
  */
@@ -402,6 +404,7 @@ export function exitLabel(exit) {
   if (exit.kind === 'edge' && exit.crossTileId) {
     return exit.targetName ? `Cross into ${exit.targetName}` : 'Cross the border';
   }
+  if (exit.kind === 'edge') return `Leave to ${exit.targetName}`;
   return `Return to ${exit.targetName}`;
 }
 

@@ -13,6 +13,7 @@ import {
 } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { miniMapView } from '../map/MiniMap.js';
+import { ancestorMarkerTile } from '../map/AncestorMarker.js';
 import { authoringWarning } from '../map/MapExits.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
@@ -26,6 +27,7 @@ import { mountMapControls } from '../ui/MapControls.js';
 import { mountMiniMap } from '../ui/MiniMap.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
+import { confirmModal } from '../ui/Modal.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM } from '../view/ViewRole.js';
@@ -130,10 +132,21 @@ export function wireMapView(app) {
    * draws. */
   function syncPartyMarker() {
     const position = partyTracker.getPosition();
-    const nodeId = navigator.getCurrentNode().id;
-    mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : null);
+    const shown = navigator.getCurrentNode();
+    const nodeId = shown.id;
+    // On a map above the party, as the breadcrumb shows it, the marker sits
+    // on the tile that leads down to where the party stands.
+    const ancestorTile =
+      position.nodeId === nodeId
+        ? null
+        : ancestorMarkerTile(grid.getBreadcrumb(position.nodeId), shown);
+    mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : ancestorTile);
     const followed = followedView();
-    mapCanvas.setFocusTile(followed.nodeId === nodeId ? followed.tileId : null);
+    // Build mode frames the whole map from its top-left corner instead of
+    // the party, so the mini-map does not cover the first rows and columns.
+    mapCanvas.setFocusTile(
+      state.mode === 'build' ? null : followed.nodeId === nodeId ? followed.tileId : ancestorTile,
+    );
     mapCanvas.setCharacterTokens(
       state.splitParty ? characterTokens(state.characters, position, nodeId) : [],
     );
@@ -272,6 +285,10 @@ export function wireMapView(app) {
     // carries it into another node, the next click paints fog there instead
     // of moving the party. Only a pressed icon explains why.
     setFogTool(null);
+    // The pointer can rest on the canvas through a map change, and no new
+    // hover event arrives. A tooltip left up would name a tile of the old map
+    // over fog on the new one.
+    env.tileTooltip?.hide();
     navigator.goTo(nodeId);
     resyncMapViews(app, env, { reframe: true });
   }
@@ -549,7 +566,15 @@ export function wireMapView(app) {
           );
         }
       },
-      onRevealAll: () => {
+      // Players see the result at once on their own tab, and the button
+      // sits beside the brushes, so a stray click asks first.
+      onRevealAll: async () => {
+        const shown = navigator.getCurrentNode();
+        const ok = await confirmModal(
+          `Reveal all of "${shown.name}" to the players? Undo can hide it again.`,
+          { title: 'Reveal whole area', confirmLabel: 'Reveal' },
+        );
+        if (!ok || navigator.getCurrentNode().id !== shown.id) return;
         const node = revealAll(navigator.getCurrentNode());
         grid.updateNode(node);
         mapCanvas.refreshNode(node);
@@ -622,8 +647,9 @@ export function wireMapView(app) {
     // sentence set while the rail stayed hidden is never announced. Resetting
     // it makes entering Build mode write it again, where the GM can read it.
     lastBuildWarning = '';
-    syncExits(); // Build mode offers no ways out. Play mode draws them again.
-    if (mode === 'build') syncCreatureMarkers();
+    // Build mode offers no ways out, and it drops the party focus of the fit.
+    // Play mode draws the exits again.
+    syncPartyMarker();
     worldTree.update();
     regionTree.update();
     refreshMapDescription();
@@ -650,7 +676,11 @@ export function wireMapView(app) {
   // Keep the canvas buffer matched to the CSS size of the element, times the
   // device pixel ratio. This lets the map fill the fluid layout column,
   // instead of staying a fixed 720x540 island. Each resize re-frames the node.
+  // Combat and Library mode hide the map with display: none, which reports a
+  // size of zero. The buffer keeps its size while hidden, so the pan and zoom
+  // of the GM come back unchanged when the map shows again.
   const resizeMapToViewport = () => {
+    if (canvasEl.clientWidth === 0 || canvasEl.clientHeight === 0) return;
     const dpr = window.devicePixelRatio || 1;
     mapCanvas.resize(
       Math.max(1, Math.round(canvasEl.clientWidth * dpr)),

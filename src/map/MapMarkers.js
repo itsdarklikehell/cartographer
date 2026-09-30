@@ -19,6 +19,22 @@ import { drawPlatedLabel, labelSize } from './CanvasText.js';
  */
 const NAME_SCALE = { factor: 0.24, min: 11, max: 26 };
 
+/**
+ * Where the party dot sits on its tile, as fractions of the tile size. On a
+ * plain tile it fills the center. A tile with a point of interest, a link to
+ * a child map, or a way out has art or a badge that the GM needs to see, so
+ * the dot shrinks into the free lower-left corner. The NPC circle uses the
+ * upper left, the encounter diamond the upper right, and the exit badge the
+ * lower right.
+ * @param {import('../types/map.js').Tile | undefined} tile
+ * @param {boolean} onExit whether the tile is a way out of the map
+ * @returns {{ x: number, y: number, r: number }}
+ */
+export function partyDot(tile, onExit) {
+  const busy = onExit || Boolean(tile?.metadata?.poiType) || Boolean(tile?.childNodeId);
+  return busy ? { x: 0.26, y: 0.74, r: 0.15 } : { x: 0.5, y: 0.5, r: 0.22 };
+}
+
 /** A red diamond in the tile's upper-right corner. @type {MarkerShape} */
 const encounterDiamond = (ctx, sx, sy, size) => {
   const r = size * 0.16;
@@ -271,18 +287,20 @@ export class MapMarkers {
     if (!view.partyTileId) return;
     if (view.characterTokens?.some((t) => t.tileId === view.partyTileId)) return;
     const coords = parseCoords(view.partyTileId);
-    if (!coords) return;
+    if (!coords || !view.node) return;
     const { ctx, tileSize } = this.host;
     const size = tileSize * view.scale;
     const sx = coords.x * size + view.offsetX;
     const sy = coords.y * size + view.offsetY;
+    const onExit = view.exits?.some((e) => e.kind === 'tile' && e.tileId === view.partyTileId);
+    const dot = partyDot(tileAtXY(view.node, coords.x, coords.y), Boolean(onExit));
 
     ctx.save();
     ctx.fillStyle = INK.gold;
     ctx.strokeStyle = INK.goldRim;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(sx + size / 2, sy + size / 2, size * 0.22, 0, Math.PI * 2);
+    ctx.arc(sx + size * dot.x, sy + size * dot.y, size * dot.r, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
     ctx.restore();
