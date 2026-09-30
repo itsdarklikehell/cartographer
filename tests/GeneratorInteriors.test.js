@@ -136,6 +136,17 @@ test('a castle has stairs and a building has none', () => {
   assert.ok(building.tiles.filter((t) => t.imageRef.includes('door')).length >= 3);
 });
 
+test('a temple is one open nave with its altar, and no inner walls or doors', () => {
+  for (let seed = 1; seed <= 10; seed++) {
+    const temple = generateBuilding(palette, 14, mulberry32(seed), 'temple');
+    const inner = temple.tiles.filter((t) => /door-[hv]/.test(t.imageRef) && t.id !== temple.entry);
+    assert.deepEqual(inner, [], `seed ${seed}`);
+    const floor = temple.tiles.filter((t) => !/wall|door/.test(t.imageRef)).length;
+    assert.equal(floor, 12 * 12, `seed ${seed}`);
+    assert.ok(temple.tiles.some((t) => String(t.overlayRef).includes('altar')));
+  }
+});
+
 test('a building with a cellar puts its trapdoor on the bare floor farthest from the door', () => {
   const size = 8;
   const building = generateBuilding(palette, size, mulberry32(10));

@@ -220,7 +220,8 @@ export const CELLAR_CHANCE = 0.3;
 /**
  * Generate the inside of one building, such as a house, a shop, or a
  * temple: a few small rooms of at least two cells a side, and no stairs.
- * `environ`, such as `inn` or `temple`, picks the furnishings
+ * A temple is one open nave with no inner walls, so its altar and colonnade
+ * fill the building. `environ`, such as `inn` or `temple`, picks the furnishings
  * (`GeneratorFurnish.BUILDING_LAYOUTS`). A building has a cellar with a
  * chance of `CELLAR_CHANCE`. Its trapdoor goes on the floor
  * cell farthest from the entrance that `stairsCell` accepts, and
@@ -233,7 +234,8 @@ export const CELLAR_CHANCE = 0.3;
  * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
  */
 export function generateBuilding(palette, size, rng, environ) {
-  const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth: 3 });
+  const maxDepth = environ === 'temple' ? 0 : 3;
+  const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth });
   const tiles = maskTiles(palette, cells, size, rng);
   const dist = walkDistances(cells, size, doorColumn(size), size - 1);
   const far = cells.flatMap((code, i) => (code === FLOOR ? [i] : []));

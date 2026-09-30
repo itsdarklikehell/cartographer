@@ -550,7 +550,7 @@ A town building takes its furnishings from what it is.
 | Building | Furnishings |
 | --- | --- |
 | Inn | More bedrooms |
-| Temple | An altar and pillars |
+| Temple | One open nave with an altar and pillars |
 | Barracks | Rows of beds |
 | Shop | A counter and stock |
 | Academy | Bookshelves |

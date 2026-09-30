@@ -698,7 +698,7 @@ from.
 | Environ | Furnishings |
 | --- | --- |
 | Inn | Guest bedrooms |
-| Temple | An altar and a colonnade |
+| Temple | One open nave with an altar and a colonnade, and no inner walls |
 | Barracks | A row of beds |
 | Shop | A counter and its stock |
 | Academy | Bookshelves and a table |
