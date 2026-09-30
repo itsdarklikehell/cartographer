@@ -556,18 +556,24 @@ that.
 
 ### Choose eldritch invocations
 
-1. Open the sheet of a warlock of level 2 or higher, and find the
-   Progression block.
-2. From warlock level 3, click **Choose** beside the pact boon row, pick a
-   boon, and click **Choose**. Pick the boon first, because some
-   invocations need it.
-3. Click **Choose** beside the **Invocations** row.
-4. Tick the invocations, up to the number in the row, and click **Choose**.
-   The list offers only the invocations that the warlock qualifies for.
-5. Open **Invocation rules** under the row to read what each pick does.
+1. Open the sheet of a warlock, find the Progression block, and click
+   **Assign level** (or **Add a class**). Pick **Warlock**.
+2. At warlock level 3, pick a pact boon and click **Choose**. The app asks
+   for the boon first, because some invocations need it.
+3. When the level raises the number of invocations (levels 2, 5, 7, 9, 12,
+   15, and 18), tick the new invocations and click **Choose**. The list
+   offers only the invocations that the warlock qualifies for.
+4. On each warlock level, the app offers one swap. To replace an
+   invocation, pick it under **Replace**, pick the new one under **With**,
+   and click **Done**. To keep every invocation, leave both at **None**.
+5. Open **Invocation rules** under the Invocations row to read what each
+   pick does.
 
-The app lets you change the picks at any time. The rules allow one swap
-each time the warlock gains a level, so you decide when a swap is allowed.
+A cancelled dialog leaves the boon or the invocations pending. The row
+**Warlock choices pending** shows what is left, and its **Choose** button
+asks again. The **GM edit** buttons beside the Pact boon and Invocations
+rows set the picks freely at any time, as a GM override of the level-up
+rules.
 
 The spells that the invocations cast appear with the other spells of the
 warlock. The [GM reference](gm-reference.md#eldritch-invocations) lists

@@ -14,15 +14,20 @@ import {
 } from '../entities/Invocations.js';
 import { PACT_BOONS } from '../data/invocations.js';
 import { splitList } from '../util/text.js';
+import { choosePendingWarlockPicks } from './InvocationLevelFlow.js';
+import { pactBoonPending, pendingInvocationCount } from '../entities/InvocationLevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
  * The warlock rows of the progression section: the pact boon from 3rd
  * warlock level, and the eldritch invocations from 2nd, with a list of what
- * each picked invocation does. `entities/Invocations.js` holds the rules.
- * This file is DOM wiring over it, verified visually. A character with no
- * warlock level gets no rows.
+ * each picked invocation does. A row names the pending pact boon and
+ * invocations, and its Choose button asks for them. The GM edit buttons set
+ * the boon and the invocations freely, as a GM override with no level-up
+ * swap limit. `entities/Invocations.js` keeps the rules. This file is DOM
+ * wiring over it, verified visually. A character with no warlock level gets
+ * no rows.
  * @param {() => Character} getCharacter
  * @param {{ editBase: boolean, onCommit: (character: Character) => void }} opts
  *   editBase gates the Choose buttons, since a pick changes the base character
@@ -39,8 +44,26 @@ export function buildInvocationRows(getCharacter, opts) {
     const boon = getPactBoon(character);
     rows.push(
       row(
-        boon ? `Pact boon: ${pactBoonName(boon)}` : 'No pact boon chosen',
-        opts.editBase && ['Choose', choosePactBoon, 'Choose the pact boon'],
+        boon ? `Pact boon: ${pactBoonName(boon)}` : 'Pact boon pending',
+        opts.editBase && ['GM edit', choosePactBoon, 'GM override: set the pact boon freely'],
+      ),
+    );
+  }
+
+  const pending = pendingInvocationCount(character);
+  if (pending > 0 || pactBoonPending(character)) {
+    const parts = [
+      ...(pactBoonPending(character) ? ['pact boon'] : []),
+      ...(pending > 0 ? [`${pending} invocation${pending === 1 ? '' : 's'}`] : []),
+    ];
+    rows.push(
+      row(
+        `Warlock choices pending (${parts.join(', ')})`,
+        opts.editBase && [
+          'Choose',
+          () => choosePendingWarlockPicks(getCharacter, opts),
+          'Choose the pending pact boon and invocations',
+        ],
       ),
     );
   }
@@ -50,7 +73,11 @@ export function buildInvocationRows(getCharacter, opts) {
     rows.push(
       row(
         `Invocations (${picked.length} of ${count})`,
-        opts.editBase && ['Choose', chooseInvocations, 'Choose the eldritch invocations'],
+        opts.editBase && [
+          'GM edit',
+          chooseInvocations,
+          'GM override: edit the eldritch invocations freely',
+        ],
       ),
     );
     if (picked.length > 0) {

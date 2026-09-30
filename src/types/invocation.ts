@@ -39,3 +39,13 @@ export interface InvocationCast {
   /** True when a once-per-rest cast is spent until a long rest. */
   spent: boolean;
 }
+
+/** The warlock picks of one level-up (see InvocationLevelUp.js). */
+export interface WarlockPicks {
+  /** The pact boon, when the level asks for one. */
+  boon?: PactBoon | null;
+  /** The new invocation ids. */
+  added: string[];
+  /** One known invocation replaced by another, or null for none. */
+  swap?: { from: string; to: string } | null;
+}

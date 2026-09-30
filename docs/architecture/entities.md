@@ -637,6 +637,13 @@ keeps only the stored picks that the character still qualifies for, up to
 the count of its warlock level. A warlock that loses a level or changes its
 boon loses the invocations that no longer apply, and no writer has to prune
 the list. `setInvocations` writes the list through the same filter.
+`InvocationLevelUp.js` keeps the level-up rules. `pendingInvocationCount`
+and `pactBoonPending` tell the sheet and the level-up what is left to
+pick, and `swapInvocation` replaces one known pick in place with an
+invocation that qualifies and is not picked. `ui/InvocationLevelFlow.js`
+gathers the boon, the new picks, and the swap against a preview of the
+level, and `applyWarlockPicks` applies them again, boon first, to the
+character read after the last dialog closes.
 
 Beguiling Influence grants two skills through the grant ledger. Its record
 sits in `featureChoices` under the key `warlock 2 Beguiling Influence`, so

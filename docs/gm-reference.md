@@ -1781,11 +1781,16 @@ The app does not enforce these subclass rules, so you enforce them:
 
 ### Eldritch invocations
 
-A warlock picks its eldritch invocations and its pact boon in the
-Progression block. Only the GM can pick either one. The Invocations row
-shows how many invocations the warlock has and how many its level allows.
-Its Choose button lists only the invocations that the warlock qualifies
-for. An invocation qualifies when the warlock level is high enough, the
+A warlock picks its eldritch invocations and its pact boon when it gains
+a warlock level in the Progression block. Only the GM can pick either one.
+The level-up asks for the pact boon at warlock level 3, and for the new
+invocations at each level that raises the count. It then offers one
+optional swap of a known invocation for another that qualifies. A pick
+that the GM cancels stays pending, and the **Warlock choices pending** row
+asks for it again, with no swap. The Invocations row shows how many
+invocations the warlock has and how many its level allows. The **GM edit**
+buttons set the boon and the invocations freely, with no swap limit, and
+list only the invocations that the warlock qualifies for. An invocation qualifies when the warlock level is high enough, the
 warlock knows the cantrip that it names, and the warlock has the pact boon
 that it names. The Pact boon row appears from warlock level 3. The
 Invocation rules list under the rows shows what each picked invocation does.
@@ -1828,9 +1833,6 @@ The app does not enforce these invocation rules, so you enforce them:
   Tome, but it has no Book of Shadows.
 - The pact weapon of the Pact of the Blade, and the familiar of the Pact of
   the Chain, with the invocations that use them.
-- The swap of an invocation. The rules allow one swap each time the
-  warlock gains a level. The app lets you change the picks freely at any
-  time, so you decide when a swap is allowed.
 
 ### Inventory and equipment
 

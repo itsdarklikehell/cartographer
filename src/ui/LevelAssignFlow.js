@@ -17,6 +17,8 @@ import { applyFeatureGrant } from '../entities/Progression.js';
 import { buildFeatureStamp } from '../entities/FeatureGrants.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
+import { askWarlockPicks } from './InvocationLevelFlow.js';
+import { applyWarlockPicks } from '../entities/InvocationLevelUp.js';
 
 /**
  * The dialogs of assigning a level from the progression section of the
@@ -131,12 +133,16 @@ export async function assignLevelFlow(getCharacter, opts) {
     // A later grant's picks exclude what an earlier one already gave.
     preview = applyFeatureGrant(preview, stamp);
   }
+  // A warlock level asks for the pact boon and the new invocations it allows,
+  // and offers one swap of a known invocation.
+  const warlock = classId === 'warlock' ? await askWarlockPicks(preview, { swap: true }) : null;
   const live = getCharacter();
-  const next = applyLevelChoices(live, { classId, skills, stamps, subclass });
-  if (next === live) {
+  const leveled = applyLevelChoices(live, { classId, skills, stamps, subclass });
+  if (leveled === live) {
     opts.notify('That level can no longer be assigned.');
     return;
   }
+  const next = warlock ? applyWarlockPicks(leveled, warlock) : leveled;
   const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
   const subclassText = subclass ? ` ${subclassNotice(next, classId)}` : '';
   opts.notify(
