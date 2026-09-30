@@ -46,6 +46,7 @@ import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Prof
 import { defenseFields } from '../entities/DamageDefenses.js';
 import { creatureTypeFields } from '../entities/CreatureType.js';
 import { attackTraitFields } from '../entities/CreatureAttacks.js';
+import { normalizeHitSave } from '../combat/HitSave.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -662,8 +663,13 @@ export function normalizeLibrary(parsed) {
           : (stamp?.[slot] ?? null);
       if (!value) return value;
       if (slot === 'armor') return coerceEnemyArmor(value);
-      // A creature's weapon coerces the same way an equipment entry does.
-      return withCoercedWeapon(/** @type {Record<string, any>} */ (value));
+      // A creature's weapon coerces the same way an equipment entry does. An
+      // on-hit save that names no known ability, DC, or condition drops out.
+      const { onHitSave, ...weapon } = withCoercedWeapon(
+        /** @type {Record<string, any>} */ (value),
+      );
+      const hitSave = normalizeHitSave(onHitSave);
+      return hitSave ? { ...weapon, onHitSave: hitSave } : weapon;
     };
     const stats = e.stats ?? e.statBlock;
     // A rating is written either as a number or as a fraction such as "1/4".

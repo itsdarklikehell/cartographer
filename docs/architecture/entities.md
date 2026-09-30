@@ -291,9 +291,10 @@ Multiattack count, and the combat code asks it in place of
 A `packTactics` flag stores only `true`. A `surpriseAttack` stores a dice count and a
 die size (d4 to d12), and `coerceSurpriseAttack` drops any other value. A creature weapon can store an
 `onHitSave` of an ability, a DC, and a condition, which `combat/HitSave.js`
-cleans. `EquipmentPresets.copyEnemyWeapon` keeps a clean rider and drops a
-broken one, and the combat code cleans it again before it rolls, so a
-hand-edited library file cannot roll a save with an unknown ability.
+cleans. `EquipmentPresets.copyEnemyWeapon` and `Library.normalizeLibrary`
+keep a clean rider and drop a broken one, so a hand-edited library file
+loads with no save rather than a save of an unknown ability. The combat code
+cleans the rider again before it rolls.
 
 `applyConditionToTarget` in `app/combatantWrites.js` checks the immunity list
 before it writes a chip. A creature immune to the condition keeps its chips,

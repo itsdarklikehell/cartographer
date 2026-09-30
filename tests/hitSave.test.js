@@ -198,3 +198,25 @@ test('a hero with no rider weapon still reads as a plain target', () => {
   assert.equal(hitSaveOf(/** @type {any} */ ({ name: 'Fist' })), null);
   assert.equal(hero.name, 'Hero');
 });
+
+test('the library normalizer cleans an on-hit save and drops a broken one', async () => {
+  const { normalizeLibrary } = await import('../src/library/Library.js');
+  const weapon = (/** @type {unknown} */ onHitSave) => ({ ...BITE, onHitSave });
+  const lib = normalizeLibrary({
+    creatures: [
+      {
+        name: 'Good Wolf',
+        maxHP: 11,
+        weapon: weapon({ ability: 'str', dc: '11', condition: 'prone' }),
+      },
+      {
+        name: 'Bad Wolf',
+        maxHP: 11,
+        weapon: weapon({ ability: 'LUCK', dc: 11, condition: 'Prone' }),
+      },
+    ],
+  });
+  const byName = Object.fromEntries(lib.creatures.map((c) => [c.name, c]));
+  assert.deepEqual(byName['Good Wolf'].weapon?.onHitSave, RIDER);
+  assert.equal('onHitSave' in (byName['Bad Wolf'].weapon ?? {}), false);
+});
