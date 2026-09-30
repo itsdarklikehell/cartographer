@@ -2048,7 +2048,9 @@ log names the feature, as in "Wren casts Circle of Death (Mystic Arcanum)."
 
 The Equipment tab has nine slots: Helmet, Armor, Gloves, Greaves, Main
 hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists only the
-items that its slot accepts.
+items that its slot accepts. 5e armor has no Helmet, Gloves, or Greaves
+slot, so those three are a house rule. The item form marks their types
+with "(house rule)", and a note under the AC row says so too.
 
 | Slot | Accepts |
 | --- | --- |
@@ -2095,6 +2097,7 @@ character carries.
 | --- | --- | --- |
 | Use one | A consumable | Uses one charge, down to the last one |
 | Drop one | Any other stacked item | Removes one from the stack |
+| Add or remove (plus) | Every item, for the GM | Opens an **Amount** field under the row. **Add** puts that many on the stack, and the log records a pickup. **Remove** takes that many off, at most the whole stack, and the log records a discard |
 | Discard | Every item | Removes the whole stack. Asks first when the stack has more than one item |
 
 An edit keeps the item equipped, because it is the same item. A type change

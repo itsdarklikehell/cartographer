@@ -26,6 +26,9 @@ import {
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 
+/** The item types whose equipment slots 5e does not have. */
+const HOUSE_RULE_TYPES = ['helmet', 'gloves', 'greaves'];
+
 /**
  * The item create and edit form, shared by the add row and the per-item
  * editor. Every mechanical field is here: type-specific armor, shield,
@@ -73,8 +76,14 @@ export function buildItemForm({
 
   // gear is the catch-all for miscellaneous, non-equippable items, for
   // example rope, rations, and trinkets. The picker states this where the GM picks it.
+  // The helmet, gloves, and greaves slots are not part of 5e, so their type
+  // names say so in the picker, and a note under the AC row says it again.
+  const typeLabel = (/** @type {string} */ t) => {
+    if (t === 'gear') return 'gear (misc.)';
+    return HOUSE_RULE_TYPES.includes(t) ? `${t} (house rule)` : t;
+  };
   const typeSelect = select(
-    ITEM_TYPES.map((t) => ({ value: t, label: t === 'gear' ? 'gear (misc.)' : t })),
+    ITEM_TYPES.map((t) => ({ value: t, label: typeLabel(t) })),
     item ? (item.type ?? 'gear') : ITEM_TYPES[0],
     { className: 'item-form__type-select' },
   );
@@ -303,6 +312,11 @@ export function buildItemForm({
   // The flat AC bonus shares a row with the stat buff. Both are small
   // worn-item numbers, and each hides on its own when the type drops it.
   const acRow = fieldRow(acField, buffStatField, buffAmountField);
+  const houseRuleNote = el(
+    'p',
+    'item-form__house-rule u-muted',
+    '5e armor has no helmet, gloves, or greaves slot. This piece and any AC bonus it gives are a house rule.',
+  );
   const focusRow = fieldRow(focusField);
 
   // The range fields show only for a ranged or thrown weapon, and the
@@ -333,6 +347,7 @@ export function buildItemForm({
     armorRow.hidden = weightField.hidden;
     weaponRow.hidden = propertiesRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     acRow.hidden = acField.hidden && buffStatField.hidden;
+    houseRuleNote.hidden = !HOUSE_RULE_TYPES.includes(type);
     syncWeaponFields();
     const presets = presetsFor(type);
     presetField.hidden = presets.length === 0;
@@ -392,6 +407,7 @@ export function buildItemForm({
       versatileRow,
       effectsRow,
       acRow,
+      houseRuleNote,
       focusRow,
     ],
     assemble,

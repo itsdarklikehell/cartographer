@@ -581,6 +581,16 @@
   width: 4.5rem;
 }
 
+/* The count form: the captioned Amount field, with its buttons level with
+   the input rather than with the caption. */
+.inventory-panel__count {
+  align-items: flex-end;
+}
+
+.inventory-panel__count-amount {
+  width: 6rem;
+}
+
 /* One pill per mechanical effect, wrapping under the name line, so an item
    with many modifiers stays scannable instead of one long comma run. */
 .inventory-panel__effects {
@@ -632,6 +642,13 @@
   min-height: 2rem;
   font-family: var(--font-mono);
   color: var(--text);
+}
+
+/* The line under the AC row that marks a helmet, gloves, or greaves piece as a
+   house rule. */
+.item-form__house-rule {
+  margin: 0;
+  font-size: var(--text-label);
 }
 
 /* Weapon damage editor: one row per dice term (count, die, damage type),

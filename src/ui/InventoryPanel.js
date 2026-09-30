@@ -70,10 +70,11 @@ export function mountInventoryPanel(
   // time opens by default.
   /** @type {Set<ItemType>} */
   const collapsedTypes = new Set();
-  /** This tracks which item's edit or give form is open. It is shared with the row builders. */
+  /** This tracks which item's edit, give, or count form is open. It is shared with the row builders. */
   const view = {
     /** @type {string | null} */ editingId: null,
     /** @type {string | null} */ givingId: null,
+    /** @type {string | null} */ adjustingId: null,
   };
 
   /** @type {(() => void) | null} Refill the mounted Inventory tab's item list. */

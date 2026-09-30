@@ -1,9 +1,9 @@
-import { removeItem, updateItem } from '../entities/Character.js';
+import { addItem, removeItem, updateItem } from '../entities/Character.js';
 import { itemEffects, isConsumable } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { el } from './dom.js';
 import { chip, iconButton, textButton } from './buttons.js';
-import { numberField, select } from './formFields.js';
+import { labeled, numberField, select } from './formFields.js';
 import { confirmModal } from './Modal.js';
 import { clampInt } from '../util/num.js';
 import { getPactBoon } from '../entities/Invocations.js';
@@ -30,7 +30,7 @@ import { isPactWeapon, setPactWeapon } from '../entities/PactWeapon.js';
  * give must write against the character as it is when the button is pressed.
  *
  * @typedef {{
- *   view: { editingId: string | null, givingId: string | null },
+ *   view: { editingId: string | null, givingId: string | null, adjustingId: string | null },
  *   getCharacter: () => Character,
  *   commit: (next: Character, event?: InventoryEvent) => void,
  *   render: () => void,
@@ -102,6 +102,7 @@ export function buildRow(item, playable, ctx) {
       iconButton('edit', `Edit ${item.name}`, () => {
         view.editingId = item.id;
         view.givingId = null;
+        view.adjustingId = null;
         render();
       }),
     );
@@ -117,6 +118,7 @@ export function buildRow(item, playable, ctx) {
       iconButton('give', `Give ${item.name} to another character`, () => {
         view.givingId = view.givingId === item.id ? null : item.id;
         view.editingId = null;
+        view.adjustingId = null;
         render();
       }),
     );
@@ -137,6 +139,24 @@ export function buildRow(item, playable, ctx) {
           itemName: item.name,
           count: 1,
         }),
+      ),
+    );
+  }
+
+  // The count form adds to or takes from the stack by any amount. It follows
+  // `canEdit`, like the edit form, because adding items is the GM's call.
+  if (canEdit()) {
+    row.appendChild(
+      iconButton(
+        'plus',
+        `Add or remove ${item.name}`,
+        () => {
+          view.adjustingId = view.adjustingId === item.id ? null : item.id;
+          view.editingId = null;
+          view.givingId = null;
+          render();
+        },
+        { title: 'Change the count' },
       ),
     );
   }
@@ -164,9 +184,62 @@ export function buildRow(item, playable, ctx) {
     { variant: 'danger' },
   );
   row.appendChild(removeButton);
+  if (item.id === view.adjustingId && canEdit()) {
+    return el('div', '', row, buildCountForm(item, ctx));
+  }
   if (item.id !== view.givingId || recipients.length === 0) return row;
 
   return el('div', '', row, buildGiveForm(item, recipients, ctx));
+}
+
+/**
+ * The inline count form under a row: an amount, and buttons that add it to
+ * the stack or take it off. Coins, arrows, and torches change by more than
+ * one at a time, and this saves a trip through the edit form to retype the
+ * total. Add logs as a pickup and Remove as a discard. Remove takes at most
+ * the whole stack, and a stack that reaches 0 leaves the inventory.
+ * @param {InventoryItem} item
+ * @param {RowContext} ctx
+ * @returns {HTMLElement}
+ */
+function buildCountForm(item, { view, getCharacter, commit, render }) {
+  const amountInput = numberField(1, {
+    min: 1,
+    className: 'inventory-panel__count-amount',
+    ariaLabel: `Amount of ${item.name} to add or remove`,
+  });
+  /** @param {boolean} add */
+  const apply = (add) => {
+    const typed = clampInt(amountInput.value, 1, Number.MAX_SAFE_INTEGER);
+    const count = add ? typed : Math.min(typed, item.quantity);
+    view.adjustingId = null;
+    const character = getCharacter();
+    if (add) {
+      commit(addItem(character, { ...item, quantity: count }), {
+        verb: 'pickup',
+        itemName: item.name,
+        count,
+      });
+      return;
+    }
+    commit(removeItem(character, item.id, count), {
+      verb: 'discard',
+      itemName: item.name,
+      count,
+    });
+  };
+  const cancelButton = textButton('Cancel', () => {
+    view.adjustingId = null;
+    render();
+  });
+  return el(
+    'div',
+    'inventory-panel__give inventory-panel__count u-row u-g1',
+    labeled('Amount', amountInput),
+    cancelButton,
+    textButton('Remove', () => apply(false), { variant: 'danger' }),
+    textButton('Add', () => apply(true), { variant: 'primary' }),
+  );
 }
 
 /**
