@@ -398,6 +398,58 @@ A head beside both a river and water joins the river and drains into the
 water. A river with no lower ground left ends in a pond, and the pond cell
 becomes water.
 
+### Guided terrain
+
+A region map of a world shows the same land as its block on the world map,
+at a larger scale. `src/map/GeneratorGuide.js` does this. `terrainGuide`
+reads the parent tiles under the bounding box of a site into a
+`TerrainGuide` (in `src/types/map.ts`). The guide lists the biome of each
+parent cell, its river arms, and whether the cell belongs to the block. A
+cell of the box outside the block keeps its terrain in the guide, such as
+the sea or the land of a neighbor.
+
+`generateWorld` puts a guide on each region site. `expandTree` and the
+example world pass `site.guide` to `generateNodeTiles`, and the wild
+archetypes hand it to `wildTerrain`. The town and the interior archetypes
+ignore a guide.
+
+With a guide, `guidedField` builds the three climate fields in place of
+`terrainField`. Each cell of the sub-map maps to a point in the box with the
+projection of `RegionCrossing.projectAlong`. A party that enters from a
+parent cell or crosses a border then lands on the matching land. Each
+biome has a target elevation, moisture, and temperature in `CLIMATE`,
+chosen so that `classifyBiome` gives the same biome back. A cell blends the
+targets of the four parent cells around its point. A small warp moves the
+point, so the outlines bend, and small noise adds hills, lakes, and patches
+of forest that the parent is too coarse to show.
+
+Water, hills, and mountains give no moisture, and plain hills and mountains
+give no temperature. A foothill then takes the climate of the lowland beside
+it, so desert foothills stay dry and snowy foothills stay cold. A cell in
+the hill or the mountain band takes the biome of its nearest parent cell
+when that cell is in the same band. Without this rule, a plain range
+beside a snowfield turns to snow mountains, and plain hills in a desert
+turn to badlands.
+
+The rivers of the guide run between the points of their parent cells. The
+cells under a guided river stay above the sea line and below the mountain
+line. A river that drains into parent water runs until it meets water, and
+a river that leaves the box runs off the map. `traceRivers` then adds half
+the usual count of smaller rivers, which join the guided ones.
+
+`paintedMask` sets which cells the map keeps. A cell stays when its nearest
+parent cell is in the block, or is water beside the block, so a coast keeps
+a band of its sea. The land of a neighbor and the open sea stay blank, and
+the region map takes the outline of its block. Only the largest connected
+painted area stays, and a blank area that does not reach the border fills
+in, so no painted speck stands apart from the rest of the map. `generateWilds` treats a
+blank cell as water while it places the sites, the roads, and the
+landmarks, and then drops the blank tiles.
+
+`guideSize` picks the size preset of a region map: the smallest preset at
+least 1.5 times the longer side of the box. A block of one cell gets a small
+map, and a block 25 cells wide gets a vast one.
+
 ### Sites and roads
 
 After the rivers, `src/map/GeneratorSites.js` places the sites of an outdoor
@@ -786,7 +838,9 @@ no region.
 
 `regionFor` picks the archetype of each region from its terrain. Every tile
 of a region links to the region map, so the region shows as one region group
-on the world.
+on the world. Each region site has a terrain guide of its block, and the
+region map draws the land of that block at a larger scale (see Guided
+terrain above).
 
 **Tree.** `expandTree` in `src/map/GeneratorTree.js` builds a map and its
 sub-maps, breadth first. The top map draws from `mulberry32(seed)`. Each
@@ -797,9 +851,10 @@ alone.
 
 `depth` limits the optional sites. `SUBMAP_BUDGET` stops the tree at 300
 sub-maps, because each sub-map adds to the save. A vast world with every
-level has 240 to 271 sub-maps over seeds 1 to 5. Its packed save is about
-0.5 MiB of text. The browser stores two bytes per character, so the world
-takes about 1 MiB of localStorage, and the save warns at 3 MiB.
+level reaches the budget on seeds 1 to 5, and 98 to 147 of its places get
+no map. Its packed save is about 0.18 million characters. The browser
+stores two bytes per character, so the world takes about 0.36 MiB of
+localStorage, and the save warns at 3 MiB.
 
 The forced sub-maps count against the budget, and they take it first, so
 that no stairs lead nowhere. `expandTree` generates each sub-map when it
@@ -851,6 +906,8 @@ helpers below.
 | `GeneratorHalls.js` | The castle and the building |
 | `GeneratorFurnish.js` | Furnishings for every interior |
 | `GeneratorWorld.js` | The world |
+| `GeneratorGuide.js` | The terrain guide of a region, its guided climate fields, and its outline |
+| `GeneratorSizes.js` | The size presets, in a module of their own so the generators can read them without an import cycle |
 | `GeneratorTree.js`, `GeneratorNames.js` | Building and naming the sub-maps |
 | `RegionRepaint.js` | Repainting the block of a regenerated region on its parent map |
 
@@ -1243,7 +1300,10 @@ modules read it:
   "Cross into {name}" label in the gutter beyond each `edge` exit.
   `syncExits` in `mapWiring.js` passes the canvas only the edges that
   `exitsInReach` keeps: the sides within `EXIT_REACH_SIGHTS` sight radii
-  of the traveler. The exit buttons get the same list. The canvas also
+  of the traveler. `paintedDistance` measures each side from the traveler
+  to the last painted tile in that direction, so on a region map with
+  blank cells outside its outline, the arrow shows near the coast of the
+  region and not only near the grid border. The exit buttons get the same list. The canvas also
   gets the full list, and a fit keeps room for every side in it, so an
   arrow that appears as the party walks does not rezoom the map.
   `passTime` reruns `syncExits`, because the sight radius changes with

@@ -21,14 +21,15 @@ import { mulberry32 } from '../util/Rng.js';
 
 /**
  * The most sub-maps that one generation creates, forced ones included. A
- * vast world opened all the way down has 240 to 271 sub-maps (seeds 1 to
- * 5), so it stays under the budget. Its packed save is about 0.5 MiB of
- * text, and localStorage stores two bytes per character, so it adds about
- * 1 MiB against the 3 MiB warning of `SaveManager.QUOTA_WARN_BYTES`.
+ * vast world opened all the way down reaches the budget on seeds 1 to 5,
+ * and 98 to 147 of its places get no map. Its packed save is about 0.18
+ * million characters, and localStorage stores two bytes per character, so
+ * it adds about 0.36 MiB against the 3 MiB warning of
+ * `SaveManager.QUOTA_WARN_BYTES`.
  * The undo log costs more on top of that. The generation's own undo record
  * is the smaller of the new nodes in the save's form and a snapshot of the
  * save before it. Over the example campaign, that is a snapshot of about
- * 0.14 million characters. A New, Load example, or Import over the generated
+ * 0.18 million characters. A New, Load example, or Import over the generated
  * world keeps the replaced save as an undo snapshot, which is a second copy
  * of the whole save.
  * Only the forced sub-maps of the top map can go past the budget, and
@@ -190,6 +191,7 @@ export function expandTree(palette, root, { seed, depth, budget = SUBMAP_BUDGET 
           levels,
           level: site.level,
           environ: site.environ,
+          guide: site.guide,
         },
         childRng,
       );

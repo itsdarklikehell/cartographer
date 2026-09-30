@@ -37,10 +37,11 @@ const CLIMB = 0.02;
  * @param {{ size: number, elevation: Float64Array, cells: string[] }} field
  * @param {number} count
  * @param {() => number} rng
+ * @param {ArmNetwork} [network] rivers already on the map, which the new
+ *   rivers join and keep three cells away from at their sources
  * @returns {RiverResult}
  */
-export function traceRivers({ size, elevation, cells }, count, rng) {
-  const network = new ArmNetwork();
+export function traceRivers({ size, elevation, cells }, count, rng, network = new ArmNetwork()) {
   /** @type {number[]} */
   const ponds = [];
   /** @param {number} x @param {number} y */

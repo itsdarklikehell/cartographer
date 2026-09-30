@@ -4,9 +4,14 @@ import { ArmNetwork, coastOverlays, smoothCoastline } from './Autotile.js';
 import { BIOME_TERRAIN, TERRAIN_PROFILES, terrainField } from './GeneratorTerrain.js';
 import { traceRivers } from './GeneratorRivers.js';
 import { bridgeAt } from './GeneratorRoads.js';
+import { guidedField } from './GeneratorGuide.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('../types/map.js').TerrainGuide} TerrainGuide */
+
+/** The share of the usual river count that a guided map traces on its own. */
+const GUIDED_RIVERS = 0.5;
 
 /**
  * The ground of the open maps. `wildTerrain` builds the classified cells and
@@ -24,9 +29,12 @@ import { bridgeAt } from './GeneratorRoads.js';
  *   elevation: Float64Array,
  *   rivers: ArmNetwork,
  *   roads: ArmNetwork,
+ *   painted?: Uint8Array,
  * }} WildTerrain
  * `cells` is the terrain class per cell and `biomes` the finer biome
- * per cell, both indexed `y * size + x`. `roads` starts empty.
+ * per cell, both indexed `y * size + x`. `roads` starts empty. A guided map
+ * has `painted`, with 1 for each cell that it keeps and 0 for each cell
+ * outside the outline of its block, which gets no tile.
  */
 
 /**
@@ -110,17 +118,29 @@ export function southLanding(cells, size, skip = () => false) {
  * cells with shorelines the coast pieces can draw, and rivers. Rivers are
  * traced after the coastline is smoothed, because smoothing turns narrow
  * land into water and a river traced first could end up inside a lake.
+ * With a `guide`, the cells and the main rivers follow the parent terrain
+ * (`GeneratorGuide.guidedField`), and the tracer adds `GUIDED_RIVERS` of
+ * the usual river count as smaller rivers that join them.
  * @param {number} size
  * @param {string} archetype a key of TERRAIN_PROFILES
  * @param {() => number} rng
+ * @param {TerrainGuide} [guide]
  * @returns {WildTerrain}
  */
-export function wildTerrain(size, archetype, rng) {
+export function wildTerrain(size, archetype, rng, guide) {
   const profile = TERRAIN_PROFILES[archetype] ?? TERRAIN_PROFILES.wilderness;
-  const field = terrainField(size, profile, rng);
+  const { field, rivers, painted } = guide
+    ? guidedField(size, guide, rng)
+    : { field: terrainField(size, profile, rng), rivers: undefined, painted: undefined };
   let cells = smoothCoastline(field.cells, size, size);
-  const count = Math.round(profile.rivers * Math.max(1, size / 12));
-  const { network, ponds } = traceRivers({ size, elevation: field.elevation, cells }, count, rng);
+  const share = guide ? GUIDED_RIVERS : 1;
+  const count = Math.round(profile.rivers * Math.max(1, size / 12) * share);
+  const { network, ponds } = traceRivers(
+    { size, elevation: field.elevation, cells },
+    count,
+    rng,
+    rivers,
+  );
   for (const i of ponds) cells[i] = 'water';
   if (ponds.length) cells = smoothCoastline(cells, size, size);
   // A pond can widen the water it joins, so a river cell can end up under
@@ -130,7 +150,7 @@ export function wildTerrain(size, archetype, rng) {
     cells[i] === 'water' && b !== 'deep-water' ? 'water' : b,
   );
   for (let i = 0; i < cells.length; i++) {
-    if (cells[i] === 'water') network.drop(i % size, Math.floor(i / size));
+    if (cells[i] === 'water' || painted?.[i] === 0) network.drop(i % size, Math.floor(i / size));
   }
   return {
     size,
@@ -139,6 +159,7 @@ export function wildTerrain(size, archetype, rng) {
     elevation: field.elevation,
     rivers: network,
     roads: new ArmNetwork(),
+    ...(painted ? { painted } : {}),
   };
 }
 

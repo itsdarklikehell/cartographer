@@ -5,6 +5,7 @@ import { generateCave } from './GeneratorCave.js';
 import { generateBuilding, generateCastle, generateUpperFloor } from './GeneratorHalls.js';
 import { generateWorld } from './GeneratorWorld.js';
 import { generateGuestFloor } from './GeneratorInnShop.js';
+import { GENERATOR_SIZES } from './GeneratorSizes.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -20,16 +21,8 @@ import { generateGuestFloor } from './GeneratorInnShop.js';
  * GeneratorHalls.js (castle, building), and GeneratorWorld.js (world).
  */
 
-/**
- * Grid side length per size preset. Square grids keep the archetype
- * generators simple and give the same result at any size. The "large"
- * preset is big enough to be a real procedurally generated area, not a
- * handful of tiles a GM can place by hand. "Huge" and "vast" suit a whole
- * realm: the climate model scales its features with the map, so a vast map
- * gets more lakes, ranges, and rivers instead of larger ones.
- * @type {Record<string, number>}
- */
-export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22, huge: 32, vast: 48 };
+/** The size presets, from `GeneratorSizes.js`. */
+export { GENERATOR_SIZES };
 
 /**
  * The size presets as the Generate dialog lists them, smallest first.
@@ -136,7 +129,11 @@ export const NESTED_ARCHETYPES = ARCHETYPES.region.map((a) => a.value);
  *   levels?: number,
  *   level?: number,
  *   environ?: string,
+ *   guide?: import('../types/map.js').TerrainGuide,
  * }} GenerateOptions
+ * `guide` is the parent terrain under the node, which the ground of an
+ * open-terrain archetype follows (see `GeneratorGuide.guidedField`). The
+ * other archetypes ignore it.
  */
 
 /**
@@ -300,6 +297,6 @@ export function generateNodeTiles(palette, options, rng) {
   let open;
   if (archetype === 'town') open = generateTown(palette, n, rng, environ);
   else if (archetype === 'world') open = generateWorld(palette, n, rng);
-  else open = generateWilds(palette, n, rng, archetype);
+  else open = generateWilds(palette, n, rng, archetype, options.guide);
   return done(open, open.sites);
 }

@@ -1,7 +1,8 @@
-import { NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
+import { NEIGHBORS4, inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { getTile } from './TileGrid.js';
 import { tileKind } from './TileKinds.js';
+import { tileAtXY } from './TileIndex.js';
 import { describeTile } from './TileCoords.js';
 import { crossingFor } from './RegionCrossing.js';
 import { memoizeByIdentity, memoizeByIdentity2 } from '../util/memoize.js';
@@ -404,9 +405,10 @@ export const EXIT_REACH_SIGHTS = 3;
 
 /**
  * The exits to show while the traveler stands at `at`. An edge exit shows
- * only when the traveler is at most `reach` tiles from its side. A tile
- * exit or the fallback always shows. With no traveler in the node, every
- * exit shows, because no distance can be measured.
+ * only when the traveler is at most `reach` tiles from the painted edge of
+ * the node on its side (see `paintedDistance`). A tile exit or the fallback
+ * always shows. With no traveler in the node, every exit shows, because no
+ * distance can be measured.
  * @param {MapNode} node
  * @param {MapExit[]} exits
  * @param {{ x: number, y: number } | null} at
@@ -415,8 +417,34 @@ export const EXIT_REACH_SIGHTS = 3;
  */
 export function exitsInReach(node, exits, at, reach) {
   if (!at) return exits;
-  const near = new Set(sideDistances(node, at).flatMap((e) => (e.d <= reach ? [e.side] : [])));
+  const near = new Set(
+    EXIT_SIDES.flatMap(({ side, dx, dy }) =>
+      paintedDistance(node, at, dx, dy) <= reach ? [side] : [],
+    ),
+  );
   return exits.filter((exit) => exit.kind !== 'edge' || near.has(exit.side));
+}
+
+/**
+ * How many tiles a traveler at `at` walks in the direction (dx, dy) before
+ * the next step leaves the painted part of the node: off the grid, or onto a
+ * blank cell. A guided region has blank cells outside the outline of its
+ * block, so a traveler on the coast of a region that does not fill its grid
+ * stands at the edge even far from the grid border. A traveler on a blank
+ * cell, such as a party on a map that the GM has not painted yet, measures
+ * to the grid border instead.
+ * @param {MapNode} node
+ * @param {{ x: number, y: number }} at
+ * @param {number} dx @param {number} dy
+ * @returns {number}
+ */
+export function paintedDistance(node, at, dx, dy) {
+  const painted = Boolean(tileAtXY(node, at.x, at.y));
+  /** @param {number} x @param {number} y */
+  const inside = (x, y) => (painted ? Boolean(tileAtXY(node, x, y)) : inBounds(node, x, y));
+  let d = 0;
+  while (inside(at.x + dx * (d + 1), at.y + dy * (d + 1))) d++;
+  return d;
 }
 
 /** Which axis a side runs along: sides on the north/south run along x. */

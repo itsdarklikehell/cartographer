@@ -19,6 +19,8 @@ import { DEFAULT_CREATURES } from '../src/data/creatures.js';
 import { attackAbility } from '../src/entities/Weapons.js';
 import { abilityModifier } from '../src/entities/Modifiers.js';
 import { creatureProficiencyBonus } from '../src/entities/CreatureChecks.js';
+import { computeRegionEntryTile } from '../src/map/EntryPoint.js';
+import { NEIGHBORS4 } from '../src/map/MapGeometry.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 const { grid } = campaign;
@@ -49,6 +51,29 @@ const lineage = (id) => {
 test('the example campaign is the same on every load', () => {
   const again = buildExampleCampaign(new TilePalette());
   assert.equal(serialize(buildState(again)), serialize(buildState(campaign)));
+});
+
+test('a party that walks into a region of the example lands on a painted tile', () => {
+  const world = nodeOf('world');
+  let approaches = 0;
+  for (const tile of world.tiles) {
+    if (!tile.childNodeId) continue;
+    const region = nodeOf(tile.childNodeId);
+    const [x, y] = tile.id.split(',').map(Number);
+    for (const [dx, dy] of NEIGHBORS4) {
+      const from = getTile(world, `${x + dx},${y + dy}`);
+      if (!from || from.childNodeId === region.id) continue;
+      const party = { nodeId: 'world', tileId: from.id };
+      const id = computeRegionEntryTile(world, region, region.id, party, tile.id);
+      const landing = getTile(region, id);
+      assert.ok(landing, `${region.id} from ${from.id}: ${id} is painted`);
+      if (!/\/(water|deep-water)\//.test(from.imageRef)) {
+        assert.doesNotMatch(landing.imageRef, /\/(water|deep-water)\//, `${region.id} ${id}`);
+      }
+      approaches++;
+    }
+  }
+  assert.ok(approaches > 100);
 });
 
 test('the example world takes its regions from the seeded world generator', () => {

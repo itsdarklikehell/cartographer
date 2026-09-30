@@ -5,6 +5,8 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { toCaster } from '../src/entities/Caster.js';
 import { buildExampleContent } from '../src/campaign/ExampleContent.js';
+import { tileKind } from '../src/map/TileKinds.js';
+import { opensOutward } from '../src/map/MapExits.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 
@@ -97,10 +99,12 @@ test('each character starts with one personal handout that only its own tab sees
 test('the clues of the example lie on the tiles where the party finds them', () => {
   /** @param {string} id */
   const handout = (id) => campaign.handouts.find((h) => h.id === id);
-  assert.deepEqual(
-    [handout('barrow-inscription')?.nodeId, handout('barrow-inscription')?.tileId],
-    [creature('barrow-skeleton-1').location?.nodeId, '8,0'],
-  );
+  const inscription = handout('barrow-inscription');
+  assert.equal(inscription?.nodeId, creature('barrow-skeleton-1').location?.nodeId);
+  const barrow = campaign.grid.getNode('barrow');
+  const door = barrow?.tiles.find((t) => t.id === inscription?.tileId);
+  assert.ok(door && tileKind(door) === 'door' && opensOutward(barrow, door), 'at the barrow door');
+
   assert.equal(handout('snagtooth-orders')?.tileId, creature('snagtooth').location?.tileId);
   assert.equal(handout('irennes-letter')?.nodeId, creature('pale-sworn-1').location?.nodeId);
   assert.equal(handout('crypt-ledger')?.tileId, null);

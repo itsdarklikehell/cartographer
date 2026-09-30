@@ -9,6 +9,7 @@ import { clamp } from '../util/num.js';
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
+/** @typedef {import('../types/map.js').TerrainGuide} TerrainGuide */
 /** @typedef {import('./GeneratorSites.js').Site} Site */
 /** @typedef {import('./GeneratorGround.js').WildTerrain} WildTerrain */
 
@@ -19,8 +20,9 @@ import { clamp } from '../util/num.js';
  * traces rivers down from the high ground. Then it places
  * settlements, a keep, and a dungeon, joins them with roads, and scatters
  * landmarks.
- * The terrain covers every cell, so the map meets its parent along the whole
- * border.
+ * Without a guide, the terrain covers every cell, so the map meets its
+ * parent along the whole border. A guided map covers the outline of its
+ * block alone (see `GeneratorGuide.paintedMask`).
  */
 
 /**
@@ -190,26 +192,38 @@ export function fordCrossings(terrain, sites) {
  * marker. `sites` lists the settlements, the keep, the dungeon, and each
  * cave entrance, mine, and ruin that drew its marker, each with the
  * sub-map it opens into. A mine and a cave entrance open into a cave, and a
- * ruin into a dungeon.
+ * ruin into a dungeon. A guided map has tiles only inside the outline of
+ * its block (see `GeneratorGuide.paintedMask`), and no site, road, or
+ * landmark outside it.
  * @param {TilePalette} palette
  * @param {number} size
  * @param {() => number} rng
  * @param {string} [archetype] a key of TERRAIN_PROFILES
+ * @param {TerrainGuide} [guide] the parent terrain that the ground follows
+ *   (see `GeneratorGround.wildTerrain`)
  * @returns {{ tiles: Tile[], entry: string, sites: GeneratedSite[] }}
  */
-export function generateWilds(palette, size, rng, archetype = 'wilderness') {
-  const terrain = wildTerrain(size, archetype, rng);
+export function generateWilds(palette, size, rng, archetype = 'wilderness', guide) {
+  const terrain = wildTerrain(size, archetype, rng, guide);
+  const { painted } = terrain;
+  // A blank cell counts as water while the sites, the roads, and the
+  // landmarks find their cells, so none of them stands outside the outline.
+  // It draws with its own class, so the land beside it gets no shoreline.
+  const own = terrain.cells;
+  if (painted) terrain.cells = own.map((c, i) => (painted[i] ? c : 'water'));
   const sites = planSites(terrain, rng);
   plantFarmland(terrain, sites, rng);
   const { roads, exits } = connectSites(terrain, sites);
   terrain.roads = roads;
   const fords = fordCrossings(terrain, sites);
+  const drawn = painted ? terrain.cells.map((c, i) => (painted[i] ? c : own[i])) : terrain.cells;
   const tiles = terrainTiles(
     palette,
-    { ...terrain, fords },
+    { ...terrain, cells: drawn, fords },
     rng,
     new Set(sites.map((s) => s.tileId)),
   );
+
   const byId = tilesById(tiles);
   /** @type {GeneratedSite[]} */
   const maps = [];
@@ -239,5 +253,6 @@ export function generateWilds(palette, size, rng, archetype = 'wilderness') {
   // The tiles run in the same row-major order as the cells.
   const entry =
     exits[0] ?? southLanding(terrain.cells, size, (i) => Boolean(tiles[i].metadata.poiType));
-  return { tiles, entry, sites: maps };
+  const kept = painted ? tiles.filter((_, i) => painted[i]) : tiles;
+  return { tiles: kept, entry, sites: maps };
 }

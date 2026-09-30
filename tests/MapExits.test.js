@@ -10,6 +10,7 @@ import {
   findExits,
   isSealedInterior,
   nearestSide,
+  paintedDistance,
   stairwayTo,
 } from '../src/map/MapExits.js';
 import { edgeExitBand, exitBandGeometry, hitExitBand } from '../src/map/ExitBands.js';
@@ -817,4 +818,29 @@ test('an edge exit without a node lookup leads back to the parent', () => {
     targetName: 'Coast',
     along: 2,
   });
+});
+
+test('exitsInReach measures to the painted edge of a map that does not fill its grid', () => {
+  // A triangle of land: row y holds the cells x <= y of a 10 by 10 grid.
+  const n = node({
+    id: 'n',
+    width: 10,
+    height: 10,
+    tiles: gridTiles(10, 10, (id, x, y) => (x <= y ? createTile(id, 'grass.svg') : null)),
+  });
+  assert.equal(paintedDistance(n, { x: 2, y: 6 }, 0, -1), 4, 'north to the diagonal');
+  assert.equal(paintedDistance(n, { x: 2, y: 6 }, 1, 0), 4, 'east to the diagonal');
+  assert.equal(paintedDistance(n, { x: 2, y: 6 }, -1, 0), 2, 'west to the grid border');
+  assert.equal(paintedDistance(n, { x: 8, y: 2 }, 1, 0), 1, 'a blank cell measures to the grid');
+  const target = { targetNodeId: 'p', targetName: 'P' };
+  /** @type {import('../src/types/map.js').MapExit[]} */
+  const exits = ['north', 'east', 'south', 'west'].map((side) => ({
+    kind: /** @type {const} */ ('edge'),
+    side: /** @type {import('../src/types/map.js').ExitSide} */ (side),
+    ...target,
+  }));
+  const sides = exitsInReach(n, exits, { x: 5, y: 6 }, 1).map((e) =>
+    e.kind === 'edge' ? e.side : e.kind,
+  );
+  assert.deepEqual(sides, ['north', 'east'], 'the coast of the triangle is in reach');
 });

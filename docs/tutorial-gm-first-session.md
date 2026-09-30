@@ -60,7 +60,7 @@ If a dialog says that walls or obstacles block every path, click
 
 ## 4. Enter a town
 
-1. Find the settlement marker of Briarwick. It is one tile north of the
+1. Find the settlement marker of Briarwick. It is one tile south of the
    place where the party started.
 2. Move the party onto that tile.
 
@@ -85,7 +85,7 @@ directions, so you do not make a separate exit.
 2. Click the **Nearby encounters** tab. It lists the creatures near the
    party, with their HP and their column and row.
 
-In the example, a Goblin Scout stands beside the burned farmstead, south of
+In the example, a Goblin Scout stands beside the burned farmstead, east of
 Briarwick. A red diamond marks its tile on the map. Markers show only near
 the party, so move closer if you do not see the diamond.
 

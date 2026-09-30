@@ -1,6 +1,7 @@
 import { NEIGHBORS4, tileIdAt } from './MapGeometry.js';
 import { randInt } from './GeneratorRandom.js';
 import { southLanding, terrainTiles, wildTerrain } from './GeneratorGround.js';
+import { guideSize, terrainGuide } from './GeneratorGuide.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').GeneratedSite} GeneratedSite */
@@ -128,7 +129,10 @@ export function partitionLand(cells, size, rng) {
 
 /**
  * Generate a world map. Each region is a site whose tiles all link to one
- * large child region, with the archetype that its terrain calls for. The
+ * child region, with the archetype that its terrain calls for. The site
+ * has the guide of its bounding box (`GeneratorGuide.terrainGuide`), so
+ * the region map draws the land of its block, and its size preset follows
+ * the size of the block (`GeneratorGuide.guideSize`). The
  * entry is the land cell nearest the middle of the south border, so a party
  * that the regeneration moves lands on the shore instead of in the sea.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
@@ -153,7 +157,9 @@ export function generateWorld(palette, size, rng) {
       const block = /** @type {number[]} */ (blocks.get(r));
       const { archetype, environ } = regionFor(block.map((i) => terrain.cells[i]));
       const tileIds = block.map((i) => tileIdAt(i % size, Math.floor(i / size)));
-      return { tileIds, archetype, kind: 'region', environ, size: 'large', label: archetype };
+      const guide = terrainGuide(tiles, tileIds);
+      const kind = /** @type {const} */ ('region');
+      return { tileIds, archetype, kind, environ, size: guideSize(guide), label: archetype, guide };
     });
   return { tiles, entry: southLanding(terrain.cells, size), sites };
 }

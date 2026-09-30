@@ -102,7 +102,8 @@ export interface PartyPosition {
  *  the depth and the budget, because its tile already leads somewhere.
  *  `levels` is the level count of a dungeon or a cave, counted from this
  *  site down, and `level` is the number of the level that the site opens
- *  into, where the top level is 1. */
+ *  into, where the top level is 1. A `guide` gives the terrain of the parent
+ *  under the site, so an open sub-map draws the same land at a larger scale. */
 export interface GeneratedSite {
   tileIds: string[];
   archetype: string;
@@ -113,6 +114,23 @@ export interface GeneratedSite {
   forced?: boolean;
   levels?: number;
   level?: number;
+  guide?: TerrainGuide;
+}
+
+/** The terrain of the cells of a parent map under the bounding box of a site,
+ *  from GeneratorGuide.terrainGuide. Both arrays run row by row over the
+ *  box, `width` cells wide and `height` cells tall. `biomes` is the biome
+ *  of each cell, such as `forest`, or null for a cell whose art is not a
+ *  built-in terrain. `rivers` lists the river arms of each cell, such as
+ *  `ns` for a channel that runs north to south, and an empty string for a
+ *  cell with no river. `block` is true for each cell of the site itself, and
+ *  false for a cell of the box that belongs to a neighbor or to the sea. */
+export interface TerrainGuide {
+  width: number;
+  height: number;
+  biomes: (string | null)[];
+  rivers: string[];
+  block: boolean[];
 }
 
 /** A pier of a port town, from GeneratorTownDocks.planDocks. `side` is the

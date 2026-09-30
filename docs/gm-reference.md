@@ -601,8 +601,21 @@ stack, for example "Ashford Barrow (level 3)".
 #### Worlds
 
 A world is a continent in a sea, split into up to nine regions. Each region
-is a block of land tiles that all link to one large region map. A small
-island is in no region.
+is a block of land tiles that all link to one region map. A small island is
+in no region.
+
+A region map is a larger, more detailed copy of its block. Its coasts,
+ranges, forests, and rivers sit where the world map shows them, and small
+hills, lakes, and streams fill in between. The map takes the outline of its
+block, so the land of a neighbor region and the open sea stay blank, and a
+coast keeps a band of its sea. A larger block gets a larger map, from small
+(8 x 8) for a block of one tile to vast (48 x 48) for a block 25 tiles
+across. An edge exit arrow shows when the party is near the edge of the
+painted land, not only near the border of the grid.
+
+A region map that you generate again from the Generate dialog does not
+follow its block, because the dialog builds the map from its archetype
+alone.
 
 The terrain of a block sets the archetype of its region map.
 

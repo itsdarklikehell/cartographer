@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { generateWorld, partitionLand, regionFor } from '../src/map/GeneratorWorld.js';
+import { guideSize } from '../src/map/GeneratorGuide.js';
 import { NEIGHBORS4 } from '../src/map/MapGeometry.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
@@ -98,7 +99,7 @@ test('the regions stop at the most that one world gets', () => {
   );
 });
 
-test('a world links each region block to one large region map', () => {
+test('a world links each region block to one guided region map', () => {
   for (const seed of [1, 2, 3]) {
     const size = 22;
     const world = generateWorld(palette, size, mulberry32(seed));
@@ -108,7 +109,9 @@ test('a world links each region block to one large region map', () => {
     assert.equal(new Set(ids).size, ids.length, 'no tile is in two regions');
     for (const site of world.sites) {
       assert.equal(site.kind, 'region');
-      assert.equal(site.size, 'large');
+      assert.ok(site.guide, 'the site has a guide');
+      assert.equal(site.size, guideSize(site.guide));
+      assert.equal(site.guide.block.filter(Boolean).length, site.tileIds.length);
     }
     const entry = world.tiles.find((t) => t.id === world.entry);
     assert.ok(entry && !/water/.test(entry.imageRef), `seed ${seed}: the entry is land`);

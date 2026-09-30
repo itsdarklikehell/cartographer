@@ -159,7 +159,7 @@ export function buildExampleWorld(palette) {
     const seed = childSeed(WORLD_SEED, i);
     const gen = generateNodeTiles(
       palette,
-      { archetype: site.archetype, size: site.size, environ: site.environ },
+      { archetype: site.archetype, size: site.size, environ: site.environ, guide: site.guide },
       mulberry32(seed),
     );
     /** @type {RegionStage} */

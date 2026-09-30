@@ -58,26 +58,29 @@ test('the first tile stands when no candidate id parses', () => {
   assert.equal(resolveReturnTile(odd, '1,1', 'inn'), 'bogus');
 });
 
-test('leaving The Wandering Kettle by its door lands on plain ground', () => {
+test('leaving a building of Briarwick by any door lands on plain ground', () => {
   const { grid } = buildExampleCampaign(new TilePalette());
-  const nodes = [...grid.nodes.values()];
-  const kettle = nodes.find((n) => n.name === 'The Wandering Kettle');
-  const parent = nodes.find((n) => n.id === kettle?.parentId);
-  assert.ok(kettle && parent);
-  const doors = kettle.tiles.filter((t) => t.imageRef.includes('door'));
-  assert.ok(doors.length > 0);
-  for (const door of doors) {
-    const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
-      kind: 'tile',
-      tileId: door.id,
-      via: 'door',
-      targetNodeId: parent.id,
-      targetName: parent.name,
-    });
-    const back = computeParentReturnTile(parent, kettle, exit, {
-      nodeId: kettle.id,
-      tileId: door.id,
-    });
-    assert.equal(parent.tiles.find((t) => t.id === back)?.childNodeId ?? null, null, door.id);
+  const briarwick = grid.getNode('briarwick');
+  assert.ok(briarwick);
+  const buildings = [...grid.nodes.values()].filter((n) => n.parentId === briarwick.id);
+  assert.ok(buildings.length > 1);
+  for (const building of buildings) {
+    const doors = building.tiles.filter((t) => t.imageRef.includes('door'));
+    assert.ok(doors.length > 0, building.name);
+    for (const door of doors) {
+      const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+        kind: 'tile',
+        tileId: door.id,
+        via: 'door',
+        targetNodeId: briarwick.id,
+        targetName: briarwick.name,
+      });
+      const back = computeParentReturnTile(briarwick, building, exit, {
+        nodeId: building.id,
+        tileId: door.id,
+      });
+      const landing = briarwick.tiles.find((t) => t.id === back);
+      assert.equal(landing?.childNodeId ?? null, null, `${building.name} ${door.id}`);
+    }
   }
 });
