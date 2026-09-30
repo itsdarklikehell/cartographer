@@ -6,7 +6,7 @@ import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import { locationFields, moveToPartyChange, readLocation } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
-import { clearableDefeated, nameTally } from '../entities/CreatureMap.js';
+import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
 import { commitCreatures, rosterIds } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -86,15 +86,19 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     // live state comes from the creature as it is now, read again by id.
     // The `existing` copy is from before the dialog opened, and a heal or a
     // cross-tab save may have changed the creature since then.
+    // A move onto the party tile goes through moveCreature, which keeps
+    // `met`, so the party does not meet a known NPC a second time.
+    const party = app.partyTracker.getPosition();
+    const toParty = location?.nodeId === party.nodeId && location.tileId === party.tileId;
     const fresh = applyFresh(state.creatures, existing.id, (current) =>
-      editCreature(current, { ...fields, location }),
+      editCreature(current, { ...fields, location: toParty ? current.location : location }),
     );
     if (!fresh.entity) {
       app.toasts.show(`${existing.name} was removed while the dialog was open.`);
       return null;
     }
-    stored = fresh.entity;
-    state.creatures = fresh.list;
+    state.creatures = toParty ? moveCreature(fresh.list, existing.id, location) : fresh.list;
+    stored = state.creatures.find((c) => c.id === existing.id) ?? fresh.entity;
   } else {
     const { name, ...options } = fields;
     stored = createCreature(slugId(name, rosterIds(state)), name, { ...options, location });

@@ -28,6 +28,7 @@ import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { wireHandouts } from './handoutWiring.js';
 import { creatureForm } from './creatureForm.js';
+import { bringToParty, toggleCompanion } from './companions.js';
 import { commitCreatures } from './combatants.js';
 import { storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -194,6 +195,8 @@ export function wireStory(app) {
     onAdd: () =>
       creatureForm(app, null, { ...app.partyTracker.getPosition() }, { disposition: 'neutral' }),
     onEdit: (npc) => creatureForm(app, npc, null),
+    onToggleCompanion: (npc) => toggleCompanion(app, npc),
+    onBringToParty: (npc) => bringToParty(app, npc),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
   });

@@ -101,6 +101,9 @@ export interface Creature extends HPBuffFields {
    * writes one travelogue line. A placed non-hostile creature stays hidden
    * from the players until met. An unplaced creature is always known. */
   met: boolean;
+  /** True for a companion NPC. It moves to the party tile each time the
+   * party moves, in the GM tab. A template never copies it. */
+  travelsWithParty?: boolean;
   /** What the creature swings, or null for an unarmed creature. */
   weapon: EnemyWeapon | null;
   /** What the creature wears, or null for an unarmored creature. Its

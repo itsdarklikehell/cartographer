@@ -50,6 +50,8 @@ export function keepPairs(label) {
  *   onSetExhaustion?: (npc: NPC, level: number) => void,
  *   onAdd?: () => Promise<unknown>,
  *   onEdit?: (npc: NPC) => Promise<unknown>,
+ *   onToggleCompanion?: (npc: NPC) => void,
+ *   onBringToParty?: (npc: NPC) => void,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
  *   getRole?: () => ViewRole,
@@ -122,8 +124,26 @@ export function mountNPCPanel(container, callbacks) {
     },
     actions: (npc, ctx) => {
       if (!ctx.gm) return [];
+      const { onToggleCompanion, onBringToParty } = callbacks;
+      const travels = npc.travelsWithParty === true;
       const onEdit = callbacks.onEdit;
       return [
+        onToggleCompanion
+          ? {
+              icon: /** @type {const} */ ('flag'),
+              label: `${npc.name} travels with the party`,
+              title: travels ? 'Travels with the party' : 'Does not travel with the party',
+              pressed: travels,
+              onClick: () => onToggleCompanion(npc),
+            }
+          : null,
+        onBringToParty
+          ? {
+              icon: /** @type {const} */ ('give'),
+              label: `Bring ${npc.name} to the party`,
+              onClick: () => onBringToParty(npc),
+            }
+          : null,
         onEdit ? { icon: 'edit', label: `Edit ${npc.name}`, onClick: () => onEdit(npc) } : null,
         {
           icon: 'remove',

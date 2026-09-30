@@ -12,7 +12,7 @@ import { findPath } from '../map/MapPath.js';
 import { isBlocked } from '../map/TileKinds.js';
 import { describeTile } from '../map/TileCoords.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
-import { meetCreatures } from '../entities/CreatureMap.js';
+import { followParty, meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { createCellHover } from './mapHover.js';
 import { createWalkGate } from './mapNightWalk.js';
@@ -66,8 +66,20 @@ export function createMapTravel(app, env, dialogs) {
     }
   }
 
+  /** Move each companion NPC onto the party tile. Only the GM tab writes
+   * the roster, the same as a meeting. */
+  function bringCompanions() {
+    if (!isGM(state.role)) return;
+    const creatures = followParty(state.creatures, partyTracker.getPosition());
+    if (creatures === state.creatures) return;
+    state.creatures = creatures;
+    app.actions.syncCreatureMarkers();
+    app.actions.markDirty();
+  }
+
   /** The party can change nodes. Re-filter every location-scoped panel. */
   function refreshLocationPanels() {
+    bringCompanions();
     meetCreaturesHere();
     // A move can carry the party off a running fight's tile, which ends it.
     app.actions.syncCombatLocation();

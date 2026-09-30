@@ -130,7 +130,11 @@ of 21, where the rule gives 18.
 ### Placement and templates
 
 `CreatureMap.js` has the placement reads and writes. `meetCreatures` marks
-every creature on the party's tile as met. `knownCreaturesAt` is the player
+every creature on the party's tile as met. `followParty` moves each companion (a
+creature with `travelsWithParty` and HP above 0) to the party tile through
+`moveCreature`, which leaves `met` alone. The GM tab runs it at the start of
+`refreshLocationPanels` in `app/mapTravel.js`. `toTemplate` never copies
+`travelsWithParty`. `knownCreaturesAt` is the player
 view of the non-hostile creatures, and `discoveredHostiles` is the player view
 of the hostile creatures, through the fog of war. `encounterGroup` lists every
 creature within `ENCOUNTER_RADIUS` grid steps of the party's tile, and

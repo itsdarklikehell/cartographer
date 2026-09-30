@@ -15,6 +15,7 @@ import {
   isOnTile,
   formatLocation,
   moveCreature,
+  followParty,
   creaturePlacementsIn,
   restoreCreaturePlacements,
   unplaceFrom,
@@ -278,4 +279,21 @@ test('standDown turns the named creatures neutral and met, and keeps the rest', 
   assert.equal(next[0].met, true);
   assert.equal(next[1], roster[1]);
   assert.equal(standDown(roster, new Set(['x'])), roster);
+});
+
+test('followParty moves each living companion to the party and keeps it met', () => {
+  const dorn = { ...placed('dorn', 'n1', '0,0'), travelsWithParty: true, met: true };
+  const here = { ...placed('bram', 'n2', '5,5'), travelsWithParty: true };
+  const fallen = applyDamage({ ...placed('guard', 'n1', '0,0'), travelsWithParty: true }, 999);
+  const loose = { ...createCreature('ghost', 'ghost'), travelsWithParty: true };
+  const roster = [dorn, here, fallen, placed('wolf', 'n1', '1,1'), loose];
+  const moved = followParty(roster, at('n2', '5,5'));
+  assert.deepEqual(moved[0].location, at('n2', '5,5'));
+  assert.equal(moved[0].met, true);
+  assert.equal(moved[1], here, 'a companion on the party tile stays put');
+  assert.equal(moved[2], fallen, 'a defeated companion stays behind');
+  assert.equal(moved[3], roster[3]);
+  assert.deepEqual(moved[4].location, at('n2', '5,5'), 'an unplaced companion joins');
+  const still = [here];
+  assert.equal(followParty(still, at('n2', '5,5')), still, 'nothing moves, same array');
 });

@@ -223,6 +223,25 @@ export function moveCreature(creatures, id, location) {
 }
 
 /**
+ * Move every companion to the party. A companion is a creature with
+ * `travelsWithParty` that is not defeated. The move goes through
+ * `moveCreature`, so a companion stays met and the party does not meet it
+ * a second time. The array keeps its identity when nothing moves.
+ * @param {Creature[]} creatures
+ * @param {EncounterLocation} position the party position
+ * @returns {Creature[]}
+ */
+export function followParty(creatures, position) {
+  let next = creatures;
+  for (const c of creatures) {
+    if (c.travelsWithParty !== true || isDefeated(c)) continue;
+    if (c.location?.nodeId === position.nodeId && c.location.tileId === position.tileId) continue;
+    next = moveCreature(next, c.id, { nodeId: position.nodeId, tileId: position.tileId });
+  }
+  return next;
+}
+
+/**
  * Unplace the creatures standing in any of the given nodes, so they show
  * everywhere instead. A node edit that removes nodes calls this, so no
  * creature keeps a location on a map that no longer exists, which would hide

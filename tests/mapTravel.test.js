@@ -807,3 +807,23 @@ test('a lone character walks to the door and leaves an interior in one click', (
   assert.equal(w.state.characters[0].location?.nodeId, 'world');
   assert.equal(w.log.at(-1), 'Hero returns to World.');
 });
+
+test('a companion NPC moves to the party in the GM tab and is not met again', () => {
+  const dorn = {
+    ...createCreature('dorn', 'Dorn', { location: { nodeId: 'world', tileId: '0,0' } }),
+    met: true,
+    travelsWithParty: true,
+  };
+  const gm = world({ creatures: [dorn] });
+  gm.travel.refreshLocationPanels();
+  assert.deepEqual(gm.state.creatures[0].location, { nodeId: 'world', tileId: '2,5' });
+  assert.deepEqual(gm.log, []);
+  assert.ok(gm.calls.includes('syncCreatureMarkers'));
+  const roster = gm.state.creatures;
+  gm.travel.refreshLocationPanels();
+  assert.equal(gm.state.creatures, roster, 'a companion already there does not move');
+
+  const player = world({ role: 'player', creatures: [dorn] });
+  player.travel.refreshLocationPanels();
+  assert.equal(player.state.creatures[0], dorn, 'only the GM tab moves companions');
+});
