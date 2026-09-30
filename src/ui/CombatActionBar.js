@@ -94,7 +94,7 @@ export function combatActionBar(actions, callbacks, budget = null) {
             icon: 'sword',
             className: 'combat-action-bar__attack',
             ariaLabel: `Attack with ${weapon.name} in the off hand`,
-            title: `Roll an off-hand attack with ${weapon.name}, which adds no ability bonus to damage`,
+            title: `Roll an off-hand attack with ${weapon.name}. It adds no ability bonus to damage without the Two-Weapon Fighting style`,
           }),
         ),
       ),

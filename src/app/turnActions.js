@@ -1,4 +1,4 @@
-import { COST_LABELS } from '../combat/ActionBudget.js';
+import { budgetOf, COST_LABELS } from '../combat/ActionBudget.js';
 import {
   actionSurgeLine,
   hasCunningAction,
@@ -100,11 +100,15 @@ export function takeTurnAction(app, id, action, { rng = Math.random } = {}) {
  * @param {ActionCost} cost
  */
 export function toggleBudget(app, id, cost) {
+  // A press on the free Action pip while an Action Surge spare waits spends
+  // the spare, and the Action pip stays free, so the log names the spare.
+  const before = app.state.combat?.order.find((p) => p.id === id);
+  const spare = cost === 'action' && budgetOf(before?.used).spare;
   const spent = app.actions.toggleBudget?.(id, cost) ?? null;
   if (spent === null) return;
   // The log keeps a record of the override, because nothing else does.
   const name = findCombatant(app, id)?.entity.name ?? 'Unknown combatant';
-  const label = COST_LABELS[cost].toLowerCase();
+  const label = spare ? 'Action Surge action' : COST_LABELS[cost].toLowerCase();
   app.actions.logEvent('combat', `${name}'s ${label} is marked ${spent ? 'used' : 'free'}.`);
 }
 

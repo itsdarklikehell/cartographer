@@ -215,6 +215,15 @@ test('Action Surge before the action gives two actions, once per turn', () => {
   assert.equal(app.actions.spendBudget('aldric', 'action'), false, 'two actions in all');
 });
 
+test('pressing the Action pip while a surge spare waits logs the spare as used', () => {
+  const { app } = fighterFight();
+  assert.equal(takeTurnAction(app, 'aldric', entry(app, 'action-surge')), true);
+  toggleBudget(app, 'aldric', 'action');
+  assert.equal(usedOf(app, 'aldric').spare, false);
+  assert.equal(usedOf(app, 'aldric').action, false);
+  assert.equal(app.log.at(-1), "Aldric's Action Surge action is marked used.");
+});
+
 test('a creature cannot use a class action', () => {
   const { app } = fighterFight();
   assert.equal(takeTurnAction(app, 'gob', entry(app, 'action-surge')), false);
