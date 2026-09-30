@@ -1,6 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountCombatScreen } from '../ui/CombatScreen.js';
-import { buildCombatView, isDowned } from '../combat/CombatView.js';
+import { buildCombatView, isGone } from '../combat/CombatView.js';
 import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
@@ -52,16 +52,17 @@ export function wireCombatScreen(app) {
   let selectedTargetId = /** @type {string | null} */ (null);
 
   /**
-   * Release the held target once it stops being attackable: defeated,
-   * removed from the order, or the fight over. Without this step the dead
-   * foe's card kept its pressed ring and the active column kept naming it,
-   * while the attack dialog had already stopped honoring the pick.
+   * Release the held target once it leaves the fight for good: a defeated
+   * creature, a dead character, removed from the order, or the fight over. A
+   * dying ally stays selected, so the HP box of the combat screen can target
+   * it for a heal. A released target drops the pressed ring from its card and
+   * its name from the active column, which the attack dialog also ignores.
    */
   function releaseStaleTarget() {
     if (!selectedTargetId) return;
     const inOrder = state.combat?.order.some((p) => p.id === selectedTargetId) ?? false;
     const found = inOrder ? findCombatant(app, selectedTargetId) : null;
-    if (!found || isDowned(found)) selectedTargetId = null;
+    if (!found || isGone(found)) selectedTargetId = null;
   }
 
   const screen = mountCombatScreen(mustGetElement('combat-screen'), {

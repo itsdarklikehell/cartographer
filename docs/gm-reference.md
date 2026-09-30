@@ -1076,7 +1076,7 @@ The combat screen runs one fight at the full width of the page.
 
 | Area | Contents |
 | --- | --- |
-| Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, damage and heal steppers, and the loadout |
+| Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
 | Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
 | Right column | The combat log, with the dice tray docked below it |
 | Bottom | The turn ribbon: one chip per combatant in initiative order |
@@ -1089,6 +1089,13 @@ The combat screen runs one fight at the full width of the page.
 | Dashed edge | A combatant that cannot act, such as a stunned one. It is still in the fight, and only its turn is lost |
 
 A click on a ribbon chip inspects that combatant without a change of turn.
+
+The Damage and Heal box in the left column shows to the GM only. Its
+**Target** select picks the combatant that the box acts on, and the buttons
+name that combatant, as in **Heal Mirelle**. The target defaults to the card
+selected on the board, then to the inspected combatant, then to the
+combatant whose turn it is. A new selection on the board resets the target.
+A dying ally stays selected, so you can heal it on a foe's turn.
 
 | Viewer | Loadout shown on a card |
 | --- | --- |

@@ -6,6 +6,8 @@ import { combatActionBar } from './CombatActionBar.js';
 import { deathSaveBlock } from './DeathSaveBlock.js';
 import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
+import { select } from './formFields.js';
+import { hpTargetId } from '../view/CombatHpTarget.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
@@ -34,6 +36,11 @@ export function mountActiveColumn(callbacks, loadoutOf) {
   // re-render. This lets the GM apply the same number to several combatants
   // without retyping it.
   let hpAmount = 1;
+
+  // The combatant the GM picked in the HP box. A new card selection or a new
+  // inspection drops the pick, so the box follows the board again.
+  let hpPick = /** @type {string | null} */ (null);
+  let hpContext = '';
 
   /**
    * @param {CombatView} view
@@ -72,7 +79,14 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     }
     element.appendChild(facts);
 
-    if (gm && row.hp) element.appendChild(hpControls(row));
+    const selectedId = callbacks.getSelectedTargetId();
+    const context = `${selectedId}|${inspectedId}`;
+    if (context !== hpContext) {
+      hpPick = null;
+      hpContext = context;
+    }
+    const hpTarget = hpTargetId(view, { picked: hpPick, selectedId, inspectedId });
+    if (gm && hpTarget) element.appendChild(hpControls(view, hpTarget, gm));
 
     if (row.conditions.length > 0) {
       element.appendChild(
@@ -158,23 +172,42 @@ export function mountActiveColumn(callbacks, loadoutOf) {
   }
 
   /**
-   * The GM's HP edit control: an amount field with a Damage button and a Heal
-   * button. This matches the pattern the Encounters panel uses.
-   * @param {CombatantRow} row
+   * The GM's HP edit control: a target select, an amount field, and a Damage
+   * button and a Heal button that name the target. This matches the pattern
+   * the Encounters panel uses. The select defaults to the selected card, so
+   * a heal typed on the boss's turn goes to the ally the GM selected.
+   * @param {CombatView} view
+   * @param {string} targetId
+   * @param {boolean} gm
    */
-  function hpControls(row) {
+  function hpControls(view, targetId, gm) {
+    const rows = view.rows.filter((r) => r.hp);
+    const target = select(
+      rows.map((r) => ({ value: r.id, label: r.name ?? 'Unknown combatant' })),
+      targetId,
+      { className: 'combat-screen__hp-target', ariaLabel: 'Damage or heal target' },
+    );
+    target.addEventListener('change', () => {
+      hpPick = target.value;
+      render(view, gm);
+    });
+    const row = rows.find((r) => r.id === targetId);
     const amount = /** @type {HTMLInputElement} */ (el('input', 'field combat-screen__hp-amount'));
     amount.type = 'number';
     amount.min = '1';
     amount.value = String(hpAmount);
     amount.setAttribute('aria-label', 'Damage or heal amount');
-    const name = row.name ?? 'Unknown combatant';
-    const damage = textButton('Damage', () => callbacks.onApplyHP(row.id, hpAmount, false), {
-      icon: 'minus',
-      variant: 'danger',
-      ariaLabel: `Damage ${name}`,
-    });
-    const heal = textButton('Heal', () => callbacks.onApplyHP(row.id, hpAmount, true), {
+    const name = row?.name ?? 'Unknown combatant';
+    const damage = textButton(
+      `Damage ${name}`,
+      () => callbacks.onApplyHP(targetId, hpAmount, false),
+      {
+        icon: 'minus',
+        variant: 'danger',
+        ariaLabel: `Damage ${name}`,
+      },
+    );
+    const heal = textButton(`Heal ${name}`, () => callbacks.onApplyHP(targetId, hpAmount, true), {
       icon: 'heal',
       variant: 'success',
       ariaLabel: `Heal ${name}`,
@@ -195,6 +228,8 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     return el(
       'div',
       'combat-screen__hp-controls u-g2',
+      sectionLabel('Target', { className: 'combat-screen__hp-label' }),
+      target,
       sectionLabel('Amount', { className: 'combat-screen__hp-label' }),
       amount,
       damage,
