@@ -433,7 +433,7 @@ export function wireMapView(app) {
     onStrokeEnd: authoring.onStrokeEnd,
     // A GM right-click in Build mode, without a drag into a pan, selects the
     // cell and opens the encounter context dialog for it. Encounter authoring
-    // lives in encounterWiring.js. The action is late-bound, like the rest of
+    // lives in encounterPanels.js. The action is late-bound, like the rest of
     // app.actions.
     onCellContextMenu: (x, y, _tile, clientX, clientY) => {
       if (state.mode !== 'build' || !isGM(state.role)) return;

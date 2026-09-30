@@ -562,12 +562,15 @@ stamps that `findRegionGroups` in `map/RegionGroups.js` and `spanBlocks` in
 the object that those caches already know, so an adoption that moved nothing
 leaves them warm.
 
-### encounterWiring.js (plus creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)
+### encounterWiring.js (plus encounterPanels.js, creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)
 
-`encounterWiring.js` owns the Encounters panel, the sidebar's Initiative
-card, the Build-rail encounter list, and the alert when the party walks
-into an encounter. It owns the running fight, and it is the only module
-that writes `state.combat`.
+`encounterWiring.js` owns the running fight and the sidebar's Initiative
+card, and it is the only module that writes `state.combat`. It mounts
+`encounterPanels.js`, which owns the Encounters panel, the Build-rail
+encounter list, the Build-mode right-click menu of a tile, and the alert
+when the party walks into an encounter (`maybeTriggerEncounter`). The
+Encounters panel's Start combat button calls back into `encounterWiring.js`,
+which builds the roster with the pure `combat/CombatRoster.js`.
 
 The turn flow is registered on `app.actions` (`advanceCombatTurn`,
 `endCombat`, `spendBudget`, `addCombatant`, `removeCombatant`, and

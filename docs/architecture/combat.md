@@ -572,7 +572,7 @@ The round counter and the turn controls sit beside the ribbon:
 ## Starting a fight
 
 Only the GM starts a fight, from the Start combat button in the Active tab of
-the Encounters panel. `creaturesHere` in `encounterWiring.js` gates the
+the Encounters panel. `creaturesHere` in `encounterPanels.js` gates the
 button. Every undefeated creature on the party's exact tile counts, whatever
 its disposition, so the app does not stop a party that attacks a neutral
 bystander. The Active tab lists the same live creatures that the gate counts,
