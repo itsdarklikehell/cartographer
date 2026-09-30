@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   attackExtras,
+  buffExtras,
   normalizeHpPool,
   normalizeLevelsPerStep,
   normalizeOnHit,
@@ -180,4 +181,24 @@ test('an on-hit chip and a save chip keep their chip mods', () => {
   });
   // Mods with no condition to ride have no chip, so they drop.
   assert.deepEqual(saveExtras({ mods: { attacks: 'disadvantage' } }, ''), {});
+});
+
+test('buffExtras keeps only known damage types in a resist choice', () => {
+  assert.deepEqual(buffExtras({ resistChoice: ['fire', 'nope', 'acid'] }).resistChoice, [
+    'acid',
+    'fire',
+  ]);
+  assert.equal('resistChoice' in buffExtras({ resistChoice: ['nope'] }), false);
+  assert.equal('resistChoice' in buffExtras({ resistChoice: 'fire' }), false);
+});
+
+test('Protection from Energy offers the five energy types', () => {
+  const pfe = DEFAULT_SPELLS.find((s) => s.id === 'protection-from-energy');
+  assert.deepEqual(/** @type {any} */ (pfe?.effect).resistChoice, [
+    'acid',
+    'cold',
+    'fire',
+    'lightning',
+    'thunder',
+  ]);
 });

@@ -242,6 +242,10 @@ export interface SpellBuffEffect {
    * chip goes on a foe, and only the caster's hits against it deal the
    * damage (Hunter's Mark). */
   hit?: HitRider;
+  /** Damage types the caster picks one of at the cast. The pick joins
+   * `mods.resist` on every target (Protection from Energy). Absent means the
+   * cast offers no pick. */
+  resistChoice?: string[];
 }
 
 /** The temporary hit points a buff grants at the cast: `count` dice of

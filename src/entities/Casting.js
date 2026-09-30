@@ -167,6 +167,7 @@ function slotPoolToSpend(caster, slotLevel, pactOnly) {
  *   granted?: boolean,
  *   pool?: 'pact',
  *   rng?: RandomFn,
+ *   resistPick?: string,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
  *   carries no conditions, so the call site reads them off the real combatant.
@@ -193,6 +194,7 @@ export function castSpell(caster, spell, options = {}) {
     granted = false,
     pool,
     rng = Math.random,
+    resistPick,
   } = options;
 
   const paid = free
@@ -218,6 +220,7 @@ export function castSpell(caster, spell, options = {}) {
     casterConditions,
     casterId: caster.id,
     rng,
+    resistPick,
   });
 
   return {
@@ -306,6 +309,7 @@ function payForCast(caster, spell, slotLevel, ritual, granted, pactOnly) {
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   casterId?: string,
  *   rng: RandomFn,
+ *   resistPick?: string,
  * }} ctx
  * @returns {object[]}
  */
@@ -320,6 +324,7 @@ function resolveEffect(spell, ctx) {
     attackMode,
     casterConditions,
     rng,
+    resistPick,
   } = ctx;
 
   if (effect.kind === 'attack') {
@@ -434,7 +439,7 @@ function resolveEffect(spell, ctx) {
 
   // A buff rolls no attack and no save. See `BuffCast.buffOutcomes`.
   if (effect.kind === 'buff') {
-    return buffOutcomes(spell, effect, targets, { steps, spellModifier, rng });
+    return buffOutcomes(spell, effect, targets, { steps, spellModifier, rng, resistPick });
   }
 
   // A summons rolls nothing and names no target. It reports which template to

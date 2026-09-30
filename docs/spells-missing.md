@@ -5,7 +5,7 @@
 
 The built-in spell list in `src/data/spells/` is a curated selection, and
 most of it comes from the System Reference Document (SRD) 5.1. The SRD 5.1
-lists 319 spells, and the app ships 94. Three built-in spells come from
+lists 319 spells, and the app ships 95. Three built-in spells come from
 outside the SRD: Witch Bolt, Ray of Sickness, and Destructive Wave appear
 only in the Player's Handbook. Each shipped spell has rules that the spell
 resolver applies in full, or a description that names the clause that the
@@ -27,7 +27,7 @@ Player's Handbook. The ranger has Hunter's Mark.
 | Cantrip | Fire Bolt, Ray of Frost, Shocking Grasp, Eldritch Blast, Sacred Flame, Vicious Mockery, Acid Splash, Poison Spray, Chill Touch, Resistance, Guidance, Light |
 | 1st | Magic Missile, Burning Hands, Cure Wounds, Healing Word, Guiding Bolt, Faerie Fire, Bless, Bane, Hunter's Mark, Thunderwave, Inflict Wounds, Hellish Rebuke, Witch Bolt, Ray of Sickness, Sleep, Color Spray, Shield, Shield of Faith, Divine Favor, Protection from Evil and Good, Mage Armor, False Life, Heroism, Detect Magic, Disguise Self, Jump, Silent Image, Speak with Animals |
 | 2nd | Scorching Ray, Hold Person, Lesser Restoration, Blindness/Deafness, Shatter, Prayer of Healing, Invisibility, Blur, Acid Arrow, Spiritual Weapon, Barkskin, Aid, Alter Self, Levitate |
-| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Haste, Bestow Curse, Slow, Speak with Dead |
+| 3rd | Fireball, Lightning Bolt, Revivify, Counterspell, Conjure Animals, Mass Healing Word, Fear, Vampiric Touch, Protection from Energy, Haste, Bestow Curse, Slow, Speak with Dead |
 | 4th | Ice Storm, Blight, Greater Invisibility, Stoneskin, Phantasmal Killer, Arcane Eye, Compulsion, Confusion, Polymorph |
 | 5th | Cone of Cold, Greater Restoration, Mass Cure Wounds, Flame Strike, Hold Monster, Destructive Wave, Conjure Elemental |
 | 6th | Chain Lightning, Circle of Death, Disintegrate, Freezing Sphere, Sunbeam, Heal |
@@ -79,6 +79,8 @@ full. The resolver applies these rules:
 - A condition chip that raises the HP maximum of its holder, grants
   temporary hit points at the cast or at the start of each of its turns, or
   makes it immune to a condition.
+- A condition chip that gives its holder resistance to damage types, with
+  one type that the caster picks at the cast.
 - A condition chip that gives its holder advantage on the saves of one
   ability, or an extra action on each of its turns for one weapon attack.
 - Damage or effect scaling by spell slot level, and by caster level for
@@ -256,6 +258,19 @@ Heroism also makes its target immune to Frightened. The cast ends a
 Frightened chip that the target has, and a later spell that imposes
 Frightened does not land. The log names the chip that blocks it. A chip that
 the GM adds by hand still lands.
+
+### Damage resistance
+
+Stoneskin gives its target resistance to bludgeoning, piercing, and
+slashing damage from a nonmagical weapon. A weapon counts as magical when
+its item has the **Magical weapon** box ticked, and damage from a spell
+always gets through.
+
+Protection from Energy asks the caster for one damage type in the cast
+dialog: acid, cold, fire, lightning, or thunder. The chip resists the
+picked type until the spell ends. A spell of your own can offer the same
+pick. Write a `resistChoice` list of damage types on its buff effect, and
+the cast dialog offers those types.
 
 ### Speed of action
 

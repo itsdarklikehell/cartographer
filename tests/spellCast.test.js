@@ -2134,3 +2134,26 @@ test('a save spell with an HP limit logs a target above it as unaffected', () =>
   // With no repeated save, the limit is the whole rule, so no save rolls.
   assert.ok(app.log.includes('Goblin is affected (150 HP or fewer), Stunned.'));
 });
+
+test('a resist choice asks for a damage type and the chip resists the pick', () => {
+  const caster = riderMage();
+  const app = stubApp({ characters: [caster] });
+  const ward = {
+    ...bless,
+    name: 'Protection from Energy',
+    effect: { kind: 'buff', resistChoice: ['acid', 'cold', 'fire'] },
+  };
+  const plan = planFor(app, caster, ward);
+  const pick = plan.fields.find((/** @type {any} */ f) => f.name === 'resist-type');
+  assert.deepEqual(
+    pick.options.map((/** @type {any} */ o) => o.value),
+    ['acid', 'cold', 'fire'],
+  );
+  resolveCast(app, plan, submit({ target: 'mage', 'resist-type': 'cold' }), {
+    writeBack: (next) => {
+      app.state.characters = [next];
+    },
+  });
+  const chip = app.state.characters[0].conditions.find((c) => c.name === 'Protection from Energy');
+  assert.deepEqual(chip.mods.resist, ['cold']);
+});

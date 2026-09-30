@@ -1,5 +1,5 @@
 import { normalizeHitRider } from './HitRiders.js';
-import { DIE_SIZES, normalizeDamagePart } from './Equipment.js';
+import { DAMAGE_TYPES, DIE_SIZES, normalizeDamagePart } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { MAX_HP_BOOST, normalizeChipMods } from './ChipMods.js';
 import { clampInt } from '../util/num.js';
@@ -227,6 +227,9 @@ export function buffExtras(raw) {
   const raise = clampInt(perStep.maxHP, 0, MAX_HP_BOOST);
   const tempHP = normalizeTempHP(raw.tempHP);
   const hit = normalizeHitRider(raw.hit);
+  const resistChoice = Array.isArray(raw.resistChoice)
+    ? DAMAGE_TYPES.filter((t) => /** @type {unknown[]} */ (raw.resistChoice).includes(t))
+    : [];
   return {
     ...(mods ? { mods } : {}),
     ...(raise > 0 ? { modsPerStep: { maxHP: raise } } : {}),
@@ -234,6 +237,7 @@ export function buffExtras(raw) {
     ...(raw.tempEachTurn === true ? { tempEachTurn: true } : {}),
     ...(until ? { until } : {}),
     ...(hit ? { hit } : {}),
+    ...(resistChoice.length ? { resistChoice } : {}),
   };
 }
 

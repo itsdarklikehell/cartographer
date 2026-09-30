@@ -248,6 +248,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random, a
     spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
     attackMode: resolved.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
+    ...(values['resist-type'] ? { resistPick: values['resist-type'] } : {}),
     ...(free ? { free: { slotLevel } } : {}),
     ...(invocation?.oncePerRest && !invocation.free ? { granted: true, pool: 'pact' } : {}),
     // The caster's feat riders join its chips for the projectile rolls. The

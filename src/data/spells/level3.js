@@ -196,6 +196,23 @@ export const LEVEL_3 = [
     repeat: {},
   },
   {
+    id: 'protection-from-energy',
+    name: 'Protection from Energy',
+    level: 3,
+    school: 'abjuration',
+    classes: ['cleric', 'druid', 'ranger', 'sorcerer', 'wizard'],
+    castingTime: { kind: 'action' },
+    range: 'Touch',
+    components: ['V', 'S'],
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'For the duration, the willing creature you touch has resistance to one damage type ' +
+      'of your choice: acid, cold, fire, lightning, or thunder.',
+    effect: { kind: 'buff', resistChoice: ['acid', 'cold', 'fire', 'lightning', 'thunder'] },
+  },
+  {
     id: 'haste',
     name: 'Haste',
     level: 3,

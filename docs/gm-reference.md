@@ -1222,7 +1222,8 @@ after that.
 A character resists the damage types of its race, such as fire for a
 tiefling. A creature takes its three lists from the creature dialog. A
 chip can add resistances too. Stoneskin resists bludgeoning, piercing, and
-slashing from a nonmagical weapon, and a spell gets through it. A weapon
+slashing from a nonmagical weapon, and a spell gets through it. Protection
+from Energy resists the one type that the caster picks at the cast. A weapon
 counts as magical when the **Magical weapon** box in its item form is
 ticked. A creature takes the flag from the library weapon that arms it. The
 log names each defense that changed the damage, with the amount taken.
@@ -1486,6 +1487,7 @@ but no actions.
 | Target or Recipient | A spell with one target | The creature that the spell affects |
 | Targets | A spell with more than one target | Up to the cap of the spell. An upcast spell such as Hold Person reaches one more creature per level |
 | Projectile allocation | A spell with several projectiles | How many projectiles go to each target. The total follows the slot level |
+| Resist | A buff with a list of damage types, such as Protection from Energy | The damage type that the chip resists |
 | Attack roll | An attack spell | Normal, Advantage, or Disadvantage |
 | Save DC on a hit | An attack spell whose hit brings a save, such as Ray of Sickness | The DC of that save. Starts at the spell save DC of the caster |
 | Save DC | A save spell that rolls a save. Sleep, Color Spray, and Power Word Kill roll none | Starts at 8 plus the proficiency bonus plus the spell ability modifier |
@@ -2146,7 +2148,7 @@ four tabs.
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable that the item form offers, in five subtabs: Weapons, Armor, Rings, Consumables, and Gear |
 | Creatures | Stock creatures in two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, filled in |
-| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 94 built-in spells |
+| Spells | The spell catalog that the Spellbook tab picks from, grouped by spell level. The app ships 95 built-in spells |
 | Feats | The feat catalog that the level-up feat choice offers. The app ships 16 built-in feats |
 
 | Row badge | Meaning | Row control |

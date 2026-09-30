@@ -195,6 +195,18 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       });
     }
   }
+  // A buff with a list of damage types asks which one the chip resists
+  // (Protection from Energy).
+  const choice = spell.effect.kind === 'buff' ? (spell.effect.resistChoice ?? []) : [];
+  if (choice.length > 0) {
+    fields.push({
+      name: 'resist-type',
+      label: 'Resist',
+      type: 'select',
+      value: choice[0],
+      options: choice.map((t) => ({ value: t, label: t[0].toUpperCase() + t.slice(1) })),
+    });
+  }
   if (kind === 'attack') {
     fields.push({
       name: 'mode',

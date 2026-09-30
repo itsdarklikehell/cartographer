@@ -63,3 +63,15 @@ test('buffOutcomes rolls temporary HP per target', () => {
   });
   assert.equal('tempHP' in plain[0], false);
 });
+
+test('castMods adds the picked resist type, or the first type for a bad pick', () => {
+  const effect = /** @type {any} */ ({
+    kind: 'buff',
+    mods: { resist: ['fire'] },
+    resistChoice: ['fire', 'cold'],
+  });
+  assert.deepEqual(castMods(effect, 0, 0, 'cold')?.resist, ['fire', 'cold']);
+  assert.deepEqual(castMods(effect, 0, 0, 'fire')?.resist, ['fire'], 'no duplicate type');
+  assert.deepEqual(castMods(effect, 0, 0, 'psychic')?.resist, ['fire']);
+  assert.deepEqual(castMods({ ...effect, mods: undefined }, 0, 0)?.resist, ['fire']);
+});

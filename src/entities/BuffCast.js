@@ -29,14 +29,23 @@ export function buffCondition(spell) {
  * increments. Aid's raise grows with the slot, and Heroism's temporary HP
  * each turn is the caster's spell modifier, which a modifier of 0 or less
  * makes nothing.
+ * A spell with a `resistChoice` adds the damage type the caster picked to
+ * `mods.resist`. A pick outside the list falls back to the first type, so a
+ * cast from a dialog that sent no pick still resists something.
  * @param {SpellBuffEffect} effect
  * @param {number} steps
  * @param {number} spellModifier
+ * @param {string} [resistPick]
  * @returns {ChipMods | null}
  */
-export function castMods(effect, steps, spellModifier) {
+export function castMods(effect, steps, spellModifier, resistPick) {
   /** @type {ChipMods} */
   const mods = { ...effect.mods };
+  const choice = effect.resistChoice ?? [];
+  if (choice.length > 0) {
+    const picked = resistPick && choice.includes(resistPick) ? resistPick : choice[0];
+    mods.resist = [...new Set([...(mods.resist ?? []), picked])];
+  }
   const raise = (mods.maxHP ?? 0) + (effect.modsPerStep?.maxHP ?? 0) * steps;
   if (raise > 0) mods.maxHP = raise;
   if (effect.tempEachTurn && spellModifier > 0) mods.tempHPEachTurn = spellModifier;
@@ -65,11 +74,11 @@ export function rollTempHP(temp, steps, rng) {
  * @param {Spell} spell
  * @param {SpellBuffEffect} effect
  * @param {import('./Casting.js').CastTarget[]} targets
- * @param {{ steps: number, spellModifier: number, rng: RandomFn }} ctx
+ * @param {{ steps: number, spellModifier: number, rng: RandomFn, resistPick?: string }} ctx
  */
-export function buffOutcomes(spell, effect, targets, { steps, spellModifier, rng }) {
+export function buffOutcomes(spell, effect, targets, { steps, spellModifier, rng, resistPick }) {
   const condition = buffCondition(spell);
-  const mods = castMods(effect, steps, spellModifier);
+  const mods = castMods(effect, steps, spellModifier, resistPick);
   return targets.map((target) => ({
     target,
     condition,

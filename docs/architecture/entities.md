@@ -306,6 +306,12 @@ boolean on an inventory weapon, a library weapon template, and an
 keep it only when it is `true`, so any code that sets the field to `true`
 marks a weapon magical.
 
+A buff effect with a `resistChoice` list (Protection from Energy) adds a
+Resist select to the cast dialog in `app/spellCastFields.js`.
+`spellCastResolve` passes the pick to `castSpell` as `resistPick`, and
+`BuffCast.castMods` adds it to the chip's `mods.resist`. A pick outside
+the list falls back to the first type in it.
+
 `applyDefenses(groups, defenses, { halve })` takes the `byType` groups of a
 damage roll. It returns the total damage taken and a note for each defense
 that changed a type. `halve` means a successful save against a spell that
