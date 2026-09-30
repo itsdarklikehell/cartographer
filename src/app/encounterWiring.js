@@ -312,9 +312,7 @@ export function wireEncounters(app) {
       app.views.combatScreen.update();
     },
   };
-  // A loaded save can carry a fight the party no longer stands in, because
-  // the campaign was edited elsewhere. Reconcile this once at mount, then
-  // refresh.
-  app.actions.syncCombatLocation();
+  // `main.js` reconciles a loaded fight with the party's tile once every
+  // module is wired, because the reconcile logs through the travelogue.
   app.views.initiativePanel.update();
 }

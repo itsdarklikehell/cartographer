@@ -720,9 +720,14 @@ the usual way.
 
 `syncCombatLocation` ends a fight when the party leaves the tile or the last
 creature there is deleted. The party-move paths and `commitCreatures` call
-this action. The plain panel refresh never calls it, because that refresh also
-runs from the rehydrate loop. There, a state write would conflict with the save
-that the tab just took from another tab.
+this action. `main.js` also calls it once after every module is wired, so a
+save whose fight has no creature left on the party's tile loads with the
+fight ended. It runs there and not inside `wireEncounters`, because it logs
+through `logEvent` and leaves combat mode through `setMode`, which
+`wireStory` and `wireSessionControls` register later. The plain panel
+refresh never calls it, because that refresh also runs from the rehydrate
+loop. There, a state write would conflict with the save that the tab just
+took from another tab.
 
 The check reads `creaturesOnTile`, which counts defeated creatures and
 bystanders. A combatant at 0 HP is a turn in the fight and not the end of it,

@@ -112,6 +112,14 @@ function start() {
   wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
   wireShortcuts(app);
 
+  // A loaded save can carry a fight the party no longer stands in, because
+  // the campaign was edited elsewhere. The reconcile runs once here, after
+  // every module is wired, because it logs the end of the fight through
+  // `logEvent` (from `wireStory`) and leaves combat mode through `setMode`
+  // (from `wireSessionControls`). A call inside `wireEncounters` throws on
+  // the missing `logEvent` and stops the rest of the mount.
+  app.actions.syncCombatLocation();
+
   // A reload that finds a fight running resumes it on the combat screen, for
   // any role. A player takes their turn there too. The ribbon's Back to map
   // control lets anyone who prefers to watch the map leave the combat screen.
