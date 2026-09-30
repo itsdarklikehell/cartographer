@@ -407,6 +407,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       onHit.rows.onHitUntil,
       onHit.rows.onHitSlants,
       onHit.rows.onHitResist,
+      ...onHit.typedRows,
       onHit.rows.drain,
       summonsRow,
       saveTogglesRow,

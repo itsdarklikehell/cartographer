@@ -762,6 +762,17 @@ nonmagical weapon, as Stoneskin does. A `buff` also has **Caster picks one
 of**. Type damage types there, split by commas, and the cast dialog asks
 the caster for one of them, as Protection from Energy does.
 
+An `attack` whose hit imposes a condition can leave a second chip on a
+target of some creature types only, as Chill Touch does on an undead target.
+Tick **Extra chip on some creature types**, then tick the types under
+**Extra chip on** and type a name in **Extra chip name**. The form drops an
+extra chip that has no name or no ticked type. Pick when the chip ends in
+**Extra chip ends at**. **Stops healing** keeps the holder from regaining hit
+points, and **Attacks the caster at disadvantage** gives the holder
+disadvantage on its attacks against the caster. The indented group also has
+its own attack and resist rows. The extra chip has no save, and a hit on a
+target of another type leaves only the first chip.
+
 If the rules of the spell need more than the app can apply, make it a
 `utility` spell and write the rules in the description. Then apply the
 rules yourself at the table.

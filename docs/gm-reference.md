@@ -1550,7 +1550,11 @@ undead and oozes disadvantage on the save. See
 A Chill Touch hit stops the target from regaining hit points until the start
 of the next turn of the caster, and a heal on it logs that it has no effect.
 An undead target also attacks the caster at disadvantage until the end of the
-next turn of the caster.
+next turn of the caster. The spell form sets this second chip under **Extra
+chip on some creature types**, which shows once **A hit imposes a
+condition** is ticked. The group names the creature types, the chip name, the
+turn that ends it, and its mods, which include **Stops healing** and
+**Attacks the caster at disadvantage**. The extra chip has no save.
 
 A buff with a range of Self, such as Shield, offers only the caster as its
 target. The chip of Shield, Shield of Faith, Mage Armor, or Barkskin changes

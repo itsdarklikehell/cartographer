@@ -49,3 +49,16 @@
   width: 3.5rem;
   text-align: center;
 }
+
+/* A group of rows that belong to the control just above them, such as the
+   extra chip of a spell's hit. The inset and the rule set the group apart
+   from rows of the same kind outside it. */
+.form__nested {
+  margin-left: var(--space-2);
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--border-strong);
+}
+
+.form__nested[hidden] {
+  display: none;
+}

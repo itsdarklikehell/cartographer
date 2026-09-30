@@ -5,14 +5,17 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { CHIP_UNTILS, UNTIL_LABELS } from '../entities/SpellFields.js';
 import { capitalize } from '../util/text.js';
 import { buildChipModControls } from './SpellFormChipMods.js';
+import { buildTypedChipControls } from './SpellFormTypedChip.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
  * The spell form's controls for what an attack spell's hit does besides its
  * damage: a condition the hit imposes, with or without a save against it, and
- * the share of the damage the caster regains. `ui/SpellForm.js` places the
- * rows, calls `sync` when the effect kind changes, and reads the values back
+ * the share of the damage the caster regains. A hit that imposes a condition
+ * can also leave a second chip on a target of some creature types
+ * (`ui/SpellFormTypedChip.js`). `ui/SpellForm.js` places the rows and the
+ * typed chip rows, calls `sync` when the effect kind changes, and reads the values back
  * with `read`. `entities/SpellDraft.js` decides what they mean.
  * @param {Spell | null} spell the spell being edited, or null for a new one
  */
@@ -52,6 +55,7 @@ export function buildOnHitControls(spell) {
     attack?.drain ?? '',
   );
   const chip = buildChipModControls(onHit?.mods ?? {});
+  const typed = buildTypedChipControls(onHit?.typed ?? null);
   const drainField = labeled('Caster regains', drain);
   setTip(drainField, "The damage counts after the target's resistances, as with Vampiric Touch");
 
@@ -76,11 +80,13 @@ export function buildOnHitControls(spell) {
     rows.onHit.hidden = !attacks || !imposes.input.checked;
     rows.onHitUntil.hidden = rows.onHit.hidden;
     rows.onHitSlants.hidden = rows.onHitResist.hidden = rows.onHit.hidden;
+    typed.sync(!rows.onHit.hidden);
   }
 
   /** @param {() => void} onChange */
   function listen(onChange) {
     imposes.input.addEventListener('change', onChange);
+    typed.listen(onChange);
   }
 
   /** The control values, for `SpellDraft.assembleSpell`. */
@@ -92,13 +98,12 @@ export function buildOnHitControls(spell) {
             saveAbility: save.value,
             until: until.value,
             mods: { ...chip.read(), noHealing: noHealing.input.checked },
-            // The typed chip has no control, so an edit keeps it as stored.
-            ...(onHit?.typed ? { typed: onHit.typed } : {}),
+            typed: typed.read(),
           }
         : null,
       drain: drain.value,
     };
   }
 
-  return { rows, sync, listen, read };
+  return { rows, typedRows: Object.values(typed.rows), sync, listen, read };
 }

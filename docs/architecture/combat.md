@@ -509,7 +509,8 @@ A chip with the `disadvantageVsSource` mod slants the attacks of its holder
 against the caster named in `source.casterId`. `entities/SourceSlant.js`
 reads it, and both `combat/WeaponSwing.js` and the spell attack in
 `spellCastResolve.js` fold it into the roll mode. Chill Touch writes this chip
-on an undead target through the typed chip of its `onHit` block.
+on an undead target through the typed chip of its `onHit` block, and the
+spell form authors that chip in `ui/SpellFormTypedChip.js`.
 
 ## The combat view
 
