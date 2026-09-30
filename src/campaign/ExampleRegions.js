@@ -476,6 +476,22 @@ export const REGION_STAGES = {
       siteTile(stage, tomb),
       'The Barrow of the Old King. Warded shut for four hundred years; the ward is failing.',
     );
+    // A generated dungeon beside the keep reads as the barrow, so it becomes
+    // the old crypt of House Vane, with nothing that the story needs.
+    const near = (/** @type {number} */ i) =>
+      tileDistance(siteTile(stage, i), siteTile(stage, keep));
+    const crypt = stage.gen.sites
+      .map((s, i) => i)
+      .filter((i) => i !== tomb && stage.gen.sites[i].label === 'dungeon' && near(i) <= 6)
+      .sort((a, b) => near(a) - near(b))[0];
+    if (crypt !== undefined) {
+      stage.overrides.set(crypt, { id: 'vane-crypt', name: 'Old Vane Crypt', levels: 1 });
+      noteTile(
+        gen,
+        siteTile(stage, crypt),
+        'The old crypt of House Vane, sealed when the family built the new one under Thornhold. Dust, broken urns, and rats. Nothing here bears on the story.',
+      );
+    }
     stage.after.push((node) => {
       const hall = node('thornhold');
       putInside(stage, hall, ['shade'], { fallback: { nodeId: 'thornhold', tileId: hall.entry } });

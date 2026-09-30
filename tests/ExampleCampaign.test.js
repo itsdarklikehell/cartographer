@@ -135,6 +135,8 @@ test('the story places are the expected generated maps', () => {
   assert.equal(nodeOf('saltmere').parentId, 'saltreach');
   assert.equal(nodeOf('thornhold').parentId, 'barrowdowns');
   assert.equal(nodeOf('barrow').parentId, 'barrowdowns');
+  assert.equal(nodeOf('vane-crypt').name, 'Old Vane Crypt');
+  assert.equal(nodeOf('vane-crypt').parentId, 'barrowdowns');
   assert.equal(nodeOf('hollowvein').parentId, 'graypeak');
   // Saltmere is a port: its sea has piers.
   assert.ok(nodeOf('saltmere').tiles.some((t) => String(t.overlayRef).includes('/dock/')));
