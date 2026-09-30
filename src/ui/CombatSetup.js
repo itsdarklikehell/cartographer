@@ -105,11 +105,13 @@ export function combatSetupModal(roster, callbacks = {}) {
       if (stealth) body.push(stealth.section);
       /**
        * One row: the name, the DEX modifier, and the initiative field, then
-       * the cells that follow them.
+       * the cells that follow them. A note shows in small text under the
+       * name, so it does not push the initiative field out of line.
        * @param {Participant} participant
        * @param {Node[]} cells
+       * @param {string} [note]
        */
-      const initiativeRow = (participant, cells) => {
+      const initiativeRow = (participant, cells, note) => {
         const view = describe(participant);
         const modifier = el(
           'span',
@@ -126,7 +128,12 @@ export function combatSetupModal(roster, callbacks = {}) {
         return el(
           'div',
           `initiative-panel__row combat-setup__row u-row u-g2 initiative-panel__row--${view.side}`,
-          el('span', 'initiative-panel__name', view.name),
+          el(
+            'span',
+            'initiative-panel__name',
+            view.name,
+            note ? el('span', 'combat-setup__distance u-muted', note) : null,
+          ),
           modifier,
           input,
           ...cells,
@@ -158,12 +165,8 @@ export function combatSetupModal(roster, callbacks = {}) {
           const join = checkbox('Join', false, { className: 'initiative-panel__surprised' });
           join.input.setAttribute('aria-label', `Add ${name} to the fight`);
           joined.set(participant.id, join.input);
-          const away = el(
-            'span',
-            'combat-setup__distance u-muted',
-            `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`,
-          );
-          body.push(initiativeRow(participant, [away, join.label]));
+          const away = `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`;
+          body.push(initiativeRow(participant, [join.label], away));
         }
       }
 

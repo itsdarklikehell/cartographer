@@ -226,8 +226,15 @@ body.role-player .npc-scope {
   font-size: var(--text-label);
 }
 
+/* The distance sits on its own line under the name, and the Join and
+   Surprised cells share one width, so every initiative field lines up. */
 .combat-setup__distance {
+  display: block;
   font-size: var(--text-label);
+}
+
+.combat-setup__row .initiative-panel__surprised {
+  min-width: 6.5rem;
 }
 
 .combat-setup__stealth-outcome {
