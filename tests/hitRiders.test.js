@@ -164,6 +164,19 @@ test('a Divine Favor hit adds 1d4 radiant and names it in the log', () => {
   assert.match(app.log[1], /radiant.*, Divine Favor \+1d4 radiant\.$/);
 });
 
+test('a chip resistance halves rider damage by the rider type', () => {
+  const hero = makeHero([createCondition('Divine Favor', 10, { hit: FAVOR })]);
+  const warded = { name: 'Protection from Energy', rounds: 600, mods: { resist: ['radiant'] } };
+  const app = swing(hero, goblinWith([warded]));
+  // 11 slashing lands in full, and the 4 radiant of the rider halves to 2.
+  assert.equal(app.state.creatures[0].currentHP, 40 - 13);
+  // Stoneskin halves the slashing of Hunter's Mark with the sword's own.
+  const stone = { name: 'Stoneskin', rounds: 600, mods: { resistNonmagical: true } };
+  const marked = swing(makeHero(), goblinWith([markBy('hero'), stone]));
+  // 8 + 6 + 3 slashing is 17, which halves to 8.
+  assert.equal(marked.state.creatures[0].currentHP, 40 - 8);
+});
+
 test("a Hunter's Mark hit adds 1d6 of the weapon's type, doubled on a crit", () => {
   const hero = makeHero();
   const app = swing(hero, goblinWith([markBy('hero')]));
