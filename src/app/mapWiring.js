@@ -415,7 +415,7 @@ export function wireMapView(app) {
   app.views.regionTree = regionTree;
   env.regionTree = regionTree;
 
-  /** @type {{ update: () => void } | null} assigned after mapCanvas exists */
+  /** @type {ReturnType<typeof mountMapControls> | null} assigned after mapCanvas exists */
   let mapControls = null;
   /** @type {ReturnType<typeof mountMiniMap> | null} assigned after mapCanvas exists */
   let miniMap = null;
@@ -500,31 +500,33 @@ export function wireMapView(app) {
   });
   miniMap = shownMiniMap;
 
-  // A click on the mini-map never reaches the canvas, so the edge exit bands
-  // move off the part of the canvas it covers. The observer fires when the
-  // mini-map shows, hides, or changes size. A canvas resize changes the
-  // buffer scale, so resizeMapToViewport calls this too.
+  // A click on the mini-map or the zoom toolbar never reaches the canvas, so
+  // the edge exit bands move off the part of the canvas they cover. The
+  // observers fire when either shows, hides, or changes size. A canvas
+  // resize changes the buffer scale, so resizeMapToViewport calls this too.
   const syncMapOccluders = () => {
-    const box = shownMiniMap.element;
-    if (box.hidden) {
-      mapCanvas.setOccluders([]);
-      return;
-    }
-    mapCanvas.setOccluders([
-      clientRectToBuffer(
-        box.getBoundingClientRect(),
-        canvasEl.getBoundingClientRect(),
-        canvasEl.width,
-        canvasEl.height,
+    const canvasRect = canvasEl.getBoundingClientRect();
+    const boxes = [shownMiniMap.element, mapControls?.element].filter(
+      (box) => box && !box.hidden && box.offsetParent !== null,
+    );
+    mapCanvas.setOccluders(
+      boxes.map((box) =>
+        clientRectToBuffer(
+          /** @type {HTMLElement} */ (box).getBoundingClientRect(),
+          canvasRect,
+          canvasEl.width,
+          canvasEl.height,
+        ),
       ),
-    ]);
+    );
   };
-  new ResizeObserver(syncMapOccluders).observe(shownMiniMap.element);
+  const occluderObserver = new ResizeObserver(syncMapOccluders);
+  occluderObserver.observe(shownMiniMap.element);
 
   mapControls = mountMapControls(mustGetElement('map-viewport'), {
     onZoomIn: () => mapCanvas.zoomBy(1.25),
     onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
-    onFit: () => mapCanvas.fit(),
+    onFit: () => mapCanvas.fit({ whole: true }),
     onCenter: () => centerOnLocation(followedView()),
     getZoom: () => mapCanvas.scale,
     // GM fog controls, hidden from the player role by CSS. Brushes stroke fog
@@ -559,6 +561,7 @@ export function wireMapView(app) {
     },
     miniMap: { isOpen: shownMiniMap.isOpen, onToggle: shownMiniMap.toggle },
   });
+  occluderObserver.observe(mapControls.element);
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.
   // The brush silently owns the left mouse button, so a key must give it back.

@@ -720,7 +720,7 @@ The map controls sit in a row over the map.
 | Control | What it does |
 | --- | --- |
 | Zoom in, Zoom out | Change the zoom one step |
-| Fit map to view | Fits the whole map in the viewport |
+| Fit map to view | Fits the whole map in the viewport, even when its tiles then draw small |
 | Center on party | Brings the party back into view at the current zoom |
 | Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice |
 | Zoom readout | Shows the zoom as a percentage |
@@ -733,7 +733,8 @@ party. A second click on the same brush button, or Escape, puts the brush
 down. A change of mode or of map also puts the brush down.
 
 When a map opens, the view fits the whole map. If the map is too large to
-show at a readable size, the view centers on the party instead. In a Player
+show at a readable size, the view centers on the party instead, and **Fit
+map to view** shows the whole map at a smaller size. In a Player
 tab, it centers on the bound character. The view then follows the party
 until you pan or zoom.
 

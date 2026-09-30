@@ -11,15 +11,17 @@ import { INK } from './CanvasInk.js';
 
 /**
  * Size a label from the on-screen tile size. Font sizes are in buffer pixels,
- * which are devicePixelRatio times denser than CSS pixels, so a caller gives
- * the bounds it wants rather than taking one shared pair: a mean cap draws
- * illegibly on a HiDPI canvas, and a generous floor clutters a zoomed-out map.
+ * which are devicePixelRatio times denser than CSS pixels. The bounds are in
+ * CSS pixels, and `pixelRatio` converts them, so a label never draws under
+ * `min` CSS pixels on a HiDPI screen. A floor in buffer pixels halves on a
+ * 2x screen, and the digits then draw at about 7 CSS pixels.
  * @param {number} size the tile's on-screen size in buffer px
  * @param {{ factor: number, min: number, max: number }} scale
+ * @param {number} [pixelRatio] buffer px per CSS px
  * @returns {number} the font size in buffer px
  */
-export function labelSize(size, { factor, min, max }) {
-  return Math.round(clamp(size * factor, min, max));
+export function labelSize(size, { factor, min, max }, pixelRatio = 1) {
+  return Math.round(clamp(size * factor, min * pixelRatio, max * pixelRatio));
 }
 
 /**

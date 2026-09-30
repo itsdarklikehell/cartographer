@@ -2,7 +2,8 @@ import { findRegionGroups } from './RegionGroups.js';
 import { MapRenderer } from './MapRenderer.js';
 import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
-import { parseCoords, clampZoom, fitToExtent, readableScale } from './MapGeometry.js';
+import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
+import { exitBandDepth } from './ExitBands.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -101,6 +102,8 @@ export class MapCanvas {
     // True once the user pans or zooms away from the fitted view. This
     // controls whether resize() re-fits the view or keeps the user's framing.
     this._userView = false;
+    // True after the Fit button, so a refit keeps the whole map in view.
+    this._fitWhole = false;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -150,18 +153,23 @@ export class MapCanvas {
     this.disarmExit();
     this.selectedTileId = null;
     this.cursorCellId = null;
-    this.fit();
+    this.fit({ whole: false });
   }
 
-  /** Re-frame the current node's full extent in the view (zoom-to-extents). */
-  fit() {
+  /**
+   * Re-frame the current node's full extent in the view (zoom-to-extents).
+   * A fit on its own keeps tiles at least `READABLE_TILE_PX` wide, so a large
+   * map shows in part. `whole` drops that floor and shows the whole map, for
+   * the Fit button the GM presses to see it all. Later refits keep the choice
+   * until the node changes.
+   * @param {{ whole?: boolean }} [options]
+   */
+  fit(options) {
     const { node, canvas } = this;
     if (!node) return;
     this._userView = false;
-    // Pad the top and left enough for the coordinate labels. These labels
-    // hang off those two edges, up to about 60 buffer pixels at the label
-    // font cap. The bottom and right have no labels, so a small margin there
-    // lets the fit zoom closer.
+    if (options) this._fitWhole = Boolean(options.whole);
+    const sides = this._fitSides();
     const fitted = fitToExtent(
       node.width * this.tileSize,
       node.height * this.tileSize,
@@ -170,9 +178,8 @@ export class MapCanvas {
       {
         minScale: this.minZoom,
         maxScale: this.maxZoom,
-        padding: 16,
-        leadPadding: 64,
-        readableScale: readableScale(this.tileSize),
+        sides,
+        readableScale: this._fitWhole ? 0 : readableScale(this.tileSize),
         focus: this._focusPoint(),
       },
     );
@@ -400,11 +407,12 @@ export class MapCanvas {
    * @param {import('../types/map.js').MapExit[]} exits
    */
   setExits(exits) {
+    const before = this._fitKey();
     this.exits = exits;
     // The armed side can no longer be a way out; requiring a fresh first press
     // is cheaper than checking, and rearming costs the user one keystroke.
     this.disarmExit();
-    this.render();
+    this._refitIfChanged(before);
   }
 
   /**
@@ -413,8 +421,51 @@ export class MapCanvas {
    * @param {import('./ExitBands.js').Rect[]} rects
    */
   setOccluders(rects) {
+    const before = this._fitKey();
     this.occluders = rects;
-    this.render();
+    this._refitIfChanged(before);
+  }
+
+  /**
+   * The padding a fit keeps on each side of the map. The top and left fit
+   * the coordinate labels, which hang off those two edges, up to about 60
+   * buffer pixels at the label font cap. The bottom and right have no
+   * labels, so a small margin there lets the fit zoom closer. Each side with
+   * an exit band, or under the mini-map or the zoom toolbar, keeps room for
+   * them too.
+   */
+  _fitSides() {
+    const ratio = globalThis.devicePixelRatio || 1;
+    return fitSides({
+      lead: 64 * ratio,
+      trail: 16 * ratio,
+      exitSides: this.exits.flatMap((e) => (e.kind === 'edge' ? [e.side] : [])),
+      bandDepth: exitBandDepth(ratio),
+      occluders: this.occluders,
+      canvasWidth: this.canvas.width,
+    });
+  }
+
+  /**
+   * The fit padding as a string, to tell whether a change of exits or
+   * occluders moves it. A key on the padding, and not on the raw rects,
+   * stops a loop: a refit changes the zoom readout, the readout resizes the
+   * toolbar, and the toolbar's new width would refit again.
+   */
+  _fitKey() {
+    const s = this._fitSides();
+    return [s.top, s.right, s.bottom, s.left].map(Math.round).join();
+  }
+
+  /**
+   * Refit a fitted view when its padding inputs changed, and redraw
+   * otherwise. The exits and the mini-map arrive after setNode fits, so a
+   * fitted view keeps room for them. A view the user panned or zoomed stays.
+   * @param {string} before the fit key before the change
+   */
+  _refitIfChanged(before) {
+    if (!this._userView && this._fitKey() !== before) this.fit();
+    else this.render();
   }
 
   /**

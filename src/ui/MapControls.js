@@ -26,7 +26,7 @@ import { append, el } from './dom.js';
  *   },
  *   miniMap?: { isOpen: () => boolean, onToggle: () => void },
  * }} callbacks
- * @returns {{ update: () => void }}
+ * @returns {{ update: () => void, element: HTMLDivElement }}
  */
 export function mountMapControls(container, callbacks) {
   const root = el('div', 'map-controls u-row u-g1');
@@ -114,5 +114,5 @@ export function mountMapControls(container, callbacks) {
   }
 
   update();
-  return { update };
+  return { update, element: root };
 }

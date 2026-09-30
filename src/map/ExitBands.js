@@ -1,5 +1,6 @@
 import { parseCoords } from './MapGeometry.js';
 import { labelSize } from './CanvasText.js';
+import { coordLabelLayout } from './CoordLabels.js';
 import { exitLabel, sideAxis } from './MapExits.js';
 import { clamp } from '../util/num.js';
 
@@ -30,7 +31,9 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * @property {number} canvasWidth
  * @property {number} canvasHeight
  * @property {number} alongCell cell index along the side to centre the band on
- * @property {Rect[]} [occluders] rects in buffer px that HTML over the canvas covers
+ * @property {Rect[]} [occluders] rects in buffer px that a band keeps off: the
+ *   HTML over the canvas, the coordinate label strips, and the party's tile
+ * @property {number} [pixelRatio] buffer px per CSS px
  */
 
 /** A rect in buffer px. */
@@ -54,6 +57,7 @@ const BAND_INSET = 8;
  * @property {number} canvasHeight
  * @property {string | null} [partyTileId]
  * @property {Rect[]} [occluders]
+ * @property {number} [pixelRatio]
  */
 
 /**
@@ -91,8 +95,33 @@ export function exitBandGeometry(node, view, tileSize, exit) {
     canvasWidth: view.canvasWidth,
     canvasHeight: view.canvasHeight,
     alongCell,
-    occluders: view.occluders ?? [],
+    occluders: [...(view.occluders ?? []), ...viewKeepOuts(node, view, tileSize, party)],
+    pixelRatio: view.pixelRatio ?? 1,
   };
+}
+
+/**
+ * The parts of the canvas drawing that a band keeps off: the coordinate
+ * label strips, and the party's tile. A band over the strip hides the
+ * digits a GM reads a tile by, and a band over the party's tile hides the
+ * token on its entry tile.
+ * @param {MapNode} node
+ * @param {ExitBandView} view
+ * @param {number} tileSize
+ * @param {{ x: number, y: number } | null} party
+ * @returns {Rect[]}
+ */
+function viewKeepOuts(node, view, tileSize, party) {
+  const strips = coordLabelLayout({ ...view, node }, tileSize)?.strips ?? [];
+  if (!party) return strips;
+  const size = tileSize * view.scale;
+  const tile = {
+    x: view.offsetX + party.x * size,
+    y: view.offsetY + party.y * size,
+    w: size,
+    h: size,
+  };
+  return [...strips, tile];
 }
 
 /**
@@ -117,7 +146,8 @@ export function exitBandGeometry(node, view, tileSize, exit) {
 export function edgeExitBand(exit, geom) {
   const side = exit.kind === 'edge' ? exit.side : 'north';
   const size = geom.tileSize * geom.scale;
-  const fontSize = labelSize(size, EXIT_LABEL_SCALE);
+  const ratio = geom.pixelRatio ?? 1;
+  const fontSize = labelSize(size, EXIT_LABEL_SCALE, ratio);
   const label = exitLabel(exit);
   // Leave room for the chevron, the gap after it, and the label at the
   // average glyph width of the sans-serif stack.
@@ -125,10 +155,10 @@ export function edgeExitBand(exit, geom) {
     Math.max(geom.canvasWidth - 16, 40),
     fontSize * 1.9 + label.length * fontSize * 0.54,
   );
-  const h = Math.round(clamp(size * 0.8, 26, 46));
-  // A gap of 0.55 of a cell clears the coordinate labels, which hang half a
-  // cell off the top and left edges.
-  const gap = Math.max(10, size * 0.55);
+  const h = Math.round(clamp(size * 0.8, 26 * ratio, 46 * ratio));
+  // The gap clears the coordinate labels, which hang off the top and left
+  // edges, and is at least 0.55 of a cell.
+  const gap = Math.max(10 * ratio, size * 0.55, labelGap(geom, side));
   const along = clamp(geom.alongCell, 0, Math.max(0, sideLength(geom, side) - 1));
   let x;
   let y;
@@ -150,6 +180,34 @@ export function edgeExitBand(exit, geom) {
     geom,
   );
   return { ...placed, fontSize };
+}
+
+/**
+ * The room a north or south exit band takes beyond the room for the
+ * coordinate labels, at the smallest band height, in buffer px. A fit keeps
+ * this much room, so the band sits beside the map rather than over it.
+ * @param {number} [pixelRatio]
+ * @returns {number}
+ */
+export function exitBandDepth(pixelRatio = 1) {
+  return 26 * pixelRatio;
+}
+
+/**
+ * The distance from the map edge to the far side of its coordinate digits
+ * and the clear space past them, in buffer px, or 0 when no digits draw. A
+ * north band sits past the column digits and a west band past the row
+ * digits, so the band never hides the coordinate of its own column or row.
+ * @param {ExitBandGeometry} geom
+ * @param {ExitSide} side
+ */
+function labelGap(geom, side) {
+  if (side !== 'north' && side !== 'west') return 0;
+  const layout = coordLabelLayout({ ...geom, node: geom }, geom.tileSize);
+  if (!layout) return 0;
+  const { columns, rows } = layout;
+  if (side === 'north') return columns ? geom.offsetY - columns.y + BAND_INSET : 0;
+  return rows ? geom.offsetX - rows.x + BAND_INSET : 0;
 }
 
 /**
@@ -183,8 +241,13 @@ function overlaps(a, b) {
  * seen in part but not clicked. The band slides along its own side, which
  * keeps it beside the border it leads off. Each occluder offers two places,
  * one just before it and one just past it on that axis. The band takes the
- * nearest place that is on the canvas and clear of every occluder. When no
- * place is clear, as on a canvas too small for both, the band stays where
+ * nearest place that is on the canvas and clear of every occluder.
+ *
+ * A coordinate strip runs the whole length of a side, so no slide clears it.
+ * When no slide is clear, the band tries the places just before and just
+ * past each occluder on the other axis. A north band then drops below the
+ * column digits when the canvas has no room above them. When no place is
+ * clear at all, as on a canvas too small for the band, the band stays where
  * it is. This is a pure function.
  * @param {Rect} band
  * @param {ExitSide} side
@@ -195,10 +258,23 @@ export function avoidOccluders(band, side, geom) {
   const occluders = geom.occluders ?? [];
   if (!occluders.some((o) => overlaps(band, o))) return band;
   const horizontal = sideAxis(side) === 'x';
+  return nearestClear(band, horizontal, geom) ?? nearestClear(band, !horizontal, geom) ?? band;
+}
+
+/**
+ * The nearest place for a band, moved along one axis only, that is on the
+ * canvas and clear of every occluder, or null when there is none.
+ * @param {Rect} band
+ * @param {boolean} alongX true to move the band on the x axis
+ * @param {ExitBandGeometry} geom
+ * @returns {Rect | null}
+ */
+function nearestClear(band, alongX, geom) {
+  const occluders = geom.occluders ?? [];
   /** @type {Rect | null} */
   let best = null;
   for (const o of occluders) {
-    const places = horizontal
+    const places = alongX
       ? [o.x - band.w - BAND_INSET, o.x + o.w + BAND_INSET].map((x) => ({
           ...band,
           x: clampToCanvas(x, band.w, geom.canvasWidth),
@@ -213,7 +289,7 @@ export function avoidOccluders(band, side, geom) {
       if (!best || shift < Math.abs(best.x - band.x) + Math.abs(best.y - band.y)) best = place;
     }
   }
-  return best ?? band;
+  return best;
 }
 
 /**

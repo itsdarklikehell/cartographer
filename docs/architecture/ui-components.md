@@ -1301,10 +1301,11 @@ The few layout switches are in known places:
     the map controls.
 
   `combat.css` has one more, `@media (max-width: 1100px)`, which stacks the
-  combat screen's columns. The fit-to-view zoom never draws a tile smaller
-  than `READABLE_TILE_PX` (32 px, `src/map/MapGeometry.js`), so a narrow
-  viewport shows a readable part of a large map and not all of it at a
-  quarter size.
+  combat screen's columns. The fit that opens a map never draws a tile
+  smaller than `READABLE_TILE_PX` (32 px, `src/map/MapGeometry.js`), so a
+  narrow viewport shows a readable part of a large map and not all of it at
+  a quarter size. The Fit button calls `fit({ whole: true })`, which drops
+  that floor and shows the whole map.
 - **Preference media queries.** `base.css` has the
   `prefers-color-scheme` block for the select chevron and a
   `prefers-reduced-motion` block (see [Accessibility](#accessibility)).

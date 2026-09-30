@@ -333,7 +333,7 @@ export class MapMarkers {
       // Names stack above the tile, with the nearest name closest to it. This
       // is skipped when tiles are too small for the label to be legible.
       if (size >= 24) {
-        const fontSize = labelSize(size, NAME_SCALE);
+        const fontSize = labelSize(size, NAME_SCALE, view.pixelRatio);
         names.forEach((name, i) => {
           const ty = sy - 3 - (names.length - 1 - i) * (fontSize + 2);
           // A square plate, not a pill: stacked names read as one block, and

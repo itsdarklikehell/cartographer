@@ -2,19 +2,14 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, exitLabel } from './MapExits.js';
 import { edgeExitBand, exitBandGeometry } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
-import { drawPlatedLabel, labelSize } from './CanvasText.js';
+import { drawPlatedLabel } from './CanvasText.js';
+import { coordLabelLayout } from './CoordLabels.js';
 import { toDisplay } from './TileCoords.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 /** @typedef {import('../types/map.js').MapExit} MapExit */
 /** @typedef {import('./ExitBands.js').ExitBand} ExitBand */
-
-/**
- * Coordinate digits run large: they label a whole row or column, and they draw
- * on empty canvas or a plate rather than over tile art, so they take a high cap.
- */
-const COORD_SCALE = { factor: 0.3, min: 14, max: 42 };
 
 /**
  * This class draws the decoration layer of the map render. It covers
@@ -43,15 +38,10 @@ export class MapDecorations {
    * @param {MapView} view
    */
   renderCoordinates(view) {
-    if (!view.node) return;
-    const size = this.host.tileSize * view.scale;
-    if (size < 20) return; // Text this dense is not legible.
-    const fontSize = labelSize(size, COORD_SCALE);
-    const pad = fontSize * 0.9;
-    const colPinned = view.offsetY - pad < pad;
-    const colY = colPinned ? pad : view.offsetY - pad;
-    const rowPinned = view.offsetX - pad < pad;
-    const rowX = rowPinned ? pad : view.offsetX - pad;
+    // A null layout means tiles too small for legible digits.
+    const layout = coordLabelLayout(view, this.host.tileSize);
+    if (!view.node || !layout) return;
+    const { size, fontSize, colY, rowX, colPinned, rowPinned } = layout;
     for (let x = 0; x < view.node.width; x++) {
       const cx = view.offsetX + (x + 0.5) * size;
       if (cx < 0 || cx > view.canvasWidth) continue;

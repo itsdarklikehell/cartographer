@@ -210,6 +210,7 @@ export class MapCanvasPointer {
       canvasHeight: host.canvas.height,
       partyTileId: host.partyTileId,
       occluders: host.occluders,
+      pixelRatio: globalThis.devicePixelRatio || 1,
     };
     for (const exit of host.exits) {
       if (exit.kind !== 'edge') continue;

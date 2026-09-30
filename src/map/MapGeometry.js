@@ -324,6 +324,55 @@ export function readableScale(tileSize) {
 }
 
 /**
+ * The padding a fitted view keeps on each side of the map, in buffer px.
+ * @typedef {{ top: number, right: number, bottom: number, left: number }} FitSides
+ */
+
+/**
+ * The padding a fit keeps on each side of the map, so the chrome around the
+ * map does not cover it. The top and left start at `lead`, which fits the
+ * coordinate labels, and the bottom and right start at `trail`. A north or
+ * south side with an edge exit adds `bandDepth` for its exit band. A west or
+ * east band is wide, and room for it shrinks a map on a narrow canvas far
+ * more than the band needs, so that band slides clear of the map instead. A
+ * tall occluder at the top corner, such as the mini-map, pushes the left or
+ * right side past it. A wide occluder at the top, such as the zoom toolbar,
+ * pushes the top side below it, with half of `lead` left for the column
+ * labels.
+ * @param {{
+ *   lead: number,
+ *   trail: number,
+ *   exitSides?: import('../types/map.js').ExitSide[],
+ *   bandDepth?: number,
+ *   occluders?: { x: number, y: number, w: number, h: number }[],
+ *   canvasWidth: number,
+ *   inset?: number,
+ * }} opts
+ * @returns {FitSides}
+ */
+export function fitSides(opts) {
+  const { lead, trail, canvasWidth } = opts;
+  const inset = opts.inset ?? 8;
+  const exits = new Set(opts.exitSides ?? []);
+  const depth = (opts.bandDepth ?? 0) + inset;
+  const sides = {
+    top: lead + (exits.has('north') ? depth : 0),
+    right: trail,
+    bottom: trail + (exits.has('south') ? depth : 0),
+    left: lead,
+  };
+  for (const o of opts.occluders ?? []) {
+    if (o.y > inset * 2) continue;
+    if (o.w > o.h) sides.top = Math.max(sides.top, o.y + o.h + lead / 2);
+    else if (o.x <= inset * 2) sides.left = Math.max(sides.left, o.x + o.w + inset);
+    else if (o.x + o.w >= canvasWidth - inset * 2) {
+      sides.right = Math.max(sides.right, canvasWidth - o.x + inset);
+    }
+  }
+  return sides;
+}
+
+/**
  * The pan offset along one axis. The extent is centered between the two
  * paddings when it fits the buffer. Otherwise the view centers on `focus`
  * when one is given, or starts at the top or left edge of the map. The
@@ -358,21 +407,23 @@ function fitOffset(extent, buffer, lead, trail, focus) {
  * `padding` applies to all four sides. `leadPadding` replaces it on the top
  * and left sides only, where the coordinate labels hang off the grid. The
  * bottom and right sides then need less space, and the fit zooms closer.
+ * `sides`, from fitSides, replaces both with one padding for each side.
  * @param {number} extentW
  * @param {number} extentH
  * @param {number} bufferW
  * @param {number} bufferH
- * @param {{ padding?: number, leadPadding?: number, minScale?: number, maxScale?: number, readableScale?: number, focus?: { x: number, y: number } | null }} [options]
+ * @param {{ padding?: number, leadPadding?: number, sides?: FitSides, minScale?: number, maxScale?: number, readableScale?: number, focus?: { x: number, y: number } | null }} [options]
  * @returns {{ scale: number, offsetX: number, offsetY: number }}
  */
 export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
   const trail = options.padding ?? 24;
   const lead = options.leadPadding ?? trail;
+  const sides = options.sides ?? { top: lead, right: trail, bottom: trail, left: lead };
   if (extentW <= 0 || extentH <= 0 || bufferW <= 0 || bufferH <= 0) {
     return { scale: 1, offsetX: 0, offsetY: 0 };
   }
-  const availW = Math.max(1, bufferW - lead - trail);
-  const availH = Math.max(1, bufferH - lead - trail);
+  const availW = Math.max(1, bufferW - sides.left - sides.right);
+  const availH = Math.max(1, bufferH - sides.top - sides.bottom);
   const whole = Math.min(availW / extentW, availH / extentH);
   const scale = clampZoom(
     Math.max(whole, options.readableScale ?? 0),
@@ -382,7 +433,19 @@ export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
   const focus = options.focus;
   return {
     scale,
-    offsetX: fitOffset(extentW * scale, bufferW, lead, trail, focus ? focus.x * scale : undefined),
-    offsetY: fitOffset(extentH * scale, bufferH, lead, trail, focus ? focus.y * scale : undefined),
+    offsetX: fitOffset(
+      extentW * scale,
+      bufferW,
+      sides.left,
+      sides.right,
+      focus ? focus.x * scale : undefined,
+    ),
+    offsetY: fitOffset(
+      extentH * scale,
+      bufferH,
+      sides.top,
+      sides.bottom,
+      focus ? focus.y * scale : undefined,
+    ),
   };
 }

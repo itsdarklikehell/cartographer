@@ -85,6 +85,21 @@ test('band geometry takes the occluders of the view', () => {
     targetName: 'Saltmere Coast',
   });
   const occluders = [{ x: 1, y: 2, w: 3, h: 4 }];
-  assert.deepEqual(exitBandGeometry(node, view, 48, exit).occluders, []);
-  assert.equal(exitBandGeometry(node, { ...view, occluders }, 48, exit).occluders, occluders);
+  const bare = exitBandGeometry(node, view, 48, exit).occluders ?? [];
+  // The two coordinate strips are always kept out.
+  assert.equal(bare.length, 2);
+  const withHtml = exitBandGeometry(node, { ...view, occluders }, 48, exit).occluders ?? [];
+  assert.deepEqual(withHtml, [...occluders, ...bare]);
+  const withParty = exitBandGeometry(node, { ...view, partyTileId: '2,1' }, 48, exit);
+  assert.deepEqual(withParty.occluders?.at(-1), { x: 96, y: 48, w: 48, h: 48 });
+  assert.equal(withParty.pixelRatio, 1);
+});
+
+test('a band with no place along its side moves across it', () => {
+  const free = band('north');
+  // A strip along the whole north side, like the column digits.
+  const strip = { x: 0, y: free.y - 4, w: 900, h: 30 };
+  const moved = band('north', [strip]);
+  assert.equal(moved.x, free.x);
+  assert.equal(overlap(moved, strip), false);
 });

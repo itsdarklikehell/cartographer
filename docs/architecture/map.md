@@ -218,7 +218,9 @@ role, so a color that two layers share is written once.
 
 `CanvasText` defines the label rule that the coordinate digits, character
 names, exit labels, and region names share. `labelSize(size, { factor, min,
-max })` scales a font from the tile size on screen. `drawPlatedLabel(ctx,
+max }, pixelRatio)` scales a font from the tile size on screen. The bounds
+are in CSS pixels, and `pixelRatio` converts them to buffer pixels, so a
+label on a 2x screen never draws under `min` CSS pixels. `drawPlatedLabel(ctx,
 text, x, y, opts)` sets the font and alignment, draws the pill or rectangle
 behind the text, and restores the context.
 
@@ -1199,20 +1201,38 @@ The band is a bounded pill centered on the traveler's row or column (the
 exit's `along`), kept within the canvas. When the GM pans the map's border out
 of view, the arrow stays at the viewport edge.
 
-HTML over the canvas, such as the mini-map, catches a click before the canvas
-does, so a band under it cannot be clicked. `MapCanvas.setOccluders` takes the
-rectangles, in buffer pixels, that such HTML covers, and the view passes them
-into the band geometry.
+HTML over the canvas, such as the mini-map and the zoom toolbar, catches a
+click before the canvas does, so a band under it cannot be clicked.
+`MapCanvas.setOccluders` takes the rectangles, in buffer pixels, that such
+HTML covers, and the view passes them into the band geometry.
+`exitBandGeometry` adds two more kinds of rectangle that a band keeps off:
+the strips of coordinate digits from `coordLabelLayout` (`CoordLabels.js`),
+and the party's tile. A band over the digits hides the coordinate a GM reads
+a tile by, and a band over the party's tile hides the token on its entry
+tile. A north or west band also takes a gap wide enough to sit past the
+digits of its side.
 
 `avoidOccluders` then slides a covered band along its own side, to the
 nearest place just before or just past an occluder that stays on the canvas
 and clear of every occluder. A west band under the mini-map moves down below
-it, and a north band moves right. When no place is clear, the band stays where
-it is.
+it, and a north band moves right. A digit strip runs the whole length of its
+side, so no slide clears it. The band then tries the places before and past
+each occluder on the other axis, and a north band with no room above the
+column digits drops just below them. When no place is clear, the band stays
+where it is.
 
-`app/mapWiring.js` converts the mini-map's client rectangle with
-`clientRectToBuffer`. It does this from a `ResizeObserver` on the mini-map and
-on each canvas resize.
+`app/mapWiring.js` converts the client rectangles of the mini-map and the
+zoom toolbar with `clientRectToBuffer`. It does this from a `ResizeObserver`
+on each of them and on each canvas resize.
+
+A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
+the height of a band to a north or south side that has an exit, pushes the
+left side past a mini-map at the top-left corner, and pushes the top side
+below the zoom toolbar. A west or east band is wide, so a fit keeps no room
+for it, and the band slides clear instead. The exits and the occluders reach
+`MapCanvas` after `setNode` fits, so `setExits` and `setOccluders` refit a
+view the user has not panned or zoomed when the exit sides or the rectangles
+change.
 
 ### Exit travel
 
