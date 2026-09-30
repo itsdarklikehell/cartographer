@@ -28,8 +28,8 @@ work that the frame already did.
 
 DOM controls that update on every frame compare the new value with the
 value they last wrote, and skip the write when nothing changed.
-`MapControls.update` (through `onViewChange`) does this. `refreshMapDescription`
-in `mapWiring.js` does the same for the text of the map's screen-reader live
+`MapControls.update` (through `onViewChange`) does this. The `refresh` method of
+`mountMapNarration` in `mapNarration.js` does the same for the text of the map's screen-reader live
 region. A screen reader announces a live region again each time its text
 node is rewritten, even with the same text, so a skipped comparison produces
 a false announcement.

@@ -281,8 +281,21 @@ merge reaches storage.
 the breadcrumb, both world trees, the palette, the fog controls, and the
 Build-rail tools. It registers the map actions (`focusLocation`,
 `centerOnLocation`, `resyncMap`, `onModeChanged`, `onRoleChanged`, and
-others) and returns the shared `MapEnv` context. Every module around the map
-takes `MapEnv` as its second argument.
+others) and returns the shared `MapEnv` context. `src/types/mapEnv.ts`
+declares that type. Every module around the map takes `MapEnv` as its second
+argument.
+
+`mapWiring.js` mounts three helpers at fixed points of its mount order:
+
+- `mapChrome.js` mounts the HTML over the canvas: the mini-map and the zoom
+  and fog toolbar. It reports their rectangles to the canvas as occluders,
+  and it returns `syncMapOccluders` for the resize handler.
+- `mapNarration.js` mounts the screen-reader live regions of the map: the
+  map description, the list of points of interest, the exit prompt, and the
+  cursor narration. It also defines `createBuildWarning`, the Build-rail
+  warning for a node that has no way in or out.
+- `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
+  Build rail.
 
 #### Map resync
 

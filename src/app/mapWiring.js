@@ -1,76 +1,29 @@
 import { getTile } from '../map/TileGrid.js';
-import { describeCursor, describeNode } from '../map/MapDescription.js';
-import { clientRectToBuffer, tileIdAt } from '../map/MapGeometry.js';
+import { createBuildWarning, mountMapNarration } from './mapNarration.js';
+import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
-import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
+import { discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens, followedPosition } from '../party/CharacterTokens.js';
-import {
-  renderNodeToCanvas,
-  downloadCanvasPNG,
-  exportFilename,
-  exportTileSize,
-  EXPORT_TILE_SIZE,
-} from '../map/MapExport.js';
-import { findRegionGroups } from '../map/RegionGroups.js';
-import { miniMapView } from '../map/MiniMap.js';
 import { ancestorMarkerTile } from '../map/AncestorMarker.js';
 import { authoringWarning } from '../map/MapExits.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
 import { resyncMapViews } from './mapResync.js';
-import { el, mustGetElement } from '../ui/dom.js';
+import { mountMapChrome } from './mapChrome.js';
+import { wireMapBuildTools } from './mapBuildTools.js';
+import { mustGetElement } from '../ui/dom.js';
 import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
-import { mountMapControls } from '../ui/MapControls.js';
-import { mountMiniMap } from '../ui/MiniMap.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
-import { confirmModal } from '../ui/Modal.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
-/** @typedef {import('../types/map.js').MapNode} MapNode */
-
-/**
- * MapEnv is the mutable context shared between the map wiring and its two
- * gesture modules, mapAuthoring and mapTravel. It holds the mounted views and
- * the Build and Play UI state.
- *
- * Wiring sets the view fields in mount order. The gesture handlers only run
- * on user events, long after wiring completes, so reading the fields late is
- * safe. mapControls and nodeActions already rely on the same late binding.
- * `mapResync.js`'s resyncMapViews depends on the same rule: it reads
- * mapCanvas, breadcrumb, worldTree, and regionTree from this object instead
- * of the local variables. Do not call resyncMapViews, goToNode, resyncMap, or
- * a node action while wireMapView still runs.
- * @typedef {{
- *   mapCanvas: import('../map/MapCanvas.js').MapCanvas,
- *   inspector: ReturnType<typeof import('../ui/TileInspector.js').mountTileInspector>,
- *   palettePanel: ReturnType<typeof mountPalettePanel>,
- *   tileTooltip: ReturnType<typeof mountTileTooltip>,
- *   breadcrumb: ReturnType<typeof mountBreadcrumb>,
- *   worldTree: ReturnType<typeof mountWorldTree>,
- *   regionTree: ReturnType<typeof mountWorldTree>,
- *   nodeActions: ReturnType<typeof createNodeActions>,
- *   selectedTileId: string | null,
- *   activeBrush: import('../ui/PalettePanel.js').Brush,
- *   fogTool: 'reveal' | 'hide' | null,
- *   goToNode: (nodeId: string) => void,
- *   selectTile: (tileId: string) => void,
- *   clearSelection: () => void,
- *   syncPartyMarker: () => void,
- *   syncExits: () => void,
- *   syncPaletteKind: () => void,
- *   refreshMapDescription: () => void,
- *   snapshotEdit: (...nodes: MapNode[]) => void,
- *   recordEdit: (snapshot: import('../map/EditHistory.js').EditSnapshot) => void,
- *   finishEdit: () => void,
- * }} MapEnv
- */
+/** @typedef {import('../types/mapEnv.js').MapEnv} MapEnv */
 
 /**
  * Wires everything on and around the map: the canvas and its stroke and click
@@ -187,7 +140,7 @@ export function wireMapView(app) {
     // path that can move the party, change the node in view, or repaint the
     // parent runs this function.
     miniMap?.update();
-    syncBuildWarning();
+    buildWarning.sync();
     // The tree's warning badges answer the same question for every node. A
     // stroke on the node in view can seal or unseal a child node without
     // changing the warning of the node itself, so the rail warning check
@@ -196,28 +149,7 @@ export function wireMapView(app) {
     env.worldTree?.update();
   }
 
-  // This element stays in the document with no text, instead of being added
-  // only when there is a message. A screen reader can miss a live region that
-  // arrives together with its content. CSS hides the element when it is empty.
-  const buildWarning = mustGetElement('build-warning');
-  let lastBuildWarning = '';
-
-  /** Tell the GM when nothing in the parent map leads to the node in view, or
-   * when an interior has no painted way out. Play mode always offers a
-   * fallback exit, so both warnings point to an unfinished map. The Build
-   * rail that shows them stays hidden everywhere else. */
-  function syncBuildWarning() {
-    const node = navigator.getCurrentNode();
-    const parent = grid.getParent(node);
-    const text = authoringWarning(node, parent) ?? '';
-    // This follows the same reasoning as refreshMapDescription. This element
-    // is a live region, and syncExits runs on every party step and every
-    // paint stroke. An unconditional write re-announces an unchanged
-    // sentence each time.
-    if (text === lastBuildWarning) return;
-    lastBuildWarning = text;
-    buildWarning.textContent = text;
-  }
+  const buildWarning = createBuildWarning(app);
 
   /** @type {ReturnType<typeof mountExitList> | null} assigned after the viewport mounts */
   let exitList = null;
@@ -246,36 +178,12 @@ export function wireMapView(app) {
   }
   app.actions.syncCreatureMarkers = syncCreatureMarkers;
 
-  let lastDescription = '';
-  let lastPoints = '';
+  /** @type {ReturnType<typeof mountMapNarration> | null} assigned after the viewport mounts */
+  let narration = null;
 
-  /** Re-narrate the current map for the screen-reader live region. Call this
-   * wherever the node, the party, the fog, or the tiles change, the same
-   * events that redraw the map. */
+  /** Re-narrate the current map for the screen-reader live region. */
   function refreshMapDescription() {
-    const { status, points } = describeNode(
-      navigator.getCurrentNode(),
-      partyTracker.getPosition(),
-      {
-        revealAll: state.mode === 'build',
-        showNotes: isGM(state.role),
-        markerVisible: (id) => mapCanvas.markerVisible(id),
-      },
-    );
-    // Write only when the narration changes. Assigning textContent replaces
-    // the live region's text node, and a screen reader watches that node. An
-    // unconditional write re-announces the whole description even when no
-    // word changed, for example on a paint stroke that only swaps tile art,
-    // or a party step inside an already-explored area.
-    if (status !== lastDescription) {
-      lastDescription = status;
-      mapDescription.textContent = status;
-    }
-    const joined = points.join('\n');
-    if (joined === lastPoints) return;
-    lastPoints = joined;
-    pointList.replaceChildren(...points.map((point) => el('li', '', point)));
-    pointList.hidden = points.length === 0;
+    narration?.refresh();
   }
   app.actions.refreshMapDescription = refreshMapDescription;
 
@@ -438,9 +346,9 @@ export function wireMapView(app) {
   app.views.regionTree = regionTree;
   env.regionTree = regionTree;
 
-  /** @type {ReturnType<typeof mountMapControls> | null} assigned after mapCanvas exists */
+  /** @type {ReturnType<typeof import('../ui/MapControls.js').mountMapControls> | null} assigned after mapCanvas exists */
   let mapControls = null;
-  /** @type {ReturnType<typeof mountMiniMap> | null} assigned after mapCanvas exists */
+  /** @type {ReturnType<typeof import('../ui/MiniMap.js').mountMiniMap> | null} assigned after mapCanvas exists */
   let miniMap = null;
 
   const mapCanvas = new MapCanvas(canvasEl, palette, {
@@ -466,23 +374,11 @@ export function wireMapView(app) {
     onCellClick: travel.onCellClick,
     onExitClick: travel.exitToParent,
     // A cursor key pressed toward a border that leads out arms the exit. The
-    // same arrow key again takes the exit. This message is narrated apart
-    // from the map description, which a node change rewrites completely.
-    onExitArmed: (exit) => {
-      exitPrompt.textContent = exit
-        ? `Press the same arrow again to return to ${exit.targetName}.`
-        : '';
-    },
-    // Each arrow key that lands the cursor names the cell it landed on, so a
-    // screen reader user knows what Enter acts on. The map description is
-    // about the node and the party, and a cursor move changes neither.
-    onCursorMove: (tileId) => {
-      cursorStatus.textContent = describeCursor(navigator.getCurrentNode(), tileId, {
-        revealAll: state.mode === 'build',
-        markerVisible: (id) => mapCanvas.markerVisible(id),
-        labelFor: (imageRef) => palette.listAll().find((e) => e.imageRef === imageRef)?.label,
-      });
-    },
+    // same arrow key again takes the exit.
+    onExitArmed: (exit) => narration?.exitArmed(exit),
+    // The map description is about the node and the party, and a cursor move
+    // changes neither.
+    onCursorMove: (tileId) => narration?.cursorMoved(tileId),
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
@@ -511,88 +407,16 @@ export function wireMapView(app) {
 
   authoring.wireCanvasDrop(canvasEl);
 
-  // The mini-map follows the same position as the Center button: the party,
-  // or a bound player's own character while the party is split. Build mode
-  // lifts the fog, as the main map does.
-  const shownMiniMap = mountMiniMap(mustGetElement('map-viewport'), {
-    revealAll: () => state.mode === 'build',
-    getView: () => {
-      const node = navigator.getCurrentNode();
-      return miniMapView(node, grid.getParent(node), followedView(), travel.entryThrough());
-    },
+  const chrome = mountMapChrome(app, env, {
+    canvasEl,
+    followedView,
+    centerOnLocation,
+    setFogTool,
+    entryThrough: travel.entryThrough,
   });
-  miniMap = shownMiniMap;
-
-  // A click on the mini-map or the zoom toolbar never reaches the canvas, so
-  // the edge exit bands move off the part of the canvas they cover. The
-  // observers fire when either shows, hides, or changes size. A canvas
-  // resize changes the buffer scale, so resizeMapToViewport calls this too.
-  const syncMapOccluders = () => {
-    const canvasRect = canvasEl.getBoundingClientRect();
-    const boxes = [shownMiniMap.element, mapControls?.element].filter(
-      (box) => box && !box.hidden && box.offsetParent !== null,
-    );
-    mapCanvas.setOccluders(
-      boxes.map((box) =>
-        clientRectToBuffer(
-          /** @type {HTMLElement} */ (box).getBoundingClientRect(),
-          canvasRect,
-          canvasEl.width,
-          canvasEl.height,
-        ),
-      ),
-    );
-  };
-  const occluderObserver = new ResizeObserver(syncMapOccluders);
-  occluderObserver.observe(shownMiniMap.element);
-
-  mapControls = mountMapControls(mustGetElement('map-viewport'), {
-    onZoomIn: () => mapCanvas.zoomBy(1.25),
-    onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
-    onFit: () => mapCanvas.fit({ whole: true }),
-    onCenter: () => centerOnLocation(followedView()),
-    getZoom: () => mapCanvas.scale,
-    // GM fog controls, hidden from the player role by CSS. Brushes stroke fog
-    // on or off. Reveal-all lights the whole current node.
-    fog: {
-      getTool: () => env.fogTool,
-      // The pressed state of the brush button flips, but a screen reader only
-      // hears a state change on the button itself. The pickup is said out
-      // loud, the same way the Escape drop is, so the user knows the left
-      // button and Enter now paint fog instead of moving the party.
-      onToolChange: (tool) => {
-        setFogTool(tool);
-        if (env.fogTool === 'reveal') {
-          toasts.show(
-            'Reveal fog brush picked up. A click or Enter on a tile reveals it. Escape puts the brush down.',
-          );
-        } else if (env.fogTool === 'hide') {
-          toasts.show(
-            'Hide fog brush picked up. A click or Enter on a tile hides it. Escape puts the brush down.',
-          );
-        }
-      },
-      // Players see the result at once on their own tab, and the button
-      // sits beside the brushes, so a stray click asks first.
-      onRevealAll: async () => {
-        const shown = navigator.getCurrentNode();
-        const ok = await confirmModal(
-          `Reveal all of "${shown.name}" to the players? Undo can hide it again.`,
-          { title: 'Reveal whole area', confirmLabel: 'Reveal' },
-        );
-        if (!ok || navigator.getCurrentNode().id !== shown.id) return;
-        const node = revealAll(navigator.getCurrentNode());
-        grid.updateNode(node);
-        mapCanvas.refreshNode(node);
-        regionTree.update();
-        refreshMapDescription();
-        app.actions.markDirty();
-        toasts.show(`Revealed all of "${node.name}".`);
-      },
-    },
-    miniMap: { isOpen: shownMiniMap.isOpen, onToggle: shownMiniMap.toggle },
-  });
-  occluderObserver.observe(mapControls.element);
+  miniMap = chrome.miniMap;
+  mapControls = chrome.mapControls;
+  const { syncMapOccluders } = chrome;
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.
   // The brush silently owns the left mouse button, so a key must give it back.
@@ -607,38 +431,7 @@ export function wireMapView(app) {
   // This is the only control for the fallback exit.
   exitList = mountExitList(mustGetElement('map-viewport'), travel.exitToParent);
 
-  // A visually hidden live region that narrates the map canvas for screen
-  // readers. The canvas pixels are opaque to assistive technology.
-  // aria-live="polite" announces an update without an interruption.
-  const mapDescription = el('div', 'sr-only');
-  mapDescription.setAttribute('role', 'status');
-  mapDescription.setAttribute('aria-live', 'polite');
-  mustGetElement('map-viewport').appendChild(mapDescription);
-
-  // The points of interest are an ordinary list, not part of the live region.
-  // A screen reader visits it on demand. In the live region, a node with many
-  // notes reads over a thousand characters on each navigation.
-  const pointList = el('ul', 'sr-only');
-  pointList.hidden = true;
-  pointList.setAttribute('aria-label', 'Points of interest');
-  mustGetElement('map-viewport').appendChild(pointList);
-
-  // This is its own region, not a line in mapDescription. The arming prompt
-  // comes and goes with single keystrokes. Sharing mapDescription's region,
-  // refreshMapDescription's write-if-changed check either overwrites the
-  // prompt or re-announces the whole map.
-  const exitPrompt = el('div', 'sr-only');
-  exitPrompt.setAttribute('role', 'status');
-  exitPrompt.setAttribute('aria-live', 'polite');
-  mustGetElement('map-viewport').appendChild(exitPrompt);
-
-  // The cursor narration has its own region for the same reason. It changes
-  // on every arrow key, and it must not re-announce the map description or
-  // overwrite an exit prompt that is still being read.
-  const cursorStatus = el('div', 'sr-only');
-  cursorStatus.setAttribute('role', 'status');
-  cursorStatus.setAttribute('aria-live', 'polite');
-  mustGetElement('map-viewport').appendChild(cursorStatus);
+  narration = mountMapNarration(app, mapCanvas);
 
   // The map-facing effects of a mode switch. sessionControls calls this
   // after it flips the body classes.
@@ -649,10 +442,7 @@ export function wireMapView(app) {
     // down settles the authoring gesture and the crosshair for the new mode.
     setFogTool(null);
     if (mode !== 'build') clearSelection();
-    // The warning text is written into a rail that only Build mode shows. A
-    // sentence set while the rail stayed hidden is never announced. Resetting
-    // it makes entering Build mode write it again, where the GM can read it.
-    lastBuildWarning = '';
+    buildWarning.reset();
     // Build mode offers no ways out, and it drops the party focus of the fit.
     // Play mode draws the exits again.
     syncPartyMarker();
@@ -698,33 +488,7 @@ export function wireMapView(app) {
   };
   new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 
-  // Build-rail map tools: stroke-level undo, and a fog-free PNG export of the
-  // current node. These live in the Build rail, so only the GM in Build mode
-  // sees them. A player never sees these tools.
-  mustGetElement('stroke-undo-btn').addEventListener('click', authoring.undoStroke);
-  mustGetElement('export-png-btn').addEventListener('click', async () => {
-    const node = navigator.getCurrentNode();
-    // Browsers cap the area and the sides of a canvas. The render scales the
-    // tiles down to fit, and refuses a node that cannot fit at any readable
-    // size. The toast below names the size it settled on.
-    const tileSize = exportTileSize(node);
-    const canvas = await renderNodeToCanvas(node, {
-      tileSize: EXPORT_TILE_SIZE,
-      regionGroups: findRegionGroups(node),
-      getNodeName: (id) => grid.getNode(id)?.name,
-      imageCache: mapCanvas.renderer.imageCache,
-    });
-    if (!canvas) {
-      toasts.show(`"${node.name}" is too large to export as PNG.`);
-      return;
-    }
-    downloadCanvasPNG(canvas, exportFilename(node.name));
-    toasts.show(
-      tileSize < EXPORT_TILE_SIZE
-        ? `Exported "${node.name}" as PNG at ${tileSize} pixels per tile. A larger image is past the limit of the browser.`
-        : `Exported "${node.name}" as PNG.`,
-    );
-  });
+  wireMapBuildTools(app, env, authoring.undoStroke);
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();

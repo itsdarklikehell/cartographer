@@ -1274,7 +1274,7 @@ each occluder on the other axis, and a north band with no room above the
 column digits drops just below them. When no place is clear, the band stays
 where it is.
 
-`app/mapWiring.js` converts the client rectangles of the mini-map and the
+`app/mapChrome.js` converts the client rectangles of the mini-map and the
 zoom toolbar with `clientRectToBuffer`. It does this from a `ResizeObserver`
 on each of them and on each canvas resize.
 
