@@ -447,6 +447,13 @@ still open stays until you end the fight. To bring the foes back, click
    values yourself. The hostile creatures of the Active encounter tab join
    the foes. A friendly or neutral creature on the tile of the party joins
    the party.
+   - If one side sneaks up on the other, set **Who sneaks** to that side,
+     and click **Roll Stealth** or type each Stealth total. The app ticks
+     **Surprised** on each watcher whose passive Perception notices no one.
+     See [Stealth contest](gm-reference.md#stealth-contest).
+   - If the party talks its way out, click **Parley** instead. No fight
+     starts, and the travelogue records the parley. See
+     [Parley](gm-reference.md#parley).
 6. Click **Start combat**. The app rolls for each row that you did not roll
    or type, and the combat screen replaces the map.
 

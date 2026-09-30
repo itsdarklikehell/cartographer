@@ -1100,17 +1100,22 @@ the stored name keep the plain name.
 | --- | --- |
 | Initiative value | Starts at 10 plus the DEX modifier. Every value is editable |
 | Roll initiative | Rolls for every row at once |
+| Who sneaks | Picks the side that sneaks for the Stealth contest: **No one**, **The party**, or **The foes**. See [Stealth contest](#stealth-contest) |
+| Roll Stealth | Rolls a Dexterity (Stealth) check for each row of the sneaking side. It shows only when a side sneaks |
+| Stealth total | The Stealth total of a sneaker row. Roll Stealth fills it, and you can type your own value |
+| PP | The passive Perception of a watcher row |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
+| Parley | Closes the dialog with no fight, and logs a line such as "The party settles the encounter with Goblin Scout 1 and Goblin Scout 2 without a fight." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 
 For the initiative rules, see [Initiative](#initiative).
 
 ### Surprise
 
-The GM decides who is surprised, for example after a Stealth check against
-the passive Perception of the other side. Tick **Surprised** on each of
-those rows before you press Start combat. The log records a line such as
-"Goblin Scout is surprised."
+The GM decides who is surprised. The [Stealth contest](#stealth-contest)
+ticks the boxes for you, or you tick **Surprised** on each row by hand
+before you press Start combat. The log records a line such as "Goblin Scout
+is surprised."
 
 A surprised combatant wears a Surprised chip and keeps its place in the
 initiative order. Until its first turn ends, its Reaction pip is spent. On
@@ -1119,6 +1124,44 @@ button that needs them refuses. The app does not track movement, so the GM
 keeps the surprised combatant in place. At the end of that turn the chip
 ends and the reaction comes back, and its next turn is a normal one. To
 overrule a spent pip, press it to mark it free.
+
+### Stealth contest
+
+The contest is optional. With **Who sneaks** at **No one**, the dialog
+shows no Stealth controls. Pick the side that sneaks, and each row of that
+side shows a Stealth total. Each row of the other side shows its passive
+Perception (PP).
+
+**Roll Stealth** rolls d20 plus the Stealth bonus for each sneaker. A
+character uses its sheet bonus, and a creature uses its stat block. The
+chips of the roller slant the roll. For a character, armor with stealth
+disadvantage and armor that the character is not proficient with also give
+disadvantage. You can type a total in any sneaker row instead of rolling.
+A row with no total takes no part.
+
+The app compares each watcher's passive Perception with every sneaker
+total. A watcher notices the threat when its passive Perception is higher
+than at least one total. A total equal to the passive Perception stays
+hidden. A watcher that notices no sneaker is surprised. Each change to a
+total runs the contest again. It ticks **Surprised** on each watcher that
+notices no one, and it clears the box on each watcher that notices. The
+boxes of the sneaking side do not change. The outcome line under the picker
+names every total and each surprised combatant.
+
+You can change any **Surprised** box after the contest. When you press
+Start combat, the travelogue records the outcome line, such as "The party
+sneaks (Stealth Ayla 16, Bren 11). Goblin 1 and Goblin 2 are surprised."
+The contest covers one sneaking side at a time. If both sides sneak, run
+the check for the second side yourself and tick its boxes by hand.
+
+### Parley
+
+**Parley** in the setup dialog records that the party settled the encounter
+without a fight. It closes the dialog, starts no fight, and writes a note
+to the travelogue that names the foes. The foes stay hostile and stay on
+their tiles, so the **Encounter!** dialog opens again when the party next
+moves next to them. If the truce lasts, change the disposition of each foe
+in the creature dialog.
 
 ### Attack dialog
 

@@ -6,6 +6,7 @@ import { checkbox, numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
 import { numberedNames } from '../combat/DisplayNames.js';
+import { stealthStep } from './CombatSetupStealth.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
@@ -19,6 +20,11 @@ import { numberedNames } from '../combat/DisplayNames.js';
  * button submits the form. Rolled values stay editable, so the GM can override
  * a result by hand before starting. A Surprised box on each row marks a
  * combatant that the other side caught unaware.
+ *
+ * With `stealth` hooks, an optional Stealth contest above the rows ticks the
+ * Surprised boxes (see CombatSetupStealth.js), and Start passes its outcome
+ * line to `onStealth`. With `onParley`, a Parley button closes the dialog
+ * with no fight. The dialog then calls `onParley` and resolves to null.
  *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
@@ -34,6 +40,9 @@ import { numberedNames } from '../combat/DisplayNames.js';
  *   describe?: (participant: Participant) => ParticipantView | null,
  *   rollInitiative?: (participant: Participant) => { value: number, note: string },
  *   onRolled?: (results: { name: string, value: number, note: string }[]) => void,
+ *   stealth?: import('./CombatSetupStealth.js').StealthHooks,
+ *   onStealth?: (line: string) => void,
+ *   onParley?: () => void,
  * }} [callbacks]
  * @returns {Promise<Participant[] | null>}
  */
@@ -44,6 +53,8 @@ export function combatSetupModal(roster, callbacks = {}) {
   const surprised = new Map();
   /** The ids whose value the GM rolled or typed. Start rolls the others. */
   const settled = new Set();
+  /** @type {ReturnType<typeof stealthStep> | null} */
+  let stealth = null;
 
   /**
    * The setup rows show only a name and a side. The fallback for an
@@ -68,6 +79,10 @@ export function combatSetupModal(roster, callbacks = {}) {
     build: (close) => {
       /** @type {Node[]} */
       const body = [];
+      stealth = callbacks.stealth
+        ? stealthStep(roster, describe, surprised, callbacks.stealth)
+        : null;
+      if (stealth) body.push(stealth.section);
       for (const participant of roster) {
         const view = describe(participant);
         const modifier = el(
@@ -102,6 +117,7 @@ export function combatSetupModal(roster, callbacks = {}) {
             modifier,
             input,
             surprise.label,
+            ...(stealth?.cells(participant) ?? []),
           ),
         );
       }
@@ -131,7 +147,17 @@ export function combatSetupModal(roster, callbacks = {}) {
         actions.push(rollAll);
       }
 
+      stealth?.layout();
       const cancel = textButton('Cancel', () => close('cancel'));
+      // Parley ends the setup with no fight. The caller logs how the party
+      // settled the encounter.
+      if (callbacks.onParley) {
+        actions.push(
+          textButton('Parley', () => close('parley'), {
+            icon: 'flag',
+          }),
+        );
+      }
 
       // The submit button carries a value. This makes an Escape dismissal,
       // where returnValue stays empty, read as a cancel, not as starting the
@@ -147,7 +173,10 @@ export function combatSetupModal(roster, callbacks = {}) {
       return { body, actions, initialFocus: start };
     },
     result: (returnValue) => {
+      if (returnValue === 'parley') callbacks.onParley?.();
       if (returnValue !== 'start') return null;
+      const contest = stealth?.line();
+      if (contest) callbacks.onStealth?.(contest);
       // A row the GM neither rolled nor typed still shows the placeholder of
       // 10 plus the modifier. Start rolls those rows, and logs them the same
       // way a press of Roll initiative does.

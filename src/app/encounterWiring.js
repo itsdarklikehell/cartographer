@@ -12,6 +12,7 @@ import {
   unspend,
 } from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
+import { parleyLine, passivePerceptionOf, rollStealth } from '../combat/Stealth.js';
 import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
@@ -214,6 +215,27 @@ export function wireEncounters(app) {
       // records every result. A hand-edited override before Start does not
       // log again.
       onRolled: (results) => app.actions.logEvent('roll', initiativeLine(results)),
+      // The Stealth contest is optional. A row that nothing holds any more
+      // rolls a bare d20 and has a passive Perception of 10.
+      stealth: {
+        rollStealth: (p) => {
+          const found = findCombatant(app, p.id);
+          return found ? rollStealth(found.entity, found.kind) : Math.floor(Math.random() * 20) + 1;
+        },
+        passivePerception: (p) => {
+          const found = findCombatant(app, p.id);
+          return found ? passivePerceptionOf(found.entity, found.kind) : 10;
+        },
+      },
+      onStealth: (line) => app.actions.logEvent('roll', line),
+      // A parley settles the encounter with no fight. The foes stay hostile
+      // and in place, so the GM changes their disposition by hand if the
+      // truce lasts.
+      onParley: () => {
+        const foes = roster.filter((p) => describe(p)?.side === 'foe').map((p) => p.id);
+        const names = combatLabels(app, foes);
+        app.actions.logEvent('note', parleyLine(foes.map((id) => names.get(id) ?? id)));
+      },
     });
     if (!participants) return;
     const started = startCombat(participants, (p) => describe(p)?.name ?? '', startedAt);
