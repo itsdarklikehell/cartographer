@@ -101,7 +101,7 @@ export interface AppActions {
   getSelectedCharacterId(): string | null;
   // encounterWiring: defaults to the party's position and "The party". A
   // player who moves their own token passes that character's tile and name.
-  maybeTriggerEncounter(position?: PartyPosition, subject?: string): void;
+  maybeTriggerEncounter(position?: PartyPosition, subject?: string): Promise<void>;
   // encounterWiring: the Build-mode right-click menu for a tile of the node
   // in view. It creates a creature there, or edits one already staged
   // there, and floats at the pointer's screen position.

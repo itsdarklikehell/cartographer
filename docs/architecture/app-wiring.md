@@ -708,14 +708,14 @@ all of them. After a write, it:
 2. marks the danger and blue tiles on the viewed map again, which also
    rebuilds both Build-rail lists scoped to the same node
 3. refreshes the Encounters and NPCs panels of the Play sidebar
-4. drops the running fight when nothing is staged on the party's tile any
-   more (`syncCombatLocation`)
+4. drops the running fight when no creature of it is left near the party's
+   tile (`syncCombatLocation`)
 5. refreshes the initiative panel, whose wrapped update also refreshes the
    combat screen
 6. marks the campaign dirty
 
 The combat screen refresh in step 5 is needed because authoring, moving,
-spawning, or defeating a creature on the party's tile can start or end a
+spawning, or defeating a creature near the party's tile can start or end a
 fight. A caller passes `{ panel: false }` from an Encounters row handler,
 because the list helper already re-renders its own rows once the handler
 resolves, and a second update renders them twice. A caller passes

@@ -5,8 +5,9 @@ import {
   creaturesAt,
   creaturesNear,
   creaturesOnTile,
-  hostileCreaturesOnTile,
-  liveCreaturesOnTile,
+  encounterGroup,
+  hostileGroup,
+  ENCOUNTER_RADIUS,
   knownCreaturesAt,
   discoveredHostiles,
   meetCreatures,
@@ -101,29 +102,40 @@ test('creaturesOnTile takes the exact tile only, defeated ones included', () => 
   assert.deepEqual(creaturesOnTile(roster, null), []);
 });
 
-test('hostileCreaturesOnTile drops the defeated and the bystanders', () => {
-  const live = placed('live', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 });
-  const down = applyDamage(placed('down', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 }), 5);
-  const bystander = placed('bystander', 'n1', '2,2');
-  const roster = [live, down, bystander];
+test('encounterGroup takes the tile and its eight neighbours, on the same node only', () => {
+  const roster = [
+    placed('center', 'n1', '2,2'),
+    placed('diagonal', 'n1', '3,3'),
+    applyDamage(placed('downed', 'n1', '1,2', { maxHP: 5 }), 5),
+    placed('twoAway', 'n1', '4,2'),
+    placed('otherNode', 'n2', '2,2'),
+    placed('badTile', 'n1', 'nowhere'),
+    createCreature('everywhere', 'everywhere'),
+  ];
   assert.deepEqual(
-    hostileCreaturesOnTile(roster, at('n1', '2,2')).map((c) => c.id),
-    ['live'],
+    encounterGroup(roster, at('n1', '2,2')).map((c) => c.id),
+    ['center', 'diagonal', 'downed'],
   );
+  assert.deepEqual(
+    encounterGroup(roster, at('n1', '2,2'), 2).map((c) => c.id),
+    ['center', 'diagonal', 'downed', 'twoAway'],
+  );
+  assert.deepEqual(encounterGroup(roster, at('n1', 'bad')), []);
+  assert.deepEqual(encounterGroup(roster, null), []);
+  assert.equal(ENCOUNTER_RADIUS, 1);
 });
 
-test('liveCreaturesOnTile keeps bystanders and drops only the defeated', () => {
+test('hostileGroup keeps the standing hostiles and drops the defeated and the bystanders', () => {
   const live = placed('live', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 });
+  const beside = placed('beside', 'n1', '2,3', { disposition: 'hostile', maxHP: 5 });
   const down = applyDamage(placed('down', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 }), 5);
   const bystander = placed('bystander', 'n1', '2,2');
-  const downedBystander = applyDamage(placed('fallen', 'n1', '2,2', { maxHP: 5 }), 5);
-  const elsewhere = placed('elsewhere', 'n1', '3,3');
-  const roster = [live, down, bystander, downedBystander, elsewhere];
+  const far = placed('far', 'n1', '5,5', { disposition: 'hostile', maxHP: 5 });
+  const roster = [live, beside, down, bystander, far];
   assert.deepEqual(
-    liveCreaturesOnTile(roster, at('n1', '2,2')).map((c) => c.id),
-    ['live', 'bystander'],
+    hostileGroup(roster, at('n1', '2,2')).map((c) => c.id),
+    ['live', 'beside'],
   );
-  assert.deepEqual(liveCreaturesOnTile(roster, null), []);
 });
 
 test('isOnTile is false for an unplaced creature and for a missing position', () => {

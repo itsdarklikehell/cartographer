@@ -132,7 +132,10 @@ of 21, where the rule gives 18.
 `CreatureMap.js` has the placement reads and writes. `meetCreatures` marks
 every creature on the party's tile as met. `knownCreaturesAt` is the player
 view of the non-hostile creatures, and `discoveredHostiles` is the player view
-of the hostile creatures, through the fog of war.
+of the hostile creatures, through the fog of war. `encounterGroup` lists every
+creature within `ENCOUNTER_RADIUS` grid steps of the party's tile, and
+`hostileGroup` keeps its undefeated hostiles. The [Combat](combat.md) guide
+describes how the encounter reads them.
 
 `CreatureTemplate.fromTemplate` builds a creature from a library template, and
 `toTemplate` builds a template from a creature. A library file has no version
@@ -1936,7 +1939,7 @@ A summons cast during a fight joins the running order.
 the combatant that has it. The initiative is a plain d20 plus the DEX
 modifier, the same roll that the setup dialog makes. A new creature that sorts
 above the current combatant therefore acts first on the next round. When the
-removal takes away the last creature on the party's tile, the fight ends
+removal takes away the last creature of the fight near the party, the fight ends
 through `syncCombatLocation`.
 
 ## Condition effects

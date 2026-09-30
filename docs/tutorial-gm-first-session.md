@@ -92,8 +92,12 @@ the party, so move closer if you do not see the diamond.
 3. Move the party onto the tile of the Goblin Scout.
 
 A dialog that reads **Encounter!** names the creature, its HP, and the map.
+The dialog also names any other foe on a tile next to the party, because
+those foes are part of the same encounter.
 
-4. Click **Continue**. The creature moves into the **Active encounter** tab.
+4. Click **Not now**. The creature shows in the **Active encounter** tab.
+   The other button, **Set up combat**, opens the setup dialog of the next
+   section at once.
 
 The Active encounter tab also shows one line for you alone. It rates the
 fight against the party, for example "Trivial: 50 XP".

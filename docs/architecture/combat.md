@@ -688,23 +688,35 @@ The round counter and the turn controls sit beside the ribbon:
 ## Starting a fight
 
 Only the GM starts a fight, from the Start combat button in the Active tab of
-the Encounters panel. `creaturesHere` in `encounterPanels.js` gates the
-button. Every undefeated creature on the party's exact tile counts, whatever
-its disposition, so the app does not stop a party that attacks a neutral
-bystander. The Active tab lists the same live creatures that the gate counts,
-so the panel switches to that tab whenever the button can show.
+the Encounters panel, or from the Set up combat button of the arrival modal.
+Both read one list, `hostileGroup` in `src/entities/CreatureMap.js`. It keeps
+the undefeated hostile creatures of `encounterGroup`, which is every creature
+in the party's node within `ENCOUNTER_RADIUS` (one) grid steps of the party's
+tile. A diagonal step counts as one, so the group covers the party's tile and
+the eight tiles around it. A GM who stages two bandits on neighbouring tiles
+therefore meets both in one fight. `canStartCombat` in `encounterPanels.js`
+gates the button on that list. The Active tab and the difficulty hint list
+the same creatures, so the panel switches to that tab whenever the button can
+show.
 
-The setup roster is the whole party plus the creatures on the tile. A defeated
-hostile creature stays on the tile but does not join a new fight, and a
-bystander joins in any condition. Hostile creatures line up as foes, and
-friendly and neutral creatures line up with the party.
+The setup roster from `combatRoster` is the whole party, the creatures of
+`hostileGroup`, and any friendly or neutral creature on the party's own tile.
+A defeated hostile creature stays staged but does not join a new fight, and a
+bystander on the tile joins in any condition. Hostile creatures line up as
+foes, and friendly and neutral creatures line up with the party. A friendly or
+neutral creature alone does not make an encounter. The GM who wants to fight
+one sets its disposition to hostile first.
 
 Only a hostile creature is a threat, and only a threat opens the arrival modal
-when the party steps onto its tile. A friendly or neutral creature opens
-nothing. The panel lists it, and the step logs a meeting.
-`arrivalAlert` in `src/combat/Arrival.js` writes the text of the modal from the
-`name`, `currentHP`, and `maxHP` of each hostile creature there. The GM sees
-exact HP, and a player sees an HP band.
+when the party steps next to it or onto its tile. A friendly or neutral
+creature opens nothing. The NPCs panel lists it, and a step onto its tile logs
+a meeting. `arrivalAlert` in `src/combat/Arrival.js` writes the text of the
+modal from the `name`, `currentHP`, and `maxHP` of each creature in
+`hostileGroup`. The GM sees exact HP, and a player sees an HP band. With no
+fight running, the GM's modal has Set up combat and Not now buttons, and Set
+up combat opens the setup dialog at once. A player's modal, and a GM's modal
+for one character's token away from the party, has one Continue button,
+because the setup reads the party's shared position.
 
 ### Rolling initiative
 
@@ -724,8 +736,8 @@ failing. The GM can edit every value by hand before Start.
 
 ## Ending a fight
 
-A fight ends when the GM presses End combat, or when no creature is left on
-the party's tile. The defeat of the last enemy does not end the fight.
+A fight ends when the GM presses End combat, or when no creature of the fight
+is left near the party's tile. The defeat of the last enemy does not end the fight.
 An automatic end on the last kill would close the screen mid-swing, and it
 would take the log and the board away before the party could heal.
 
@@ -746,10 +758,10 @@ the usual way.
 
 ### The automatic end
 
-`syncCombatLocation` ends a fight when the party leaves the tile or the last
-creature there is deleted. The party-move paths and `commitCreatures` call
+`syncCombatLocation` ends a fight when the party walks away from it or the last
+creature in it is deleted. The party-move paths and `commitCreatures` call
 this action. `main.js` also calls it once after every module is wired, so a
-save whose fight has no creature left on the party's tile loads with the
+save whose fight has no creature left near the party's tile loads with the
 fight ended. It runs there and not inside `wireEncounters`, because it logs
 through `logEvent` and leaves combat mode through `setMode`, which
 `wireStory` and `wireSessionControls` register later. The plain panel
@@ -757,11 +769,11 @@ refresh never calls it, because that refresh also runs from the rehydrate
 loop. There, a state write would conflict with the save that the tab just
 took from another tab.
 
-The check reads `creaturesOnTile`, which counts defeated creatures and
-bystanders. A combatant at 0 HP is a turn in the fight and not the end of it,
-and a fight that the party picked with a neutral creature has no hostiles at
-all. A walk off the tile ends the fight, and so does the deletion of the last
-creature, but a kill does not.
+The check reads `encounterGroup` and keeps the fight while any creature of
+that group is in the running order. The group counts defeated creatures and
+bystanders, because a combatant at 0 HP is a turn in the fight and not the
+end of it. A walk away from the fight ends it, and so does the deletion of the
+last creature in it, but a kill does not.
 
 ### The outcome banner
 

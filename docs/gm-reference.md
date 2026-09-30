@@ -853,22 +853,27 @@ The Encounters panel in the Session tab has two tabs.
 
 | Tab | GM tab lists | Player tab lists |
 | --- | --- | --- |
-| Active encounter | Every live creature on the tile of the party, of any disposition | The same creatures |
-| Nearby encounters | The hostile creatures within the nearby range, on the node of the party, plus unplaced ones | The hostile creatures on revealed tiles of the node of the party, plus unplaced ones that the party walked into |
+| Active encounter | The live hostile creatures on the tile of the party and on the eight tiles around it | The same creatures |
+| Nearby encounters | The other hostile creatures within the nearby range, on the node of the party, plus unplaced ones | The other live hostile creatures on revealed tiles of the node of the party, plus unplaced ones that the party walked into. A defeated foe does not show |
+
+A friendly or neutral creature never shows in the Active encounter tab. It
+stays in the NPCs panel. Each row shows the name on one line, and the HP and
+the column and row on a second line. On a GM tab, the **Amount** field of a
+row sets how much the damage and heal buttons of that row apply.
 
 A GM tab also shows these controls:
 
 | Control | What it does |
 | --- | --- |
-| Start combat | Opens the combat setup for everyone on the tile of the party |
+| Start combat | Opens the combat setup for the party, the creatures of the Active encounter tab, and any friendly or neutral creature on the tile of the party |
 | New encounter | Opens the creature dialog for a new foe |
 | From bestiary | Opens the Bestiary dialog |
 | Save as a bestiary template, on a row | Stores that creature as a campaign template |
 
 ### The difficulty hint
 
-Above the Active encounter rows, the GM sees one line that rates the fight
-on the tile of the party. For example: "Hard: 1200 XP against party
+Above the Active encounter rows, the GM sees one line that rates the foes
+of that tab. For example: "Hard: 1200 XP against party
 thresholds easy 300, medium 600, hard 900, deadly 1600".
 
 | Part | Meaning |
@@ -1003,14 +1008,19 @@ After a victory, End combat offers the XP of the defeated foes. The XP is
 split evenly among the living characters and rounded down. A foe with no
 challenge rating is worth nothing. You can change the amount or cancel.
 
-A fight also ends when the party walks off the tile, or when you delete the
-last creature staged there.
+A fight also ends when no creature of the fight is left on the tile of the
+party or on the eight tiles around it. A walk away from the fight ends it,
+and so does the deletion of the last creature in it.
 
 ### Combat setup
 
-**Start combat** opens the setup dialog. It lists everyone on the tile of
-the party. Hostile creatures line up as foes, and friendly and neutral
-creatures line up with the party.
+**Start combat** opens the setup dialog. The **Set up combat** button of the
+**Encounter!** dialog opens it too. It lists the party, the live hostile
+creatures on the tile of the party and on the eight tiles around it, and any
+friendly or neutral creature on the tile of the party. Hostile creatures
+line up as foes, and friendly and neutral creatures line up with the party.
+Only a hostile creature starts an encounter. To fight a friendly or neutral
+creature, set its disposition to hostile first.
 
 | Control | What it does |
 | --- | --- |

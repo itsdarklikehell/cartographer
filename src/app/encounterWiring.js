@@ -1,7 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { creaturesOnTile } from '../entities/CreatureMap.js';
+import { encounterGroup } from '../entities/CreatureMap.js';
 import { addParticipant, startCombat, dropParticipant } from '../combat/Initiative.js';
 import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
@@ -275,7 +275,7 @@ export function wireEncounters(app) {
     onOpen: () => app.actions.setMode('combat'),
   });
 
-  // Walking off the fight's tile, or deleting the last creature there,
+  // Walking away from the fight, or deleting the last creature in it,
   // drops the running combat, because its participants are no longer
   // here. Killing every foe does not drop it: the screen shows the foes as
   // down and waits for the GM to press End combat. This way a last hit does
@@ -286,14 +286,18 @@ export function wireEncounters(app) {
   // write conflicts with the save just adopted from another tab and
   // echoes a dirty write back at it.
   app.actions.syncCombatLocation = () => {
-    if (!current()) return;
-    // Defeated combatants count here. A combatant at 0 HP is a turn in the
-    // fight, not the end of it. Only walking away, or deleting everyone in
-    // the fight, ends a fight this way. Non-hostile creatures count too,
-    // because a fight the party picked with one has no hostiles at all.
-    const stagedHere = creaturesOnTile(state.creatures, app.partyTracker.getPosition());
-    if (stagedHere.length > 0) return;
-    app.actions.logEvent('combat', "The fight ends. No creature is left on the party's tile.");
+    const combat = current();
+    if (!combat) return;
+    // The fight goes on while any creature in its order still stands within
+    // the encounter group of the party's position. Defeated combatants
+    // count here. A combatant at 0 HP is a turn in the fight, not the end of
+    // it. Only walking away, or deleting everyone in the fight, ends a fight
+    // this way. Non-hostile creatures count too, because a bystander in the
+    // order is part of the fight.
+    const inFight = new Set(combat.order.map((p) => p.id));
+    const near = encounterGroup(state.creatures, app.partyTracker.getPosition());
+    if (near.some((c) => inFight.has(c.id))) return;
+    app.actions.logEvent('combat', 'The fight ends. No creature in it is left near the party.');
     setCombat(null);
     exitCombatMode();
     app.views.initiativePanel.update();

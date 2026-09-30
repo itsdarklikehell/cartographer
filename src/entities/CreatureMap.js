@@ -1,4 +1,5 @@
 import { withinRadius } from '../map/FogOfWar.js';
+import { parseCoords } from '../map/MapGeometry.js';
 import { describeTile } from '../map/TileCoords.js';
 import { tileAt } from '../map/TileIndex.js';
 import { isDefeated } from './Creature.js';
@@ -81,10 +82,11 @@ export function discoveredHostiles(creatures, position, node) {
 
 /**
  * Whether a creature stands exactly on a tile. Unplaced (appears-everywhere)
- * creatures are not on any tile. A creature joins a fight only by standing
- * on its own. This is the membership test behind `creaturesOnTile`. The
- * function is exported so a caller resolving one creature by id can ask the
- * question without filtering the whole roster. This function is pure.
+ * creatures are not on any tile. A friendly or neutral creature joins a
+ * fight only by standing on the party's own tile. This is the membership
+ * test behind `creaturesOnTile`. The function is exported so a caller
+ * resolving one creature by id can ask the question without filtering the
+ * whole roster. This function is pure.
  * @param {Creature} creature
  * @param {EncounterLocation | null} position
  * @returns {boolean}
@@ -99,8 +101,8 @@ export function isOnTile(creature, position) {
 }
 
 /**
- * Every creature placed exactly on a tile, defeated ones included. These
- * are the participants when a fight starts there. This function is pure.
+ * Every creature placed exactly on a tile, defeated ones included. The
+ * Build-mode tile menu lists these for editing. This function is pure.
  * @param {Creature[]} creatures
  * @param {EncounterLocation | null} position
  * @returns {Creature[]}
@@ -111,31 +113,62 @@ export function creaturesOnTile(creatures, position) {
 }
 
 /**
- * The undefeated hostile creatures placed exactly on a tile. This is the
- * threat that a step onto the tile walks into: it feeds the arrival alert
- * and the out-of-combat foe target list. This function is pure.
- * @param {Creature[]} creatures
- * @param {EncounterLocation | null} position
- * @returns {Creature[]}
+ * How many grid steps from the party's tile a creature can stand and still
+ * be part of the encounter there. One step reaches the eight tiles around
+ * the party, diagonals included, so a group of foes staged on neighbouring
+ * tiles meets the party as one fight instead of one foe at a time.
  */
-export function hostileCreaturesOnTile(creatures, position) {
-  return creaturesOnTile(creatures, position).filter(
-    (c) => c.disposition === 'hostile' && !isDefeated(c),
-  );
+export const ENCOUNTER_RADIUS = 1;
+
+/**
+ * Whether a creature stands in the position's node within `radius` grid
+ * steps of its tile. A step counts the same along a row, a column, or a
+ * diagonal, as on a battle grid. An unplaced creature is on no tile, so it
+ * is never near one. This function is pure.
+ * @param {Creature} creature
+ * @param {EncounterLocation | null} position
+ * @param {number} radius
+ * @returns {boolean}
+ */
+export function isNearTile(creature, position, radius) {
+  if (position === null || creature.location === null) return false;
+  if (creature.location.nodeId !== position.nodeId) return false;
+  const at = parseCoords(creature.location.tileId);
+  const center = parseCoords(position.tileId);
+  if (!at || !center) return false;
+  return Math.max(Math.abs(at.x - center.x), Math.abs(at.y - center.y)) <= radius;
 }
 
 /**
- * The undefeated creatures placed exactly on a tile, whatever their
- * disposition. This is who the party stands with: it fills the Active tab
- * of the Encounters panel, and it is enough to start a fight. A party can
- * turn on a neutral creature, so a bystander counts here even though only
- * a hostile one raises the arrival alert. This function is pure.
+ * Every creature that belongs to the encounter at a position: those placed
+ * within `radius` grid steps of its tile, whatever their disposition, and
+ * defeated ones included. The Encounters panel, the difficulty hint, the
+ * Start combat button, the fight roster, and the check that ends a fight
+ * when the party walks away all read this one list, so they agree on who
+ * the encounter is. This function is pure.
  * @param {Creature[]} creatures
  * @param {EncounterLocation | null} position
+ * @param {number} [radius]
  * @returns {Creature[]}
  */
-export function liveCreaturesOnTile(creatures, position) {
-  return creaturesOnTile(creatures, position).filter((c) => !isDefeated(c));
+export function encounterGroup(creatures, position, radius = ENCOUNTER_RADIUS) {
+  return creatures.filter((c) => isNearTile(c, position, radius));
+}
+
+/**
+ * The undefeated hostile creatures of the encounter at a position. Only
+ * these open an encounter: they raise the arrival alert, fill the Active
+ * tab, and start a fight. A friendly or neutral creature near the party
+ * stays in the NPCs panel. This function is pure.
+ * @param {Creature[]} creatures
+ * @param {EncounterLocation | null} position
+ * @param {number} [radius]
+ * @returns {Creature[]}
+ */
+export function hostileGroup(creatures, position, radius = ENCOUNTER_RADIUS) {
+  return encounterGroup(creatures, position, radius).filter(
+    (c) => c.disposition === 'hostile' && !isDefeated(c),
+  );
 }
 
 /**

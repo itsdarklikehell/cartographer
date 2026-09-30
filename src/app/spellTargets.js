@@ -1,6 +1,6 @@
 import { parseAssignments } from '../ui/ModalFields.js';
 import { formatModifier } from '../entities/Modifiers.js';
-import { hostileCreaturesOnTile } from '../entities/CreatureMap.js';
+import { hostileGroup } from '../entities/CreatureMap.js';
 import { combatantsAsTargets, asTarget } from './combatants.js';
 import { splitTrimmedList } from '../util/text.js';
 
@@ -87,12 +87,13 @@ export function targetFree(kind) {
 /**
  * The combatants an out-of-combat cast can reach. There is no initiative
  * order to limit the scope. A heal or a buff reaches the whole party (allies,
- * caster included). An attack or a save spell reaches the foes on the party's
- * tile: the undefeated hostile creatures standing there. A friendly or
- * neutral bystander is not a foe, so it is never offered. A utility spell
- * targets no one. The target shape matches `combatTargets`.
+ * caster included). An attack or a save spell reaches the foes of the
+ * encounter group: the undefeated hostile creatures on the party's tile and
+ * the tiles around it. A friendly or neutral bystander is not a foe, so it is
+ * never offered. A utility spell targets no one. Each target has the same
+ * fields as one from `combatTargets`.
  *
- * The party's tile is the closest range check the app has, because the app
+ * The encounter group is the closest range check the app has, because the app
  * cannot measure distance between two tokens. Without this check, a cast
  * offers every foe in the campaign, including foes in regions the party has
  * not reached.
@@ -112,7 +113,7 @@ export function rosterTargets(app, spell, casterId) {
     return party.map((c) => asTarget(c, 'character'));
   }
   const position = app.partyTracker.getPosition();
-  return hostileCreaturesOnTile(state.creatures, position).map((c) => asTarget(c, 'creature'));
+  return hostileGroup(state.creatures, position).map((c) => asTarget(c, 'creature'));
 }
 
 /**

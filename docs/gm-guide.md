@@ -426,18 +426,20 @@ still open stays until you end the fight. To bring the foes back, click
 
 ### Run a fight
 
-1. Move the party onto a tile with a live creature. A dialog that reads
-   **Encounter!** names each hostile creature. A friendly or neutral
-   creature opens no dialog.
-2. Click **Continue**.
+1. Move the party onto or next to a tile with a live hostile creature. A
+   dialog that reads **Encounter!** names each hostile creature on the tile
+   of the party and on the eight tiles around it. A friendly or neutral
+   creature opens no dialog, and it stays in the **NPCs** panel.
+2. Click **Set up combat** to go straight to step 5, or click **Not now**.
 3. In the **Encounters** panel, open the **Active encounter** tab. It lists
-   each live creature on the tile, and it shows **Start combat** whenever it
+   the same hostile creatures, and it shows **Start combat** whenever it
    has a row. Above the rows, one line rates the fight against the XP budget
    of your party. Players never see this line.
 4. Click **Start combat**.
 5. In the **Set up combat** dialog, click **Roll initiative**, or type the
-   values yourself. Hostile creatures on the tile join the foes, and
-   friendly and neutral creatures join the party.
+   values yourself. The hostile creatures of the Active encounter tab join
+   the foes. A friendly or neutral creature on the tile of the party joins
+   the party.
 6. Click **Start combat**. The combat screen replaces the map.
 
 ![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)
@@ -457,7 +459,9 @@ still open stays until you end the fight. To bring the foes back, click
 When the last foe drops, a banner announces the victory and the fight stays
 open. The party can heal, and everyone can read the log before you end it.
 The party can also attack a creature on its own side, for example a
-bystander that the party turns on.
+bystander that the party turns on. To start a fight with a friendly or
+neutral creature, first set its disposition to hostile in the creature
+dialog.
 
 To leave the combat screen without ending the fight, click **Back to map**.
 To return, click **Open combat** in the **Initiative** card of the Session

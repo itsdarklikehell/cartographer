@@ -1,6 +1,6 @@
 import { tileIdAt } from '../map/MapGeometry.js';
 import { mustGetElement } from '../ui/dom.js';
-import { confirmDelete, alertModal } from '../ui/Modal.js';
+import { confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
 import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
@@ -11,9 +11,9 @@ import {
   creaturesNear,
   creaturesOnTile,
   discoveredHostiles,
-  hostileCreaturesOnTile,
-  liveCreaturesOnTile,
+  hostileGroup,
 } from '../entities/CreatureMap.js';
+import { isDefeated } from '../entities/Creature.js';
 import { difficultyLine } from '../entities/EncounterDifficulty.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -40,67 +40,86 @@ export function wireEncounterPanels(app, { onStartCombat }) {
   const { state } = app;
 
   /**
-   * If the party's current tile holds a threat, show it in a modal over the
-   * map. A threat is an undefeated hostile creature standing there. A
-   * friendly or neutral creature is not a threat: it lists in the panel and
-   * the travelogue announces meeting it, but no modal opens. The
-   * first-meeting travelogue line lives in `meetCreaturesHere`
-   * (mapTravel.js), on the same arrival path.
+   * If a threat stands at the party's tile or next to it, show it in a
+   * modal over the map. A threat is an undefeated hostile creature of the
+   * encounter group (see `hostileGroup`), so foes staged on neighbouring
+   * tiles show in one alert. A friendly or neutral creature is not a
+   * threat: it lists in the NPCs panel and the travelogue announces meeting
+   * it, but no modal opens. The first-meeting travelogue line lives in
+   * `meetCreaturesHere` (mapTravel.js), on the same arrival path.
    *
    * The threat stays in place: a party that flees or ignores it still sees it
-   * in the sidebar for that node. This is only a walk-into-something alert.
-   * The readout follows the viewer role. The GM sees exact HP. A player sees
-   * the coarse status band. The app calls this
-   * after a real move, not on the initial render, so a fresh load does not
-   * show a popup. It defaults to the whole party at its shared position. A
-   * player who moves their own token passes that character's tile and name
-   * instead.
+   * in the sidebar for that node. The readout follows the viewer role. The
+   * GM sees exact HP and, with no fight running, a Set up combat button that
+   * opens the combat setup at once, next to Not now. A player sees the
+   * coarse status band and one Continue button, because only the GM starts
+   * a fight. The app calls this after a real move, not on the initial
+   * render, so a fresh load does not show a popup. It defaults to the whole
+   * party at its shared position. A player who moves their own token passes
+   * that character's tile and name instead.
    * @param {import('../types/map.js').PartyPosition} [position]
    * @param {string} [subject]
    */
-  app.actions.maybeTriggerEncounter = (
+  app.actions.maybeTriggerEncounter = async (
     position = app.partyTracker.getPosition(),
     subject = 'The party',
   ) => {
-    const here = hostileCreaturesOnTile(state.creatures, position);
+    const here = hostileGroup(state.creatures, position);
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
     const region = node ? node.name : position.nodeId;
-    const alert = arrivalAlert(here, {
-      gm: isGM(state.role),
-      subject,
-      region,
+    const gm = isGM(state.role);
+    const alert = arrivalAlert(here, { gm, subject, region });
+    if (!alert) return;
+    // The combat setup draws its roster from the party's shared position, so
+    // an alert for one character's token elsewhere offers no setup.
+    const party = app.partyTracker.getPosition();
+    const atParty = position.nodeId === party.nodeId && position.tileId === party.tileId;
+    if (!gm || !atParty || !canStartCombat()) {
+      await alertModal(alert.message, { title: alert.title, label: 'Continue' });
+      return;
+    }
+    const fight = await confirmModal(alert.message, {
+      title: alert.title,
+      confirmLabel: 'Set up combat',
+      cancelLabel: 'Not now',
     });
-    if (alert) alertModal(alert.message, { title: alert.title, label: 'Continue' });
+    if (fight) await onStartCombat();
   };
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what is relevant to the party's current position,
-    // split into two tabs. The Active tab lists every live creature on the
-    // party's exact tile, bystanders included. This is who the party stands
-    // with, and it is what a fight started here would draw in. Only the
-    // hostile ones raised the arrival alert. The Nearby tab lists the
-    // remaining hostiles within range. For the GM, this means hostile
-    // creatures within four times the fog reveal radius of the party, plus
-    // unplaced ones. For a player, this means only discovered hostiles: one
-    // on a tile the fog has revealed, or an unplaced one the party walked
-    // into.
-    getActiveEncounters: () => liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
+    // split into two tabs. The Active tab lists the undefeated hostiles of
+    // the encounter group: the party's tile and the tiles around it. These
+    // raised the arrival alert, and they are the foes a fight started here
+    // draws in. A friendly or neutral creature stays in the NPCs panel. The
+    // Nearby tab lists the remaining hostiles within range. For the GM, this
+    // means hostile creatures within four times the fog reveal radius of the
+    // party, plus unplaced ones. For a player, this means only discovered
+    // hostiles that still stand: one on a tile the fog has revealed, or an
+    // unplaced one the party walked into.
+    getActiveEncounters: () => hostileGroup(state.creatures, app.partyTracker.getPosition()),
     // The hint rates the same list the Active tab shows, so what the GM reads
     // is the fight the Start combat button would begin.
     getDifficulty: () =>
       difficultyLine(
         state.characters,
-        liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
+        hostileGroup(state.creatures, app.partyTracker.getPosition()),
       ),
     getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
-      const hereIds = new Set(liveCreaturesOnTile(state.creatures, position).map((c) => c.id));
+      const hereIds = new Set(hostileGroup(state.creatures, position).map((c) => c.id));
       const list = isGM(state.role)
         ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
             (c) => c.disposition === 'hostile',
           )
-        : discoveredHostiles(state.creatures, position, app.grid.getNode(position.nodeId) ?? null);
+        : // A player needs no record of a fallen foe, so a defeated one
+          // leaves the players' list.
+          discoveredHostiles(
+            state.creatures,
+            position,
+            app.grid.getNode(position.nodeId) ?? null,
+          ).filter((c) => !isDefeated(c));
       return list.filter((c) => !hereIds.has(c.id));
     },
     onUpdate: (edited) => {
@@ -149,11 +168,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
       app.toasts.show(`Saved "${creature.name}" to the bestiary.`);
     },
     confirmDelete: (creature) => confirmDelete(creature.name),
-    // Only the GM can start combat. The button shows only to the GM, and
-    // only while the party stands on a tile holding a live creature, with
-    // no fight running. A non-hostile creature is enough: a party that
-    // turns on a bystander is not stopped, it only gets no arrival alert.
-    canStartCombat: () => isGM(state.role) && state.combat === null && creaturesHere(),
+    canStartCombat,
     onStartCombat,
     getRole: () => state.role,
   });
@@ -237,10 +252,15 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     );
   };
 
-  // Whether the party stands on anything a fight could involve: at least
-  // one live creature on its exact tile, whatever its disposition. The
-  // arrival alert keeps its own, hostile-only read.
-  function creaturesHere() {
-    return liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()).length > 0;
+  // Only the GM can start combat. The button shows only to the GM, and only
+  // while an undefeated hostile stands in the encounter group of the party,
+  // with no fight running. To fight a friendly or neutral creature, the GM
+  // first sets its disposition to hostile.
+  function canStartCombat() {
+    return (
+      isGM(state.role) &&
+      state.combat === null &&
+      hostileGroup(state.creatures, app.partyTracker.getPosition()).length > 0
+    );
   }
 }

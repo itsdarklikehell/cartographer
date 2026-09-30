@@ -1,19 +1,21 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
-import { creaturesOnTile } from '../entities/CreatureMap.js';
+import { encounterGroup, isOnTile } from '../entities/CreatureMap.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { createParticipant } from './Initiative.js';
 
 /**
- * The combatants of a fight that starts on the party's tile, and the log line
+ * The combatants of a fight that starts where the party stands, and the log line
  * of the initiative roll. `app/encounterWiring.js` opens the setup dialog with
  * these.
  */
 
 /**
  * The combatants are everyone involved in this encounter: the whole party,
- * plus every creature on the party's tile. Hostile creatures line up as foes.
- * Friendly and neutral ones line up with the party. Each combatant carries its
+ * the undefeated hostile creatures of the encounter group (the party's tile
+ * and the tiles around it), and any friendly or neutral creature on the
+ * party's own tile. Hostile creatures line up as foes. Friendly and neutral
+ * ones line up with the party. Each combatant carries its
  * DEX modifier. This modifier seeds the default value (10 + modifier, the
  * passive baseline), adds to the d20 roll from Roll initiative, and shows
  * beside the name. The GM can edit every value by hand.
@@ -29,9 +31,10 @@ export function combatRoster(characters, creatures, position) {
     return createParticipant(id, 10 + mod, mod);
   };
   // A defeated hostile stays staged but takes no part in a new fight. A
-  // bystander joins whatever its condition.
-  const roster = creaturesOnTile(creatures, position).filter(
-    (c) => c.disposition !== 'hostile' || !isDefeated(c),
+  // bystander on the party's tile joins whatever its condition. One on a
+  // neighbouring tile stays out, because it is not part of the encounter.
+  const roster = encounterGroup(creatures, position).filter((c) =>
+    c.disposition === 'hostile' ? !isDefeated(c) : isOnTile(c, position),
   );
   return [
     ...characters.map((c) => withDex(c.id, effectiveStats(c))),
