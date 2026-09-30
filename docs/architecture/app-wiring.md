@@ -318,12 +318,16 @@ The gesture layers live beside `mapWiring.js`, each in its own file:
 - `mapAuthoring.js` handles Build mode: paint, erase, and region strokes,
   drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` and
   `finishEdit` on the `MapEnv`, and `undoStroke` as an action).
-- `mapTravel.js` handles Play mode: cell clicks, teleports, discovery of
+- `mapTravel.js` handles Play mode: cell clicks, discovery of
   points of interest, and meetings with NPCs. It keeps its own views in step
   and does not call `resyncMapViews`.
 - `mapExitTravel.js` handles the ways out of the node in view: a return to
   the parent node, and a walk across a border into the region beside it.
   `mapTravel.js` builds it and gives it the click helpers they share.
+- `mapTeleport.js` handles a Play-mode pick in the World panel. A GM pick
+  of another node asks whether to view that map or to teleport the party.
+- `mapSightings.js` logs "Sighted" and the name of a sub-map when a move
+  reveals a tile that links to it (`Sightings.sightedLinks`).
 - `mapHover.js` builds the Play-mode hover tooltip.
 
 `mapTravel.js` also applies these rules to clicks and zooms:

@@ -21,6 +21,7 @@ import { isGM } from '../view/ViewRole.js';
  * @property {() => import('../types/entities.js').Character | null} clickSubject
  * @property {(tile: import('../types/map.js').Tile, nodeId?: string) => void} discoverTile
  * @property {(subject: import('../types/entities.js').Character | null) => import('../types/map.js').PartyPosition} positionOf
+ * @property {(before: MapNode | undefined, except?: string | null) => void} noteSightings
  * @property {() => void} refreshLocationPanels
  */
 
@@ -72,6 +73,7 @@ export function createExitTravel(app, env, travel) {
       env.goToNode(parent.id);
       return;
     }
+    const parentBefore = grid.getNode(parent.id);
     const through = entryFor(state.entryTiles, travelerFor(subject), child.id);
     const landing = computeParentReturnTile(parent, child, exit, from, through);
     if (subject) {
@@ -82,7 +84,7 @@ export function createExitTravel(app, env, travel) {
       // Read the parent node back out of the grid, so the reveal around the
       // landing point builds on any write made since the lookup above.
       const fresh = grid.getNode(parent.id) ?? parent;
-      grid.updateNode(revealAround(fresh, landing, partyTracker.revealRadius));
+      grid.updateNode(revealAround(fresh, landing, partyTracker.sightFor(fresh)));
     } else {
       partyTracker.moveTo(parent.id, landing); // reveals fog around the landing itself
       state.characters = recallAll(state.characters);
@@ -95,6 +97,7 @@ export function createExitTravel(app, env, travel) {
         ? `${subject.name} returns to ${parent.name}.`
         : `The party returns to ${parent.name}.`,
     );
+    travel.noteSightings(parentBefore);
     app.actions.markDirty();
     travel.refreshLocationPanels();
     if (subject) {
@@ -162,6 +165,7 @@ export function createExitTravel(app, env, travel) {
     // Check this before the move reveals entry fog. An all-fogged region has
     // never been visited, so the crossing is its discovery.
     const firstVisit = !target.tiles.some((t) => t.revealed);
+    const targetBefore = grid.getNode(target.id);
     const landing = computeCrossingEntryTile(parent, target, tile.id);
     grid.updateNode(revealAround(parent, tile.id, 0));
     if (subject) {
@@ -170,7 +174,7 @@ export function createExitTravel(app, env, travel) {
         tileId: landing,
       });
       const fresh = grid.getNode(target.id) ?? target;
-      grid.updateNode(revealAround(fresh, landing, partyTracker.revealRadius));
+      grid.updateNode(revealAround(fresh, landing, partyTracker.sightFor(fresh)));
     } else {
       partyTracker.moveTo(target.id, landing); // reveals fog around the landing itself
       state.characters = recallAll(state.characters);
@@ -192,6 +196,7 @@ export function createExitTravel(app, env, travel) {
           ? `Discovered ${target.name}.`
           : `The party crosses into ${target.name}.`,
     );
+    travel.noteSightings(targetBefore);
     app.actions.markDirty();
     travel.refreshLocationPanels();
     if (moved) {

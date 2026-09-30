@@ -284,7 +284,7 @@ export function wireGenerateAction(app, env) {
     if (seers.length) {
       let revealed = grid.getNode(node.id) ?? fresh;
       for (const at of seers) {
-        revealed = revealAround(revealed, at.tileId, partyTracker.revealRadius);
+        revealed = revealAround(revealed, at.tileId, partyTracker.sightFor(revealed));
       }
       grid.updateNode(revealed);
     }

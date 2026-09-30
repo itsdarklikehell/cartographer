@@ -228,13 +228,21 @@ export function computeParentReturnTile(parent, child, exit, position, throughTi
   const at = exit.kind === 'tile' ? (parseCoords(exit.tileId) ?? from) : from;
   const side = exit.kind === 'edge' ? exit.side : at ? nearestSide(child, at) : 'north';
   const along = at ?? { x: Math.floor(child.width / 2), y: Math.floor(child.height / 2) };
+  // A door leads back out beside the block tile the party came in through,
+  // on the side the door faces. A projection of a door in the middle of a
+  // wall falls between the two middle tiles of an even block, and rounds
+  // to the tile that the party did not use.
+  const via =
+    exit.kind === 'tile' && throughTileId && group.tileIds.includes(throughTileId)
+      ? parseCoords(throughTileId)
+      : null;
   let x;
   let y;
   if (sideAxis(side) === 'x') {
-    x = projectBack(along.x, child.width, group.minX, group.maxX);
+    x = via ? via.x : projectBack(along.x, child.width, group.minX, group.maxX);
     y = side === 'north' ? group.minY - 1 : group.maxY + 1;
   } else {
-    y = projectBack(along.y, child.height, group.minY, group.maxY);
+    y = via ? via.y : projectBack(along.y, child.height, group.minY, group.maxY);
     x = side === 'west' ? group.minX - 1 : group.maxX + 1;
   }
   // A block flush against the parent's north or west edge projects to a

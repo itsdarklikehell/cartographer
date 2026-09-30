@@ -710,8 +710,10 @@ sees only the nodes that the party discovered. A discovered node has at
 least one revealed tile, or it is where the party stands.
 
 A click on a row name in the World panel opens that map in a Player tab.
-In a GM tab, it offers to teleport the party there, and **Teleport** moves
-the party.
+In a GM tab, a click on the map where the party stands opens that map. A
+click on any other row asks what to do. **View map** opens the map and
+leaves the party where it is, as the breadcrumb does. **Teleport party**
+moves the party there.
 
 ### Map controls
 
@@ -846,9 +848,28 @@ that you pick. If you cancel, the party stays split.
 
 | Range | Distance from the party (tiles) | What it sets |
 | --- | --- | --- |
-| Fog reveal radius | 2 | The radius that movement reveals. A revealed tile stays revealed |
-| Detection range | 4 (twice the reveal radius) | The range at which encounter, NPC, and point-of-interest markers show |
-| Nearby range | 8 (four times the reveal radius) | The range of the GM lists of nearby encounters and NPCs |
+| Sight | See the table below | The radius that movement reveals. A revealed tile stays revealed |
+| Detection range | 4 | The range at which encounter, NPC, and point-of-interest markers show |
+| Nearby range | 8 | The range of the GM lists of nearby encounters and NPCs |
+
+The sight of the party depends on the map and on the watch of the in-game
+clock. The detection range and the Nearby range stay the same at every
+hour.
+
+| Map | Sight (tiles) |
+| --- | --- |
+| The world map | 2 |
+| An outdoor map below the world map, from Dawn to Afternoon | 3 |
+| An outdoor map below the world map, at Dusk | 2 |
+| An outdoor map below the world map, at Night | 1 |
+| A building interior | 2 |
+
+When the party is on a sub-map, the tiles that link to it on each map above
+are revealed too. So the world map shows the region where the party stands.
+
+When a tile that links to a sub-map first comes out of the fog, the
+Travelogue logs "Sighted" and the name of the sub-map. A discoverable site
+that the party has not found stays out of the log.
 
 A hover on a tile in Play mode names the point of interest and the NPCs on
 it. The keyboard cursor does the same. The hover uses the detection range,

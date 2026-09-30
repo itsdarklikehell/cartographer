@@ -355,10 +355,12 @@ controls.
 1. Find a way out. An arrow at the edge of the map reads **Leave to** and
    the name of the map above. A door or a staircase that leads out has a
    chevron badge.
-2. Click the arrow, or move the party onto the door or the staircase.
+2. Click the arrow, or click the door or the staircase.
 
-The party walks out onto the map above. It stands beside the tile that
-links to the sub-region, on the side of the exit that it used.
+A click on a door or a staircase walks the party to it and out in one
+click. The party walks out onto the map above. It stands beside the tile
+that links to the sub-region, on the side of the exit that it used. From a
+door, the party stands beside the tile that it came in through.
 
 To leave with the keyboard, press an arrow key toward the edge twice. The
 first press lights the exit, and the second press walks out.

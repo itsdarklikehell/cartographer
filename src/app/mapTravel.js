@@ -1,11 +1,10 @@
 import { updateTileMetadata } from '../map/TileGrid.js';
-import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
-import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
+import { parseCoords } from '../map/MapGeometry.js';
+import { computeRegionEntryTile } from '../map/EntryPoint.js';
 import { exitForTile, findExits } from '../map/MapExits.js';
 import {
   entryFor,
   forgetCharacterEntries,
-  forgetEntries,
   rememberEntry,
   travelerFor,
 } from '../map/EntryMemory.js';
@@ -20,6 +19,8 @@ import { meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { createCellHover } from './mapHover.js';
 import { createExitTravel } from './mapExitTravel.js';
+import { createSightingLog } from './mapSightings.js';
+import { createTeleport } from './mapTeleport.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -36,12 +37,15 @@ import { createExitTravel } from './mapExitTravel.js';
  */
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
+  const noteSightings = createSightingLog(app);
   const { exitToParent, veilCrossing } = createExitTravel(app, env, {
     clickSubject,
     discoverTile,
+    noteSightings,
     positionOf,
     refreshLocationPanels,
   });
+  const teleportToNode = createTeleport(app, env, { noteSightings, refreshLocationPanels });
 
   /** Landing where a placed creature stands is the introduction. Mark the
    * creature met, and log the meeting once per creature: "encounters" for a
@@ -71,55 +75,6 @@ export function createMapTravel(app, env) {
     app.views.initiativePanel.update();
     app.views.npcPanel.update();
     app.views.handoutPanel.update();
-  }
-
-  /**
-   * Offer to teleport the party to a discovered node. A click on the node
-   * the party already occupies just brings the view back to it. Otherwise, a
-   * confirm dialog gates the move. The party lands on the node's first
-   * revealed tile. A discovered node with tiles always has one. A tile-less
-   * node falls back to the grid center.
-   * @param {string} nodeId
-   */
-  async function teleportToNode(nodeId) {
-    const node = grid.getNode(nodeId);
-    if (!node) return;
-    // Teleporting the party is the GM's decision. When a player selects a
-    // node, the view brings it into view without moving anyone.
-    if (!isGM(state.role) || partyTracker.getPosition().nodeId === nodeId) {
-      env.goToNode(nodeId);
-      return;
-    }
-    const ok = await confirmModal(`Would you like to teleport to "${node.name}"?`, {
-      confirmLabel: 'Teleport',
-    });
-    if (!ok) return;
-    // Resolve the landing spot against the node's real tiles. This makes
-    // sure that a teleport into a sparse or walled node, for example a
-    // generated dungeon, never strands the party on a wall or an empty
-    // cell.
-    const target = resolveEntryTile(
-      node,
-      node.tiles.find((t) => t.revealed)?.id ??
-        tileIdAt(Math.floor(node.width / 2), Math.floor(node.height / 2)),
-    );
-    // No revealed tile means the party has never set foot here. This
-    // teleport is then the region's discovery. The code checks this before
-    // moveTo reveals fog.
-    const firstVisit = !node.tiles.some((t) => t.revealed);
-    partyTracker.moveTo(nodeId, target);
-    state.characters = recallAll(state.characters); // the whole party teleports
-    // A teleport arrives through no block of the parent, so any memory of an
-    // earlier walk in no longer describes where the party stands. Nobody
-    // holds their own location after the recall either.
-    state.entryTiles = forgetCharacterEntries(forgetEntries(state.entryTiles, [nodeId]));
-    env.goToNode(nodeId);
-    app.actions.logEvent(
-      'travel',
-      firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`,
-    );
-    refreshLocationPanels();
-    app.actions.maybeTriggerEncounter();
   }
 
   /**
@@ -212,9 +167,11 @@ export function createMapTravel(app, env) {
       character.id,
       rejoined ? null : { nodeId, tileId: tile.id },
     );
-    const radius = partyTracker.revealRadius;
-    const walked = revealAlong(navigator.getCurrentNode(), path, radius);
+    const before = navigator.getCurrentNode();
+    const radius = partyTracker.sightFor(before);
+    const walked = revealAlong(before, path, radius);
     grid.updateNode(revealAround(walked, tile.id, radius));
+    noteSightings(before);
     discoverTile(tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.syncPartyMarker();
@@ -394,17 +351,17 @@ export function createMapTravel(app, env) {
           // way, and the whole party spends the time of it.
           if (path) {
             const walked = grid.getNode(parent.id) ?? parent;
-            grid.updateNode(revealAlong(walked, path, partyTracker.revealRadius));
+            grid.updateNode(revealAlong(walked, path, partyTracker.sightFor(walked)));
+            noteSightings(walked, child.id);
           }
           if (path !== undefined && !subject) spendWalk(tile, path, parent);
+          const childBefore = navigator.getCurrentNode();
           if (subject) {
             state.characters = moveCharacter(state.characters, subject.id, {
               nodeId: child.id,
               tileId: entry,
             });
-            grid.updateNode(
-              revealAround(navigator.getCurrentNode(), entry, partyTracker.revealRadius),
-            );
+            grid.updateNode(revealAround(childBefore, entry, partyTracker.sightFor(childBefore)));
           } else {
             partyTracker.moveTo(child.id, entry);
             state.characters = recallAll(state.characters);
@@ -432,6 +389,7 @@ export function createMapTravel(app, env) {
                 ? `Discovered ${child.name}.`
                 : `Entered ${child.name}.`,
           );
+          noteSightings(childBefore);
           app.actions.markDirty(); // position and fog changed
         }
         // Re-read the node. The move above wrote a new, fog-revealed node
@@ -459,16 +417,21 @@ export function createMapTravel(app, env) {
       }
       return;
     }
-    // A door or stairway out of an interior is also an ordinary tile to walk
-    // onto. It leads out only once whoever the click moves stands on it.
-    // Otherwise the party can never stand in a doorway, and a stray click
-    // at the far end of a dungeon level takes the party out of it. The
-    // exit buttons travel through the same door in one press for anyone who
-    // needs that.
+    // A click on a door or stairway out of an interior walks whoever the
+    // click moves to it and leads them out in one click. The walk clears
+    // the fog on the way and spends its time. A forced move onto the door
+    // (no walk reaches it) only puts the party in the doorway, and a second
+    // click leads out.
     const exit = exitForTile(currentExits(), tile.id);
     if (exit) {
+      const here = navigator.getCurrentNode();
       const at = positionOf(subject);
-      if (at.nodeId === navigator.getCurrentNode().id && at.tileId === tile.id) {
+      const onDoor = at.tileId === tile.id;
+      if (at.nodeId === here.id && (onDoor || path)) {
+        if (!onDoor && path) {
+          if (!subject && gm) spendWalk(tile, path);
+          grid.updateNode(revealAlong(here, path, partyTracker.sightFor(here)));
+        }
         exitToParent(exit);
         return;
       }
@@ -479,8 +442,10 @@ export function createMapTravel(app, env) {
     }
     if (gm) {
       if (path !== undefined) spendWalk(tile, path);
-      partyTracker.moveTo(navigator.getCurrentNode().id, tile.id, path ?? []);
+      const before = navigator.getCurrentNode();
+      partyTracker.moveTo(before.id, tile.id, path ?? []);
       state.characters = recallAll(state.characters);
+      noteSightings(before);
       discoverTile(tile);
       env.mapCanvas.refreshNode(navigator.getCurrentNode());
       env.syncPartyMarker();

@@ -27,6 +27,7 @@ import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
 import { holdShortenedBoot } from './app/shortenedLoadPrompts.js';
 import { openAssetMirror } from './storage/AssetMirror.js';
+import { sightRadius } from './party/Sight.js';
 import { openIndexedDbAssets } from './storage/IndexedDbAssets.js';
 
 // Image payloads live in IndexedDB, and every reader of a stored campaign
@@ -84,6 +85,9 @@ function start() {
       actions: {},
     })
   );
+
+  // Fog clears farther on an outdoor map in daylight than at night.
+  partyTracker.setSight((node) => sightRadius(node, app.state.clock));
 
   // The order below is a dependency order, not a preference. Almost every
   // cross-module reference resolves when an event fires, long after all of

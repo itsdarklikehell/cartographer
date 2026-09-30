@@ -51,7 +51,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
         // A placed character sees around the tile, the same as a character
         // that walks there.
         if (node) {
-          app.grid.updateNode(revealAround(node, location.tileId, app.partyTracker.revealRadius));
+          app.grid.updateNode(revealAround(node, location.tileId, app.partyTracker.sightFor(node)));
           app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
           app.views.regionTree.update();
         }

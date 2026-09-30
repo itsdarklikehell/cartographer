@@ -1,12 +1,15 @@
-import { revealAlong, revealAround } from '../map/FogOfWar.js';
+import { revealAlong, revealAround, revealLinksTo } from '../map/FogOfWar.js';
 
+/** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../map/TileGrid.js').TileGrid} TileGrid */
 
 /**
  * Tracks the party's current position: which node, and which tile within
  * it. This class reveals fog around that tile whenever the party moves, and
- * writes the revealed node straight back into the given TileGrid.
+ * writes the revealed node straight back into the given TileGrid. Each move
+ * also reveals the block that links to the party's node on every map above
+ * it, so the world map shows the region the party is in.
  */
 export class PartyTracker {
   /**
@@ -16,9 +19,30 @@ export class PartyTracker {
    */
   constructor(grid, position, options = {}) {
     this.grid = grid;
+    /** The fixed range of markers and of the Nearby list, in tiles. */
     this.revealRadius = options.revealRadius ?? 2;
+    /** @type {((node: MapNode) => number) | null} */
+    this.sight = null;
     this.position = position;
     this._revealAroundCurrent();
+  }
+
+  /**
+   * Set how far the party sees on a node, for fog reveal only. Without it,
+   * the fog clears to `revealRadius`.
+   * @param {(node: MapNode) => number} sight
+   */
+  setSight(sight) {
+    this.sight = sight;
+  }
+
+  /**
+   * The radius of fog that the party clears on `node`.
+   * @param {MapNode} node
+   * @returns {number}
+   */
+  sightFor(node) {
+    return this.sight ? this.sight(node) : this.revealRadius;
   }
 
   /** @returns {PartyPosition} */
@@ -44,7 +68,26 @@ export class PartyTracker {
   _revealAroundCurrent(path = []) {
     const node = this.grid.getNode(this.position.nodeId);
     if (!node) throw new Error(`PartyTracker: unknown node "${this.position.nodeId}"`);
-    const walked = revealAlong(node, path, this.revealRadius);
-    this.grid.updateNode(revealAround(walked, this.position.tileId, this.revealRadius));
+    const radius = this.sightFor(node);
+    const walked = revealAlong(node, path, radius);
+    this.grid.updateNode(revealAround(walked, this.position.tileId, radius));
+    this.revealAncestors(node);
+  }
+
+  /**
+   * Reveal the link tiles of `node` on its parent, and of the parent on its
+   * parent, up to the root. A map above that is already revealed there stays
+   * the same object, so the caches keyed on it stay warm.
+   * @param {MapNode} node
+   */
+  revealAncestors(node) {
+    let child = node;
+    let parent = this.grid.getParent(child);
+    while (parent) {
+      const revealed = revealLinksTo(parent, child.id);
+      if (revealed !== parent) this.grid.updateNode(revealed);
+      child = revealed;
+      parent = this.grid.getParent(revealed);
+    }
   }
 }

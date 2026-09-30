@@ -844,11 +844,22 @@ is a set of pure functions over a MapNode that manage the flag:
   away from an area never fogs it again.
 - `revealAlong(node, tileIds, radius)` calls `revealAround` for each tile of
   a walk, so the party sees what it passes on a long walk.
+- `revealLinksTo(node, childId)` reveals the tiles of `node` that link to one
+  child. `PartyTracker.revealAncestors` calls it on every map above the
+  party's node, so the world map shows the region where the party stands.
 - `withinRadius(tileId, centerId, radius)` applies the same Euclidean cutoff
   as a standalone predicate. `CreatureMap.creaturesNear` uses it.
 - `hideAll(node)` resets a node to fully unrevealed, and `revealedCount(node)`
   counts the revealed tiles. The tests and the benchmarks use them, and no app
   code calls them.
+
+The radius of a move comes from `party/Sight.js`. `sightRadius(node, clock)`
+gives 3 tiles on an outdoor map below the world map from Dawn to Afternoon,
+2 at Dusk, and 1 at Night. It gives 2 in an interior and on the world map at
+every hour. `main.js` hands it to `PartyTracker.setSight`, and every fog
+reveal of a move reads `PartyTracker.sightFor(node)`. The marker range and
+the Nearby lists read the fixed `revealRadius` instead, so a foe does not
+drop out of the Nearby list when night falls.
 
 ### Marker range
 
@@ -1251,9 +1262,17 @@ whoever a click moves. That is the whole party for the GM, and one character
 while the split-party switch is on. A spectator tab moves no one, and it
 follows the camera out instead.
 
-A `tile` exit also stays an ordinary tile to walk onto. It leads out only
-once the mover already stands on it, because otherwise the party could never
-stand in a doorway. The exit buttons take the same door in one press.
+A click on a `tile` exit walks the mover to the door along the path from
+`walkPath`, spends the time of the walk, and then leads out, all in one
+click. A forced move onto a door (no walk reaches it) only puts the mover in
+the doorway, and a second click leads out. The exit buttons take the same
+door in one press.
+
+`EntryPoint.computeParentReturnTile` lands a mover who leaves by a door
+beside the block tile that they came in through, on the side that the door
+faces. A projection of the door position alone falls between the two middle
+tiles of an even block, such as a 2x2 building, and rounds to the right or
+lower one, which can be the tile that the party did not use.
 
 `syncExits` in `app/mapWiring.js` is the one place that computes the list
 again, and it updates the canvas and the button list together. It runs from

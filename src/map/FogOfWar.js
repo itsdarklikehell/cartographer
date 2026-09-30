@@ -153,3 +153,39 @@ export function discoveredNodes(nodes, party) {
 
 /** @type {(node: MapNode) => boolean} */
 const hasRevealed = memoizeByIdentity((node) => node.tiles.some((tile) => tile.revealed));
+
+/** The positions of the tiles that link to each child node, by child id. */
+const linkPositions = memoizeByIdentity(
+  /** @param {MapNode} node */
+  (node) => {
+    /** @type {Map<string, number[]>} */
+    const byChild = new Map();
+    node.tiles.forEach((tile, pos) => {
+      if (!tile.childNodeId) return;
+      const list = byChild.get(tile.childNodeId);
+      if (list) list.push(pos);
+      else byChild.set(tile.childNodeId, [pos]);
+    });
+    return byChild;
+  },
+);
+
+/**
+ * Reveal the tiles of `node` that link to the child node `childId`. A party
+ * inside a region has seen that region, so its block on the map above
+ * shows through the fog even when the party never walked the map above.
+ * A node whose link tiles are already revealed, or that has no link to the
+ * child, comes back unchanged.
+ * @param {MapNode} node
+ * @param {string} childId
+ * @returns {MapNode}
+ */
+export function revealLinksTo(node, childId) {
+  /** @type {Map<number, import('../types/map.js').Tile> | null} */
+  let changed = null;
+  for (const pos of linkPositions(node).get(childId) ?? []) {
+    const tile = node.tiles[pos];
+    if (!tile.revealed) (changed ??= new Map()).set(pos, { ...tile, revealed: true });
+  }
+  return changed ? withTilesReplaced(node, changed) : node;
+}
