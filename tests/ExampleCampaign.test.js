@@ -157,6 +157,20 @@ test('each group of foes shares one tile, so the party meets it as one encounter
   assert.ok(den && overlayList(den).some((r) => r.includes('/road/')), 'the pack hunts the road');
 });
 
+test('no hostile creature stands within one tile of the party at the start', () => {
+  const [px, py] = campaign.party.tileId.split(',').map(Number);
+  for (const c of campaign.creatures) {
+    if (c.location?.nodeId !== campaign.party.nodeId || c.disposition !== 'hostile') continue;
+    const [x, y] = c.location.tileId.split(',').map(Number);
+    assert.ok(Math.max(Math.abs(x - px), Math.abs(y - py)) >= 2, c.id);
+  }
+  const farm = nodeOf('briarwick-vale').tiles.find((t) =>
+    String(t.metadata.notes).startsWith('A farmstead hit in the goblin raids'),
+  );
+  const scout = creature('goblin-scout').location?.tileId ?? '';
+  assert.ok(farm && tileDistance(scout, farm.id) <= 2, 'the scout stays near the farm');
+});
+
 test('Sister Alwyn stands beside the altar, on floor that a walk from the door reaches', () => {
   const place = creature('sister-alwyn').location;
   const temple = nodeOf(place?.nodeId ?? '');

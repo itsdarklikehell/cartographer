@@ -10,6 +10,7 @@ import {
   reachableFrom,
   stampMarker,
   tileDistance,
+  tileXY,
 } from './ExampleStaging.js';
 
 /** @typedef {import('./ExampleWorld.js').RegionStage} RegionStage */
@@ -233,7 +234,19 @@ export const REGION_STAGES = {
       'A farmstead hit in the goblin raids. The house still stands, but the barn behind it burned to the ground, and its charred door is scored with claw marks far too orderly to be animal.',
     );
     put(stage, 'farm', farm);
-    put(stage, 'goblinScout', besideTile(gen, farm));
+    // The scout lurks near the farm but out of the party's encounter range
+    // (one tile on every side) at the start, so the first fight waits until
+    // the party walks over.
+    const start = tileXY(stage.places.start.tileId);
+    const clear = (/** @type {Tile} */ t) => {
+      const [x, y] = tileXY(t.id);
+      return Math.max(Math.abs(x - start[0]), Math.abs(y - start[1])) >= 2;
+    };
+    const lurk = makeSpotPicker(gen, (t) => isStandable(t) && !t.metadata.poiType && clear(t), {
+      from: farm,
+      near: true,
+    });
+    put(stage, 'goblinScout', lurk());
     const village = stage.gen.sites.findIndex(
       (s, i) => i !== town && ['village', 'settlement'].includes(s.label),
     );
