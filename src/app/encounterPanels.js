@@ -16,7 +16,8 @@ import {
 import { isDefeated } from '../entities/Creature.js';
 import { difficultyLine } from '../entities/EncounterDifficulty.js';
 import { arrivalAlert } from '../combat/Arrival.js';
-import { labelsAcross } from '../combat/DisplayNames.js';
+import { encounterLabels } from '../combat/DisplayNames.js';
+import { combatRoster } from '../combat/CombatRoster.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { addLethargy } from './lethargy.js';
@@ -89,10 +90,10 @@ export function wireEncounterPanels(app, { onStartCombat }) {
   };
 
   // The two tabs share one numbering of the foes that share a name, so two
-  // wolves never both read "Wolf 1". The Active tab takes the low numbers,
-  // the ones a fight started here gives its foes. A fight numbers only its
-  // own foes, so an Active foe that is the only one of its name in the group
-  // shows as "Wolf 1" here and as "Wolf" in the fight.
+  // wolves never both read "Wolf 1". A foe of the fight takes the label the
+  // fight gives it. With no fight running, the fight is the one Start combat
+  // would begin here, so the setup dialog shows the same labels. A defeated
+  // foe leaves the Active tab but stays in a running fight's count.
   /** @type {Map<string, string>} */
   let labels = new Map();
 
@@ -116,8 +117,10 @@ export function wireEncounterPanels(app, { onStartCombat }) {
           app.grid.getNode(position.nodeId) ?? null,
         ).filter((c) => !isDefeated(c));
     const nearby = list.filter((c) => !hereIds.has(c.id));
-    labels = labelsAcross(
+    const fight = state.combat?.order ?? combatRoster(state.characters, state.creatures, position);
+    labels = encounterLabels(
       [...state.characters, ...state.creatures],
+      fight.map((p) => p.id),
       [hereIds, nearby.map((c) => c.id)],
     );
     return { group, nearby };

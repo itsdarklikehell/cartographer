@@ -1095,10 +1095,13 @@ Combatants that share a name get a number after it, such as "Goblin
 Scout 1" and "Goblin Scout 2". The numbers follow the order of the creature
 list. The rows of the Encounters panel, the combat status line in the
 sidebar, the combat screen, and the attack and spell dialogs use the same
-numbers. The Active and Nearby tabs share one numbering, and the Active tab
-comes first, so two foes never show the same label. A foe that is the only
-one of its name in a fight shows no number there, even when the panel
-numbers it. The log and the stored name keep the plain name.
+numbers. The Active tab and the setup dialog number the foes of the fight
+that Start combat would begin, or of the fight that runs, so a foe shows
+the same label in the panel, the dialog, and the fight. A foe that is the
+only one of its name in the fight shows no number. The Nearby tab counts on
+after the fight, so a second wolf nearby reads "Wolf 2" beside a lone
+"Wolf" in the Active tab. A defeated foe keeps its place in the count of a
+running fight. The log and the stored name keep the plain name.
 
 | Control | What it does |
 | --- | --- |
