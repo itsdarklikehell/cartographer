@@ -11,11 +11,8 @@ pnpm install --frozen-lockfile
 echo "Building for production..."
 pnpm run build
 
-# Tag the source commit that this deploy is built from, so the published
-# output can always be traced back to its source. The tag is local; push it
-# with the release when the tree is clean.
+# The version names the deploy commit on gh-pages.
 VERSION=$(node -p "require('./package.json').version")
-git tag -f "deploy-v$VERSION"
 
 # Navigate into the build output directory
 cd dist

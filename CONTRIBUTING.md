@@ -109,7 +109,7 @@ The build writes minified bundles to `dist/`. Each bundle name has a content has
 
 > **Warning:** `pnpm run deploy` force-pushes `dist/` to the `gh-pages` branch of the public repository, and it replaces the published site. Only a maintainer runs it.
 
-The deploy script installs the exact versions in the lockfile, builds, tags the source commit as `deploy-v<version>` in your local clone, and pushes. Push the tag yourself with the release.
+The deploy script installs the exact versions in the lockfile, builds, and pushes. The commit on `gh-pages` names the version from `package.json`.
 
 ## Send a change
 
