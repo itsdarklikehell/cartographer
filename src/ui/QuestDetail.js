@@ -153,6 +153,7 @@ function gmObjective(quest, objective, index, ctx, callbacks) {
         icon: hidden ? 'eye-off' : 'eye',
         label: hidden ? `Reveal ${text} to players` : `Hide ${text} from players`,
         pressed: !hidden,
+        focusKey: `reveal:${quest.id}:${id}`,
         onClick: change((q) => toggleObjectiveHidden(q, id)),
       },
       quest,

@@ -83,6 +83,7 @@ export function mountHandoutPanel(container, callbacks) {
             ? `Hide ${handout.title} from players`
             : `Reveal ${handout.title} to players`,
           pressed: handout.revealed,
+          focusKey: `reveal:${handout.id}`,
           onClick: () => callbacks.onToggle(handout),
         },
         handout,

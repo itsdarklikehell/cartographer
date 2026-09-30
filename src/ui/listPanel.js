@@ -43,6 +43,8 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
 /**
  * One wired button on a row. `pressed` sets `aria-pressed`, for the
  * toggles that flip a quest's status or a handout's visibility.
+ * `focusKey` names a toggle whose label changes when pressed, so focus
+ * finds it again after the rebuild (see `focusMemory.js`).
  * @template T
  * @typedef {{
  *   icon: import('./icons.js').IconName,
@@ -50,6 +52,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  *   title?: string,
  *   variant?: import('./buttons.js').ButtonVariant,
  *   pressed?: boolean,
+ *   focusKey?: string,
  *   onClick: (entry: T) => unknown,
  * }} RowAction
  */
@@ -176,6 +179,7 @@ export function mountListPanel(container, options) {
       { variant: spec.variant, title: spec.title },
     );
     if (spec.pressed !== undefined) button.setAttribute('aria-pressed', String(spec.pressed));
+    if (spec.focusKey) button.dataset.focusKey = spec.focusKey;
     return button;
   }
 

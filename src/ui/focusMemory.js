@@ -16,6 +16,11 @@
  * signature is unique per row. An unlabeled control falls back to its
  * index among the controls that share its signature.
  *
+ * A toggle whose label names its next action, such as "Reveal X to players"
+ * and "Hide X from players", changes its name on each press. It sets
+ * `data-focus-key` to a name that does not change, and the signature is
+ * that key alone.
+ *
  * A signature that no longer exists restores nothing. This is the case
  * where the row went away, and the old behavior is the correct one.
  *
@@ -65,6 +70,8 @@ function hasCaret(node) {
  * @returns {string}
  */
 export function controlSignature(node) {
+  const key = node.getAttribute('data-focus-key');
+  if (key !== null) return `key|${key}`;
   const label =
     node.getAttribute('aria-label') ??
     node.getAttribute('title') ??

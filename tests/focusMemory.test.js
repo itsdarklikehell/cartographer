@@ -50,6 +50,14 @@ test('controlSignature reads the accessible name first', () => {
   assert.equal(controlSignature(button), 'BUTTON||icon-btn|Damage Goblin Scout');
 });
 
+test('controlSignature uses a focus key in place of the label', () => {
+  const toggle = node('BUTTON', {
+    'aria-label': 'Reveal Map to players',
+    'data-focus-key': 'reveal:map',
+  });
+  assert.equal(controlSignature(toggle), 'key|reveal:map');
+});
+
 test('controlSignature falls back to the title, then to the text', () => {
   assert.equal(controlSignature(node('BUTTON', { title: 'Edit' })), 'BUTTON|||Edit');
   assert.equal(controlSignature(node('BUTTON', { text: '  New quest  ' })), 'BUTTON|||New quest');

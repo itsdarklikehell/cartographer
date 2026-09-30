@@ -114,6 +114,7 @@ export function mountQuestPanel(container, callbacks) {
           icon: 'chevron',
           label: open ? `Hide details of ${quest.title}` : `Show details of ${quest.title}`,
           pressed: open,
+          focusKey: `details:${quest.id}`,
           onClick: () => {
             if (open) expanded.delete(quest.id);
             else expanded.add(quest.id);
@@ -135,6 +136,7 @@ export function mountQuestPanel(container, callbacks) {
                 ? `Hide ${quest.title} from players`
                 : `Reveal ${quest.title} to players`,
               pressed: quest.revealed,
+              focusKey: `reveal:${quest.id}`,
               onClick: () => callbacks.onToggleRevealed(quest),
             },
           ]
