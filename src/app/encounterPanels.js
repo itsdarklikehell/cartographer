@@ -20,7 +20,7 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { addLethargy } from './lethargy.js';
 import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
-import { commitCreatures } from './combatants.js';
+import { combatLabels, commitCreatures } from './combatants.js';
 import { logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 
@@ -87,6 +87,14 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     if (fight) await onStartCombat();
   };
 
+  // Each tab numbers the foes that share a name among its own rows. The
+  // Active tab counts the same group a fight started here draws in, so a foe
+  // keeps its number from the row into the fight.
+  /** @type {Map<string, string>} */
+  let activeLabels = new Map();
+  /** @type {Map<string, string>} */
+  let nearbyLabels = new Map();
+
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what is relevant to the party's current position,
     // split into two tabs. The Active tab lists the undefeated hostiles of
@@ -98,7 +106,15 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     // party, plus unplaced ones. For a player, this means only discovered
     // hostiles that still stand: one on a tile the fog has revealed, or an
     // unplaced one the party walked into.
-    getActiveEncounters: () => hostileGroup(state.creatures, app.partyTracker.getPosition()),
+    getActiveEncounters: () => {
+      const group = hostileGroup(state.creatures, app.partyTracker.getPosition());
+      activeLabels = combatLabels(
+        app,
+        group.map((c) => c.id),
+      );
+      return group;
+    },
+    getLabel: (c) => activeLabels.get(c.id) ?? nearbyLabels.get(c.id) ?? c.name,
     // The hint rates the same list the Active tab shows, so what the GM reads
     // is the fight the Start combat button would begin.
     getDifficulty: () =>
@@ -120,7 +136,12 @@ export function wireEncounterPanels(app, { onStartCombat }) {
             position,
             app.grid.getNode(position.nodeId) ?? null,
           ).filter((c) => !isDefeated(c));
-      return list.filter((c) => !hereIds.has(c.id));
+      const nearby = list.filter((c) => !hereIds.has(c.id));
+      nearbyLabels = combatLabels(
+        app,
+        nearby.map((c) => c.id),
+      );
+      return nearby;
     },
     onUpdate: (edited) => {
       // Log the transition into defeat exactly once. Compare against the

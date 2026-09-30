@@ -54,7 +54,10 @@ import { describeTile } from '../map/TileCoords.js';
  *   canStartCombat?: () => boolean,
  *   getDifficulty?: () => string,
  *   getRole?: () => ViewRole,
+ *   getLabel?: (encounter: Encounter) => string,
  * }} callbacks
+ * `getLabel` gives the name a row shows, such as "Roadside Bandit 2" for the
+ * second of two foes with one name.
  * `getDifficulty` gives one line rating the fight where the party stands, shown
  * above the Active rows for the GM alone. An empty string shows nothing.
  * If `onStartCombat` is set, the Active tab's action row gains a Start
@@ -80,6 +83,10 @@ export function mountEncounterPanel(container, callbacks) {
    * @type {WeakMap<Encounter, HTMLInputElement>}
    */
   const amounts = new WeakMap();
+
+  /** The row's name, numbered when two foes share it (see `getLabel`).
+   * @param {Encounter} encounter */
+  const nameOf = (encounter) => callbacks.getLabel?.(encounter) ?? encounter.name;
 
   /** @param {Encounter} encounter @returns {number} */
   const amountOf = (encounter) => clampInt(amounts.get(encounter)?.value, 0);
@@ -115,7 +122,7 @@ export function mountEncounterPanel(container, callbacks) {
       : [hpBand(encounter.currentHP, encounter.maxHP)];
     const label = el('span', 'encounter-panel__label u-col');
     label.append(
-      el('span', 'encounter-panel__name', encounter.name),
+      el('span', 'encounter-panel__name', nameOf(encounter)),
       ...detail.flatMap((text) =>
         text ? [el('span', 'encounter-panel__detail u-muted', text)] : [],
       ),
@@ -129,7 +136,7 @@ export function mountEncounterPanel(container, callbacks) {
     const amountInput = numberField(1, {
       min: 0,
       className: 'encounter-panel__amount',
-      ariaLabel: `Damage or heal amount for ${encounter.name}`,
+      ariaLabel: `Damage or heal amount for ${nameOf(encounter)}`,
     });
     amounts.set(encounter, amountInput);
     // The visible caption says what the number is for. The input keeps its
@@ -155,33 +162,33 @@ export function mountEncounterPanel(container, callbacks) {
     return [
       {
         icon: 'minus',
-        label: `Damage ${encounter.name}`,
+        label: `Damage ${nameOf(encounter)}`,
         variant: 'danger',
         onClick: () => updateOne(encounter, (e) => applyDamage(e, amountOf(encounter))),
       },
       {
         icon: 'heal',
-        label: `Heal ${encounter.name}`,
+        label: `Heal ${nameOf(encounter)}`,
         variant: 'success',
         onClick: () => updateOne(encounter, (e) => heal(e, amountOf(encounter))),
       },
       callbacks.onEdit
         ? {
             icon: 'edit',
-            label: `Edit ${encounter.name}`,
+            label: `Edit ${nameOf(encounter)}`,
             title: 'Edit',
             onClick: () => callbacks.onEdit?.(encounter),
           }
         : null,
       {
         icon: 'save',
-        label: `Save ${encounter.name} as a bestiary template`,
+        label: `Save ${nameOf(encounter)} as a bestiary template`,
         title: 'Save as template',
         onClick: () => callbacks.onSaveTemplate?.(encounter),
       },
       {
         icon: 'remove',
-        label: `Delete ${encounter.name}`,
+        label: `Delete ${nameOf(encounter)}`,
         variant: 'danger',
         onClick: async () => {
           const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;

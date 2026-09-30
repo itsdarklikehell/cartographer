@@ -15,7 +15,7 @@ import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
 import { addLethargy } from './lethargy.js';
-import { describeCombatant, findCombatant } from './combatants.js';
+import { combatLabels, describeCombatant, findCombatant } from './combatants.js';
 import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
@@ -325,7 +325,13 @@ export function wireEncounters(app) {
   // live on the screen.
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: current,
-    describe,
+    // The status line names the active combatant as the fight screen does,
+    // with a number when two combatants share a name.
+    describe: (participant) => {
+      const view = describe(participant);
+      const ids = (state.combat?.order ?? []).map((p) => p.id);
+      return view && { ...view, name: combatLabels(app, ids).get(participant.id) ?? view.name };
+    },
     onOpen: () => app.actions.setMode('combat'),
   });
 
