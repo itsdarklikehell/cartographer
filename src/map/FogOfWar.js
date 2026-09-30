@@ -173,6 +173,19 @@ const linkPositions = memoizeByIdentity(
 );
 
 /**
+ * The first tile of `node` that links to the child node `childId`, or
+ * undefined. The lookup is memoized on the node, so a caller can ask on
+ * every party step.
+ * @param {MapNode} node
+ * @param {string} childId
+ * @returns {import('../types/map.js').Tile | undefined}
+ */
+export function linkTileTo(node, childId) {
+  const pos = linkPositions(node).get(childId)?.[0];
+  return pos === undefined ? undefined : node.tiles[pos];
+}
+
+/**
  * Reveal the tiles of `node` that link to the child node `childId`. A party
  * inside a region has seen that region, so its block on the map above
  * shows through the fog even when the party never walked the map above.

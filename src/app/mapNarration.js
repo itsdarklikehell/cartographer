@@ -1,4 +1,5 @@
-import { describeCursor, describeNode } from '../map/MapDescription.js';
+import { describeCursor, describeNode, placeNoun } from '../map/MapDescription.js';
+import { linkTileTo } from '../map/FogOfWar.js';
 import { authoringWarning } from '../map/MapExits.js';
 import { el, mustGetElement } from '../ui/dom.js';
 import { isGM } from '../view/ViewRole.js';
@@ -59,7 +60,7 @@ function liveRegion(className, parent) {
  * @param {{ markerVisible: (tileId: string) => boolean }} canvas
  */
 export function mountMapNarration(app, canvas) {
-  const { navigator, partyTracker, palette, state } = app;
+  const { grid, navigator, partyTracker, palette, state } = app;
   const viewport = mustGetElement('map-viewport');
   const mapDescription = liveRegion('sr-only', viewport);
 
@@ -91,11 +92,14 @@ export function mountMapNarration(app, canvas) {
     /** Re-narrate the current map. Call this wherever the node, the party,
      * the fog, or the tiles change, the same events that redraw the map. */
     refresh() {
-      const { status, points } = describeNode(
-        navigator.getCurrentNode(),
-        partyTracker.getPosition(),
-        { revealAll: state.mode === 'build', showNotes: isGM(state.role), markerVisible },
-      );
+      const node = navigator.getCurrentNode();
+      const parent = grid.getParent(node);
+      const { status, points } = describeNode(node, partyTracker.getPosition(), {
+        revealAll: state.mode === 'build',
+        showNotes: isGM(state.role),
+        markerVisible,
+        placeNoun: placeNoun(node, parent && linkTileTo(parent, node.id)),
+      });
       // Write only when the narration changes. Assigning textContent replaces
       // the live region's text node, and a screen reader watches that node.
       // An unconditional write re-announces the whole description even when

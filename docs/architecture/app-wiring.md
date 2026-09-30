@@ -292,7 +292,9 @@ argument.
   and it returns `syncMapOccluders` for the resize handler.
 - `mapNarration.js` mounts the screen-reader live regions of the map: the
   map description, the list of points of interest, the exit prompt, and the
-  cursor narration. It also defines `createBuildWarning`, the Build-rail
+  cursor narration. The description names the place by the marker art of
+  the tile that opens it on the map above (`placeNoun`), such as "a village"
+  or "an inn", and "the world map" at the root. It also defines `createBuildWarning`, the Build-rail
   warning for a node that has no way in or out.
 - `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
   Build rail.

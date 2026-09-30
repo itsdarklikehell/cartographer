@@ -18,8 +18,57 @@ import { capitalize } from '../util/text.js';
  *   revealAll?: boolean,
  *   showNotes?: boolean,
  *   markerVisible?: (tileId: string) => boolean,
+ *   placeNoun?: string | null,
  * }} DescribeOptions
+ * `placeNoun` names what the node is, such as "a village" (see `placeNoun`).
  */
+
+/**
+ * The spoken noun of a place, by the tile family of the marker that links
+ * to it on the map above. A town map is a region to the data model, so the
+ * marker is what tells a village from a port.
+ * @type {Readonly<Record<string, string>>}
+ */
+const PLACE_NOUNS = Object.freeze({
+  city: 'a city',
+  town: 'a town',
+  settlement: 'a town',
+  village: 'a village',
+  port: 'a port',
+  castle: 'a castle',
+  'ruined-castle': 'a ruined castle',
+  inn: 'an inn',
+  tavern: 'a tavern',
+  temple: 'a temple',
+  shrine: 'a shrine',
+  'general-store': 'a shop',
+  alchemist: 'a shop',
+  blacksmith: 'a smithy',
+  farm: 'a farm',
+  barracks: 'a barracks',
+  watchtower: 'a watchtower',
+  lighthouse: 'a lighthouse',
+  'wizard-tower': 'a tower',
+  academy: 'an academy',
+  dungeon: 'a dungeon',
+  'cave-entrance': 'a cave',
+  mine: 'a mine',
+});
+
+/**
+ * The noun that names `node` in its description: "the world map" for the
+ * root, the noun of the marker art of `link` (the tile on the parent map
+ * that opens the node) when the table knows it, and null otherwise. A
+ * caller with null falls back to the kind of the node.
+ * @param {MapNode} node
+ * @param {Tile | null | undefined} link
+ * @returns {string | null}
+ */
+export function placeNoun(node, link) {
+  if (node.parentId === null) return 'the world map';
+  const family = link?.imageRef.match(/^assets\/tiles\/([^/]+)\//)?.[1];
+  return (family && PLACE_NOUNS[family]) ?? null;
+}
 
 /**
  * Convert "general-store" to "General store" for a spoken description.
@@ -127,8 +176,10 @@ export function describeNode(node, party, options = {}) {
       notes: showNotes ? tile.metadata.notes : '',
     });
   }
-  const kindPhrase = node.kind === 'interior' ? 'an interior' : 'a region';
-  const environ = node.environ ? ` (${node.environ})` : '';
+  // A named place, such as a village or an inn, needs no environ after it.
+  const named = options.placeNoun;
+  const kindPhrase = named ?? (node.kind === 'interior' ? 'an interior' : 'a region');
+  const environ = !named && node.environ ? ` (${node.environ})` : '';
   const parts = [`${node.name}, ${kindPhrase}${environ}, ${node.width} by ${node.height} tiles.`];
 
   parts.push(

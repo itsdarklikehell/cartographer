@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeCursor, describeNode } from '../src/map/MapDescription.js';
+import { describeCursor, describeNode, placeNoun } from '../src/map/MapDescription.js';
 import { createMapNode, createTile, setTile, updateTileMetadata } from '../src/map/TileGrid.js';
-import { setTileRevealed } from '../src/map/FogOfWar.js';
+import { linkTileTo, setTileRevealed } from '../src/map/FogOfWar.js';
 
 function node() {
   let n = createMapNode('world', 'World', null, 4, 3);
@@ -181,4 +181,30 @@ test('describeCursor names a POI in Play mode only once it is found and in range
     describeCursor(found(), '2,1', { labelFor, markerVisible: () => false }),
     'Cursor at column 3, row 2: Tavern art.',
   );
+});
+
+test('placeNoun names a place by the marker that links to it', () => {
+  const world = createMapNode('world', 'The Marches', null, 4, 4);
+  const town = createMapNode('kelmoor', 'Kelmoor', 'vale', 14, 14, { environ: 'grassland' });
+  const link = (ref) => createTile('1,1', ref, { childNodeId: 'kelmoor' });
+  assert.equal(placeNoun(world, null), 'the world map');
+  assert.equal(placeNoun(town, link('assets/tiles/village/village-1.svg')), 'a village');
+  assert.equal(placeNoun(town, link('assets/tiles/inn/inn-2.svg')), 'an inn');
+  assert.equal(placeNoun(town, link('assets/tiles/grass/grass-1.svg')), null);
+  assert.equal(placeNoun(town, link('data:image/png;base64,AAAA')), null);
+  assert.equal(placeNoun(town, undefined), null);
+});
+
+test('a named place drops the environ from the description', () => {
+  const town = createMapNode('kelmoor', 'Kelmoor', 'vale', 14, 14, { environ: 'grassland' });
+  const named = describeNode(town, null, { placeNoun: 'a village' }).status;
+  assert.match(named, /^Kelmoor, a village, 14 by 14 tiles\./);
+  assert.match(describeNode(town, null).status, /^Kelmoor, a region \(grassland\), /);
+});
+
+test('linkTileTo finds the tile that opens a child node', () => {
+  let vale = createMapNode('vale', 'Vale', 'world', 4, 4);
+  vale = setTile(vale, createTile('2,1', 'assets/tiles/port/port-1.svg', { childNodeId: 'k' }));
+  assert.equal(linkTileTo(vale, 'k')?.id, '2,1');
+  assert.equal(linkTileTo(vale, 'nobody'), undefined);
 });
