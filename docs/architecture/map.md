@@ -875,7 +875,11 @@ The radius of a move comes from `party/Sight.js`. `sightRadius(node, clock)`
 gives 3 tiles on an outdoor map below the world map from Dawn to Afternoon,
 2 at Dusk, and 1 at Night. It gives 2 in an interior and on the world map at
 every hour. `main.js` hands it to `PartyTracker.setSight`, and every fog
-reveal of a move reads `PartyTracker.sightFor(node)`. The marker range and
+reveal of a move reads `PartyTracker.sightFor(node)`. The tracker also clears
+fog around the party when it is built, before `main.js` runs. The load in
+`campaign/Campaigns.js` therefore passes the same rule, read against the
+loaded clock, as the `sight` option of the constructor. Without it, the first
+render after a load clears fog to 2 tiles at Night. The marker range and
 the Nearby lists read the fixed `revealRadius` instead, so a foe does not
 drop out of the Nearby list when night falls.
 

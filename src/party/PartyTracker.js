@@ -15,14 +15,17 @@ export class PartyTracker {
   /**
    * @param {TileGrid} grid
    * @param {PartyPosition} position
-   * @param {{ revealRadius?: number }} [options]
+   * The first fog reveal runs here, so a caller that knows the sight rule
+   * passes it as `sight`. A tracker built without it clears the fog to
+   * `revealRadius` around the party at night as well as by day.
+   * @param {{ revealRadius?: number, sight?: (node: MapNode) => number }} [options]
    */
   constructor(grid, position, options = {}) {
     this.grid = grid;
     /** The fixed range of markers and of the Nearby list, in tiles. */
     this.revealRadius = options.revealRadius ?? 2;
     /** @type {((node: MapNode) => number) | null} */
-    this.sight = null;
+    this.sight = options.sight ?? null;
     this.position = position;
     this._revealAroundCurrent();
   }

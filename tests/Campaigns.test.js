@@ -13,6 +13,8 @@ import { TilePalette } from '../src/map/TilePalette.js';
 import { TileGrid } from '../src/map/TileGrid.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { installLocalStorage } from './helpers/env.js';
+import { gridTiles } from './helpers/grid.js';
+import { revealedCount } from '../src/map/FogOfWar.js';
 
 beforeEach(installLocalStorage);
 
@@ -226,4 +228,23 @@ test('loadInitialCampaign boots a save with a parent loop and a malformed spellb
     ['b', 'a'],
   );
   assert.deepEqual(campaign.characters[0].spellbook, { cantrips: [], known: [], prepared: [] });
+});
+
+test('loadInitialCampaignSafe clears the first fog with the sight radius of the hour', () => {
+  // A 7x7 region at Night (watch 5): sight 1 reveals the party tile and its
+  // four neighbours. The fixed radius of 2 would reveal 13.
+  const tiles = gridTiles(7, 7).map((t) => ({ ...t, revealed: false }));
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [
+        { id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] },
+        { id: 'moor', name: 'Moor', parentId: 'world', width: 7, height: 7, tiles },
+      ],
+      party: { nodeId: 'moor', tileId: '3,3' },
+      clock: { day: 1, watch: 5 },
+    }),
+  );
+  const { campaign } = loadInitialCampaignSafe();
+  assert.equal(revealedCount(/** @type {any} */ (campaign.grid.getNode('moor'))), 5);
 });

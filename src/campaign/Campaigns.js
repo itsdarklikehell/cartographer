@@ -1,6 +1,7 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
 import { MapNavigator } from '../map/MapNavigator.js';
 import { PartyTracker } from '../party/PartyTracker.js';
+import { sightRadius } from '../party/Sight.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
@@ -218,5 +219,11 @@ export function loadInitialCampaignSafe() {
 function withTrackers(campaign) {
   const navigator = new MapNavigator(campaign.grid, campaign.party.nodeId);
   navigator.getCurrentNode();
-  return { campaign, navigator, partyTracker: new PartyTracker(campaign.grid, campaign.party) };
+  return {
+    campaign,
+    navigator,
+    partyTracker: new PartyTracker(campaign.grid, campaign.party, {
+      sight: (node) => sightRadius(node, campaign.clock),
+    }),
+  };
 }

@@ -66,3 +66,11 @@ test('throws if constructed or moved onto an unknown node', () => {
   const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '0,0' }, { revealRadius: 0 });
   assert.throws(() => tracker.moveTo('nope', '0,0'), /unknown node/);
 });
+
+test('a sight rule given to the constructor clears the first fog', () => {
+  const grid = new TileGrid();
+  grid.addNode(grid5x5());
+  const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '2,2' }, { sight: () => 0 });
+  assert.equal(revealedCount(grid.getNode('n')), 1);
+  assert.equal(tracker.sightFor(grid5x5()), 0);
+});
