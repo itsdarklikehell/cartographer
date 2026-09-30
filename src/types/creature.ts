@@ -149,6 +149,9 @@ export interface Creature extends HPBuffFields {
    * goblin boss does.
    * Absent means none. See `app/redirectWard.js`. */
   redirectAttack?: boolean;
+  /** True for an undead with Turn Resistance or Turn Defiance, which rolls its
+   * save against Turn Undead with advantage. Absent means none. */
+  turnResistance?: boolean;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -203,6 +206,7 @@ export interface CreatureTemplate {
   surpriseAttack?: SurpriseAttack;
   multiattackDisadvantage?: number;
   redirectAttack?: boolean;
+  turnResistance?: boolean;
   role?: string;
   notes?: string;
   class?: string;

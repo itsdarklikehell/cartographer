@@ -169,3 +169,26 @@ test('Preserve Life refuses a share-out over a cap and spends nothing', async ()
   whole.state.characters = [withHP(whole.state.characters[0], 30)];
   assert.equal(await preserveLife(whole, found(whole), { prompt }), false, 'nobody to heal');
 });
+
+test('Turn Resistance rolls the save against Turn Undead with advantage', async () => {
+  const app = fight();
+  app.state.creatures = app.state.creatures.map((c) =>
+    c.id === 's2' ? { ...c, turnResistance: true } : c,
+  );
+  // Each roll draws a low die and then a high one. Only the resistant undead
+  // rolls twice, so it keeps the high die and saves.
+  const draws = [0, 0.99, 0, 0.99];
+  const rng = () => draws.shift() ?? 0;
+  const prompt = /** @type {any} */ (async () => ({ targets: 's2' }));
+  assert.equal(await turnUndead(app, found(app), { prompt, rng }), true);
+  assert.ok(
+    app.log.some((l) => /^Skeleton 2 resists the turning/.test(l)),
+    app.log.join('\n'),
+  );
+});
+
+test('Turn Resistance loads only as true', async () => {
+  const { attackTraitFields } = await import('../src/entities/CreatureAttacks.js');
+  assert.deepEqual(attackTraitFields({ turnResistance: true }), { turnResistance: true });
+  assert.deepEqual(attackTraitFields({ turnResistance: 'yes' }), {});
+});

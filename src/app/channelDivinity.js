@@ -4,6 +4,7 @@ import { classLevelOf } from '../entities/Multiclass.js';
 import { spellSaveDC } from '../entities/Classes.js';
 import { creatureTypeOf } from '../entities/CreatureType.js';
 import { resolveSave } from '../entities/Checks.js';
+import { rollMode } from '../entities/ConditionEffects.js';
 import { CHANNEL_DIVINITY_ID } from '../entities/PoolIds.js';
 import { isGone } from '../combat/CombatView.js';
 import {
@@ -77,9 +78,16 @@ export async function turnUndead(app, found, { prompt = promptModal, rng = Math.
   for (const id of splitTrimmedList(String(values.targets ?? ''))) {
     const target = findCombatant(app, id);
     if (!target) continue;
+    // Turn Resistance or Turn Defiance gives the save advantage, which folds
+    // with the slants of the target's own chips under the cancel rule.
+    const resists = target.kind === 'creature' && target.entity.turnResistance === true;
+    const conditions = target.entity.conditions;
+    const mode = rollMode({ roller: conditions, kind: 'save', ability: 'WIS' }, [
+      resists ? 'advantage' : null,
+    ]);
     const save = resolveSave(combatantSaveBonus(target, 'WIS'), dc, {
-      ability: 'WIS',
-      conditions: target.entity.conditions,
+      mode: mode ?? 'normal',
+      conditions,
       rng,
     });
     const cr = target.kind === 'creature' ? target.entity.cr : undefined;

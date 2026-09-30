@@ -1072,6 +1072,7 @@ Build mode, from Play mode, and from the tile menu.
 | Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
 | Multiattack: attack with disadvantage | Blank (none) | The swing of the Multiattack that rolls with disadvantage, such as 2 for the second attack. Blank, or a number past the last swing, stores none |
 | Redirect Attack (reaction: an ally becomes the target) | Off | When an attack targets the creature, the app offers to make an ally the target instead. See [Redirect Attack](#redirect-attack) |
+| Turn Resistance (advantage on saves against Turn Undead) | Off | The creature rolls its WIS save against Turn Undead with advantage. Use it for Turn Resistance and for Turn Defiance |
 | Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
 | Surprise Attack: dice, Surprise Attack: die | Blank, d6 | Extra damage dice on a hit against a surprised target in round 1. Blank stores none |
 | On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |
@@ -1358,7 +1359,8 @@ button opens a dialog first, and a cancel keeps the use and the action.
 - **Turn Undead** lists every undead in the fight, all ticked. Untick the
   ones that are out of range (30 feet) or cannot see or hear the cleric.
   Each ticked undead rolls a Wisdom save against the spell save DC of the
-  cleric. On a failure, it gets a Turned chip for 1 minute. Damage ends
+  cleric. An undead with the Turn Resistance box in its creature form rolls
+  the save with advantage. On a failure, it gets a Turned chip for 1 minute. Damage ends
   the chip, and a Turned creature takes no reactions. It keeps its turns,
   and the GM moves it away or has it take the Dodge action. From cleric
   level 5, Destroy Undead destroys an undead of a low enough CR instead
