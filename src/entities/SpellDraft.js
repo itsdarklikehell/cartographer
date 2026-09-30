@@ -62,11 +62,14 @@ import { healTypeRules } from './SpellTypeRules.js';
  * @property {string} [until] the turn boundary that ends a save's condition
  *   or a buff's chip
  * @property {{
- *   ac: unknown, acBase: unknown, acMin: unknown, maxHP?: unknown, immune?: string[],
+ *   ac?: unknown, acBase?: unknown, acMin?: unknown, maxHP?: unknown, immune?: string[],
  *   saveAdvantage?: string[], extraAction?: boolean, attacks?: string,
  *   attacksAgainst?: string, attackerTypes?: string[], once?: boolean,
+ *   resist?: string[], resistNonmagical?: boolean,
  * }} [mods]
- *   what a buff's chip changes besides a roll
+ *   what a buff's or a save's chip changes besides a roll
+ * @property {string[]} [resistChoice] the damage types a buff's caster picks
+ *   one of at the cast
  * @property {{ maxHP: unknown }} [modsPerStep] how much more HP raise a buff
  *   gives per scaling increment
  * @property {{ count: unknown, sides: unknown, flat: unknown, flatPerStep: unknown }} [tempHP]

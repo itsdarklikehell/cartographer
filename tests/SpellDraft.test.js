@@ -445,3 +445,45 @@ test('a buff keeps its HP raise, its temporary HP, and its immunity', () => {
     { kind: 'buff' },
   );
 });
+
+test('a buff draft keeps its resistances and its resist pick list', () => {
+  const effect = assembleEffect(
+    effectDraft({
+      kind: 'buff',
+      mods: { resist: ['fire', ' Cold', 'nope'], resistNonmagical: true },
+      resistChoice: ['acid', '', 'thunder'],
+    }),
+  );
+  assert.deepEqual(/** @type {any} */ (effect).mods, {
+    resist: ['fire', 'cold'],
+    resistNonmagical: true,
+  });
+  assert.deepEqual(/** @type {any} */ (effect).resistChoice, ['acid', 'thunder']);
+});
+
+test('a save draft and an on-hit draft keep the chip mods of their condition', () => {
+  const save = assembleEffect(
+    effectDraft({
+      kind: 'save',
+      saveAbility: 'WIS',
+      condition: 'Mocked',
+      mods: { attacks: 'disadvantage', once: true },
+    }),
+  );
+  assert.deepEqual(/** @type {any} */ (save).mods, { attacks: 'disadvantage', once: true });
+  const hit = assembleEffect(
+    effectDraft({
+      kind: 'attack',
+      onHit: {
+        condition: 'Lit',
+        saveAbility: '',
+        until: '',
+        mods: { attacksAgainst: 'advantage', once: true },
+      },
+    }),
+  );
+  assert.deepEqual(/** @type {any} */ (hit).onHit.mods, {
+    attacksAgainst: 'advantage',
+    once: true,
+  });
+});

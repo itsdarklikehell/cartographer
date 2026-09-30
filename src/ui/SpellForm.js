@@ -10,6 +10,7 @@ import { buildHPControls } from './SpellFormHP.js';
 import { buildCureControls } from './SpellFormCure.js';
 import { buildTypeControls } from './SpellFormTypes.js';
 import { buildBuffControls } from './SpellFormBuff.js';
+import { buildChipModControls } from './SpellFormChipMods.js';
 import {
   labeled,
   fieldRow,
@@ -174,6 +175,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const cure = buildCureControls(spell);
   const types = buildTypeControls(spell);
   const buff = buildBuffControls(spell);
+  // The chip that a failed save leaves can slant attacks and resist damage
+  // too (Vicious Mockery).
+  const saveChip = buildChipModControls(saveEffect?.mods ?? {});
   const rider = buildRiderControls(spell);
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
@@ -314,6 +318,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     cure.sync(kind);
     types.sync(kind);
     buff.sync(kind);
+    saveChip.rows.slants.hidden = saveChip.rows.resist.hidden = saveEndsRow.hidden;
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
@@ -403,6 +408,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         ...cure.read(),
         ...types.read(),
         ...buff.read(),
+        // The buff rows read the mods of every kind, so a save's chip mods
+        // replace them here, or an edit of a save spell drops its mods.
+        ...(kindSelect.value === 'save' ? { mods: saveChip.read() } : {}),
       },
       scaling: scales.input.checked
         ? {
@@ -435,11 +443,15 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       onHit.rows.imposes,
       onHit.rows.onHit,
       onHit.rows.onHitUntil,
+      onHit.rows.onHitSlants,
+      onHit.rows.onHitResist,
       onHit.rows.drain,
       summonsRow,
       saveTogglesRow,
       conditionRow,
       saveEndsRow,
+      saveChip.rows.slants,
+      saveChip.rows.resist,
       hp.rows.limit,
       hp.rows.kills,
       hp.rows.pools,
@@ -456,6 +468,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       buff.rows.turn,
       buff.rows.hit,
       buff.rows.slants,
+      buff.rows.resist,
+      buff.rows.resistPick,
       rider.rows.dice,
       rider.rows.rolls,
       rider.rows.once,

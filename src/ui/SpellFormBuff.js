@@ -1,10 +1,11 @@
 import { setTip } from './Tooltip.js';
 import { el } from './dom.js';
-import { labeled, fieldRow, numberField, checkbox, select } from './formFields.js';
+import { labeled, fieldRow, numberField, checkbox, select, textField } from './formFields.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import { DAMAGE_TYPES, DIE_SIZES } from '../entities/Equipment.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { buildSlantControls } from './SpellFormSlants.js';
+import { buildResistControls } from './SpellFormChipMods.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
@@ -29,8 +30,10 @@ function number(value, min, max, tip) {
  * to the HP maximum (Aid), temporary HP at the cast (False Life) or at the
  * start of each turn (Heroism), a condition the holder can't take, and the
  * save advantage and extra action of Haste, the damage dice a chip adds to
- * hits (Divine Favor, Hunter's Mark), and the attack slants of
- * `SpellFormSlants.js`. The immunity select shows the
+ * hits (Divine Favor, Hunter's Mark), the attack slants of
+ * `SpellFormSlants.js`, the resistances of `SpellFormChipMods.js`, and the
+ * list of damage types that the caster picks one of (Protection from Energy).
+ * The immunity select shows the
  * first stored condition, and the form keeps any further ones as stored. The
  * form does not show `blocks` (Shield's Magic Missile), and keeps it as stored.
  * `ui/SpellForm.js` places the rows, calls `sync` when the effect kind
@@ -146,6 +149,13 @@ export function buildBuffControls(spell) {
     "The chip goes on a foe, and only the caster's hits against it add the dice, as with Hunter's Mark",
   );
   const slants = buildSlantControls(mods);
+  const resist = buildResistControls(mods);
+  const choice = textField((effect?.resistChoice ?? []).join(', '), { placeholder: 'no pick' });
+  const choiceField = labeled('Caster picks one of', choice);
+  setTip(
+    choiceField,
+    'Damage types, split by commas. The cast dialog asks for one, and the chip resists it, as with Protection from Energy',
+  );
 
   const rows = {
     ac: fieldRow(
@@ -174,6 +184,8 @@ export function buildBuffControls(spell) {
       mark.label,
     ),
     slants: slants.row,
+    resist: resist.row,
+    resistPick: fieldRow(choiceField),
   };
 
   /** @param {string} kind */
@@ -194,7 +206,11 @@ export function buildBuffControls(spell) {
         blocks: mods.blocks ?? [],
         extraAction: extra.input.checked,
         ...slants.read(),
+        ...resist.read(),
       },
+      resistChoice: choice.value
+        .split(',')
+        .map((/** @type {string} */ t) => t.trim().toLowerCase()),
       modsPerStep: { maxHP: maxHPPerStep.value },
       tempHP: {
         count: tempCount.value,

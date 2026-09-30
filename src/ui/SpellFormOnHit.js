@@ -4,6 +4,7 @@ import { CONDITIONS } from '../entities/Conditions.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { CHIP_UNTILS, UNTIL_LABELS } from '../entities/SpellFields.js';
 import { capitalize } from '../util/text.js';
+import { buildChipModControls } from './SpellFormChipMods.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
@@ -50,6 +51,7 @@ export function buildOnHitControls(spell) {
     ],
     attack?.drain ?? '',
   );
+  const chip = buildChipModControls(onHit?.mods ?? {});
   const drainField = labeled('Caster regains', drain);
   setTip(drainField, "The damage counts after the target's resistances, as with Vampiric Touch");
 
@@ -58,6 +60,8 @@ export function buildOnHitControls(spell) {
     imposes: fieldRow(imposes.label),
     onHit: fieldRow(labeled('Condition on a hit', condition), labeled('Save against it', save)),
     onHitUntil: fieldRow(labeled('Hit condition ends at', until), noHealing.label),
+    onHitSlants: chip.rows.slants,
+    onHitResist: chip.rows.resist,
   };
 
   /**
@@ -71,6 +75,7 @@ export function buildOnHitControls(spell) {
     rows.imposes.hidden = !attacks;
     rows.onHit.hidden = !attacks || !imposes.input.checked;
     rows.onHitUntil.hidden = rows.onHit.hidden;
+    rows.onHitSlants.hidden = rows.onHitResist.hidden = rows.onHit.hidden;
   }
 
   /** @param {() => void} onChange */
@@ -86,7 +91,7 @@ export function buildOnHitControls(spell) {
             condition: condition.value,
             saveAbility: save.value,
             until: until.value,
-            mods: { ...onHit?.mods, noHealing: noHealing.input.checked },
+            mods: { ...chip.read(), noHealing: noHealing.input.checked },
             // The typed chip has no control, so an edit keeps it as stored.
             ...(onHit?.typed ? { typed: onHit.typed } : {}),
           }

@@ -745,12 +745,22 @@ chip of the second list, the app asks the caster which one to end. The name
 `Exhaustion` ends one level of exhaustion. Leave the healing dice empty for a
 spell that heals no HP, such as Lesser Restoration.
 
-For a `buff` that changes attack rolls, use the attack row of the form.
+For a `buff` that changes attack rolls, use the attack row of the form. A
+`save` with a condition and an `attack` whose hit imposes a condition
+show the same row for the chip that they leave, as Vicious Mockery and
+Guiding Bolt do.
 **Holder attacks** slants the attack rolls of each target, and **Attacks
 against** slants the attack rolls made against it. To limit the second
 slant to some attackers, type their creature types in **Only by types**,
 split by commas. Tick **One attack only** when the chip ends after the first
 attack roll it slants.
+
+The resist row sits under the attack row. Type damage types in **Resists**,
+split by commas, for a chip that resists them. Tick **Nonmagical weapons**
+for a chip that resists bludgeoning, piercing, and slashing from a
+nonmagical weapon, as Stoneskin does. A `buff` also has **Caster picks one
+of**. Type damage types there, split by commas, and the cast dialog asks
+the caster for one of them, as Protection from Energy does.
 
 If the rules of the spell need more than the app can apply, make it a
 `utility` spell and write the rules in the description. Then apply the
