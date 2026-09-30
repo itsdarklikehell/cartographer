@@ -16,6 +16,8 @@ import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
+import { askShortRestDice } from '../ui/ShortRestDialog.js';
+import { spendRestDice } from '../entities/RestHitDice.js';
 import { advanceWatches, advanceToDawn, formatClock, watchesBetween } from '../time/GameClock.js';
 import { passTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
@@ -289,14 +291,31 @@ export function wireParty(app) {
       passTime(app, 1);
       app.actions.markDirty();
     },
-    onShortRest: () => {
-      state.characters = state.characters.map(shortRest);
+    // The dialog asks for the hit dice first, and a cancel there cancels
+    // the rest. The rest resolves after the dialog closes, so this handler
+    // refreshes the clock readout itself.
+    onShortRest: async () => {
+      const counts = await askShortRestDice(state.characters);
+      if (!counts) return;
+      /** @type {string[]} */
+      const spent = [];
+      state.characters = state.characters.map((character) => {
+        const out = spendRestDice(shortRest(character), counts[character.id] ?? {});
+        if (out.rolls.length > 0) {
+          const dice = out.rolls.length === 1 ? 'hit die' : 'hit dice';
+          spent.push(
+            `${character.name} spends ${out.rolls.length} ${dice} and heals ${out.healed} HP.`,
+          );
+        }
+        return out.character;
+      });
       state.clock = advanceWatches(state.clock, 1);
       passTime(app, 1);
       scope.reselect();
+      timePanel.update();
       app.actions.logEvent(
         'rest',
-        `The party takes a short rest. Now ${formatClock(state.clock)}.`,
+        ['The party takes a short rest.', ...spent, `Now ${formatClock(state.clock)}.`].join(' '),
       );
     },
     onLongRest: () => {

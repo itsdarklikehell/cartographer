@@ -1,4 +1,4 @@
-import { promptModal } from './Modal.js';
+import { confirmModal, promptModal } from './Modal.js';
 import { subclassButtons } from './SubclassPicker.js';
 import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
@@ -301,7 +301,16 @@ export function buildProgressSection(getCharacter, opts) {
       row.appendChild(
         textButton(
           'Spend',
-          () => {
+          async () => {
+            // Hit dice heal during a short rest, and the Short rest dialog
+            // spends them. A spend from the sheet asks first, so a click in
+            // the middle of a fight does not heal by mistake.
+            const ok = await confirmModal(
+              'Hit dice heal during a short rest, and the Short rest button of the ' +
+                'Time panel spends them. Spend one now anyway?',
+              { title: 'Spend a hit die', confirmLabel: 'Spend' },
+            );
+            if (!ok) return;
             const from = getCharacter();
             const result = spendHitDie(from, hitDieOfPool(pool));
             if (result.character === from) return;

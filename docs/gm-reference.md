@@ -1799,11 +1799,13 @@ when its level is assigned. A choice with only one possible pick applies
 with no prompt. A cancel keeps the grant pending, and the Choose button in
 the Progression block offers it again.
 
-The hit-dice pool can be spent.
+The hit-dice pool can be spent. The Spend button in the Progression block
+spends one die outside a rest, and it asks first, so a click in the middle
+of a fight does not heal by mistake.
 
 | Rest | Hit dice |
 | --- | --- |
-| Short rest | Spend a die to heal the roll plus the CON modifier |
+| Short rest | The Short rest dialog asks how many dice each hurt character spends. Each die heals the roll plus the CON modifier, and spending stops at full HP |
 | Long rest | Restores half of the total hit dice, at least one, largest dice first. For example, Fighter 3 / Wizard 3 with every die spent gets three dice back |
 
 ### Class feature pools

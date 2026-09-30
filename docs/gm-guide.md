@@ -515,8 +515,10 @@ that.
    button to heal. Each click changes HP by 1.
 3. Click a filled spell-slot pip to spend the slot. Click an empty pip to
    restore it.
-4. To heal on a short rest, click **Spend** beside **Hit Dice** in the
-   Progression block.
+4. To heal on a short rest, use **Short rest** in the Time panel (see
+   [Rest](#rest)). To spend one hit die outside a rest, click **Spend**
+   beside **Hit Dice** in the Progression block, and then click **Spend**
+   in the confirmation.
 
 ### Change a character's maximum HP, bonus HP, or base AC
 
@@ -610,6 +612,10 @@ in-game clock forward.
 
 1. In the **Session** tab, find the **Time** panel.
 2. Click **Short rest** or **Long rest**.
+3. For a short rest, the **Short rest** dialog lists each hurt character
+   with a hit die left. Type how many hit dice each one spends, and click
+   **Rest**. Each die heals its roll plus the CON modifier, and spending
+   stops at full HP. **Cancel** cancels the whole rest.
 
 | Rest | What comes back |
 | --- | --- |

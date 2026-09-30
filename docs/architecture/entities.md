@@ -571,8 +571,11 @@ with no proficiency lists.
 modifier per level (`classMaxHP`, the 5e average rule). It also models hit
 dice as resource pools sized to the assigned class levels. `withHitDice`
 creates the pools, and `syncHitDice` derives them again and keeps the spent
-count. `spendHitDie` heals on a short rest. `restoreHitDice` gives back half of
-the total dice on a long rest, largest die size first.
+count. `spendHitDie` spends one die and heals. `restoreHitDice` gives back half
+of the total dice on a long rest, largest die size first.
+`entities/RestHitDice.js` spends the counts that the Short rest dialog
+(`ui/ShortRestDialog.js`) collects. `spendRestDice` rolls each pool's count
+and stops at full HP, and `spendablePools` leaves out a dead character.
 
 ### Leveling up
 
