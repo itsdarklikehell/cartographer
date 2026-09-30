@@ -6,6 +6,7 @@ import {
   withDefaults,
   toggleRevealed,
   handoutRevealLine,
+  readHandouts,
   handoutsAt,
   handoutsFor,
   inAudience,
@@ -284,4 +285,23 @@ test('handoutRevealLine hides the title of a hidden or targeted handout', () => 
     'The handout Map is hidden from players.',
     { gm: true },
   ]);
+});
+
+test('readHandouts lists the revealed handouts a tab saw at other spots', () => {
+  const at = (id, extra = {}) => ({ ...createHandout(id, id), revealed: true, ...extra });
+  const here = at('here');
+  const gone = at('gone');
+  const hidden = at('hidden', { revealed: false });
+  const other = at('other', { audience: ['c2'] });
+  const unseen = at('unseen');
+  const all = [here, gone, hidden, other, unseen];
+  const seen = new Set(['here', 'gone', 'hidden', 'other']);
+  assert.deepEqual(
+    readHandouts(all, [here], seen, 'c1').map((h) => h.id),
+    ['gone'],
+  );
+  assert.deepEqual(
+    readHandouts(all, [], seen, 'c2').map((h) => h.id),
+    ['here', 'gone', 'other'],
+  );
 });

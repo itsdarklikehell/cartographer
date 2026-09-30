@@ -17,6 +17,15 @@ import { mountListPanel } from './listPanel.js';
 const DISPOSITION_VARIANTS = { friendly: 'success', neutral: 'neutral', hostile: 'danger' };
 
 /**
+ * A location label with a no-break space inside each "column 11" and "row 4",
+ * so a narrow row wraps between the parts of the label and not inside one.
+ * @param {string} label
+ */
+export function keepPairs(label) {
+  return label.replace(/\b(column|row) (\d+)/g, '$1\u00a0$2');
+}
+
+/**
  * Mount the NPC panel: one row per NPC relevant to the party's location. Each
  * row shows name, role, a disposition badge, and notes, with edit and delete
  * controls plus a "New NPC" control. Like the encounter panel, this panel
@@ -83,7 +92,8 @@ export function mountNPCPanel(container, callbacks) {
         [
           head,
           npc.role && el('span', 'npc-panel__role', npc.role),
-          getLocationLabel && el('span', 'npc-panel__location u-muted', getLocationLabel(npc)),
+          getLocationLabel &&
+            el('span', 'npc-panel__location u-muted', keepPairs(getLocationLabel(npc))),
           ctx.gm && npc.notes && el('span', 'npc-panel__notes', npc.notes),
         ].filter(Boolean)
       );

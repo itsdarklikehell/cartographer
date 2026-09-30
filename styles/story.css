@@ -34,8 +34,10 @@
 }
 
 .travelog__time {
-  flex: none;
-  font-family: var(--font-mono);
+  /* A fixed column, so every message starts at one edge. A long stamp,
+     such as "Day 12, Afternoon, round 3", wraps inside it. */
+  flex: 0 0 6.5em;
+  font-size: var(--text-label);
   color: var(--text-muted);
 }
 

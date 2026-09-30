@@ -4,6 +4,7 @@ import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 import { entriesFor } from '../log/LogVisibility.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
+import { segSwitch } from '../ui/buttons.js';
 import {
   creaturesAt,
   creaturesNear,
@@ -102,6 +103,10 @@ export function wireStory(app) {
   const folkAt = (/** @type {{ nodeId: string } | null} */ position) =>
     creaturesAt(state.creatures, position).filter((c) => c.disposition !== 'hostile');
 
+  /** The whole non-hostile cast, placed or not. */
+  const castOf = (/** @type {import('../types/creature.js').Creature[]} */ creatures) =>
+    creatures.filter((c) => c.disposition !== 'hostile');
+
   /** The same list, cut to the tiles around the party. */
   const folkNear = (/** @type {{ nodeId: string, tileId: string } | null} */ position) =>
     creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
@@ -117,16 +122,40 @@ export function wireStory(app) {
   const confirmDeleteNPC = (/** @type {import('../types/creature.js').Creature} */ npc) =>
     confirmDelete(npc.name);
 
-  app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
+  // The GM's Here / All switch. "All" lists the whole non-hostile cast, so
+  // the GM can look up an NPC on another map without leaving the party's
+  // spot. A Player tab hides the switch (session.css).
+  const npcContainer = mustGetElement('npc-container');
+  /** @type {'here' | 'all'} */
+  let npcScope = 'here';
+  const scopeSwitch = segSwitch({
+    ariaLabel: 'NPCs to list',
+    className: 'npc-scope',
+    options: [
+      { value: 'here', label: 'Here', title: 'NPCs near the party' },
+      { value: 'all', label: 'All', title: 'Every NPC in the campaign' },
+    ],
+    value: npcScope,
+    onChange: (next) => {
+      npcScope = next;
+      app.views.npcPanel.update();
+    },
+  });
+  npcContainer.append(scopeSwitch.element);
+
+  app.views.npcPanel = mountNPCPanel(npcContainer, {
     // A player learns of a placed NPC only after the party lands on its tile.
     // The GM sees who stands close enough to matter, with unmet NPCs flagged.
     // The radius is the one the Encounters panel uses for nearby foes, so both
     // sidebar lists cover the same ground. The whole node's roster stays on
     // the Build rail.
-    getNPCs: () =>
-      isGM(state.role)
-        ? folkNear(app.partyTracker.getPosition())
-        : knownCreaturesAt(state.creatures, app.partyTracker.getPosition()),
+    getNPCs: () => {
+      if (!isGM(state.role))
+        return knownCreaturesAt(state.creatures, app.partyTracker.getPosition());
+      return npcScope === 'all'
+        ? castOf(state.creatures)
+        : folkNear(app.partyTracker.getPosition());
+    },
     getLocationLabel: (npc) => {
       const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
       return npc.location && !npc.met ? `${label} — not yet met` : label;

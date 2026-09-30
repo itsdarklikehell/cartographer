@@ -5,6 +5,7 @@ import {
   toggleRevealed,
   handoutsFor,
   handoutRevealLine,
+  readHandouts,
 } from '../handout/Handouts.js';
 import {
   describeHandout,
@@ -104,6 +105,12 @@ export function wireHandouts(app) {
   /** The tile the next new handout starts on, set only while the inspector's
    * dialog is open. @type {HandoutPlace | null} */
   let preset = null;
+  /** The handouts this Player tab has listed. The tab keeps listing them
+   * under "Read earlier" after the party leaves their spot. The set lives in
+   * memory, so a reload of the tab starts it empty. @type {Set<string>} */
+  const seen = new Set();
+  /** The ids of the rows in the "Read earlier" group. @type {Set<string>} */
+  let readIds = new Set();
 
   const handoutList = wireEntityList(app, {
     key: 'handouts',
@@ -118,8 +125,17 @@ export function wireHandouts(app) {
     getHandouts: () => {
       const gm = isGM(state.role);
       const boundCharacterId = gm ? null : (app.actions.getBoundCharacterId?.() ?? null);
-      return handoutsFor(state.handouts, app.partyTracker.getPosition(), { gm, boundCharacterId });
+      const here = handoutsFor(state.handouts, app.partyTracker.getPosition(), {
+        gm,
+        boundCharacterId,
+      });
+      if (gm) return here;
+      for (const h of here) seen.add(h.id);
+      const read = readHandouts(state.handouts, here, seen, boundCharacterId);
+      readIds = new Set(read.map((h) => h.id));
+      return [...here, ...read];
     },
+    groupOf: (handout) => (readIds.has(handout.id) ? 'Read earlier' : null),
     describe: (handout) =>
       describeHandout(handout, (id) => state.characters.find((c) => c.id === id)?.name),
     // The notes name characters, which the handout rows do not change with.

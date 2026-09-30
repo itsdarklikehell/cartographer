@@ -131,7 +131,16 @@
 }
 
 .npc-panel__location {
-  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.npc-scope {
+  align-self: flex-start;
+  margin-bottom: var(--space-2);
+}
+
+body.role-player .npc-scope {
+  display: none;
 }
 
 .npc-panel__controls {

@@ -1060,8 +1060,10 @@ creature, set its disposition to hostile first.
 
 Combatants that share a name get a number after it, such as "Goblin
 Scout 1" and "Goblin Scout 2". The numbers follow the order of the creature
-list, and the combat screen and the attack and spell dialogs use the same
-numbers. The log and the stored name keep the plain name.
+list. The rows of the Encounters panel, the combat status line in the
+sidebar, the combat screen, and the attack and spell dialogs use the same
+numbers. The Active and Nearby tabs each number their own rows. The log and
+the stored name keep the plain name.
 
 | Control | What it does |
 | --- | --- |
@@ -2241,6 +2243,10 @@ chips.
 | GM tab | The NPCs on the node of the party within the nearby range, plus unplaced NPCs. A placed NPC that the party has not met shows "not yet met" |
 | Player tab | Unplaced NPCs, plus the placed NPCs on the node of the party that the party has met |
 
+In a GM tab, the **Here** and **All** switch above the list picks its scope.
+**Here** lists the NPCs near the party, as in the table. **All** lists every
+friendly and neutral creature in the campaign, on any map, so you can look up
+an NPC without moving the party. A Player tab has no switch.
 The party meets a placed NPC when it lands on the tile of that NPC. The
 meeting writes one travelogue line. If you move the NPC, it counts as not
 met until the party lands on its new tile.
@@ -2278,6 +2284,10 @@ A Player tab lists a handout only when all of these conditions are true:
 - It has no chosen characters, or the tab plays one of them. A spectator
   tab never lists a handout that has chosen characters.
 
+A Player tab keeps listing a handout after the party leaves its spot. The
+handout moves to a **Read earlier** group below the handouts of the current
+spot. It leaves the group when the GM hides or deletes it. The tab keeps this
+list in memory, so a reload of the Player tab empties the group.
 An erase stroke, a smaller node size, or a regeneration of the node can
 remove the tile of a handout. The handout then binds to the whole node. An
 undo of the erase or the regeneration binds it to its tile again.

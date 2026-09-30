@@ -35,7 +35,8 @@ function appendRevealedContent(row, handout) {
  * table. A player sees only revealed handouts, read-only. The panel owns
  * no state. getHandouts supplies the visible rows, already cut to what this
  * tab may see, and every mutation flows back through a callback, matching
- * the other panels. `describe` gives the GM a short note under a row, for
+ * the other panels. `groupOf` names the group of a Player row, such as "Read earlier".
+ * `describe` gives the GM a short note under a row, for
  * example the tile the handout waits on. `dependsOn` names what that note
  * reads besides the row. Modals live in main.js.
  * @param {HTMLElement} container
@@ -48,6 +49,7 @@ function appendRevealedContent(row, handout) {
  *   getRole?: () => ViewRole,
  *   describe?: (handout: Handout) => string,
  *   dependsOn?: () => unknown,
+ *   groupOf?: (handout: Handout) => string | null,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -60,12 +62,16 @@ export function mountHandoutPanel(container, callbacks) {
       return gm ? handouts : handouts.filter((h) => h.revealed);
     },
     emptyMessage: (gm) => (gm ? 'No handouts here.' : 'Nothing to show yet.'),
+    // A Player tab lists the handouts it read at other spots under a heading
+    // of their own, after the ones at the party's spot.
+    groupOf: (handout, gm) => (gm ? null : (callbacks.groupOf?.(handout) ?? null)),
     classes: {
       rowModifiers: (handout, gm) => [(!gm || handout.revealed) && 'handout-panel__row--revealed'],
       // A player's row is title then content with no controls, so it needs
       // no head row to line the buttons up against.
       head: (_handout, gm) => (gm ? 'u-row u-g1' : null),
       add: 'handout-panel__add',
+      group: 'handout-panel__group',
     },
     buildBody: (handout, ctx) => {
       if (!ctx.gm) return el('div', 'handout-panel__title', handout.title);

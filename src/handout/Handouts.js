@@ -149,6 +149,23 @@ export function handoutsFor(handouts, position, viewer) {
 }
 
 /**
+ * The handouts a Player tab showed earlier and does not show at the party's
+ * current spot, in list order. Each one is still revealed and still for this
+ * tab, so a handout the GM hides again, or deletes, drops out of the list.
+ * @param {Handout[]} handouts
+ * @param {Handout[]} shown the tab's list for the current spot
+ * @param {ReadonlySet<string>} seen the ids the tab has listed before
+ * @param {string | null} boundId the tab's character
+ * @returns {Handout[]}
+ */
+export function readHandouts(handouts, shown, seen, boundId) {
+  const here = new Set(shown.map((h) => h.id));
+  return handouts.filter(
+    (h) => h.revealed && seen.has(h.id) && !here.has(h.id) && inAudience(h, boundId),
+  );
+}
+
+/**
  * Make the handouts bound to any of the given nodes campaign-wide. A node
  * edit that removes nodes calls this, so no handout stays bound to a node
  * that is gone, which would hide it from every panel. The tile binding goes
