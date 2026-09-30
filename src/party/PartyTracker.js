@@ -1,4 +1,5 @@
-import { revealAlong, revealAround, revealLinksTo } from '../map/FogOfWar.js';
+import { revealLinksTo } from '../map/FogOfWar.js';
+import { revealSight } from './Sight.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -48,6 +49,18 @@ export class PartyTracker {
     return this.sight ? this.sight(node) : this.revealRadius;
   }
 
+  /**
+   * Reveal what the party sees on `node` from each of `tileIds`: the sight
+   * disc, and the whole room on a map with lit rooms. The caller writes the
+   * result back to the grid.
+   * @param {MapNode} node
+   * @param {readonly string[]} tileIds
+   * @returns {MapNode}
+   */
+  reveal(node, tileIds) {
+    return revealSight(node, tileIds, this.sightFor(node));
+  }
+
   /** @returns {PartyPosition} */
   getPosition() {
     return this.position;
@@ -71,9 +84,7 @@ export class PartyTracker {
   _revealAroundCurrent(path = []) {
     const node = this.grid.getNode(this.position.nodeId);
     if (!node) throw new Error(`PartyTracker: unknown node "${this.position.nodeId}"`);
-    const radius = this.sightFor(node);
-    const walked = revealAlong(node, path, radius);
-    this.grid.updateNode(revealAround(walked, this.position.tileId, radius));
+    this.grid.updateNode(this.reveal(node, [...path, this.position.tileId]));
     this.revealAncestors(node);
   }
 

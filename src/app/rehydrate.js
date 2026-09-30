@@ -73,7 +73,7 @@ export function rehydrateCampaign(app, campaign) {
   for (const key of SYNCED_STATE_KEYS) state[key] = reconcile(state[key], loaded[key]);
 
   // Revealing around the adopted tile does nothing here. The fog it can
-  // reveal is already in the state that was just loaded. `revealAround`
+  // reveal is already in the state that was just loaded. `revealSight`
   // returns the same node when nothing changed, so the per-node caches stay
   // warm.
   app.partyTracker.moveTo(campaign.party.nodeId, campaign.party.tileId);

@@ -28,7 +28,6 @@ import { linksIn } from '../quest/QuestLinks.js';
 import { unlinkRemovedNodes } from './questCleanup.js';
 import { refreshLocationPanels } from './locationPanels.js';
 import { forgetEntries } from '../map/EntryMemory.js';
-import { revealAround } from '../map/FogOfWar.js';
 import { describeTile } from '../map/TileCoords.js';
 import { moveCharacter, placementsIn, recallFrom } from '../party/CharacterTokens.js';
 import { mulberry32 } from '../util/Rng.js';
@@ -294,11 +293,13 @@ export function wireGenerateAction(app, env) {
       ...state.characters.map((c) => c.location).filter((at) => at != null),
     ].filter((at) => at.nodeId === node.id);
     if (seers.length) {
-      let revealed = grid.getNode(node.id) ?? fresh;
-      for (const at of seers) {
-        revealed = revealAround(revealed, at.tileId, partyTracker.sightFor(revealed));
-      }
-      grid.updateNode(revealed);
+      const revealed = grid.getNode(node.id) ?? fresh;
+      grid.updateNode(
+        partyTracker.reveal(
+          revealed,
+          seers.map((at) => at.tileId),
+        ),
+      );
     }
     env.finishEdit();
     // The removal and the moves above change which creatures stand on the

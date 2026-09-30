@@ -967,6 +967,33 @@ render after a load clears fog to 2 tiles at Night. The marker range and
 the Nearby lists read the fixed `revealRadius` instead, so a foe does not
 drop out of the Nearby list when night falls.
 
+### Lit rooms
+
+A room in a building, an inn, or a castle is lit, so a party that walks in
+sees the whole room at once. `litRooms(node)` in `party/Sight.js` is true for
+an interior whose `environ` is set and is not `dungeon`, `cave`, or `cellar`.
+The dungeon and cave generators join their rooms by open corridors, so a room
+fill there would open the whole level, and a cellar uses the dungeon
+generator.
+
+`revealRoom(node, tileId, options)` in `map/RoomReveal.js` flood-fills the
+4-connected tiles around `tileId` that are not walls or doors. It reveals
+them and the walls and doors around them, corners included. Furnishing
+obstacles such as a counter row do not stop the fill, so they do not split a
+room. A party that stands in a door sees into the rooms on both sides,
+because the fill starts from each open neighbour of the door. A fill that
+passes `ROOM_CELL_LIMIT` (100 open tiles) reveals nothing, and the sight
+disc alone shows that hall. The cap also limits the tiles that one step of a
+Player tab adds to its patch.
+
+`revealSight(node, tileIds, radius)` joins the two rules. It runs
+`revealAlong`, and on a lit map it fills the room of each tile of the walk,
+once per room. Every fog reveal of a move calls
+`PartyTracker.reveal(node, tileIds)`, which passes `sightFor(node)` as the
+radius. The one exception is the link tile that a party crosses when it
+leaves a sub-region, which `mapExitTravel.js` reveals alone with
+`revealAround` at radius 0.
+
 ### Marker range
 
 The same Euclidean rule limits the markers. `MapMarkers` shows the encounter,
@@ -1008,8 +1035,8 @@ the costs.
 `PartyPosition`, which is a node id plus a tile id. It is the only object that
 moves the party.
 
-`moveTo(nodeId, tileId, path)` updates the position, calls `revealAlong` on
-the tiles of the walk and `revealAround` on the target tile, and writes the revealed tiles straight back into the `TileGrid`
+`moveTo(nodeId, tileId, path)` updates the position, calls `reveal` on the
+tiles of the walk and the target tile, and writes the revealed tiles straight back into the `TileGrid`
 that the tracker was constructed with. The constructor also reveals around
 the initial position, so a party never starts the campaign fogged in on its
 own tile.

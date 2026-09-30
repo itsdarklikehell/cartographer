@@ -1,4 +1,6 @@
 import { WATCHES } from '../time/GameClock.js';
+import { revealAlong } from '../map/FogOfWar.js';
+import { revealRoom } from '../map/RoomReveal.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/time.js').GameClock} GameClock */
@@ -29,4 +31,36 @@ export function sightRadius(node, clock) {
   const watch = WATCHES[clock?.watch ?? 0];
   if (watch === 'Night') return SIGHT.night;
   return watch === 'Dusk' ? SIGHT.dusk : SIGHT.day;
+}
+
+/** Interior environs whose rooms join by open corridors, so a room fill there would open the whole level. */
+const DARK_ENVIRONS = new Set(['dungeon', 'cave', 'cellar']);
+
+/**
+ * Whether the rooms of `node` are lit, so a party that walks into a room
+ * sees all of it. A building, a castle, or an inn has lit rooms. A dungeon,
+ * a cave, and a cellar stay dark, and an interior with no environ stays
+ * dark as well, because nothing says what it is.
+ * @param {MapNode} node
+ * @returns {boolean}
+ */
+export function litRooms(node) {
+  return node.kind === 'interior' && !!node.environ && !DARK_ENVIRONS.has(node.environ);
+}
+
+/**
+ * Reveal what the party sees from each tile of `tileIds` on `node`: the
+ * disc of `radius` around each tile and, on a map with lit rooms, the whole
+ * room of each tile. A walk fills each room once. A reveal that changes
+ * nothing returns the same node.
+ * @param {MapNode} node
+ * @param {readonly string[]} tileIds the tiles the party stood on or walked through
+ * @param {number} radius
+ * @returns {MapNode}
+ */
+export function revealSight(node, tileIds, radius) {
+  const disc = revealAlong(node, tileIds, radius);
+  if (!litRooms(node)) return disc;
+  const options = { done: new Set() };
+  return tileIds.reduce((at, id) => revealRoom(at, id, options), disc);
 }

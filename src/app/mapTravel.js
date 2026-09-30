@@ -8,7 +8,6 @@ import {
   rememberEntry,
   travelerFor,
 } from '../map/EntryMemory.js';
-import { revealAlong, revealAround } from '../map/FogOfWar.js';
 import { findPath } from '../map/MapPath.js';
 import { isBlocked } from '../map/TileKinds.js';
 import { travelMinutes } from '../time/TravelTime.js';
@@ -190,9 +189,7 @@ export function createMapTravel(app, env) {
       rejoined ? null : { nodeId, tileId: tile.id },
     );
     const before = navigator.getCurrentNode();
-    const radius = partyTracker.sightFor(before);
-    const walked = revealAlong(before, path, radius);
-    grid.updateNode(revealAround(walked, tile.id, radius));
+    grid.updateNode(partyTracker.reveal(before, [...path, tile.id]));
     noteSightings(before);
     discoverTile(tile);
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
@@ -373,7 +370,7 @@ export function createMapTravel(app, env) {
           // way, and the whole party spends the time of it.
           if (path) {
             const walked = grid.getNode(parent.id) ?? parent;
-            grid.updateNode(revealAlong(walked, path, partyTracker.sightFor(walked)));
+            grid.updateNode(partyTracker.reveal(walked, path));
             noteSightings(walked, child.id);
           }
           if (path !== undefined && !subject) spendWalk(tile, path, parent);
@@ -383,7 +380,7 @@ export function createMapTravel(app, env) {
               nodeId: child.id,
               tileId: entry,
             });
-            grid.updateNode(revealAround(childBefore, entry, partyTracker.sightFor(childBefore)));
+            grid.updateNode(partyTracker.reveal(childBefore, [entry]));
           } else {
             partyTracker.moveTo(child.id, entry);
             state.characters = recallAll(state.characters);
@@ -452,7 +449,7 @@ export function createMapTravel(app, env) {
       if (at.nodeId === here.id && (onDoor || path)) {
         if (!onDoor && path) {
           if (!subject && gm) spendWalk(tile, path);
-          grid.updateNode(revealAlong(here, path, partyTracker.sightFor(here)));
+          grid.updateNode(partyTracker.reveal(here, path));
         }
         exitToParent(exit);
         return;

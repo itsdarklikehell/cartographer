@@ -3,7 +3,6 @@ import { addXP, getHP, setMaxHP, setBonusHP, setBaseAC } from '../entities/Chara
 import { applyFresh, removeById } from '../entities/Roster.js';
 import { moveCharacter } from '../party/CharacterTokens.js';
 import { describeTile } from '../map/TileCoords.js';
-import { revealAround } from '../map/FogOfWar.js';
 import { clampInt } from '../util/num.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { rosterIds } from './combatants.js';
@@ -51,7 +50,7 @@ export function rosterActions(app, { scope, selectCharacter }) {
         // A placed character sees around the tile, the same as a character
         // that walks there.
         if (node) {
-          app.grid.updateNode(revealAround(node, location.tileId, app.partyTracker.sightFor(node)));
+          app.grid.updateNode(app.partyTracker.reveal(node, [location.tileId]));
           app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
           app.views.regionTree.update();
         }
