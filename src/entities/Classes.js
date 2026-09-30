@@ -43,7 +43,7 @@ export function getClass(classId) {
  * is a display-only feature and comes back with no effects. The result is a
  * fresh object; the catalog entry is never touched.
  * @param {string | import('../types/class.js').ClassFeatureDef} entry
- * @returns {{ name: string, effects: import('../types/feat.js').FeatEffect[] }}
+ * @returns {{ name: string, effects: import('../types/class.js').ClassFeatureEffect[] }}
  */
 export function featureEntry(entry) {
   if (typeof entry === 'string') return { name: entry, effects: [] };

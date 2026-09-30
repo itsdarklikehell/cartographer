@@ -36,7 +36,10 @@ test('pendingFeatureGrants lists unclaimed structured features in unlock order',
     pendingFeatureGrants(rogue(6)).map((f) => featureKey(f)),
     ['rogue 1 Expertise', 'rogue 6 Expertise'],
   );
-  assert.deepEqual(pendingFeatureGrants(classed([{ classId: 'fighter', level: 5 }])), []);
+  assert.deepEqual(
+    pendingFeatureGrants(classed([{ classId: 'fighter', level: 5 }])).map((f) => featureKey(f)),
+    ['fighter 1 Fighting Style'],
+  );
   assert.deepEqual(pendingFeatureGrants(createCharacter('c1', 'Nim')), []);
 });
 

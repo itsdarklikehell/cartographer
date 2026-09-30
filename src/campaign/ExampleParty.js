@@ -25,9 +25,10 @@ import { DEFAULT_FEATS } from '../data/feats.js';
 /**
  * The example party: four level-4 characters, each built through the same
  * calls that the level-up flow makes, so the sheet shows a real history of
- * choices. Ser Aldric takes a feat, Mirelle an ability score increase, Wren
+ * choices. Ser Aldric takes the Dueling fighting style and a feat, Mirelle an ability score increase, Wren
  * claims the Expertise of the Rogue and takes the Arcane Trickster
- * subclass, and Brannoc multiclasses from an Eldritch Knight into a wizard.
+ * subclass, and Brannoc takes Great Weapon Fighting and multiclasses from an
+ * Eldritch Knight into a wizard.
  */
 
 /**
@@ -108,6 +109,8 @@ function aldric() {
     { classId: 'fighter', subclass: 'Champion' },
     { classId: 'fighter' },
   ]);
+  const [style] = pendingFeatureGrants(c);
+  c = applyFeatureGrant(c, buildFeatureStamp(style, { style: 'dueling' }));
   c = takeFeat(c, buildStamp(feat('resilient'), { abilities: ['WIS'], saves: ['WIS'] }));
   c.inventory = [
     {
@@ -376,6 +379,8 @@ function brannoc() {
     { classId: 'fighter', subclass: 'Eldritch Knight' },
     { classId: 'wizard' },
   ]);
+  const [style] = pendingFeatureGrants(c);
+  c = applyFeatureGrant(c, buildFeatureStamp(style, { style: 'great-weapon' }));
   // As an Eldritch Knight 3 he knows two cantrips and three 1st-level
   // spells: two from abjuration or evocation and one from any school. As a
   // wizard 1 he knows three cantrips, keeps six 1st-level spells in his

@@ -13,8 +13,8 @@ import { normalizeRider } from './Riders.js';
 /** @typedef {import('../types/entities.js').FeatureChoice} FeatureChoice */
 /** @typedef {import('../types/entities.js').FeatureChoices} FeatureChoices */
 /** @typedef {import('../types/feat.js').FeatEffect} FeatEffect */
-/** @typedef {{ classId: string, classLevel: number, name: string, effects: FeatEffect[] }} PendingFeature */
-/** @typedef {{ classId: string, classLevel: number, name: string, granted?: import('../types/feat.js').FeatGrants, rider?: import('../types/entities.js').RollRider }} FeatureStamp */
+/** @typedef {{ classId: string, classLevel: number, name: string, effects: import('../types/class.js').ClassFeatureEffect[] }} PendingFeature */
+/** @typedef {{ classId: string, classLevel: number, name: string, granted?: import('../types/feat.js').FeatGrants, rider?: import('../types/entities.js').RollRider, style?: string }} FeatureStamp */
 
 /**
  * The grant lifecycle of a structured class feature. A feature in the class
@@ -72,15 +72,18 @@ export function pendingFeatureGrants(character) {
  * Assemble the stamp that `applyFeatureGrant` records, from a pending
  * feature and the picks the dialog gathered. The fixed grants (armor, tools,
  * languages) come from the feature's effects; the picked ones come from the
- * picks. The rider copies as written. Class features grant no ability
- * increases, so there is no asi side.
+ * picks. The rider copies as written. A fighting style pick counts only when
+ * the feature offers it. Class features grant no ability increases, so there
+ * is no asi side.
  * @param {PendingFeature} feature
- * @param {{ skills?: string[], saves?: string[], expertise?: string[] }} picks
+ * @param {{ skills?: string[], saves?: string[], expertise?: string[], style?: string }} picks
  * @returns {FeatureStamp}
  */
 export function buildFeatureStamp(feature, picks) {
   const proficiency = feature.effects.filter((e) => e.kind === 'proficiency');
   const rider = feature.effects.find((e) => e.kind === 'rider')?.rider;
+  const styles = feature.effects.flatMap((e) => (e.kind === 'fightingStyle' ? e.from : []));
+  const style = picks.style && styles.includes(picks.style) ? picks.style : undefined;
   return {
     classId: feature.classId,
     classLevel: feature.classLevel,
@@ -94,6 +97,7 @@ export function buildFeatureStamp(feature, picks) {
       languages: proficiency.flatMap((e) => e.languages ?? []),
     },
     ...(rider ? { rider } : {}),
+    ...(style ? { style } : {}),
   };
 }
 
@@ -136,6 +140,7 @@ export function applyFeatureGrant(character, stamp) {
     ...(requested ? { requested } : {}),
     ...(granted ? { granted } : {}),
     ...(rider ? { rider } : {}),
+    ...(stamp.style ? { style: stamp.style } : {}),
   };
   return {
     ...character,

@@ -16,6 +16,12 @@ import { allowsSneakAttack, hasFreeHandFor } from './AttackOptions.js';
 import { coverBonus, coverNote } from './Cover.js';
 import { offhandDamageModifier } from './TwoWeapon.js';
 import {
+  offhandAddsModifier,
+  styleAttackBonus,
+  styleDamageBonus,
+  styleRerollBelow,
+} from '../entities/FightingStyle.js';
+import {
   abilityModOf,
   attackerProficiency,
   attackerProficientWith,
@@ -45,6 +51,7 @@ import {
  *   proficiency: number,
  *   proficient: boolean,
  *   tired: number,
+ *   style: number,
  *   modifier: number,
  *   tweak: ReturnType<typeof attackTweak>,
  *   rider: ReturnType<typeof rollRiders>,
@@ -90,7 +97,9 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
   // Both kinds of attacker carry the level, so a tired foe swings worse too.
   // Damage is untouched: the penalty is on the roll, not on the hit.
   const tired = d20Penalty(attacker);
-  const attackBonus = abilityMod + (proficient ? proficiency : 0) + tired;
+  // The Archery fighting style adds 2 to a ranged weapon.
+  const style = styleAttackBonus(attacker, weapon);
+  const attackBonus = abilityMod + (proficient ? proficiency : 0) + tired + style;
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
   // view. `attackTweak` rolls penalty dice and folds them into the modifier,
   // and keeps the values in its note for the log.
@@ -145,6 +154,7 @@ export function prepareSwing({ attacker, defender, weapon, tweaks, rng }) {
     proficiency,
     proficient,
     tired,
+    style,
     modifier: attackBonus + tweak.modifier + rider.modifier,
     tweak,
     rider,
@@ -208,6 +218,7 @@ export function attackLine(setup, roll) {
   const conditionNote = reasons ? `, ${reasons}` : '';
   const proficiencyNote = setup.proficient ? `proficiency +${setup.proficiency}` : 'not proficient';
   const tiredNote = setup.tired ? `, exhaustion ${exhaustionLevel(attacker)} ${setup.tired}` : '';
+  const styleNote = setup.style ? `, Archery +${setup.style}` : '';
   // An off-hand swing and an opportunity attack both roll to hit like any other
   // swing, so the note sits on the attack line: it says where the missing damage
   // bonus went, or which part of the turn the swing came out of.
@@ -216,7 +227,7 @@ export function attackLine(setup, roll) {
   // where the difference came from.
   const coverAC = setup.cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
   const wardAC = raised && roll.wardName ? ` (${roll.wardName} +${raised})` : '';
-  return `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote} — ${roll.outcome}.`;
+  return `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${tiredNote}${styleNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote} — ${roll.outcome}.`;
 }
 
 /**
@@ -259,22 +270,36 @@ export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit
     });
   }
   const surpriseNote = surprise ? `, Surprise Attack +${surprise.count}d${surprise.sides}` : '';
-  // The second hand of two-weapon fighting adds no ability bonus to damage. A
-  // negative modifier still applies, so the swing of a weak character is still
-  // weak.
-  const damageMod = tweaks.offhand ? offhandDamageModifier(setup.abilityMod) : setup.abilityMod;
+  // The second hand of two-weapon fighting adds no ability bonus to damage,
+  // unless the attacker has the Two-Weapon Fighting style. A negative modifier
+  // still applies, so the swing of a weak character is still weak.
+  const damageMod =
+    tweaks.offhand && !offhandAddsModifier(attacker)
+      ? offhandDamageModifier(setup.abilityMod)
+      : setup.abilityMod;
+  // Dueling adds a flat 2, and Great Weapon Fighting rerolls a 1 or a 2 on
+  // each damage die of the weapon swing.
+  const swing = { melee: setup.melee, twoHanded: !!twoHanded };
+  const dueling = styleDamageBonus(attacker, weapon, swing);
+  const reroll = styleRerollBelow(attacker, weapon, swing);
+  const styled = reroll ? parts.map((part) => ({ ...part, rerollBelow: reroll })) : parts;
+  const styleNote = `${dueling ? `, Dueling +${dueling}` : ''}${reroll ? ', Great Weapon Fighting' : ''}`;
   // Hit riders (Divine Favor, Hunter's Mark) add dice that a crit doubles.
   // Lifedrinker adds a flat amount, which a crit leaves alone.
   const riders = hitRiders(attacker, defender, { weapon: true });
   const baseType = parts[0]?.damageType ?? 'bonus';
   const drink = pactDamage(attacker, weapon, attackerStats(attacker));
   const damage = rollDamage(
-    [...parts, ...hitRiderParts(riders, crit, baseType), ...(drink ? [drink.part] : [])],
-    damageModifier(damageMod, tweaks.damageFlat ?? 0),
+    [...styled, ...hitRiderParts(riders, crit, baseType), ...(drink ? [drink.part] : [])],
+    damageModifier(damageMod + dueling, tweaks.damageFlat ?? 0),
     rng,
   );
   const drinkNote = drink ? `, ${drink.name} +${drink.part.bonus} ${drink.part.damageType}` : '';
-  return { damage, sneakDice, riderNote: hitRiderNote(riders, crit) + drinkNote + surpriseNote };
+  return {
+    damage,
+    sneakDice,
+    riderNote: hitRiderNote(riders, crit) + drinkNote + styleNote + surpriseNote,
+  };
 }
 
 /**

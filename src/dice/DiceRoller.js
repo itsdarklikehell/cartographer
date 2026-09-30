@@ -157,7 +157,8 @@ export function damageReadout(groups) {
  * first term's type: the ability modifier boosts the weapon's own damage,
  * not its riders (5e rule). A term can also carry its own `bonus`, which
  * stays with that term's damage type wherever it sits, for example Magic
- * Missile's 1d4+1. Terms that share a damage type merge into one group. No
+ * Missile's 1d4+1. Terms that share a damage type merge into one group. A
+ * term with `rerollBelow` rolls a low die once more and keeps the new roll. No
  * group total can go below zero, even with a large negative flat amount.
  * @param {import('../types/entities.js').DamagePart[]} parts
  * @param {number} [modifier]
@@ -177,7 +178,8 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
       subtotal: 0,
     };
     for (let i = 0; i < part.count; i++) {
-      const value = Math.floor(rng() * part.sides) + 1;
+      const first = Math.floor(rng() * part.sides) + 1;
+      const value = first <= (part.rerollBelow ?? 0) ? Math.floor(rng() * part.sides) + 1 : first;
       group.rolls.push(value);
       group.subtotal += value;
     }

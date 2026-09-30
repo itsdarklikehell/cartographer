@@ -20,6 +20,7 @@ import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
 import { chooseASI, chooseFeat } from './ImprovementFlow.js';
 import { skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
+import { fightingStyle } from '../data/fightingStyles.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../entities/FeatureGrants.js').FeatureStamp} FeatureStamp */
@@ -46,9 +47,11 @@ import { splitList } from '../util/text.js';
  * @returns {string}
  */
 function grantPicksText(choice) {
-  if (!choice?.granted) return '';
-  const g = choice.granted;
+  if (!choice) return '';
+  const g = choice.granted ?? {};
+  const style = choice.style ? fightingStyle(choice.style) : undefined;
   const parts = [
+    ...(style ? [`${style.name} (${style.text})`] : []),
     ...(g.skills ?? []).map(skillName),
     ...(g.saves ?? []),
     ...(g.expertise ?? []).map(skillName),

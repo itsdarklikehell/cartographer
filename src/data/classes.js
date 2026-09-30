@@ -1,4 +1,5 @@
 import { deepFreeze } from '../util/deepFreeze.js';
+import { FIGHTING_STYLES } from './fightingStyles.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 
@@ -29,6 +30,19 @@ const EXPERTISE = {
   name: 'Expertise',
   effects: [{ kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } }],
 };
+
+/** The Fighting Style feature of one class: a pick of one style from the
+ * styles that class offers (see data/fightingStyles.js).
+ * @param {string} classId */
+const fightingStyleFeature = (classId) => ({
+  name: 'Fighting Style',
+  effects: [
+    {
+      kind: /** @type {const} */ ('fightingStyle'),
+      from: FIGHTING_STYLES.filter((style) => style.classes.includes(classId)).map((s) => s.id),
+    },
+  ],
+});
 
 /** @param {Partial<import('../types/class.js').MulticlassGrant>} [grant]
  * @returns {import('../types/class.js').MulticlassGrant} */
@@ -294,7 +308,7 @@ export const DEFAULT_CLASSES = deepFreeze(
         weaponCategories: ['simple', 'martial'],
       }),
       featuresByLevel: {
-        1: ['Fighting Style', 'Second Wind'],
+        1: [fightingStyleFeature('fighter'), 'Second Wind'],
         2: ['Action Surge'],
         3: ['Martial Archetype'],
         5: ['Extra Attack'],
@@ -367,7 +381,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       }),
       featuresByLevel: {
         1: ['Divine Sense', 'Lay on Hands'],
-        2: ['Fighting Style', 'Divine Smite'],
+        2: [fightingStyleFeature('paladin'), 'Divine Smite'],
         3: ['Divine Health', 'Sacred Oath'],
         5: ['Extra Attack'],
         6: ['Aura of Protection'],
@@ -401,7 +415,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       }),
       featuresByLevel: {
         1: ['Favored Enemy', 'Natural Explorer'],
-        2: ['Fighting Style'],
+        2: [fightingStyleFeature('ranger')],
         3: ['Ranger Archetype', 'Primeval Awareness'],
         5: ['Extra Attack'],
         8: ["Land's Stride"],

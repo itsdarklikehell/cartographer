@@ -1211,7 +1211,8 @@ The group offers both weapons, and you pick the one that the second hand
 swings. The off-hand swing rolls to hit like any other attack.
 
 Its damage gets no ability bonus, which is the 5e rule. A negative ability
-modifier still applies. The combat log marks the swing "off-hand".
+modifier still applies. A character with the Two-Weapon Fighting style adds
+the ability modifier (see [Fighting styles](#fighting-styles)). The combat log marks the swing "off-hand".
 
 ### Reactions and opportunity attacks
 
@@ -1974,7 +1975,28 @@ of a fight does not heal by mistake.
 | Short rest | The Short rest dialog asks how many dice each hurt character spends. Each die heals the roll plus the CON modifier, and spending stops at full HP |
 | Long rest | Restores half of the total hit dice, at least one, largest dice first. For example, Fighter 3 / Wizard 3 with every die spent gets three dice back |
 
+### Fighting styles
+
+The Fighting Style feature of the Fighter (level 1), the Paladin (level 2),
+and the Ranger (level 2) waits in the Progression block as a pending feature
+choice. Click **Choose** and pick one style. The class features list shows
+the pick with a Change button. A character with the feature from two classes
+takes a different style each time.
+
+| Style | Classes | Effect in the app |
+| --- | --- | --- |
+| Archery | Fighter, Ranger | +2 to the attack roll of a ranged weapon |
+| Defense | Fighter, Paladin, Ranger | +1 AC while the character wears body armor |
+| Dueling | Fighter, Paladin, Ranger | +2 damage with a melee weapon in one hand, when no other weapon is in hand |
+| Great Weapon Fighting | Fighter, Paladin | Each 1 or 2 on a damage die rolls again once, for a two-handed weapon or a versatile weapon swung in two hands |
+| Protection | Fighter, Paladin | Text only. The GM applies the disadvantage by hand |
+| Two-Weapon Fighting | Fighter, Ranger | The off-hand attack adds the ability modifier to damage |
+
+The attack log line names Archery, and the hit line names Dueling and Great
+Weapon Fighting.
+
 ### Class feature pools
+
 
 The app gives each character a resource pool for every class feature that
 has a count of uses. The class levels and the ability scores set the size of

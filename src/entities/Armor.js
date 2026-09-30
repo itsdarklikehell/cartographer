@@ -10,6 +10,7 @@ import { abilityModifier } from './Modifiers.js';
 import { isProficientArmor } from './Proficiencies.js';
 import { unarmoredDefenses } from './Classes.js';
 import { heldMods, withChipAC } from './ChipMods.js';
+import { styleArmorBonus } from './FightingStyle.js';
 import {
   ARMOR_WEIGHTS,
   armorTraits,
@@ -75,7 +76,8 @@ export function armorClass(character) {
     if (item === body) continue;
     ac += itemACBonus(item);
   }
-  return withChipAC(ac, mods);
+  // The Defense fighting style adds 1 while the character wears body armor.
+  return withChipAC(ac + styleArmorBonus(character), mods);
 }
 
 /**

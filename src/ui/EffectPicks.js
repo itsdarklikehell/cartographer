@@ -4,10 +4,12 @@ import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { abilityPool, choicePool } from '../entities/FeatChoices.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
+import { fightingStyle } from '../data/fightingStyles.js';
+import { fightingStyles } from '../entities/FightingStyle.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/feat.js').FeatEffect} FeatEffect */
-/** @typedef {{ abilities: string[], skills: string[], saves: string[], expertise: string[] }} EffectPicks */
+/** @typedef {import('../types/class.js').ClassFeatureEffect} FeatEffect */
+/** @typedef {{ abilities: string[], skills: string[], saves: string[], expertise: string[], style?: string }} EffectPicks */
 
 /**
  * Gather the picks an effect list needs, dialog by dialog. The take-feat
@@ -88,6 +90,24 @@ export async function gatherEffectPicks(title, effects, taker) {
           picks.saves,
           (key) => key,
         );
+      }
+    } else if (effect.kind === 'fightingStyle') {
+      // A character takes each style once, so a second Fighting Style from
+      // another class offers only the styles not yet taken.
+      const taken = fightingStyles(taker);
+      const pool = effect.from.filter((id) => !taken.includes(id) && fightingStyle(id));
+      if (pool.length > 0) {
+        fields.push({
+          name: `style${i}`,
+          label: 'Fighting style',
+          type: 'select',
+          options: pool.map((id) => {
+            const style = fightingStyle(id);
+            return { value: id, label: `${style?.name}: ${style?.text}` };
+          }),
+          value: pool[0],
+        });
+        readers.push((values) => (picks.style = values[`style${i}`]));
       }
     }
   });

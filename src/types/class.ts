@@ -137,11 +137,15 @@ export interface SubclassDef {
   casting?: SubclassCasting;
 }
 
+/** One effect of a class feature: a feat effect, or the pick of one fighting
+ * style id from `from` (see data/fightingStyles.js). No feat picks a style. */
+export type ClassFeatureEffect = FeatEffect | { kind: 'fightingStyle'; from: string[] };
+
 /** A class feature with structured effects, in the same effect vocabulary
  * feats use. Effects the engine cannot model stay a plain name string. */
 export interface ClassFeatureDef {
   name: string;
-  effects?: FeatEffect[];
+  effects?: ClassFeatureEffect[];
 }
 
 /** One of a character's class memberships: which class, at what level, in

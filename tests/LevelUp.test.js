@@ -17,6 +17,10 @@ import {
 } from '../src/entities/LevelUp.js';
 import { createCharacter, addXP, withDefaults } from '../src/entities/Character.js';
 import { assignLevel } from '../src/entities/LevelAssign.js';
+import { FIGHTING_STYLES } from '../src/data/fightingStyles.js';
+
+/** The effects of the fighter's Fighting Style feature. */
+const FIGHTER_STYLE = [{ kind: 'fightingStyle', from: FIGHTING_STYLES.map((s) => s.id) }];
 
 /** @param {number} [level] */
 function fighter(level = 1) {
@@ -267,7 +271,7 @@ test("withDefaults migrates an older save's level-keyed choices", () => {
 
 test('unlockedFeatures lists class features up to the class level, ascending', () => {
   assert.deepEqual(unlockedFeatures(fighter(3)), [
-    { classId: 'fighter', level: 1, name: 'Fighting Style' },
+    { classId: 'fighter', level: 1, name: 'Fighting Style', effects: FIGHTER_STYLE },
     { classId: 'fighter', level: 1, name: 'Second Wind' },
     { classId: 'fighter', level: 2, name: 'Action Surge' },
     { classId: 'fighter', level: 3, name: 'Martial Archetype' },
@@ -356,7 +360,7 @@ test('a class id outside the catalog unlocks no features', () => {
     { classId: 'fighter', level: 1 },
   ]);
   assert.deepEqual(unlockedFeatures(homebrew), [
-    { classId: 'fighter', level: 1, name: 'Fighting Style' },
+    { classId: 'fighter', level: 1, name: 'Fighting Style', effects: FIGHTER_STYLE },
     { classId: 'fighter', level: 1, name: 'Second Wind' },
   ]);
 });

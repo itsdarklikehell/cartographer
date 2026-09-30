@@ -81,7 +81,10 @@ test('every feature entry is a name or a named feature with known effect kinds',
         assert.ok(typeof entry.name === 'string' && entry.name.length > 0, `${c.id} feature name`);
         assert.ok(Array.isArray(entry.effects) && entry.effects.length > 0, `${c.id} effects`);
         for (const effect of entry.effects)
-          assert.ok(FEAT_EFFECT_KINDS.includes(effect.kind), `${c.id} effect kind ${effect.kind}`);
+          assert.ok(
+            [...FEAT_EFFECT_KINDS, 'fightingStyle'].includes(effect.kind),
+            `${c.id} effect kind ${effect.kind}`,
+          );
       }
     }
   }

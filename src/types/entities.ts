@@ -329,6 +329,10 @@ export interface DamagePart {
    * can roll no dice at all. This is how a fixed amount with no dice is
    * written. */
   bonus?: number;
+  /** A die that lands at or below this face rolls once more, and the second
+   * roll stands, as Great Weapon Fighting rerolls a 1 or a 2. Absent means no
+   * reroll. */
+  rerollBelow?: number;
 }
 
 export interface InventoryItem {
@@ -539,6 +543,8 @@ export interface FeatureChoice {
   granted?: import('./feat.js').FeatGrants;
   /** The standing roll rider the feature carries. */
   rider?: RollRider;
+  /** The fighting style id that a Fighting Style feature picked. */
+  style?: string;
 }
 
 /** Applied class-feature grants, keyed by the feature they claim (see

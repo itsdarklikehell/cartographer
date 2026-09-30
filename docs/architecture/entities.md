@@ -708,6 +708,27 @@ grant that the character already had from the GM, so undo cannot remove it.
 `FeatChoices.riderSources`, which every roll site calls. The Rogue grants
 Expertise this way at levels 1 and 6, and the Bard at levels 3 and 10.
 
+The Fighting Style feature of the fighter (level 1), the paladin (level 2),
+and the ranger (level 2) carries one class-only effect,
+`{ kind: 'fightingStyle', from }` (`ClassFeatureEffect` in `types/class.ts`).
+`from` lists the style ids from `data/fightingStyles.js` that the class
+offers. The grant dialog offers one select over the styles the character has
+not taken yet, and `applyFeatureGrant` stores the pick as `style` on the
+feature's record. `entities/FightingStyle.js` reads the style ids back from
+`featureChoices` and works out the numbers:
+
+| Style | Where it applies |
+| --- | --- |
+| Archery | `WeaponSwing.prepareSwing` adds 2 to the attack of a ranged weapon |
+| Defense | `Armor.armorClass` adds 1 while the chest slot holds body armor |
+| Dueling | `WeaponSwing.hitDamage` adds 2 to one-handed melee damage when no other weapon is in hand |
+| Great Weapon Fighting | `hitDamage` sets `rerollBelow: 2` on the damage parts of a two-handed melee swing, and `rollDamage` rerolls each 1 or 2 once |
+| Two-Weapon Fighting | `hitDamage` keeps the ability modifier on the off-hand swing |
+
+Protection needs a reaction and the positions of allies, which the app does
+not model, so the sheet shows it as text only.
+
+
 `entities/Features.js` reads the names of level-scaling features as numbers.
 `attacksPerAction` gives 2 for 'Extra Attack', and 3 or 4 for the numbered
 Fighter features that follow it. It takes the best count across the class
