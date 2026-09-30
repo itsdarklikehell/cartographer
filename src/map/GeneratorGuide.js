@@ -164,10 +164,46 @@ function band(e) {
 }
 
 /**
+ * The water cells of a guide that join the block. A water cell joins when
+ * it touches the block, or when a chain of water cells links it to one
+ * that does, by steps to the eight neighbors. A lake inside the land of a
+ * neighbor does not join.
+ * @param {TerrainGuide} guide
+ * @returns {Uint8Array} 1 for each joined water cell, indexed like the guide
+ */
+function joinedSea({ width: gw, height: gh, biomes, block }) {
+  /** @param {number} p @param {(q: number) => boolean} test */
+  const anyNeighbor = (p, test) =>
+    NEIGHBORS8.some(([dx, dy]) => {
+      const x = (p % gw) + dx;
+      const y = Math.floor(p / gw) + dy;
+      return x >= 0 && y >= 0 && x < gw && y < gh && test(y * gw + x);
+    });
+  /** @param {number} p */
+  const wet = (p) => {
+    const b = biomes[p];
+    return !block[p] && !!b && band(CLIMATE[b].e) === 'water';
+  };
+  const sea = new Uint8Array(gw * gh);
+  // Each pass joins the water beside what has joined so far. A guide is
+  // at most a few dozen cells across, so the passes stay cheap.
+  for (let grew = true; grew;) {
+    grew = false;
+    for (let p = 0; p < sea.length; p++) {
+      if (sea[p] || !wet(p) || !anyNeighbor(p, (q) => block[q] || sea[q] === 1)) continue;
+      sea[p] = 1;
+      grew = true;
+    }
+  }
+  return sea;
+}
+
+/**
  * The cells of a guided map that stay painted. A cell stays when its
- * nearest parent cell is in the block, or is water beside the block, so a
- * coast keeps a band of its sea. The land of a neighbor and the open sea
- * stay blank, and the map takes the outline of its block. The warp of the
+ * nearest parent cell is in the block, or is water that joins the block
+ * (see `joinedSea`), so a coast keeps its sea out to the border of the map.
+ * The land of a neighbor stays blank, and the map takes the outline of its
+ * block on that side. The warp of the
  * sample point gives the outline the same bends as the terrain. Only the
  * largest connected area of painted cells stays, so a bend of the warp
  * leaves no painted speck that the party cannot walk to. A blank area that
@@ -178,20 +214,9 @@ function band(e) {
  * @returns {Uint8Array} 1 for each painted cell, indexed `y * size + x`
  */
 export function paintedMask(size, guide, near) {
-  const { width: gw, height: gh, biomes, block } = guide;
-  /** @param {number} p */
-  const coastal = (p) => {
-    const b = biomes[p];
-    if (!b || band(CLIMATE[b].e) !== 'water') return false;
-    const gx = p % gw;
-    const gy = Math.floor(p / gw);
-    return NEIGHBORS8.some(([dx, dy]) => {
-      const x = gx + dx;
-      const y = gy + dy;
-      return x >= 0 && y >= 0 && x < gw && y < gh && block[y * gw + x];
-    });
-  };
-  const keep = Array.from(near, (p) => block[p] || coastal(p));
+  const { block } = guide;
+  const sea = joinedSea(guide);
+  const keep = Array.from(near, (p) => block[p] || sea[p] === 1);
   /**
    * Flood the cells that `ok` accepts from `starts`, by steps to the four
    * side neighbors.

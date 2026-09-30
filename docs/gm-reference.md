@@ -607,8 +607,8 @@ in no region.
 A region map is a larger, more detailed copy of its block. Its coasts,
 ranges, forests, and rivers sit where the world map shows them, and small
 hills, lakes, and streams fill in between. The map takes the outline of its
-block, so the land of a neighbor region and the open sea stay blank, and a
-coast keeps a band of its sea. A larger block gets a larger map, from small
+block where it meets a neighbor region, and the land of that neighbor stays
+blank. A coast keeps its sea out to the edge of the map. A larger block gets a larger map, from small
 (8 x 8) for a block of one tile to vast (48 x 48) for a block 25 tiles
 across. An edge exit arrow shows when the party is near the edge of the
 painted land, not only near the border of the grid.

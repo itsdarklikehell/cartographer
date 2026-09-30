@@ -172,7 +172,21 @@ test('a painted mask takes the outline of the block, with its coastal sea', () =
   assert.equal(at(0, 0), 1, 'the block is painted');
   assert.equal(at(6, 0), 0, 'the land of a neighbor is blank');
   assert.equal(at(9, 9), 1, 'the sea beside the block is painted');
-  assert.equal(at(9, 0), 0, 'the sea beside only the neighbor is blank');
+  assert.equal(at(9, 0), 1, 'the sea that joins the coast is painted to the border');
+});
+
+test('a painted mask leaves a lake inside the land of a neighbor blank', () => {
+  // The lake at the top right touches only the neighbor's land.
+  const guide = guideOf(['FF.~', 'FF..', 'FFFF', 'FFF~']);
+  const size = 8;
+  const near = Int32Array.from({ length: size * size }, (_, i) => {
+    const gx = Math.floor((i % size) / 2);
+    const gy = Math.floor(Math.floor(i / size) / 2);
+    return gy * 4 + gx;
+  });
+  const painted = paintedMask(size, guide, near);
+  assert.equal(painted[0 * size + 7], 0, 'the lake is blank');
+  assert.equal(painted[7 * size + 7], 1, 'the sea beside the block is painted');
 });
 
 test('a painted mask drops a speck and fills a pit', () => {

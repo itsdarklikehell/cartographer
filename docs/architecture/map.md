@@ -438,9 +438,11 @@ a river that leaves the box runs off the map. `traceRivers` then adds half
 the usual count of smaller rivers, which join the guided ones.
 
 `paintedMask` sets which cells the map keeps. A cell stays when its nearest
-parent cell is in the block, or is water beside the block, so a coast keeps
-a band of its sea. The land of a neighbor and the open sea stay blank, and
-the region map takes the outline of its block. Only the largest connected
+parent cell is in the block, or is water that joins the block. Water joins
+when it touches the block, or when a chain of water cells links it to water
+that does, so a coast keeps its sea out to the border of the map. The land
+of a neighbor stays blank, and so does a lake inside that land, and on
+those sides the region map takes the outline of its block. Only the largest connected
 painted area stays, and a blank area that does not reach the border fills
 in, so no painted speck stands apart from the rest of the map. `generateWilds` treats a
 blank cell as water while it places the sites, the roads, and the
