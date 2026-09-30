@@ -478,6 +478,7 @@ The helper modules below contain the rest of the character flows:
 
 | Module | Owns |
 | --- | --- |
+| `rosterActions.js` | The roster's GM controls: place one character, edit its HP and AC, grant or award XP, and add or delete a character |
 | `characterCreate.js` | The fields of the New character dialog and `buildCharacter`, which turns the submitted values into a level 1 character. Both are free of DOM code |
 | `checkRolls.js` | Saving throws and ability checks rolled from the sheet |
 | `deathSaves.js` | Death saves rolled from the sheet or the combat screen, and stabilizing by hand |
