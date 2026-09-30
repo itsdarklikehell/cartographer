@@ -27,6 +27,7 @@ import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import { buildTimingControls, setCaption } from './SpellFormTiming.js';
 import { buildRiderControls } from './SpellFormRider.js';
+import { buildScalingControls } from './SpellFormScaling.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
@@ -242,33 +243,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
   const summonPerStepField = labeled('Extra / level', summonPerStepInput);
 
-  // --- Scaling -------------------------------------------------------------
-  const scales = checkbox('Scales per level', !!spell?.scaling);
-  // A spell that scales only its targets (Hold Person) starts with no extra
-  // dice. The sample term is only for a spell with no scaling block yet, so
-  // a save of an unchanged form cannot add damage the spell never dealt.
-  const scalingDamage = buildDamageEditor(
-    spell?.scaling
-      ? (spell.scaling.damagePerLevel ?? [])
-      : [{ count: 1, sides: 6, damageType: 'fire' }],
-    heals ? HEALING_TYPE : null,
-  );
-  const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
-  const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, {
-    min: 0,
-    className: 'form__number',
-  });
-  const targetsField = labeled('Extra targets / level', targetsInput);
-  const levelsPerStepInput = numberField(spell?.scaling?.levelsPerStep ?? 1, {
-    min: 1,
-    max: 9,
-    className: 'form__number',
-  });
-  setTip(
-    levelsPerStepInput,
-    'Slot levels per step of scaling. 2 for a spell that grows every two levels',
-  );
-  const levelsPerStepField = labeled('Levels per step', levelsPerStepInput);
+  const scaling = buildScalingControls(spell);
 
   const materialRow = fieldRow(materialField, materialCostField, consumed.label);
 
@@ -281,12 +256,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const conditionRow = fieldRow(conditionField);
   const saveEndsRow = fieldRow(saveEnds.label);
   const healTogglesRow = fieldRow(addsModifier.label, revives.label, stabilizes.label);
-  const scalingRow = fieldRow(scales.label);
-  // Keep the multi-line dice editor and the lone targets number on separate
-  // rows. A shared flex row leaves the small number field floating beside the
-  // taller editor.
-  const scalingDamageRow = fieldRow(scalingDamageField);
-  const scalingTargetsRow = fieldRow(targetsField, levelsPerStepField);
 
   function syncEffectFields() {
     const kind = kindSelect.value;
@@ -328,7 +297,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
     effectDamage.setFixedType(fixed);
-    scalingDamage.setFixedType(fixed);
+    scaling.setFixedType(fixed);
     // The one damage editor element is reused. Park it under whichever label
     // is visible.
     if (kind === 'heal') healField.appendChild(effectDamage.element);
@@ -350,13 +319,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   later.listen(syncEffectFields);
   onHit.listen(syncEffectFields);
   hp.listen(syncEffectFields);
-
-  function syncScaling() {
-    const hide = !scales.input.checked;
-    scalingDamageRow.hidden = hide;
-    scalingTargetsRow.hidden = hide;
-  }
-  scales.input.addEventListener('change', syncScaling);
 
   // Reading the controls is this file's job. Deciding what the values mean is
   // SpellDraft's job. The whole submitted form gathers as plain values and
@@ -418,13 +380,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         // replace them here, or an edit of a save spell drops its mods.
         ...(kindSelect.value === 'save' ? { mods: saveChip.read() } : {}),
       },
-      scaling: scales.input.checked
-        ? {
-            damagePerLevel: scalingDamage.get(),
-            targetsPerLevel: targetsInput.value,
-            levelsPerStep: levelsPerStepInput.value,
-          }
-        : null,
+      scaling: scaling.read(),
       repeat: extra.repeat,
     });
   }
@@ -488,9 +444,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       later.rows.ongoing,
       later.rows.ongoingMore,
       later.rows.ongoingUntil,
-      scalingRow,
-      scalingDamageRow,
-      scalingTargetsRow,
+      scaling.rows.toggle,
+      scaling.rows.damage,
+      scaling.rows.targets,
       later.rows.repeats,
       later.rows.repeat,
       later.rows.repeatDamage,
@@ -503,7 +459,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
 
   syncEffectFields();
-  syncScaling();
   syncComponents();
   return form;
 }
