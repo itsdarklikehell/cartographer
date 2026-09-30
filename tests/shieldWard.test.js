@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pendingWard } from '../src/app/shieldWard.js';
+import { offerWard, pendingWard, wardRaise } from '../src/app/shieldWard.js';
 import { rollWeaponAttack } from '../src/app/weaponAttack.js';
 import { castPlan } from '../src/app/spellCast.js';
 import { resolveCast } from '../src/app/spellCastResolve.js';
@@ -343,4 +343,28 @@ test('the ward offers the real raise when a floor takes up part of the bonus', a
     ask: never,
   });
   assert.ok(hpOf(high, 'mage') < 30);
+});
+
+test('a reaction spell whose chip adds no AC is never offered as a ward', () => {
+  const app = stubApp({ mage: wizard('mage', ['counterspell']) });
+  assert.equal(pendingWard(app, 'mage', 'hero'), null);
+  const found = /** @type {any} */ ({ kind: 'character', entity: { ...wizard('mage', []) } });
+  delete found.entity.conditions;
+  assert.equal(wardRaise(found, spellById('counterspell')), 0);
+  assert.equal(wardRaise(found, spellById('shield')), 5);
+});
+
+test('a ward that only blocks the spell says so in its question', async () => {
+  const app = stubApp();
+  const ward = /** @type {any} */ (pendingWard(app, 'mage', 'hero'));
+  /** @type {string[]} */
+  const asked = [];
+  const raised = await offerWard(app, { ...ward, bonus: 0, blocks: true }, 'Hit.', {
+    ask: async (message) => {
+      asked.push(message);
+      return false;
+    },
+  });
+  assert.equal(raised, 0);
+  assert.deepEqual(asked, ['Hit. Cast Shield as a reaction (blocks the spell)?']);
 });
