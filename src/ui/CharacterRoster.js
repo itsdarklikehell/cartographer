@@ -1,4 +1,4 @@
-import { bareButton, iconButton, iconLink, textButton, textLink, emptyState } from './buttons.js';
+import { bareButton, iconButton, iconLink, textButton, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
@@ -76,8 +76,10 @@ function hpMeter(character) {
  * not allowed.
  * If playerTabHref is set, each managed row also offers a link that opens a
  * player tab bound to that character, and the actions below the list offer
- * a link to a spectator tab. Both are real links that open a new browser
- * tab, so the GM can also middle-click them or copy the URL.
+ * a Spectator tab button. Each row link is a real link, so the GM can also
+ * middle-click it or copy the URL. The spectator control sits among the
+ * other action buttons, so it is a button too, and it opens the same URL in
+ * a new browser tab.
  *
  * `update` carries the same guard the list panels carry, through
  * `repaintNeeded` from `listPanel.js`: it repaints when the manage gate
@@ -201,13 +203,15 @@ export function mountCharacterRoster(container, options) {
               className: 'character-roster__award',
             }),
           options.playerTabHref &&
-            textLink('Spectator tab', options.playerTabHref(null), {
-              icon: 'eye',
-              ariaLabel: 'Open a spectator tab',
-              title: 'Open a player tab that plays no character',
-              className: 'character-roster__spectator',
-              newTab: true,
-            }),
+            textButton(
+              'Spectator tab',
+              () => window.open(options.playerTabHref?.(null), '_blank', 'noopener'),
+              {
+                icon: 'eye',
+                title: 'Open a player tab that plays no character',
+                className: 'character-roster__spectator',
+              },
+            ),
         ),
       );
     }

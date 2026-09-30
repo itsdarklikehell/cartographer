@@ -399,8 +399,11 @@ export function wireMapView(app) {
   const breadcrumb = mountBreadcrumb(mustGetElement('breadcrumb-container'), goToNode);
   env.breadcrumb = breadcrumb;
 
+  // A Player tab gets an empty Build-rail tree. The rail is hidden in that
+  // role, but a filled tree would still put the name of every node, such as
+  // an undiscovered dungeon, into the page for anyone who reads the DOM.
   const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
-    getNodes: () => [...grid.nodes.values()],
+    getNodes: () => (isGM(state.role) ? [...grid.nodes.values()] : []),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: goToNode,
     onAddChild: (id) => nodeActions.addChildNode(id),
@@ -669,8 +672,10 @@ export function wireMapView(app) {
     if (role === 'player') setFogTool(null);
     tileTooltip.hide();
     // The sidebar world tree shows everything to the GM, but shows only
-    // discovered nodes to a player. A role flip changes its contents.
+    // discovered nodes to a player. The Build-rail tree is empty for a
+    // player. A role flip changes the contents of both.
     regionTree.update();
+    worldTree.update();
   };
 
   // Keep the canvas buffer matched to the CSS size of the element, times the

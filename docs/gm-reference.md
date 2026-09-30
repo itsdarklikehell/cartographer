@@ -60,7 +60,8 @@ position, its open panel, and its map zoom and pan.
 | `?character=<id>` on the URL | Binds the tab to one character. The id is the name of the character in lower case, with hyphens in place of spaces |
 | The Playing as dropdown in the Party card | Sets the same binding from inside the tab |
 
-In a GM tab, the Party card has two links that open Player tabs. See
+In a GM tab, the Party card has a link on each character row and a
+Spectator tab button. Each one opens a Player tab. See
 [Party roster](#party-roster).
 
 ### Bound and spectator tabs
@@ -104,6 +105,8 @@ these items from the screen:
   party does not stand
 - the fogged part of the map
 - the Campaign, History, and Transfer buttons and the mode switch
+- the Build-mode world tree. A Player tab does not build it, so the names
+  of undiscovered maps are not in the page
 
 The Player view does not protect any of these items. Every tab of the same
 browser reads the same saved campaign from the storage of that browser. A
@@ -1787,8 +1790,9 @@ character detail card shows.
 | Allow splitting the party | GM | See [Party splitting](#party-splitting) |
 | Playing as | Player tab | Binds the tab to a character |
 
-Open player tab and Spectator tab are ordinary links. So a middle-click or
-the "Open in new tab" menu of the browser also works on them.
+Open player tab is an ordinary link, so a middle-click or the "Open in new
+tab" menu of the browser also works on it. Spectator tab is a button. It
+always opens a new browser tab, and it has no link menu.
 
 | HP and AC field | Meaning |
 | --- | --- |
