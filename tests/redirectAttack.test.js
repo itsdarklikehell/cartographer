@@ -149,8 +149,12 @@ test('a redirected hit lands on the ally and spends the reaction', async () => {
   /** @type {any[]} */
   const asked = [];
   const prompt = /** @type {any} */ (
-    async (/** @type {string} */ title, /** @type {any[]} */ fields) => {
-      asked.push({ title, fields });
+    async (
+      /** @type {string} */ title,
+      /** @type {any[]} */ fields,
+      /** @type {any} */ options,
+    ) => {
+      asked.push({ title, fields, options });
       return { ally: 'gob2' };
     }
   );
@@ -173,7 +177,12 @@ test('a redirected hit lands on the ally and spends the reaction', async () => {
   );
   const swung = app.log.findIndex((l) => /^Hero attacks Goblin with Scimitar/.test(l));
   assert.ok(swap >= 0 && swung > swap, 'the swap comes before the roll, which targets the ally');
-  assert.match(asked[0].fields[0].label, /^Hero attacks Boss with Scimitar\. Boss can swap places/);
+  assert.match(
+    asked[0].options.message,
+    /^Hero attacks Boss with Scimitar\. Boss can use its reaction/,
+  );
+  assert.equal(asked[0].options.submitLabel, 'Swap places');
+  assert.equal(asked[0].options.cancelLabel, 'Keep target');
 });
 
 test('a declined redirect leaves the hit on the defender', async () => {
@@ -276,8 +285,8 @@ test('an attack spell at the boss asks first and rolls against the ally', async 
       },
       rng: () => 0.99,
       prompt: /** @type {any} */ (
-        async (/** @type {string} */ _t, /** @type {any[]} */ fields) => {
-          labels.push(fields[0].label);
+        async (/** @type {string} */ _t, /** @type {any[]} */ _f, /** @type {any} */ options) => {
+          labels.push(options.message);
           return { ally: 'gob1' };
         }
       ),

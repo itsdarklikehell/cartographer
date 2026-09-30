@@ -782,9 +782,16 @@ Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
   captioned by `options.advancedLabel` (default "More options"). The block
   sits where the first advanced field appears, so a plain submit does not
   make the GM read past situational inputs.
-- The buttons are Cancel, then the submit button (`options.submitLabel`,
-  default `'Create'`). Every form in the app puts the dismiss button on the
-  left and the primary action on the right.
+- The buttons are the dismiss button (`options.cancelLabel`, default
+  `'Cancel'`), then the submit button (`options.submitLabel`, default
+  `'Create'`). Every form in the app puts the dismiss button on the left and
+  the primary action on the right. Only the submit button, or Enter in a
+  field, resolves the values. The dismiss button and Escape resolve `null`.
+- `options.message` puts a paragraph above the fields, and the dialog points
+  `aria-describedby` at it. Use it for a long prompt, and keep the field
+  caption short.
+- Dialog text wraps at `--modal-measure` (30rem). A long message, caption,
+  or select stops at that width, so it does not stretch the dialog to 90vw.
 
 A dialog rebuilt by hand tends to lose these behaviors:
 

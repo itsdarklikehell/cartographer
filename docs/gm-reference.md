@@ -1349,9 +1349,9 @@ when an attack targets it. It swaps places with an ally, and the ally
 becomes the target. A goblin boss can pick only another goblin within 5
 feet, and its notes say so. The app tracks no positions, so before the
 attack roll a **Redirect Attack** dialog lists every ally of the creature
-in the fight that is not down. Pick an ally that qualifies, or pick the
-creature itself to stay the target, and press **Confirm**. **Cancel** also
-keeps the creature as the target.
+in the fight that is not down. Pick an ally that qualifies and press
+**Swap places**. Press **Keep target** or Escape to keep the creature as
+the target, with its reaction unspent.
 
 The dialog opens for a weapon attack and for an attack spell, such as Fire
 Bolt, but not for a save spell. It opens only while the creature has its

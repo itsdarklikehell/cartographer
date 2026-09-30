@@ -797,6 +797,17 @@ select.field option::checkmark {
   min-width: 18rem;
   max-width: 90vw;
   box-shadow: var(--shadow-3);
+  /* The reading width of dialog text. A dialog shrinks to fit its content, so
+     one long prompt, caption, or option label would stretch it to 90vw. */
+  --modal-measure: 30rem;
+}
+
+/* Text wraps at the reading width, and a select stops there too, so a long
+   prompt or option label wraps instead of widening the dialog. */
+.modal__message,
+.modal__field > span:first-child,
+.modal__field > select {
+  max-width: var(--modal-measure);
 }
 
 .modal::backdrop {
@@ -927,7 +938,7 @@ select.field option::checkmark {
   gap: var(--space-3) var(--space-4);
   /* A fixed width, not a minimum: a caption that lengthens mid-edit (e.g. the
      point-buy budget readout) wraps instead of resizing the whole dialog. */
-  width: min(30rem, 85vw);
+  width: min(var(--modal-measure), 85vw);
 }
 
 .modal--wide .modal__title {

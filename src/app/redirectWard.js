@@ -34,9 +34,6 @@ import { combatantsAsTargets, findCombatant } from './combatants.js';
  * @typedef {{ id: string, name: string, allies: CombatTarget[] }} Redirect
  */
 
-/** The select value that declines the redirect. */
-const DECLINE = '';
-
 /**
  * The Redirect Attack that the defender could use against an attack from
  * `attackerId`, or null. It needs a running fight, a defender that has the
@@ -79,22 +76,25 @@ export function pendingRedirect(app, defenderId, attackerId) {
  * @returns {Promise<CombatTarget | null>}
  */
 export async function offerRedirect(app, redirect, message, { prompt = promptModal } = {}) {
+  // Keep target, Escape, and a click outside all resolve to null, so the
+  // creature stays the target and keeps its reaction.
   const values = await prompt(
     'Redirect Attack',
     [
       {
         name: 'ally',
-        label: `${message} ${redirect.name} can swap places with an ally within 5 feet. The notes say which allies qualify. Who becomes the target?`,
+        label: 'Ally who becomes the target',
         type: 'select',
         value: redirect.allies[0].id,
-        options: [
-          ...redirect.allies.map((a) => ({ value: a.id, label: a.label ?? a.name })),
-          { value: DECLINE, label: `${redirect.name} (no reaction)` },
-        ],
+        options: redirect.allies.map((a) => ({ value: a.id, label: a.label ?? a.name })),
         full: true,
       },
     ],
-    { submitLabel: 'Confirm' },
+    {
+      message: `${message} ${redirect.name} can use its reaction to swap places with an ally within 5 feet, and that ally becomes the target. The notes say which allies qualify.`,
+      submitLabel: 'Swap places',
+      cancelLabel: 'Keep target',
+    },
   );
   const ally = redirect.allies.find((a) => a.id === values?.ally);
   if (!ally) return null;

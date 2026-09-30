@@ -157,11 +157,16 @@ function asInput(element) {
  * `advancedLabel`, placed where the first advanced field appears. This lets a
  * plain Enter submit their defaults without the form showing them.
  * `submitRequires` names checkbox fields, and the submit button stays
- * disabled until every one of them is ticked.
+ * disabled until every one of them is ticked. `message` puts a paragraph
+ * above the fields, and the dialog names it as its description. The dismiss
+ * button reads "Cancel" unless `cancelLabel` names what declining does, and
+ * Escape resolves the same way as that button.
  * @param {string} title
  * @param {ModalField[]} fields
  * @param {{
+ *   message?: string,
  *   submitLabel?: string,
+ *   cancelLabel?: string,
  *   wide?: boolean,
  *   advancedLabel?: string,
  *   onChange?: (name: string, form: ModalFormHandle) => void,
@@ -220,6 +225,8 @@ export function promptModal(title, fields, options = {}) {
        * first advanced field appears, and mounted in its place. */
       /** @type {HTMLElement | null} */
       let advancedBox = null;
+      const message = options.message ? el('p', 'modal__message', options.message) : null;
+      if (message) body.push(message);
       for (const field of fields) {
         const labelText = document.createTextNode(field.label);
         const caption = el('span', '', labelText);
@@ -409,10 +416,11 @@ export function promptModal(title, fields, options = {}) {
         }
       }
 
-      const cancel = textButton('Cancel', () => close('cancel'));
+      const cancel = textButton(options.cancelLabel ?? 'Cancel', () => close('cancel'));
       const submit = textButton(options.submitLabel ?? 'Create', undefined, {
         variant: 'primary',
         type: 'submit',
+        value: 'submit',
       });
       // The checkboxes named by submitRequires hold the submit button
       // disabled until every one is ticked, so the dialog does not take input
@@ -430,6 +438,7 @@ export function promptModal(title, fields, options = {}) {
         body,
         actions: [cancel, submit],
         initialFocus: fields.length ? inputs[fields[0].name] : submit,
+        ...(message ? { description: message } : {}),
       };
     },
     // Wait for any field still being read before collecting. This gives a
@@ -437,8 +446,11 @@ export function promptModal(title, fields, options = {}) {
     // The values are still read before the dialog leaves the document, because
     // this code runs while the dialog is still mounted, and a getter reads its
     // own input.
+    // Only the submit button sets the return value to `submit`. Enter in a
+    // field submits through that button too. Escape leaves the return value
+    // empty, so it resolves null the same way as the dismiss button.
     result: (returnValue) =>
-      returnValue === 'cancel'
+      returnValue !== 'submit'
         ? null
         : Promise.all(Object.values(reads)).then(() =>
             Object.fromEntries(Object.entries(getters).map(([k, get]) => [k, get()])),

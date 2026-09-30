@@ -475,8 +475,9 @@ goblin within 5 feet, and the fight tracks no positions, so
 not down, and the GM judges who qualifies from the notes. `pendingRedirect`
 needs a running fight, a defender that can act and still has its reaction,
 and a viewer who may act for it (`mayActOn`), so a Player tab never pauses
-on a foe. `offerRedirect` opens a dialog with the allies and a choice to
-stay the target. A pick spends the reaction, logs the swap, and returns the
+on a foe. `offerRedirect` opens a dialog with the allies and two buttons,
+**Swap places** and **Keep target**. Keep target and Escape resolve null. A
+pick spends the reaction, logs the swap, and returns the
 ally.
 
 The question comes after the attack pays and before the attack roll.
