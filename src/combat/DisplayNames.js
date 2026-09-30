@@ -49,3 +49,30 @@ export function labelsFor(ordered, ids) {
   const wanted = new Set(ids);
   return numberedNames(ordered.filter((entry) => wanted.has(entry.id)));
 }
+
+/**
+ * One set of labels for several lists that show at once, such as the Active
+ * and Nearby tabs of the Encounters panel. Two lists numbered on their own
+ * both show "Wolf 1" for two different wolves. The numbers count through the
+ * groups in the order given, and through `ordered` inside each group, so the
+ * first group gets the low numbers. An id in more than one group counts once,
+ * in its first group.
+ * @param {readonly { id: string, name: string }[]} ordered
+ * @param {readonly Iterable<string>[]} groups
+ * @returns {Map<string, string>}
+ */
+export function labelsAcross(ordered, groups) {
+  /** @type {Set<string>} */
+  const counted = new Set();
+  /** @type {{ id: string, name: string }[]} */
+  const entries = [];
+  for (const group of groups) {
+    const wanted = new Set(group);
+    for (const entry of ordered) {
+      if (!wanted.has(entry.id) || counted.has(entry.id)) continue;
+      counted.add(entry.id);
+      entries.push(entry);
+    }
+  }
+  return numberedNames(entries);
+}

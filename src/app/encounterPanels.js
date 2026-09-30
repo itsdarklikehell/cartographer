@@ -16,11 +16,12 @@ import {
 import { isDefeated } from '../entities/Creature.js';
 import { difficultyLine } from '../entities/EncounterDifficulty.js';
 import { arrivalAlert } from '../combat/Arrival.js';
+import { labelsAcross } from '../combat/DisplayNames.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { addLethargy } from './lethargy.js';
 import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
-import { combatLabels, commitCreatures } from './combatants.js';
+import { commitCreatures } from './combatants.js';
 import { logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 
@@ -87,13 +88,40 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     if (fight) await onStartCombat();
   };
 
-  // Each tab numbers the foes that share a name among its own rows. The
-  // Active tab counts the same group a fight started here draws in, so a foe
-  // keeps its number from the row into the fight.
+  // The two tabs share one numbering of the foes that share a name, so two
+  // wolves never both read "Wolf 1". The Active tab takes the low numbers,
+  // the ones a fight started here gives its foes. A fight numbers only its
+  // own foes, so an Active foe that is the only one of its name in the group
+  // shows as "Wolf 1" here and as "Wolf" in the fight.
   /** @type {Map<string, string>} */
-  let activeLabels = new Map();
-  /** @type {Map<string, string>} */
-  let nearbyLabels = new Map();
+  let labels = new Map();
+
+  /**
+   * The hostiles of both tabs, and their labels. The Active tab lists the
+   * encounter group, and the Nearby tab lists the other hostiles in range.
+   */
+  function encounterLists() {
+    const position = app.partyTracker.getPosition();
+    const group = hostileGroup(state.creatures, position);
+    const hereIds = new Set(group.map((c) => c.id));
+    const list = isGM(state.role)
+      ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
+          (c) => c.disposition === 'hostile',
+        )
+      : // A player needs no record of a fallen foe, so a defeated one
+        // leaves the players' list.
+        discoveredHostiles(
+          state.creatures,
+          position,
+          app.grid.getNode(position.nodeId) ?? null,
+        ).filter((c) => !isDefeated(c));
+    const nearby = list.filter((c) => !hereIds.has(c.id));
+    labels = labelsAcross(
+      [...state.characters, ...state.creatures],
+      [hereIds, nearby.map((c) => c.id)],
+    );
+    return { group, nearby };
+  }
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what is relevant to the party's current position,
@@ -106,15 +134,8 @@ export function wireEncounterPanels(app, { onStartCombat }) {
     // party, plus unplaced ones. For a player, this means only discovered
     // hostiles that still stand: one on a tile the fog has revealed, or an
     // unplaced one the party walked into.
-    getActiveEncounters: () => {
-      const group = hostileGroup(state.creatures, app.partyTracker.getPosition());
-      activeLabels = combatLabels(
-        app,
-        group.map((c) => c.id),
-      );
-      return group;
-    },
-    getLabel: (c) => activeLabels.get(c.id) ?? nearbyLabels.get(c.id) ?? c.name,
+    getActiveEncounters: () => encounterLists().group,
+    getLabel: (c) => labels.get(c.id) ?? c.name,
     // The hint rates the same list the Active tab shows, so what the GM reads
     // is the fight the Start combat button would begin.
     getDifficulty: () =>
@@ -122,27 +143,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
         state.characters,
         hostileGroup(state.creatures, app.partyTracker.getPosition()),
       ),
-    getNearbyEncounters: () => {
-      const position = app.partyTracker.getPosition();
-      const hereIds = new Set(hostileGroup(state.creatures, position).map((c) => c.id));
-      const list = isGM(state.role)
-        ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
-            (c) => c.disposition === 'hostile',
-          )
-        : // A player needs no record of a fallen foe, so a defeated one
-          // leaves the players' list.
-          discoveredHostiles(
-            state.creatures,
-            position,
-            app.grid.getNode(position.nodeId) ?? null,
-          ).filter((c) => !isDefeated(c));
-      const nearby = list.filter((c) => !hereIds.has(c.id));
-      nearbyLabels = combatLabels(
-        app,
-        nearby.map((c) => c.id),
-      );
-      return nearby;
-    },
+    getNearbyEncounters: () => encounterLists().nearby,
     onUpdate: (edited) => {
       // Log the transition into defeat exactly once. Compare against the
       // pre-update creature so damage that keeps it down does not log again.
