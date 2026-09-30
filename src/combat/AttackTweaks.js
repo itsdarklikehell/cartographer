@@ -25,6 +25,8 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  * nothing here reads a barrel on the map or where the rogue is standing.
  * `pack` is Pack Tactics: an ally stands next to the defender, so the swing
  * rolls with advantage. The GM ticks it for the same reason.
+ * `surprise` is the Surprise Attack dice of the attacker. The attack code
+ * sets it from the fight, never from the dialog.
  * Every field defaults to nothing, so a plain Enter in the dialog rolls the
  * unmodified attack.
  * @typedef {{
@@ -38,6 +40,7 @@ import { attacksAvailable, canSpend } from './ActionBudget.js';
  *   cover?: import('./Cover.js').CoverLevel,
  *   sneak?: boolean,
  *   pack?: boolean,
+ *   surprise?: import("../types/creature.js").SurpriseAttack | null,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,

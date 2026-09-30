@@ -7,6 +7,8 @@
  *
  * Pack Tactics is a flag. The fight has no positions, so the attack dialog
  * offers the advantage as a box for the GM to tick.
+ * Surprise Attack adds damage dice to a hit on a surprised target in round 1,
+ * and the attack code applies it without a box.
  *
  * Every function is pure. A creature with no trait stores no key, so an older
  * save loads as a creature with one attack.
@@ -33,14 +35,16 @@ export function coerceMultiattack(value) {
 /**
  * The attack trait fields to spread into a creature or a template. A creature
  * with no trait stores no key.
- * @param {{ multiattack?: unknown, packTactics?: unknown } | undefined} value
- * @returns {{ multiattack?: number, packTactics?: true }}
+ * @param {{ multiattack?: unknown, packTactics?: unknown, surpriseAttack?: unknown } | undefined} value
+ * @returns {{ multiattack?: number, packTactics?: true, surpriseAttack?: import('../types/creature.js').SurpriseAttack }}
  */
 export function attackTraitFields(value) {
   const multiattack = coerceMultiattack(value?.multiattack);
+  const surprise = coerceSurpriseAttack(value?.surpriseAttack);
   return {
     ...(multiattack ? { multiattack } : {}),
     ...(value?.packTactics === true ? { packTactics: /** @type {const} */ (true) } : {}),
+    ...(surprise ? { surpriseAttack: surprise } : {}),
   };
 }
 
@@ -54,4 +58,42 @@ export function attackTraitFields(value) {
  */
 export function swingsPerAction(attacker, weapon) {
   return Math.max(attacksPerAction(attacker, weapon), coerceMultiattack(attacker.multiattack) ?? 1);
+}
+
+/** The die sizes a Surprise Attack may roll. */
+export const SURPRISE_SIDES = [4, 6, 8, 10, 12];
+
+/** The most dice one Surprise Attack may add. A sanity ceiling on input. */
+const MAX_SURPRISE_DICE = 10;
+
+/**
+ * Read a Surprise Attack: the extra damage dice that a hit adds against a
+ * surprised target in the first round, such as the 2d6 of a bugbear. A count
+ * below 1 or an unknown die size means none.
+ * @param {unknown} value
+ * @returns {import('../types/creature.js').SurpriseAttack | undefined}
+ */
+export function coerceSurpriseAttack(value) {
+  if (!value || typeof value !== 'object') return undefined;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const count = Math.floor(Number(raw.count));
+  const sides = Number(raw.sides);
+  if (!(count >= 1) || !SURPRISE_SIDES.includes(sides)) return undefined;
+  return { count: Math.min(count, MAX_SURPRISE_DICE), sides };
+}
+
+/**
+ * The Surprise Attack dice a hit adds, or null when none apply. They apply in
+ * round 1 of a fight to a defender whose participant is still surprised. A
+ * surprised participant loses the flag once its first turn ends.
+ * @param {any} attacker
+ * @param {import('../types/combat.js').CombatState | null | undefined} combat
+ * @param {string} defenderId
+ * @returns {import('../types/creature.js').SurpriseAttack | null}
+ */
+export function surpriseDiceFor(attacker, combat, defenderId) {
+  const dice = coerceSurpriseAttack(attacker?.surpriseAttack);
+  if (!dice || !combat || combat.round !== 1) return null;
+  const target = combat.order.find((p) => p.id === defenderId);
+  return target?.surprised === true ? dice : null;
 }

@@ -985,6 +985,7 @@ Build mode, from Play mode, and from the tile menu.
 | Armor | None (unarmored) | Armor from the library |
 | Multiattack (attacks per action) | Blank (one attack) | How many times the creature swings its weapon for one Attack action, from 2 to 6 |
 | Pack Tactics | Off | The attack dialog of the creature offers a Pack Tactics box, which gives advantage |
+| Surprise Attack: dice, Surprise Attack: die | Blank, d6 | Extra damage dice on a hit against a surprised target in round 1. Blank stores none |
 | On hit: save, On hit: DC, On hit: condition on a fail | None, 10, Prone | A save that each hit of the weapon forces. A target that fails the save gains the condition. None stores no save |
 | Resistant to, Vulnerable to, Immune to | None | The damage types that the creature takes half, double, or no damage from |
 | Immune to conditions | None | The conditions that do not land on the creature. The log names the immunity in place of the chip |
@@ -1314,7 +1315,7 @@ combatant. So a rogue that spent the dice on its own swing can spend them
 again on an opportunity attack, which is the 5e reading of once per turn. A
 miss leaves the box, because Sneak Attack applies only on a hit.
 
-### Pack Tactics and on-hit saves
+### Pack Tactics, on-hit saves, and Surprise Attack
 
 A creature with Pack Tactics has advantage when an ally of the creature
 stands within 5 feet of the target. The app tracks no positions, so tick the
@@ -1327,6 +1328,12 @@ its own bonus and chips. The log names the total, the DC, and the result. A
 target that fails gains the condition, and a target that the hit dropped to
 0 HP rolls nothing. A creature immune to the condition keeps its chips, and
 the log says so.
+
+A creature with Surprise Attack adds its dice to a hit in round 1 when the
+target is still surprised, which lasts until the end of the first turn of
+the target. The app applies the dice without a box. They take the damage
+type of the weapon, a critical hit doubles them, and the damage line of the
+log names them.
 
 ### Damage riders on hits
 

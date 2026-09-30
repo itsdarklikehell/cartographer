@@ -248,6 +248,17 @@ export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit
     bonusDie: tweaks.damageDie ?? 'd4',
     sneakDice,
   });
+  // Surprise Attack dice take the weapon's damage type, and a crit doubles
+  // them like any other damage die.
+  const surprise = tweaks.surprise;
+  if (surprise) {
+    parts.push({
+      count: crit ? surprise.count * 2 : surprise.count,
+      sides: surprise.sides,
+      damageType: parts[0]?.damageType ?? 'bonus',
+    });
+  }
+  const surpriseNote = surprise ? `, Surprise Attack +${surprise.count}d${surprise.sides}` : '';
   // The second hand of two-weapon fighting adds no ability bonus to damage. A
   // negative modifier still applies, so the swing of a weak character is still
   // weak.
@@ -263,7 +274,7 @@ export function hitDamage(setup, { attacker, defender = {}, weapon, tweaks, crit
     rng,
   );
   const drinkNote = drink ? `, ${drink.name} +${drink.part.bonus} ${drink.part.damageType}` : '';
-  return { damage, sneakDice, riderNote: hitRiderNote(riders, crit) + drinkNote };
+  return { damage, sneakDice, riderNote: hitRiderNote(riders, crit) + drinkNote + surpriseNote };
 }
 
 /**

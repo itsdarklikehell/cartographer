@@ -265,10 +265,10 @@ function enemies(at) {
     // bugbear AC 16.
     mob('camp-bugbear', 'Bugbear', 27, 3, 1, at('snagtooth'), BUGBEAR, {
       weapon: BRUTE_MORNINGSTAR,
+      surpriseAttack: { count: 2, sides: 6 },
       armor: enemyArmor('Hide'),
       ...trained([], ['stealth', 'survival']),
-      notes:
-        'Surprise Attack: when it hits a creature that is surprised, in the first round of a fight, the hit deals an extra 2d6 damage. Snagtooth pays it in silver, and it leaves the camp once he surrenders.',
+      notes: 'Snagtooth pays it in silver, and it leaves the camp once he surrenders.',
     }),
     mob('camp-goblin1', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),
     mob('camp-goblin2', 'Goblin Raider', 7, 1, 0.25, at('snagtooth'), GOBLIN, SNEAK),

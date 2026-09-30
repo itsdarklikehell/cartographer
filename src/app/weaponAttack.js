@@ -1,6 +1,10 @@
 import { promptModal } from '../ui/Modal.js';
 import { weaponIsMagical } from '../entities/MagicWeapon.js';
-import { coerceMultiattack, swingsPerAction } from '../entities/CreatureAttacks.js';
+import {
+  coerceMultiattack,
+  surpriseDiceFor,
+  swingsPerAction,
+} from '../entities/CreatureAttacks.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
 import { resolveAttack } from '../combat/AttackResolve.js';
 import { SWINGS, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
@@ -189,11 +193,12 @@ export function rollWeaponAttack(
       app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
       return;
     }
+    // Surprise Attack reads the fight, so it applies without a dialog box.
     const { damage, sneakDice, riderNote } = hitDamage(setup, {
       attacker,
       defender,
       weapon,
-      tweaks,
+      tweaks: { ...tweaks, surprise: surpriseDiceFor(attacker, app.state.combat, defender.id) },
       crit,
       rng,
     });

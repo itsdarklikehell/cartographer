@@ -528,7 +528,7 @@ Attack. That condition is advantage on the attack, or an ally next to the
 target. The second half needs a map distance that the app does not have, so
 the ticked box is the GM's answer.
 
-### Pack Tactics, on-hit saves, and Multiattack
+### Pack Tactics, on-hit saves, Multiattack, and Surprise Attack
 
 The attack dialog shows a Pack Tactics box for a creature with
 `packTactics`. A ticked box sets `tweaks.pack`, and `prepareSwing` adds one
@@ -545,7 +545,13 @@ through `applyConditionToTarget`, which checks condition immunity.
 A creature with `multiattack` gets a ticked Multiattack box while its Attack
 action is unspent. `weaponAttack` then calls `rollWeaponAttack` once for each
 swing, and it reads both sides again through `liveAttackSides` before each
-one. A defender that drops ends the loop with no toast.
+
+A creature with `surpriseAttack` adds its dice on a hit. `rollWeaponAttack`
+asks `CreatureAttacks.surpriseDiceFor`, which gives the dice only in round 1
+and only for a defender whose participant still has `surprised`. The answer
+goes in as `tweaks.surprise`, never from the dialog. `hitDamage` adds the
+dice with the damage type of the weapon, doubles them on a crit, and names
+them in the rider note.
 
 ### Hit riders and the pact weapon
 

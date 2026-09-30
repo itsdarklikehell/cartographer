@@ -23,7 +23,7 @@ import { defenseFields } from '../entities/DamageDefenses.js';
 import { DAMAGE_TYPES } from '../entities/Equipment.js';
 import { CONCENTRATING, CONDITIONS } from '../entities/Conditions.js';
 import { CREATURE_TYPES, creatureTypeFields } from '../entities/CreatureType.js';
-import { MAX_MULTIATTACK, attackTraitFields } from '../entities/CreatureAttacks.js';
+import { MAX_MULTIATTACK, SURPRISE_SIDES, attackTraitFields } from '../entities/CreatureAttacks.js';
 import { normalizeHitSave } from '../combat/HitSave.js';
 import { clampInt } from '../util/num.js';
 import { capitalize, splitList } from '../util/text.js';
@@ -56,6 +56,7 @@ import { readStats, statFields } from './statFields.js';
  *   conditionImmunities?: string[],
  *   multiattack?: number,
  *   packTactics?: boolean,
+ *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -242,6 +243,23 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       type: 'checkbox',
       value: seed?.packTactics === true,
     },
+    // Surprise Attack dice land on a hit against a surprised target in
+    // round 1. A blank count stores none.
+    {
+      name: 'surpriseCount',
+      label: 'Surprise Attack: dice',
+      type: 'number',
+      newRow: true,
+      value: seed?.surpriseAttack?.count ?? '',
+      min: 0,
+    },
+    {
+      name: 'surpriseDie',
+      label: 'Surprise Attack: die',
+      type: 'select',
+      value: String(seed?.surpriseAttack?.sides ?? 6),
+      options: SURPRISE_SIDES.map((sides) => ({ value: String(sides), label: `d${sides}` })),
+    },
     // A save the weapon forces on a hit, such as a wolf bite that knocks
     // the target prone. A blank ability stores no save.
     {
@@ -356,6 +374,7 @@ function readLevel(raw) {
  *   conditionImmunities?: string[],
  *   multiattack?: number,
  *   packTactics?: boolean,
+ *   surpriseAttack?: import("../types/creature.js").SurpriseAttack,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -385,6 +404,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     ...attackTraitFields({
       multiattack: values.multiattack,
       packTactics: values.packTactics === '1',
+      surpriseAttack: { count: values.surpriseCount, sides: Number(values.surpriseDie) },
     }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),

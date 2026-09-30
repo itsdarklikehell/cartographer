@@ -134,6 +134,9 @@ export interface Creature extends HPBuffFields {
   /** True for a creature with Pack Tactics: the attack dialog offers
    * advantage when an ally stands next to the target. Absent means none. */
   packTactics?: boolean;
+  /** Extra damage dice on a hit against a surprised target in round 1.
+   * Absent means none. */
+  surpriseAttack?: SurpriseAttack;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -185,10 +188,18 @@ export interface CreatureTemplate {
   conditionImmunities?: string[];
   multiattack?: number;
   packTactics?: boolean;
+  surpriseAttack?: SurpriseAttack;
   role?: string;
   notes?: string;
   class?: string;
   subclass?: string;
   casterLevel?: number;
   spellbook?: Spellbook;
+}
+
+/** The extra damage dice of a Surprise Attack, such as the 2d6 of a bugbear.
+ * The dice take the damage type of the weapon. */
+export interface SurpriseAttack {
+  count: number;
+  sides: number;
 }
