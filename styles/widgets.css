@@ -276,19 +276,18 @@
   color: var(--mana);
 }
 
-/* Spell-slot readout on the collapsed card: a column per spell level — the
-   ordinal centered over a two-wide pip grid. Shares .stat-bar's label column;
+/* Spell-slot readout on the collapsed card: a column per spell level, with the
+   ordinal centered over one row of pips. Shares .stat-bar's label column;
    overflow wraps inside __groups, so continuation rows stay indented past the
    "Slots" label. */
 .slot-line {
   align-items: flex-start;
 
-  /* The line reserves its full height even when it has nothing to show, so
+  /* The line reserves one row of groups even when it has nothing to show, so
      selecting a non-caster after a caster does not move the rows below the
-     header. The reserve is a level label over two pip rows, which is as tall
-     as the line gets: a pool holds at most four slots, and the pip grid is
-     two pips wide. Each pip row is one 24 px pip button tall. */
-  min-height: calc(var(--text-label) * 1.5 + 0.1rem + 48px);
+     header. One row is a level label over one 24 px pip button. A pool holds
+     at most four slots, so its pips always fit on one row. */
+  min-height: calc(var(--text-label) * 1.5 + 0.1rem + 24px);
 }
 
 /* The reserved line for a character with no slot pools at all. */
@@ -298,10 +297,9 @@
 
 .slot-line__groups {
   flex: 1;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
-  justify-items: center;
-  gap: var(--space-1) var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
   min-width: 0;
 }
 
@@ -313,8 +311,7 @@
 }
 
 .slot-line__pips {
-  display: grid;
-  grid-template-columns: repeat(2, auto);
+  display: flex;
   gap: 0;
   font-size: var(--text-label);
   line-height: 1.1;
@@ -386,13 +383,39 @@
 }
 
 .exhaustion-bar__pip:hover:not(:disabled) {
-  transform: scale(1.25);
+  transform: scale(1.15);
+}
+
+/* Each pip is a ring with its level number inside. A filled pip is a solid
+   disc, and its number takes the contrast color of the disc. */
+.exhaustion-bar__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.2rem;
+  height: 1.2rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.exhaustion-bar__pip--filled .exhaustion-bar__num {
+  background: var(--warning);
+  border-color: var(--warning);
+  color: var(--warning-contrast);
 }
 
 /* The sixth level kills, so its pip reads apart from the five that only cost a
-   penalty. A GM must see where the row ends before clicking it. */
+   penalty. A GM sees where the row ends before clicking it. */
 .exhaustion-bar__pip--fatal {
   color: var(--danger);
+}
+
+.exhaustion-bar__pip--filled.exhaustion-bar__pip--fatal .exhaustion-bar__num {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--danger-contrast);
 }
 
 /* At the fatal level the whole row is the loudest thing on the card. */

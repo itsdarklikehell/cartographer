@@ -289,16 +289,19 @@ body.mode-build .map-controls__fog {
   font-size: var(--text-label);
 }
 
-/* Transient action-feedback toasts, bottom center, above everything. They
+/* Transient action-feedback toasts, in the bottom left corner, above
+   everything. The center of the window holds the character sheet, whose HP
+   bar a centered toast covers after each autosave. The corner sits over the
+   dice tray and the party roster, which a GM reads less often. The toasts
    often land over the map, so they use the pinned-dark overlay palette in
    both themes rather than following the page surface. */
 .toast-stack {
   position: fixed;
   bottom: var(--space-4);
-  left: 50%;
-  transform: translateX(-50%);
+  left: var(--space-4);
   z-index: 20;
-  align-items: center;
+  max-width: calc(100vw - 2 * var(--space-4));
+  align-items: flex-start;
   pointer-events: none;
 }
 

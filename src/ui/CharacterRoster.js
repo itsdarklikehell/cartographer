@@ -115,7 +115,12 @@ export function mountCharacterRoster(container, options) {
       const current = character.id === selectedId;
       const select = bareButton(
         [
-          el('span', 'character-roster__label', `${character.name} (Lv ${character.level})`),
+          el(
+            'span',
+            'character-roster__label',
+            `${character.name} `,
+            el('span', 'character-roster__level', `(Lv ${character.level})`),
+          ),
           hpMeter(character),
         ],
         () => options.onSelect(character.id),

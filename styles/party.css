@@ -95,11 +95,15 @@
   min-width: 0;
 }
 
+/* A long name wraps onto a second line instead of losing its end, and the
+   level stays whole on whichever line it lands. */
 .character-roster__label {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+
+.character-roster__level {
   white-space: nowrap;
 }
 

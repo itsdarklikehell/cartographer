@@ -47,8 +47,16 @@ export function mountExhaustionBar(container, callbacks) {
       pips.setAttribute('aria-label', readout.ariaLabel);
     }
     for (const pip of readout.pips) {
-      const glyph = pip.filled ? '●' : '○';
-      const classes = `exhaustion-bar__pip${pip.fatal ? ' exhaustion-bar__pip--fatal' : ''}`;
+      // Each pip shows its level number, so the GM reads the level instead of
+      // counting circles.
+      const glyph = el('span', 'exhaustion-bar__num', String(pip.level));
+      const classes = [
+        'exhaustion-bar__pip',
+        pip.filled && 'exhaustion-bar__pip--filled',
+        pip.fatal && 'exhaustion-bar__pip--fatal',
+      ]
+        .filter(Boolean)
+        .join(' ');
       if (!editable) {
         pips.appendChild(el('span', classes, glyph));
         continue;
