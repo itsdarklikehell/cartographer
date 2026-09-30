@@ -127,9 +127,10 @@ export function combatActionBar(actions, callbacks, budget = null) {
             textButton(action.name, () => onTurn(action), {
               className: 'combat-action-bar__turn',
               ariaLabel:
-                action.cost === 'action'
+                action.ariaLabel ??
+                (action.cost === 'action' || action.cost === null
                   ? `Take the ${action.name} action`
-                  : `Take the ${action.name} action as a ${COST_LABELS[action.cost].toLowerCase()}`,
+                  : `Take the ${action.name} action as a ${COST_LABELS[action.cost].toLowerCase()}`),
               title: action.title,
             }),
           ),

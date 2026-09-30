@@ -32,7 +32,8 @@ src/combat/Initiative.js ..... pure: the order, the round counter, the turn
                                pointer, and the turn advance
 src/combat/ActionBudget.js ... pure: what one combatant already spent on the
                                current turn, and what a turn start gives back
-src/combat/TurnActions.js .... pure: the standard actions and Cunning Action
+src/combat/TurnActions.js .... pure: the standard actions, Cunning Action,
+                               Second Wind, and Action Surge
                                as action bar entries, and their log lines
 src/combat/CombatView.js ..... pure: projects a CombatState into rows a
                                panel can draw (side, HP, AC, defeated,
@@ -304,13 +305,22 @@ as its cost, and with `cunningAction` it adds Dash, Disengage, and Hide with
 the bonus action as their cost. Each entry names a `group`, and the action
 bar draws one row of buttons per group in list order. A class action joins
 the bar by adding entries with its own group, with no change to the bar.
+With `secondWind` and `actionSurge`, the uses left in those pools, it adds
+the two fighter entries. Each of them names its `poolId`, and Action Surge
+has a `cost` of null, because it spends no part of the turn.
 
 `src/app/turnActions.js` is the app half. `turnActionsOf` reads the class
 levels of a character for Cunning Action, and a creature gets the standard
 actions only. `takeTurnAction` spends the cost through `spendBudget`, logs
 the line from `turnActionLine`, and for Dodge puts a Dodging chip on the
 combatant that ends at the start of its next turn. `ConditionEffects.js`
-gives attacks against a Dodging creature disadvantage.
+gives attacks against a Dodging creature disadvantage. An entry with a
+`poolId` checks that the pool has a use left before it spends anything.
+Second Wind then spends the bonus action and heals through `applyToTarget`.
+Action Surge calls the `surgeBudget` action of encounterWiring, which runs
+`ActionBudget.surge`: the spent action becomes free, the `surged` flag
+blocks a second surge on the same turn, and the swings that Extra Attack
+banked stay banked.
 
 ### Two-weapon fighting
 

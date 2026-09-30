@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { takeTurnAction, toggleBudget, turnActionsOf } from '../src/app/turnActions.js';
-import { budgetOf, canSpend, spend, unspend } from '../src/combat/ActionBudget.js';
+import { budgetOf, canSpend, spend, surge, unspend } from '../src/combat/ActionBudget.js';
 import { turnActions } from '../src/combat/TurnActions.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';
@@ -126,4 +126,88 @@ test('a budget chip outside a fight or for a stranger changes nothing', () => {
   toggleBudget(app, 'aldric', 'action');
   assert.equal(app.dirty, 0);
   assert.deepEqual(app.log, []);
+});
+
+/**
+ * A fight whose fighter holds HP and both fighter pools, with the surge write
+ * of encounterWiring.
+ * @param {number} [uses] uses left in each pool
+ */
+function fighterFight(uses = 1) {
+  const app = fight();
+  const pool = (/** @type {string} */ id) => ({
+    id,
+    name: id,
+    type: 'uses',
+    current: uses,
+    max: 1,
+  });
+  app.state.characters[1] = {
+    ...app.state.characters[1],
+    resources: [
+      { id: 'hp', name: 'HP', type: 'hp', current: 10, max: 40 },
+      pool('second-wind'),
+      pool('action-surge'),
+    ],
+  };
+  /** @type {string[]} */
+  const toasts = [];
+  app.toasts = /** @type {any} */ ({ show: (/** @type {string} */ m) => toasts.push(m) });
+  app.actions.surgeBudget = (/** @type {string} */ id) => {
+    const combat = app.state.combat;
+    const i = combat.order.findIndex((/** @type {any} */ p) => p.id === id);
+    const next = surge(combat.order[i]);
+    if (next === combat.order[i]) return false;
+    const order = [...combat.order];
+    order[i] = next;
+    app.state.combat = { ...combat, order };
+    return true;
+  };
+  return { app, toasts };
+}
+
+/** @param {any} app @param {string} id */
+const poolOf = (app, id) =>
+  app.state.characters[1].resources.find((/** @type {any} */ r) => r.id === id).current;
+
+/** @param {any} app @param {string} id */
+const entry = (app, id) =>
+  /** @type {any} */ (turnActionsOf(app, 'aldric').find((a) => a.id === id));
+
+test('Second Wind spends the bonus action and a use, and heals 1d10 + fighter level', () => {
+  const { app } = fighterFight();
+  assert.equal(takeTurnAction(app, 'aldric', entry(app, 'second-wind'), { rng: () => 0.45 }), true);
+  assert.equal(usedOf(app, 'aldric').bonus, true);
+  assert.equal(poolOf(app, 'second-wind'), 0);
+  assert.equal(poolOf(app, 'hp'), 19, '10 HP plus d10 5 plus level 4');
+  assert.equal(app.log[0], 'Aldric uses Second Wind and regains 9 HP (d10 5 + 4).');
+});
+
+test('Second Wind with no use left, or no bonus action, refuses and keeps the use', () => {
+  const empty = fighterFight(0);
+  assert.equal(takeTurnAction(empty.app, 'aldric', entry(empty.app, 'second-wind')), false);
+  assert.match(empty.toasts[0], /no use of Second Wind left/);
+  const busy = fighterFight();
+  busy.app.actions.spendBudget('aldric', 'bonus');
+  assert.equal(takeTurnAction(busy.app, 'aldric', entry(busy.app, 'second-wind')), false);
+  assert.equal(poolOf(busy.app, 'second-wind'), 1);
+  assert.deepEqual(busy.toasts, ['Aldric has no bonus action left this turn.']);
+});
+
+test('Action Surge needs the spent action, gives it back, and spends a use', () => {
+  const { app, toasts } = fighterFight();
+  const surgeEntry = entry(app, 'action-surge');
+  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), false, 'the action is not spent yet');
+  assert.match(toasts[0], /once per turn, after the action/);
+  assert.equal(poolOf(app, 'action-surge'), 1);
+  app.actions.spendBudget('aldric', 'action');
+  assert.equal(takeTurnAction(app, 'aldric', surgeEntry), true);
+  assert.equal(usedOf(app, 'aldric').action, false);
+  assert.equal(poolOf(app, 'action-surge'), 0);
+  assert.deepEqual(app.log, ['Aldric uses Action Surge and takes one more action this turn.']);
+});
+
+test('a creature cannot use a class action', () => {
+  const { app } = fighterFight();
+  assert.equal(takeTurnAction(app, 'gob', entry(app, 'action-surge')), false);
 });

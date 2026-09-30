@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {
   STANDARD_ACTIONS,
   STANDARD_GROUP,
+  FIGHTER_GROUP,
+  actionSurgeLine,
   hasCunningAction,
+  secondWindLine,
   turnActionLine,
   turnActions,
 } from '../src/combat/TurnActions.js';
@@ -59,5 +62,40 @@ test('the log line names the action, and a bonus action names its feature', () =
   assert.equal(
     turnActionLine('Wren', { ...dash, cost: 'reaction' }),
     'Wren takes the Dash action as a reaction.',
+  );
+});
+
+test('a fighter with the pools gets Second Wind and Action Surge in the Fighter group', () => {
+  const list = turnActions({ secondWind: 1, actionSurge: 0 }).filter(
+    (a) => a.group === FIGHTER_GROUP,
+  );
+  assert.deepEqual(
+    list.map((a) => [a.id, a.cost, a.poolId]),
+    [
+      ['second-wind', 'bonus', 'second-wind'],
+      ['action-surge', null, 'action-surge'],
+    ],
+  );
+  assert.match(list[0].title, /\(1 use left\)$/);
+  assert.match(list[1].title, /\(0 uses left\)$/);
+  assert.equal(list[1].ariaLabel, 'Use Action Surge');
+  assert.equal(
+    turnActions().some((a) => a.group === FIGHTER_GROUP),
+    false,
+  );
+});
+
+test('the class action lines name the heal roll and the surge', () => {
+  assert.equal(
+    secondWindLine('Aldric', 5, 4),
+    'Aldric uses Second Wind and regains 9 HP (d10 5 + 4).',
+  );
+  assert.equal(
+    actionSurgeLine('Aldric'),
+    'Aldric uses Action Surge and takes one more action this turn.',
+  );
+  assert.equal(
+    turnActionLine('Aldric', /** @type {any} */ ({ name: 'Wait', cost: null })),
+    'Aldric takes the Wait action.',
   );
 });

@@ -54,6 +54,11 @@ export interface ActionBudget {
    * action buys one weapon swing, and nothing banks behind it.
    */
   extra: boolean;
+  /**
+   * Whether Action Surge already gave this turn its second action. 5e allows
+   * one surge per turn, even for a fighter with two uses.
+   */
+  surged: boolean;
 }
 
 /** How a participant is presented, derived from the entity holding its id. */

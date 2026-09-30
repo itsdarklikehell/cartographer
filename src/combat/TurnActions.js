@@ -1,5 +1,6 @@
 import { classLevelOf } from '../entities/Multiclass.js';
 import { COST_LABELS } from './ActionBudget.js';
+import { ACTION_SURGE_ID, SECOND_WIND_ID } from '../entities/PoolIds.js';
 
 /**
  * Pure list of the turn actions that the combat screen offers as buttons,
@@ -12,7 +13,9 @@ import { COST_LABELS } from './ActionBudget.js';
  * Each entry names its cost and a group, and the action bar draws one row
  * of buttons per group. A class feature that grants another use of a turn
  * adds entries with its own group, such as the Cunning Action of a rogue,
- * which offers Dash, Disengage, and Hide as a bonus action.
+ * which offers Dash, Disengage, and Hide as a bonus action. A fighter
+ * gets Second Wind and Action Surge, which spend a use of their class pool.
+ * Action Surge costs no part of the turn, so its entry has no cost.
  */
 
 /** @typedef {import('../types/combat.js').ActionCost} ActionCost */
@@ -23,10 +26,12 @@ import { COST_LABELS } from './ActionBudget.js';
  * @typedef {{
  *   id: string,
  *   name: string,
- *   cost: ActionCost,
+ *   cost: ActionCost | null,
  *   group: string,
  *   title: string,
  *   source?: string,
+ *   ariaLabel?: string,
+ *   poolId?: string,
  * }} TurnAction
  */
 
@@ -63,14 +68,26 @@ export function hasCunningAction(character) {
   return classLevelOf(character, 'rogue') >= 2;
 }
 
+/** The group label of the fighter's class actions. */
+export const FIGHTER_GROUP = 'Fighter';
+
+/**
+ * How many uses are left, for a button title.
+ * @param {number} left
+ * @returns {string}
+ */
+const usesLeft = (left) => `${left} ${left === 1 ? 'use' : 'uses'} left`;
+
 /**
  * The turn actions a combatant can take, as bar entries. Every combatant has
  * the standard actions. `cunningAction` adds the bonus-action copies of
- * Dash, Disengage, and Hide.
- * @param {{ cunningAction?: boolean }} [features]
+ * Dash, Disengage, and Hide. `secondWind` and `actionSurge` are the uses
+ * left in those pools, and a character without the pool passes nothing. A
+ * pool at 0 still gets its button, and the press says that no use is left.
+ * @param {{ cunningAction?: boolean, secondWind?: number, actionSurge?: number }} [features]
  * @returns {TurnAction[]}
  */
-export function turnActions({ cunningAction = false } = {}) {
+export function turnActions({ cunningAction = false, secondWind, actionSurge } = {}) {
   /** @type {TurnAction[]} */
   const list = STANDARD_ACTIONS.map((a) => ({
     id: a.id,
@@ -91,7 +108,50 @@ export function turnActions({ cunningAction = false } = {}) {
       });
     }
   }
+  if (secondWind !== undefined) {
+    list.push({
+      id: SECOND_WIND_ID,
+      name: 'Second Wind',
+      cost: 'bonus',
+      group: FIGHTER_GROUP,
+      title: `Use Second Wind as a bonus action: regain 1d10 + fighter level HP (${usesLeft(secondWind)})`,
+      ariaLabel: 'Use Second Wind as a bonus action',
+      poolId: SECOND_WIND_ID,
+    });
+  }
+  if (actionSurge !== undefined) {
+    list.push({
+      id: ACTION_SURGE_ID,
+      name: 'Action Surge',
+      cost: null,
+      group: FIGHTER_GROUP,
+      title: `Use Action Surge after the action: take one more action this turn (${usesLeft(actionSurge)})`,
+      ariaLabel: 'Use Action Surge',
+      poolId: ACTION_SURGE_ID,
+    });
+  }
   return list;
+}
+
+/**
+ * The log line of Second Wind.
+ * @param {string} actorName
+ * @param {number} die the d10 roll
+ * @param {number} fighterLevel
+ * @returns {string} for example "Aldric uses Second Wind and regains 9 HP
+ *   (d10 5 + 4)."
+ */
+export function secondWindLine(actorName, die, fighterLevel) {
+  return `${actorName} uses Second Wind and regains ${die + fighterLevel} HP (d10 ${die} + ${fighterLevel}).`;
+}
+
+/**
+ * The log line of Action Surge.
+ * @param {string} actorName
+ * @returns {string}
+ */
+export function actionSurgeLine(actorName) {
+  return `${actorName} uses Action Surge and takes one more action this turn.`;
 }
 
 /**
@@ -103,7 +163,7 @@ export function turnActions({ cunningAction = false } = {}) {
  */
 export function turnActionLine(actorName, action) {
   const base = `${actorName} takes the ${action.name} action`;
-  if (action.cost === 'action') return `${base}.`;
+  if (action.cost === 'action' || action.cost === null) return `${base}.`;
   const via = action.source ? ` (${action.source})` : '';
   return `${base} as a ${COST_LABELS[action.cost].toLowerCase()}${via}.`;
 }

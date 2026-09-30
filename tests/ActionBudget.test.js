@@ -6,12 +6,14 @@ import {
   attacksAvailable,
   budgetOf,
   canSpend,
+  canSurge,
   freshBudget,
   isFresh,
   refresh,
   resetSneak,
   spend,
   spendAttack,
+  surge,
   unspend,
 } from '../src/combat/ActionBudget.js';
 
@@ -41,6 +43,7 @@ test('freshBudget spends nothing', () => {
     attacked: false,
     sneak: false,
     extra: false,
+    surged: false,
   });
 });
 
@@ -68,6 +71,7 @@ test('budgetOf keeps only the true booleans and a whole attack count', () => {
       attacked: false,
       sneak: false,
       extra: false,
+      surged: false,
     },
   );
 });
@@ -246,4 +250,20 @@ test('unspend frees one cost, and freeing the action drops its banked swings', (
   assert.deepEqual(budgetOf(swung.used), { ...freshBudget(), bonus: true });
   const reacted = unspend(at({ reaction: true, action: true, attacksLeft: 1 }), 'reaction');
   assert.equal(budgetOf(reacted.used).attacksLeft, 1, 'only the action gives its bank back');
+});
+
+test('surge gives a spent action back once per turn and keeps the swing bank', () => {
+  const fresh = { id: 'a', initiative: 10, modifier: 0 };
+  assert.equal(canSurge(fresh), false, 'nothing to give back before the first action');
+  assert.equal(surge(fresh), fresh);
+  const swung = spendAttack(fresh, 2);
+  const surged = surge(swung);
+  assert.equal(canSurge(surged), false, 'one surge per turn');
+  assert.equal(surge(surged), surged);
+  assert.deepEqual(surged.used, { ...budgetOf(swung.used), action: false, surged: true });
+  assert.equal(attacksAvailable(surged, 2), 1, 'the banked swing still comes first');
+  const next = spendAttack(spendAttack(surged, 2), 2);
+  assert.equal(next.used?.action, true);
+  assert.equal(next.used?.attacksLeft, 1, 'the second Attack action banks its own swing');
+  assert.equal(isFresh({ ...fresh, used: { ...freshBudget(), surged: true } }), false);
 });

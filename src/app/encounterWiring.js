@@ -3,7 +3,14 @@ import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import { encounterGroup } from '../entities/CreatureMap.js';
 import { addParticipant, startCombat, dropParticipant } from '../combat/Initiative.js';
-import { attacksAvailable, canSpend, spend, spendAttack, unspend } from '../combat/ActionBudget.js';
+import {
+  attacksAvailable,
+  canSpend,
+  spend,
+  spendAttack,
+  surge,
+  unspend,
+} from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { combatRoster, initiativeLine } from '../combat/CombatRoster.js';
 import { passRound } from '../entities/TimedEffects.js';
@@ -152,6 +159,25 @@ export function wireEncounters(app) {
     setCombat({ ...combat, order });
     app.views.combatScreen.update();
     return free;
+  };
+
+  /**
+   * Give one combatant's spent action back for Action Surge.
+   * @param {string} id
+   * @returns {boolean} false when the turn cannot surge; true with no fight
+   *   running, where there is no budget to track
+   */
+  app.actions.surgeBudget = (id) => {
+    const combat = current();
+    const index = combat ? combat.order.findIndex((p) => p.id === id) : -1;
+    if (!combat || index < 0) return true;
+    const next = surge(combat.order[index]);
+    if (next === combat.order[index]) return false;
+    const order = [...combat.order];
+    order[index] = next;
+    setCombat({ ...combat, order });
+    app.views.combatScreen.update();
+    return true;
   };
 
   wireEncounterPanels(app, { onStartCombat: startCombatSetup });
