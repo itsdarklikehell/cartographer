@@ -244,6 +244,10 @@ export function buildItemForm({
   const effects = buildEffectsEditor(item?.statusEffects ?? []);
   const effectsField = labeled('Inflicts', effects.element);
 
+  // A magic weapon gets through resistance to nonmagical weapon damage.
+  const magicBox = checkbox('Magical weapon', item?.magical ?? false);
+  const magicField = labeled('Magic', magicBox.label);
+
   presetSelect.addEventListener('change', () => {
     const type = typeSelect.value;
     const preset = presetsFor(type).find((p) => p.name === presetSelect.value);
@@ -259,6 +263,7 @@ export function buildItemForm({
       rangeLongInput.value = String(preset.range?.long ?? 60);
       if (preset.versatileDamage?.length) versatileDamage.set(preset.versatileDamage);
       damage.set(preset.damage);
+      magicBox.input.checked = preset.magical === true;
       syncWeaponFields();
     }
     if (preset.armorWeight !== undefined || preset.baseAC !== undefined) {
@@ -294,7 +299,7 @@ export function buildItemForm({
   const propertiesRow = fieldRow(propertiesField);
   const damageRow = fieldRow(damageField);
   const versatileRow = fieldRow(versatileField);
-  const effectsRow = fieldRow(effectsField);
+  const effectsRow = fieldRow(effectsField, magicField);
   // The flat AC bonus shares a row with the stat buff. Both are small
   // worn-item numbers, and each hides on its own when the type drops it.
   const acRow = fieldRow(acField, buffStatField, buffAmountField);
@@ -323,6 +328,7 @@ export function buildItemForm({
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
     categoryField.hidden = kindField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
+    magicField.hidden = !weaponish;
     propertiesField.hidden = !weaponish;
     armorRow.hidden = weightField.hidden;
     weaponRow.hidden = propertiesRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
@@ -368,6 +374,7 @@ export function buildItemForm({
       damage: damage.get(),
       statusEffects: effects.get(),
       spellFocus: focusBox.input.checked,
+      magical: magicBox.input.checked,
     });
 
   return buildInlineForm({

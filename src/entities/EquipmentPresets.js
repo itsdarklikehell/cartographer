@@ -417,5 +417,6 @@ export function copyEnemyWeapon(weapon) {
     name: weapon.name,
     ...coerceWeapon(weapon),
     damage: cloneDamage(weapon.damage),
+    ...(weapon.magical === true ? { magical: true } : {}),
   };
 }

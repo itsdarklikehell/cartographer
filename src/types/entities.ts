@@ -218,6 +218,9 @@ export interface EnemyWeapon {
   /** Absent or null on a weapon with no range. */
   range?: WeaponRange | null;
   versatileDamage?: DamagePart[];
+  /** True when the weapon counts as magical, so resistance to nonmagical
+   * weapon damage (Stoneskin) does not apply. Absent means nonmagical. */
+  magical?: boolean;
 }
 
 /** An enemy's worn armor: a name, a base AC, and a weight class. The armor
@@ -324,6 +327,10 @@ export interface InventoryItem {
    * rider term, for example a flaming blade's fire die, appears in both
    * arrays. */
   versatileDamage?: DamagePart[];
+  /** Weapons and bows: true when the weapon counts as magical, so
+   * resistance to nonmagical weapon damage does not apply. Absent means
+   * nonmagical. */
+  magical?: boolean;
   /** Weapons and bows: the damage roll as dice terms. The base damage comes
    * first, then any permanent riders, for example a burning blade's +1d4
    * fire. */

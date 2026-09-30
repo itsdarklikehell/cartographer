@@ -1222,9 +1222,9 @@ after that.
 A character resists the damage types of its race, such as fire for a
 tiefling. A creature takes its three lists from the creature dialog. A
 chip can add resistances too. Stoneskin resists bludgeoning, piercing, and
-slashing from a nonmagical weapon, and a spell gets through it. The item
-form has no magic setting, so a weapon counts as nonmagical unless its
-library entry sets `magical: true`. The
+slashing from a nonmagical weapon, and a spell gets through it. A weapon
+counts as magical when the **Magical weapon** box in its item form is
+ticked. A creature takes the flag from the library weapon that arms it. The
 log names each defense that changed the damage, with the amount taken.
 
 The Damage button on the combat screen and on the panels deals the typed
@@ -1973,6 +1973,7 @@ descriptions, a type filter, and one collapsible heading per item type.
 | Range | Normal and long range in feet, for a ranged or thrown weapon. A blank or unreadable field takes 80/320 for a ranged weapon and 20/60 for a melee weapon. The long range never saves shorter than the normal range |
 | Two-handed damage | The other dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
+| Magic | For a weapon: tick **Magical weapon** so that resistance to nonmagical weapon damage does not apply |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |
 | Min STR | For body armor: the Strength score that it needs. 0 means none |

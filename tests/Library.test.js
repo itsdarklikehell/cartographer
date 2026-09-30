@@ -1209,3 +1209,15 @@ test('normalizeLibrary keeps a buff HP raise and temporary HP', () => {
     tempHP: { count: 0, sides: 4, flat: 3 },
   });
 });
+
+test('normalizeLibrary keeps only a true magical flag on a weapon template', () => {
+  const lib = normalizeLibrary({
+    equipment: [
+      { name: 'Frost Brand', type: 'weapon', kind: 'melee', magical: true, damage: [] },
+      { name: 'Fake Brand', type: 'weapon', kind: 'melee', magical: 'yes', damage: [] },
+    ],
+  });
+  const byName = Object.fromEntries(lib.equipment.map((e) => [e.name, e]));
+  assert.equal(byName['Frost Brand'].magical, true);
+  assert.equal('magical' in byName['Fake Brand'], false);
+});

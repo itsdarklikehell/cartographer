@@ -59,6 +59,7 @@ export const EQUIPPABLE_TYPES = [
  * @property {DamagePart[]} damage
  * @property {string[]} statusEffects
  * @property {boolean} spellFocus
+ * @property {boolean} [magical] weapons only: the weapon counts as magical
  */
 
 /**
@@ -142,6 +143,7 @@ function weaponFields(draft) {
     ...(versatile.length ? { versatileDamage: versatile } : {}),
     damage: draft.damage,
     ...(draft.statusEffects.length ? { statusEffects: draft.statusEffects } : {}),
+    ...(draft.magical ? { magical: true } : {}),
   };
 }
 

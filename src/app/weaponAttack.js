@@ -193,7 +193,7 @@ export function rollWeaponAttack(
     // A weapon without a true `magical` flag counts as nonmagical, so
     // Stoneskin resists its hit.
     const taken = defendedDamage(app, defender.id, damage.byType, {
-      nonmagical: !(/** @type {{ magical?: boolean }} */ (weapon).magical),
+      nonmagical: weapon.magical !== true,
     });
     const lines = hitLines({
       weapon,

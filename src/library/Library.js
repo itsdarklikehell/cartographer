@@ -228,9 +228,12 @@ function withCoercedWeapon(raw) {
     properties: _properties,
     range: _range,
     versatileDamage: _versatile,
+    magical: _magical,
     ...rest
   } = raw;
-  return { ...rest, ...coerceWeapon(raw) };
+  // Only a true flag is kept, so a string "false" in a hand-edited file
+  // cannot mark the weapon magical.
+  return { ...rest, ...coerceWeapon(raw), ...(raw.magical === true ? { magical: true } : {}) };
 }
 
 /**

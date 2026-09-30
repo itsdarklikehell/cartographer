@@ -226,3 +226,9 @@ test('coerceWeapon emits every field, so a spread of the raw record cannot keep 
   });
   assert.equal(hasWeaponProperty(merged, 'finesse'), false, 'the property check reads a list');
 });
+
+test('copyEnemyWeapon keeps a true magical flag and drops any other value', () => {
+  const base = { name: 'Claw', kind: 'melee', damage: [] };
+  assert.equal(copyEnemyWeapon({ ...base, magical: true }).magical, true);
+  assert.equal('magical' in copyEnemyWeapon({ ...base, magical: 1 }), false);
+});

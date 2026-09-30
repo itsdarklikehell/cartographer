@@ -300,7 +300,11 @@ the types in each chip's `mods.resist`. A chip with `mods.resistNonmagical`
 (Stoneskin) adds bludgeoning, piercing, and slashing only when the caller
 passes `nonmagical`. `combatants.defendedDamage` passes it for a weapon hit
 whose weapon has no true `magical` field, and never for a spell, so a spell
-and a magic weapon get through Stoneskin.
+and a magic weapon get through Stoneskin. The `magical` field is a plain
+boolean on an inventory weapon, a library weapon template, and an
+`EnemyWeapon`. `assembleItem`, `normalizeLibrary`, and `copyEnemyWeapon`
+keep it only when it is `true`, so any code that sets the field to `true`
+marks a weapon magical.
 
 `applyDefenses(groups, defenses, { halve })` takes the `byType` groups of a
 damage roll. It returns the total damage taken and a note for each defense

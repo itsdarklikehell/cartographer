@@ -24,6 +24,8 @@ export interface EquipmentTemplate {
   properties?: WeaponProperty[];
   range?: WeaponRange;
   versatileDamage?: DamagePart[];
+  /** True on a magic weapon. Absent means nonmagical. */
+  magical?: boolean;
   damage?: DamagePart[];
   statusEffects?: string[];
   armorWeight?: ArmorWeight;

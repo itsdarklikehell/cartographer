@@ -255,3 +255,10 @@ test('the two armor traits are written only when set, and only on body armor', (
     'a helmet is not body armor, so neither trait survives',
   );
 });
+
+test('the magical flag is kept only on a weapon with the box ticked', () => {
+  const sword = { type: 'weapon', name: 'Flame Tongue' };
+  assert.equal(assembleItem(draft({ ...sword, magical: true }))?.magical, true);
+  assert.equal('magical' in assembleItem(draft({ ...sword, magical: false })), false);
+  assert.equal('magical' in assembleItem(draft({ magical: true })), false, 'rope is not a weapon');
+});
