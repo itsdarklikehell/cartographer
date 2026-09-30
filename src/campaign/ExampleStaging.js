@@ -3,7 +3,7 @@ import { STACKED_ARCHETYPES } from '../map/MapGenerator.js';
 import { placeName } from '../map/GeneratorNames.js';
 import { randInt } from '../map/GeneratorRandom.js';
 import { isBlocked, tileKind } from '../map/TileKinds.js';
-import { NEIGHBORS8, parseCoords, tileIdAt } from '../map/MapGeometry.js';
+import { NEIGHBORS4, NEIGHBORS8, parseCoords, tileIdAt } from '../map/MapGeometry.js';
 import { mulberry32 } from '../util/Rng.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
@@ -167,13 +167,38 @@ export function isOpenGround(t) {
 }
 
 /**
- * Bare interior floor, not stairs, a door, or a wall, where a creature can
- * stand.
+ * Bare interior floor, not stairs, a door, a wall, or a furnishing such as an
+ * altar or a table, where a creature can stand.
  * @param {Tile} t
  * @returns {boolean}
  */
 export function isBareFloor(t) {
-  return tileKind(t) === 'floor' && !t.childNodeId;
+  return tileKind(t) === 'floor' && !t.childNodeId && !t.overlayRef;
+}
+
+/**
+ * The ids of every tile that a walk from `from` reaches through tiles that
+ * are not a wall or an obstacle, stepping to the four side neighbours as
+ * `MapPath.hasOpenPath` does. A staged creature on a tile outside this set
+ * stands where the party can never meet it.
+ * @param {{ tiles: Tile[] }} gen @param {string} from
+ * @returns {Set<string>}
+ */
+export function reachableFrom(gen, from) {
+  const byId = new Map(gen.tiles.map((t) => [t.id, t]));
+  const seen = new Set([from]);
+  const queue = [from];
+  for (let q = 0; q < queue.length; q++) {
+    const [x, y] = tileXY(queue[q]);
+    for (const [dx, dy] of NEIGHBORS4) {
+      const id = tileIdAt(x + dx, y + dy);
+      const t = byId.get(id);
+      if (!t || seen.has(id) || isBlocked(t)) continue;
+      seen.add(id);
+      queue.push(id);
+    }
+  }
+  return seen;
 }
 
 /**

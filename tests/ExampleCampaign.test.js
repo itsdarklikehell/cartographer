@@ -2,9 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildExampleCampaign } from '../src/campaign/Campaigns.js';
 import { REGIONS, WORLD_SEED } from '../src/campaign/ExampleWorld.js';
-import { isStandable } from '../src/campaign/ExampleStaging.js';
+import { isStandable, tileDistance } from '../src/campaign/ExampleStaging.js';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { getTile } from '../src/map/TileGrid.js';
+import { getTile, overlayList } from '../src/map/TileGrid.js';
+import { hasOpenPath } from '../src/map/MapPath.js';
 import { tileKind } from '../src/map/TileKinds.js';
 import { authoringWarning } from '../src/map/MapExits.js';
 import { buildState, QUOTA_WARN_BYTES, serialize } from '../src/storage/SaveManager.js';
@@ -143,6 +144,29 @@ test('every creature stands where the party can meet it', () => {
   assert.ok(!deepest.tiles.some((t) => tileKind(t) === 'stairs-down'), 'on its last level');
   assert.equal(tileKind(/** @type {any} */ (getTile(deepest, tomb?.tileId ?? ''))), 'floor');
   assert.ok(lineage(creature('innkeeper-bram').location?.nodeId ?? '').includes('briarwick'));
+});
+
+test('each group of foes shares one tile, so the party meets it as one encounter', () => {
+  /** @param {string} id */
+  const spot = (id) => JSON.stringify(creature(id).location);
+  assert.equal(spot('gray-wolf-2'), spot('gray-wolf-1'));
+  assert.equal(spot('bandit-2'), spot('bandit-1'));
+  for (const id of ['goblin-raider-1', 'goblin-raider-2'])
+    assert.equal(spot(id), spot('snagtooth'));
+  const den = getTile(nodeOf('briarwick-vale'), creature('gray-wolf-1').location?.tileId ?? '');
+  assert.ok(den && overlayList(den).some((r) => r.includes('/road/')), 'the pack hunts the road');
+});
+
+test('Sister Alwyn stands beside the altar, on floor that a walk from the door reaches', () => {
+  const place = creature('sister-alwyn').location;
+  const temple = nodeOf(place?.nodeId ?? '');
+  assert.equal(temple.name, 'Temple');
+  const door = temple.tiles.find(
+    (t) => tileKind(t) === 'door' && t.id.endsWith(`,${temple.height - 1}`),
+  );
+  assert.ok(door && hasOpenPath(temple, door.id, place?.tileId ?? ''));
+  const altar = temple.tiles.find((t) => overlayList(t).some((r) => r.includes('altar')));
+  assert.ok(altar && tileDistance(altar.id, place?.tileId ?? '') <= 2);
 });
 
 test('the handouts name real nodes, and a bound handout a real tile', () => {

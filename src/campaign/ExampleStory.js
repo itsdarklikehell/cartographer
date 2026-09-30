@@ -84,7 +84,7 @@ export function exampleQuests(at) {
     quest(
       'the-goblin-raids',
       'The Goblin Raids',
-      'Goblins out of the Northmarch burned a farm in the vale. Hedda saw them work in silence, in files, watched by a hooded rider. Chieftain Snagtooth camps in the old forest. He is paid, not hungry, and he gives up his orders to save his life.',
+      'Goblins out of the Northmarch burned a farm in the vale. Hedda saw them work in silence, in files, watched by a hooded rider. Chieftain Snagtooth camps in the old forest of the Northmarch, and the way there runs north through the Saltreach. He is paid, not hungry, and he gives up his orders to save his life.',
       {
         steps: [
           step('Look over the burned farm'),

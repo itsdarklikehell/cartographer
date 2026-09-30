@@ -4,16 +4,19 @@ import {
   IdPool,
   besideTile,
   expandSites,
+  isBareFloor,
   isOpenGround,
   isStandable,
   makeSpotPicker,
   noteTile,
+  reachableFrom,
   stampMarker,
   tileDistance,
 } from '../src/campaign/ExampleStaging.js';
 import { REGION_STAGES, stackOf } from '../src/campaign/ExampleRegions.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { createTile } from '../src/map/TileGrid.js';
+import { interiorArt } from '../src/map/TileKinds.js';
 import { generateNodeTiles } from '../src/map/MapGenerator.js';
 import { mulberry32 } from '../src/util/Rng.js';
 
@@ -82,6 +85,20 @@ test('besideTile finds a standable neighbor, else the entry', () => {
   assert.equal(besideTile(gen, '1,1'), '0,0');
   const open = field(3);
   assert.notEqual(besideTile(open, '1,1'), '1,1');
+});
+
+test('reachableFrom walks side steps around walls, and isBareFloor refuses furnishings', () => {
+  // A wall column at x = 1 seals off the right side of a 3x3 room.
+  const rows = ['.#.', '.#.', '.#.'];
+  const tiles = rows.flatMap((row, y) =>
+    [...row].map((c, x) => createTile(`${x},${y}`, interiorArt(c === '#' ? 'wall-v' : 'floor-1'))),
+  );
+  const reach = reachableFrom({ tiles }, '0,0');
+  assert.deepEqual([...reach].sort(), ['0,0', '0,1', '0,2']);
+  const floor = createTile('0,0', interiorArt('floor-1'));
+  assert.ok(isBareFloor(floor));
+  assert.ok(!isBareFloor({ ...floor, overlayRef: interiorArt('altar') }));
+  assert.ok(!isBareFloor(tiles[1]));
 });
 
 test('stampMarker and noteTile change the named tile and ignore a missing one', () => {

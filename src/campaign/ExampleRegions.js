@@ -7,6 +7,7 @@ import {
   isStandable,
   makeSpotPicker,
   noteTile,
+  reachableFrom,
   stampMarker,
   tileDistance,
 } from './ExampleStaging.js';
@@ -161,16 +162,21 @@ function stairTo(inside, kind, node) {
 
 /**
  * Put the named people on bare floor inside a sub-map, deepest first, each
- * a few tiles from the last. A missing sub-map puts them at the fallback.
- * @param {RegionStage} stage @param {TreeNode | null} inside
- * @param {string[]} names @param {{ near?: boolean, fallback: { nodeId: string, tileId: string } }} options
+ * a few tiles from the last. Only floor that a walk from the entry reaches
+ * counts, so no one stands in a sealed corner behind a wall or a row of
+ * furnishings. `from` measures nearness from that tile instead of the
+ * entry. A missing sub-map puts them at the fallback.
+ * @param {RegionStage} stage @param {TreeNode | null} inside @param {string[]} names
+ * @param {{ near?: boolean, from?: string, fallback: { nodeId: string, tileId: string } }} options
  */
-function putInside(stage, inside, names, { near = false, fallback }) {
+function putInside(stage, inside, names, { near = false, from, fallback }) {
   if (!inside) {
     for (const name of names) stage.places[name] = fallback;
     return;
   }
-  const pick = makeSpotPicker(inside, isBareFloor, { near, gap: 2 });
+  const reach = reachableFrom(inside, inside.entry);
+  const ok = (/** @type {Tile} */ t) => isBareFloor(t) && reach.has(t.id);
+  const pick = makeSpotPicker(inside, ok, { near, gap: 2, from: from ?? inside.entry });
   for (const name of names) stage.places[name] = { nodeId: inside.id, tileId: pick() };
 }
 
@@ -224,7 +230,7 @@ export const REGION_STAGES = {
       palette,
       farm,
       'farm',
-      'A burned farmstead, torched in the goblin raids. The barn door is scored with claw marks far too orderly to be animal.',
+      'A farmstead hit in the goblin raids. The house still stands, but the barn behind it burned to the ground, and its charred door is scored with claw marks far too orderly to be animal.',
     );
     put(stage, 'farm', farm);
     put(stage, 'goblinScout', besideTile(gen, farm));
@@ -241,9 +247,16 @@ export const REGION_STAGES = {
       "Hedda's steading, the largest working farm in the vale. Sells provisions and hears what the field hands hear.",
     );
     put(stage, 'hedda', besideTile(gen, steading));
+    // A group of foes shares one tile, so a party that walks onto it meets
+    // the whole group in one encounter. The wolf pack hunts the road itself,
+    // the first stretch of it past the edge of town.
+    const pack = outdoors(gen, (t) => onRoad(t) && isStandable(t) && tileDistance(t.id, gate) > 6, {
+      from: gate,
+      near: true,
+    })();
+    put(stage, 'wolf1', pack);
+    put(stage, 'wolf2', pack);
     const wild = outdoors(gen, (t) => isOpenGround(t) && tileDistance(t.id, gate) > 6, { gap: 2 });
-    put(stage, 'wolf1', wild());
-    put(stage, 'wolf2', besideTile(gen, stage.places.wolf1.tileId));
     const tower = landmark(stage, 'watchtower', wild);
     noteTile(
       gen,
@@ -251,7 +264,7 @@ export const REGION_STAGES = {
       'A broken watchtower on the vale road. Bandits use it to watch for caravans.',
     );
     put(stage, 'bandit1', besideTile(gen, tower));
-    put(stage, 'bandit2', besideTile(gen, stage.places.bandit1.tileId));
+    put(stage, 'bandit2', stage.places.bandit1.tileId);
 
     stage.after.push((node) => {
       const briarwick = node('briarwick');
@@ -263,7 +276,10 @@ export const REGION_STAGES = {
         near: true,
         fallback,
       });
-      putInside(stage, building(briarwick, palette, 'temple', node), ['alwyn'], { fallback });
+      // Sister Alwyn tends the altar at the head of the nave.
+      const temple = building(briarwick, palette, 'temple', node);
+      const altar = temple?.tiles.find((t) => overlayList(t).some((r) => r.includes('altar')));
+      putInside(stage, temple, ['alwyn'], { near: true, from: altar?.id, fallback });
       const plaza = makeSpotPicker(
         briarwick,
         (t) => t.imageRef.includes('/plaza/') && isStandable(t),
@@ -324,14 +340,18 @@ export const REGION_STAGES = {
       'camp',
       "Snagtooth's raiding camp. Too orderly for goblins: dug latrines, posted watches, written orders.",
     );
-    put(stage, 'snagtooth', camp);
-    const between = outdoors(gen, (t) => isOpenGround(t) && tileDistance(t.id, camp) <= 4, {
-      from: camp,
-      near: true,
-      gap: 2,
-    });
-    put(stage, 'raider1', between());
-    put(stage, 'raider2', between());
+    // The whole war band stands in the camp, so the party meets it as one
+    // fight.
+    for (const name of [
+      'snagtooth',
+      'raider1',
+      'raider2',
+      'campBugbear',
+      'campGoblin1',
+      'campGoblin2',
+    ]) {
+      put(stage, name, camp);
+    }
     const stones = landmark(stage, 'standing-stones', spots);
     noteTile(
       gen,
