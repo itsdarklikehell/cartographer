@@ -554,10 +554,10 @@ A town building takes its furnishings from what it is.
 
 | Building | Furnishings |
 | --- | --- |
-| Inn | More bedrooms |
+| Inn | A kitchen, a pantry, a bar, and a common room of tables. Stairs up lead to a guest floor of bedrooms |
 | Temple | One open nave with an altar and pillars |
 | Barracks | Rows of beds |
-| Shop | A counter and stock |
+| Shop | A storeroom behind a counter, and shelves on the sales floor |
 | Academy | Bookshelves |
 | Warehouse | Barrels and chests |
 
@@ -644,6 +644,7 @@ Generation always makes these maps, whatever the Sub-maps value:
 
 - the levels of a dungeon or a cave
 - the upper floor and the dungeon of a castle
+- the guest floor of an inn
 - the cellar under a trapdoor
 
 So a generated staircase or trapdoor always leads to a real map.

@@ -13,6 +13,7 @@ import {
   WALL,
 } from './GeneratorInteriorMask.js';
 import { dress, furnishHalls, furnisher } from './GeneratorFurnish.js';
+import { furnishInn, furnishShop, innWalls, PLAN_MIN_SIZE, shopWalls } from './GeneratorInnShop.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -219,9 +220,12 @@ export const CELLAR_CHANCE = 0.3;
 
 /**
  * Generate the inside of one building, such as a house, a shop, or a
- * temple: a few small rooms of at least two cells a side, and no stairs.
- * A temple is one open nave with no inner walls, so its altar and colonnade
- * fill the building. `environ`, such as `inn` or `temple`, picks the furnishings
+ * temple: a few small rooms of at least two cells a side. A temple is one
+ * open nave with no inner walls, so its altar and colonnade fill the
+ * building. An inn and a shop of `PLAN_MIN_SIZE` or more follow the fixed
+ * plans of `GeneratorInnShop.js`, and an inn also gets stairs up to its
+ * guest floor. `stairsUp` names that tile, so the caller can link it to the
+ * guest floor. `environ`, such as `inn` or `temple`, picks the furnishings
  * (`GeneratorFurnish.BUILDING_LAYOUTS`). A building has a cellar with a
  * chance of `CELLAR_CHANCE`. Its trapdoor goes on the floor
  * cell farthest from the entrance that `stairsCell` accepts, and
@@ -231,24 +235,44 @@ export const CELLAR_CHANCE = 0.3;
  * cellar leaves that cell bare.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {string} [environ]
- * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
+ * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null, stairsUp: string | null }}
  */
 export function generateBuilding(palette, size, rng, environ) {
-  const maxDepth = environ === 'temple' ? 0 : 3;
+  const plan = size >= PLAN_MIN_SIZE && (environ === 'inn' || environ === 'shop');
+  const maxDepth = environ === 'temple' || plan ? 0 : 3;
   const { cells, rooms, entry } = hallLayout(size, rng, { minRoom: 2, maxDepth });
+  /** @type {number | null} */
+  let up = null;
+  if (plan && environ === 'inn') up = innWalls(cells, size);
+  else if (plan) shopWalls(cells, size);
   const tiles = maskTiles(palette, cells, size, rng);
+  const stairsUp = up === null ? null : tileIdAt(up % size, Math.floor(up / size));
+  if (stairsUp) tileStamper(tiles, palette)(stairsUp, 'stairs-up');
+  const taken = up === null ? [] : [up];
   const dist = walkDistances(cells, size, doorColumn(size), size - 1);
   const far = cells.flatMap((code, i) => (code === FLOOR ? [i] : []));
   const at = stairsCell(
     cells,
     size,
     far.sort((a, b) => dist[b] - dist[a]),
+    taken,
   );
-  const reserved = at === null ? [] : [at];
-  furnishHall(tiles, palette, cells, size, rng, rooms, false, reserved, undefined, environ);
-  if (at === null || rng() >= CELLAR_CHANCE) return { tiles, entry, stairsDown: null };
+  const reserved = at === null ? taken : [...taken, at];
+  if (plan) {
+    const { place, placed } = furnisher(
+      cells,
+      size,
+      [doorColumn(size), size - 1],
+      new Set(reserved),
+    );
+    (environ === 'inn' ? furnishInn : furnishShop)(place, rng, size);
+    dress(tiles, palette, size, placed);
+  } else {
+    furnishHall(tiles, palette, cells, size, rng, rooms, false, reserved, undefined, environ);
+  }
+  if (at === null || rng() >= CELLAR_CHANCE) return { tiles, entry, stairsDown: null, stairsUp };
   const stairsDown = tileIdAt(at % size, Math.floor(at / size));
   const tile = /** @type {Tile} */ (tiles.find((t) => t.id === stairsDown));
   tile.overlayRef = interiorRef(palette, 'trapdoor');
-  return { tiles, entry, stairsDown };
+  return { tiles, entry, stairsDown, stairsUp };
 }

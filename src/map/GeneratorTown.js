@@ -29,7 +29,7 @@ import { planWall, wallRadii } from './GeneratorTownWall.js';
  * @type {Record<string, { environ: string, size: string }>}
  */
 const BUILDING_INTERIORS = {
-  inn: { environ: 'inn', size: 'small' },
+  inn: { environ: 'inn', size: 'medium' },
   tavern: { environ: 'tavern', size: 'small' },
   blacksmith: { environ: 'shop', size: 'small' },
   'general-store': { environ: 'shop', size: 'small' },

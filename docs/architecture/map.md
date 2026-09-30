@@ -685,6 +685,24 @@ goes beside it, and a building with no cellar leaves the cell bare. The
 `cellar` archetype in `MapGenerator.js` generates the cellar as a small
 dungeon level that the party enters by its stairs up.
 
+An inn and a shop of at least `PLAN_MIN_SIZE` (8) cells a side follow fixed
+floor plans in `src/map/GeneratorInnShop.js` instead of the split. A wall
+across the north of the building makes the back rooms, and its door sits at
+the west end. A row of tables two cells in front of that wall is the bar of
+an inn or the counter of a shop. The strip behind the row joins the back
+door to the front room past the east end of the row, so the furnisher never
+has to drop a table to keep the back rooms reachable.
+
+The back of an inn is a kitchen in the west and a pantry in the east. The
+common room fills the front with tables, and stairs up stand against its east
+wall on row `stairsRow`. The stairs lead to a forced `upper-floor` site with
+the `inn` environ. `generateGuestFloor` lays that floor out as a corridor
+along the same row, with the stairs down at its east end above the stairs
+up, and a row of guest rooms on each side. Each guest room has a door onto
+the corridor and a bed. The back of a shop is one storeroom of barrels and
+chests, and shelves line the side walls of its sales floor. A town gives its
+inn the medium size, so the common room has space for tables.
+
 ### Furnishings
 
 Each interior generator then furnishes its map through
@@ -709,10 +727,10 @@ from.
 
 | Environ | Furnishings |
 | --- | --- |
-| Inn | Guest bedrooms |
+| Inn | A kitchen with a hearth, a pantry, a bar, and a common room of tables, with stairs up to a guest floor of bedrooms |
 | Temple | One open nave with an altar and a colonnade, and no inner walls |
 | Barracks | A row of beds |
-| Shop | A counter and its stock |
+| Shop | A storeroom of stock behind a counter, and shelves on the sales floor |
 | Academy | Bookshelves and a table |
 | Warehouse | Barrels and chests |
 | House, or an environ with no layout | A hearth and a table in the room behind the door |

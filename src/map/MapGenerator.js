@@ -4,6 +4,7 @@ import { generateDungeon } from './GeneratorInteriors.js';
 import { generateCave } from './GeneratorCave.js';
 import { generateBuilding, generateCastle, generateUpperFloor } from './GeneratorHalls.js';
 import { generateWorld } from './GeneratorWorld.js';
+import { generateGuestFloor } from './GeneratorInnShop.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -195,7 +196,9 @@ export function levelsBelow(options) {
  * border other than the south, and a town with any other environ is
  * inland. A building with a trapdoor has a forced site for its cellar, which is a
  * small dungeon level entered by its stairs up. The `cellar` archetype
- * generates that level. A castle has forced sites for its upper floor,
+ * generates that level. An inn has a forced site for its guest floor, which
+ * the `upper-floor` archetype generates with the `inn` environ
+ * (`GeneratorInnShop.generateGuestFloor`). A castle has forced sites for its upper floor,
  * which the `upper-floor` archetype generates and the party enters by its
  * stairs down, and for one dungeon level below it. No generated stairs
  * lead nowhere.
@@ -240,17 +243,31 @@ export function generateNodeTiles(palette, options, rng) {
   }
   if (archetype === 'building') {
     const gen = generateBuilding(palette, n, rng, environ);
-    if (!gen.stairsDown) return done(gen);
-    const cellar = {
-      tileIds: [gen.stairsDown],
-      archetype: 'cellar',
-      kind: /** @type {NodeKind} */ ('interior'),
-      environ: 'cellar',
-      size: 'small',
-      label: 'cellar',
-      forced: true,
-    };
-    return done(gen, [cellar]);
+    /** @type {GeneratedSite[]} */
+    const sites = [];
+    if (gen.stairsUp) {
+      sites.push({
+        tileIds: [gen.stairsUp],
+        archetype: 'upper-floor',
+        kind: 'interior',
+        environ,
+        size,
+        label: 'guest floor',
+        forced: true,
+      });
+    }
+    if (gen.stairsDown) {
+      sites.push({
+        tileIds: [gen.stairsDown],
+        archetype: 'cellar',
+        kind: 'interior',
+        environ: 'cellar',
+        size: 'small',
+        label: 'cellar',
+        forced: true,
+      });
+    }
+    return done(gen, sites);
   }
   if (archetype === 'castle') {
     const gen = generateCastle(palette, n, rng);
@@ -277,7 +294,9 @@ export function generateNodeTiles(palette, options, rng) {
     };
     return done(gen, [above, below]);
   }
-  if (archetype === 'upper-floor') return done(generateUpperFloor(palette, n, rng));
+  if (archetype === 'upper-floor') {
+    return done((environ === 'inn' ? generateGuestFloor : generateUpperFloor)(palette, n, rng));
+  }
   let open;
   if (archetype === 'town') open = generateTown(palette, n, rng, environ);
   else if (archetype === 'world') open = generateWorld(palette, n, rng);
