@@ -14,6 +14,7 @@ import {
 } from '../entities/Progression.js';
 import { featureKey, getFeatureChoices, pendingFeatureGrants } from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
+import { hasExpertiseSource } from '../entities/ExpertiseSources.js';
 import { buildInvocationRows } from './InvocationPicker.js';
 import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
 import { chooseASI, chooseFeat } from './ImprovementFlow.js';
@@ -202,7 +203,9 @@ export function buildProgressSection(getCharacter, opts) {
   // Expertise doubles a skill proficiency. The Bard and Rogue features grant
   // it through the pending-grant flow above. This row is the GM's hand grant
   // for subclasses and homebrew, with no maximum. Only proficient skills are
-  // offered, which is the one rule the normalizer enforces anyway.
+  // offered, which is the one rule the normalizer enforces anyway. The row
+  // shows only for a character with a source of expertise (see
+  // ExpertiseSources.js), so a Fighter does not read "No expertise chosen".
   async function runExpertise() {
     const p = getProficiencies(getCharacter());
     const values = await promptModal(
@@ -223,7 +226,7 @@ export function buildProgressSection(getCharacter, opts) {
   }
 
   const { skills, expertise } = getProficiencies(character);
-  if (opts.editBase && skills.length > 0) {
+  if (opts.editBase && skills.length > 0 && hasExpertiseSource(character)) {
     const row = addRow();
     addText(
       row,
