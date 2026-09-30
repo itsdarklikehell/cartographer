@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { FOLLOW_DELAY_MS, FollowScheduler, followOffset } from '../src/map/MapFollow.js';
+import { FOLLOW_DELAY_MS, FollowScheduler, clearOf, followOffset } from '../src/map/MapFollow.js';
 
 /** A 40x40 map of 50 px tiles on a 1000x600 canvas, at its top-left. */
 const view = {
@@ -35,6 +35,33 @@ test('an axis where the map fits the canvas never pans', () => {
   // On a canvas smaller than two margins, the tile centres instead.
   const tiny = { ...view, canvasWidth: 200, canvasHeight: 200 };
   assert.deepEqual(followOffset(tiny, '10,10'), { offsetX: -425, offsetY: -425 });
+});
+
+test('a tile left under the mini-map or the toolbar pans clear of it', () => {
+  // The mini-map covers 0..250 x 0..250 in the top-left corner. The
+  // deadzone pan puts tile 4,4 at 200,150, under the box, so the pan moves it
+  // 50 px right, which is shorter than 100 px down.
+  const miniMap = { x: 0, y: 0, w: 250, h: 250 };
+  const panned = { ...view, offsetX: -100, offsetY: -100 };
+  assert.deepEqual(followOffset(panned, '4,4', [miniMap]), { offsetX: 50, offsetY: -50 });
+  // A toolbar along the top right: the tile moves down under it.
+  const toolbar = { x: 600, y: 0, w: 400, h: 40 };
+  assert.deepEqual(followOffset(view, '14,3', [toolbar]), { offsetX: 0, offsetY: 0 });
+  assert.deepEqual(clearOf({ x: 700, y: 10, w: 50, h: 50 }, toolbar, bounds), { dx: 0, dy: 30 });
+  // A tile clear of every box does not move.
+  assert.deepEqual(followOffset(view, '8,5', [miniMap, toolbar]), { offsetX: 0, offsetY: 0 });
+});
+
+const bounds = { w: 1000, h: 600, pansX: true, pansY: true };
+
+test('clearOf keeps the tile on the canvas and on axes that pan', () => {
+  const box = { x: 0, y: 0, w: 200, h: 250 };
+  const tile = { x: 20, y: 20, w: 50, h: 50 };
+  assert.deepEqual(clearOf(tile, box, bounds), { dx: 180, dy: 0 }, 'left would leave the canvas');
+  assert.deepEqual(clearOf(tile, box, { ...bounds, pansX: false }), { dx: 0, dy: 230 });
+  assert.deepEqual(clearOf(tile, box, { ...bounds, pansX: false, pansY: false }), { dx: 0, dy: 0 });
+  const wide = { x: 0, y: 0, w: 1000, h: 600 };
+  assert.deepEqual(clearOf(tile, wide, bounds), { dx: 0, dy: 0 }, 'no move clears a full cover');
 });
 
 /** A canvas stand-in that dispatches the pointer events by name. */

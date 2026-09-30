@@ -1,5 +1,7 @@
 import { parseCoords } from './MapGeometry.js';
 
+/** @typedef {import('./ExitBands.js').Rect} Rect */
+
 /** The part of the canvas, on each side, that the followed tile keeps clear of. */
 export const FOLLOW_DEADZONE = 0.2;
 
@@ -50,25 +52,95 @@ function axisOffset(offset, p, size, dim, extent) {
  * view: 20% of the canvas on each side, and at least three tiles. The zoom
  * never changes. A tile already inside the deadzone, or an id that is not a
  * grid coordinate, gives back the offsets of the view unchanged.
+ *
+ * `occluders` are the rects, in buffer px, that HTML over the canvas covers,
+ * such as the mini-map and the zoom toolbar. A tile that the deadzone pan
+ * leaves under one of them gets a further pan that clears it (see
+ * `clearOf`), so the party marker never hides under the chrome.
  * @param {FollowView} view
  * @param {string} tileId
+ * @param {readonly Rect[]} [occluders]
  * @returns {{ offsetX: number, offsetY: number }}
  */
-export function followOffset(view, tileId) {
-  const { offsetX, offsetY } = view;
+export function followOffset(view, tileId, occluders = []) {
   const at = parseCoords(tileId);
-  if (!at) return { offsetX, offsetY };
+  if (!at) return { offsetX: view.offsetX, offsetY: view.offsetY };
   const size = view.tileSize * view.scale;
-  return {
-    offsetX: axisOffset(offsetX, offsetX + at.x * size, size, view.canvasWidth, view.width * size),
-    offsetY: axisOffset(
-      offsetY,
-      offsetY + at.y * size,
-      size,
-      view.canvasHeight,
-      view.height * size,
-    ),
-  };
+  const pansX = view.width * size > view.canvasWidth;
+  const pansY = view.height * size > view.canvasHeight;
+  let offsetX = axisOffset(
+    view.offsetX,
+    view.offsetX + at.x * size,
+    size,
+    view.canvasWidth,
+    view.width * size,
+  );
+  let offsetY = axisOffset(
+    view.offsetY,
+    view.offsetY + at.y * size,
+    size,
+    view.canvasHeight,
+    view.height * size,
+  );
+  for (const box of occluders) {
+    const pan = clearOf(
+      { x: offsetX + at.x * size, y: offsetY + at.y * size, w: size, h: size },
+      box,
+      { w: view.canvasWidth, h: view.canvasHeight, pansX, pansY },
+    );
+    offsetX += pan.dx;
+    offsetY += pan.dy;
+  }
+  return { offsetX, offsetY };
+}
+
+/**
+ * The smallest pan that moves a tile rect off an occluder, on an axis that
+ * pans. It tries each of the four directions and keeps the shortest one, so
+ * a tile under the mini-map in the top-left corner moves right or down, by
+ * whichever is less. A move that would put the tile past the edge of the
+ * canvas does not count. A tile that does not overlap the box, or that no
+ * move clears, does not move.
+ * @param {Rect} tile
+ * @param {Rect} box
+ * @param {{ w: number, h: number, pansX: boolean, pansY: boolean }} canvas the canvas
+ *   size, and whether the view pans on each axis
+ * @returns {{ dx: number, dy: number }}
+ */
+export function clearOf(tile, box, canvas) {
+  const { pansX, pansY } = canvas;
+  const overlaps =
+    tile.x < box.x + box.w &&
+    box.x < tile.x + tile.w &&
+    tile.y < box.y + box.h &&
+    box.y < tile.y + tile.h;
+  if (!overlaps) return { dx: 0, dy: 0 };
+  const moves = [
+    ...(pansX
+      ? [
+          { dx: box.x + box.w - tile.x, dy: 0 },
+          { dx: box.x - tile.x - tile.w, dy: 0 },
+        ]
+      : []),
+    ...(pansY
+      ? [
+          { dx: 0, dy: box.y + box.h - tile.y },
+          { dx: 0, dy: box.y - tile.y - tile.h },
+        ]
+      : []),
+  ].filter(
+    (m) =>
+      tile.x + m.dx >= 0 &&
+      tile.x + tile.w + m.dx <= canvas.w &&
+      tile.y + m.dy >= 0 &&
+      tile.y + tile.h + m.dy <= canvas.h,
+  );
+  /** @param {{ dx: number, dy: number }} m */
+  const length = (m) => Math.abs(m.dx) + Math.abs(m.dy);
+  return moves.reduce(
+    (best, m) => (length(m) < length(best) ? m : best),
+    moves[0] ?? { dx: 0, dy: 0 },
+  );
 }
 
 /**

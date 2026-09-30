@@ -256,6 +256,7 @@ export class MapCanvas {
         height: node.height,
       },
       focusTileId,
+      this.occluders,
     );
     if (next.offsetX === this.offsetX && next.offsetY === this.offsetY) return;
     this.offsetX = next.offsetX;

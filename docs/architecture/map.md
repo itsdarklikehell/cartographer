@@ -1192,7 +1192,12 @@ party or the followed character. A focus tile off the canvas refits the
 view around it. A focus tile on the canvas gets the smallest pan that keeps
 it inside a deadzone of 20% of the canvas on each side, and at least three
 tiles, from `followOffset` in `map/MapFollow.js`. The zoom stays the same, and
-an axis where the whole map fits the canvas never pans. `FollowScheduler`
+an axis where the whole map fits the canvas never pans. `followOffset` also
+reads the occluders of the canvas, the rects of the mini-map and the zoom
+toolbar. When the deadzone pan leaves the tile under one of them,
+`clearOf` adds the shortest further pan that moves the tile off it and
+keeps it on the canvas. Without that pan, a party near the top-left corner
+of a large map on a narrow screen stands under the mini-map. `FollowScheduler`
 holds the pan while the pointer is over the canvas and runs it when the
 pointer leaves or 600 ms after the last click. Without the wait, a pan
 between two clicks puts a different tile under the pointer, so the second
