@@ -955,7 +955,7 @@ The call sites act on the list in these ways:
 - `app/checkRolls.js` adds a disadvantage slant to a STR or DEX save or check,
   through the `extra` parameter of `rollMode`, so a chip that grants advantage
   cancels it.
-- `app/weaponAttack.js` adds the same slant to every weapon attack, because an
+- `combat/WeaponSwing.js` adds the same slant to every weapon attack, because an
   attack uses STR or DEX whatever the weapon is.
 - `app/spellCast.js` refuses a cast before the resolver runs, so a refused cast
   spends no slot. The dialog offers an "Ignore armor" opt-out beside the
@@ -971,7 +971,7 @@ Untrained armor changes rolls only. The AC of the armor stays the same.
 `Proficiencies.isProficientWeapon(character, name, category)` is true when the
 weapons list grants the whole category or names the weapon. The comparison of
 names ignores case, because the list stores a named grant in lowercase and the
-GM can type an item name in any case. `app/weaponAttack.js` adds the
+GM can type an item name in any case. `combat/WeaponSwing.js` adds the
 proficiency bonus to the attack only when this check passes. An attacker with
 no `proficiencies` field is always proficient, because a creature's attack
 bonus includes proficiency, the way a 5e stat block does.
@@ -1295,7 +1295,7 @@ the sheet at +5 while the roll gave -1.
 number and the rolled number agree, and a passive score gets the penalty with
 no extra code. Each other kind of d20 test includes the penalty too:
 
-- `app/weaponAttack.js` subtracts it from the attack bonus, for a character or
+- `combat/WeaponSwing.js` subtracts it from the attack bonus, for a character or
   a creature.
 - `Classes.spellAttackBonus` subtracts it from a spell attack.
   `Classes.spellSaveDC` does not, because the target rolls against a DC and the
@@ -1827,7 +1827,7 @@ The reads over the table are pure and take chip lists only:
 
 These sites read the table:
 
-- `app/weaponAttack.js` builds one query from both combatants and takes the
+- `combat/WeaponSwing.js` builds one query from both combatants and takes the
   reach from the weapon's kind (`Weapons.weaponKind`). It also asks `autoCrits`
   about the defender, so any hit on a paralyzed target is a critical hit.
 - `app/spellCastResolve.js` combines the mode from the chips with the GM's
@@ -1898,7 +1898,7 @@ which has no dice tray, works the same as an attack, which has one.
 
 ### Roll sites
 
-- `app/weaponAttack.js` reads the attacker's own chips before it loads the
+- `combat/WeaponSwing.js` reads the attacker's own chips before it loads the
   tray, and puts the note in the log beside the dialog's own modifiers.
 - `CastRolls.js` rolls the caster's chips once per projectile, because each
   projectile is its own attack roll. An auto-hit projectile rolls no attack, so

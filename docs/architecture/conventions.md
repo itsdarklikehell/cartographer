@@ -402,7 +402,7 @@ the canvas, and you check the glue in a browser.
 | `MapNavigator`, `RegionGroups`, `FogOfWar`, `PartyTracker` | The event handlers of `MapCanvas` |
 | `Creature`, `Resource`, `Character` | `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, `ui/EncounterPanel.js` |
 | `serialize`, `deserialize`, and `toTileGrid` in `SaveManager` | The localStorage, download, and file wrappers in `SaveManager` |
-| `combat/AttackResolve.js` | The dialog and dice-tray code in `app/weaponAttack.js` |
+| `combat/AttackResolve.js`, `combat/WeaponSwing.js` | The dialog and dice-tray code in `app/weaponAttack.js` |
 | `entities/ItemDraft.js`, `entities/SpellDraft.js` | `ui/ItemForm.js`, `ui/SpellForm.js` |
 | `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcuts.js` |
 | `map/NodeEdits.js`, `map/NodeCleanup.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |

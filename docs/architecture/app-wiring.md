@@ -562,7 +562,7 @@ stamps that `findRegionGroups` in `map/RegionGroups.js` and `spanBlocks` in
 the object that those caches already know, so an adoption that moved nothing
 leaves them warm.
 
-### encounterWiring.js (plus creatureForm.js, weaponAttack.js, the four cast modules, combatants.js, combatantWrites.js)
+### encounterWiring.js (plus creatureForm.js, weaponAttack.js, attackFields.js, the four cast modules, combatants.js, combatantWrites.js)
 
 `encounterWiring.js` owns the Encounters panel, the sidebar's Initiative
 card, the Build-rail encounter list, and the alert when the party walks
@@ -615,15 +615,22 @@ bar starts. Casting a spell is the same job, split across five modules:
 
 `CastPlan` in `src/types/cast.ts` passes between them.
 
-`weaponAttack.js` itself owns the dialog, the dice tray call, and the log
-lines. The rules that it applies are pure functions in
-`src/combat/AttackResolve.js`, which has the unit tests:
+`weaponAttack.js` itself owns the dialog prompt, the budget spend, the dice
+tray call, the Shield pause, and the writes. `attackFields.js` builds the
+dialog's fields with no DOM code. The rules that the swing applies are pure
+functions in `src/combat/`, which have the unit tests:
 
-- `resolveAttack` decides hit and critical hit, and the wording that both
-  the log and the toast quote.
-- `damageParts` assembles the dice that a hit rolls, and doubles every
-  count on a critical hit, including the dice added in the dialog.
-- `attackerStats` picks between a creature's stat block and a character's
+- `AttackTweaks.js` reads the dialog's answers (`readAttackTweaks`), and
+  keeps the table of the three swings with `swingKind` and `canSwing`.
+- `WeaponSwing.js` works out the attack roll before the d20 rolls
+  (`prepareSwing`), words the attack line (`attackLine`), and rolls and words
+  the damage of a hit (`hitDamage` and `hitLines`).
+- In `AttackResolve.js`, `resolveAttack` decides hit and critical hit, and
+  the wording that both the log and the toast quote.
+- `AttackResolve.damageParts` assembles the dice that a hit rolls, and
+  doubles every count on a critical hit, including the dice added in the
+  dialog.
+- `AttackResolve.attackerStats` picks between a creature's stat block and a character's
   scores with gear bonuses.
 
 #### Target caps

@@ -1,161 +1,19 @@
 import { promptModal } from '../ui/Modal.js';
-import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
-import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
-import { unproficientWear } from '../entities/Armor.js';
-import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
-import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
-import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
-import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
+import { attacksPerAction } from '../entities/Features.js';
 import { hasExtraAction } from '../entities/ChipMods.js';
-import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
-import { offhandDamageModifier } from '../combat/TwoWeapon.js';
-import { formatModifier } from '../entities/Modifiers.js';
-import { rollRiders } from '../entities/Riders.js';
-import { riderSources } from '../entities/FeatChoices.js';
-import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
-import {
-  abilityModOf,
-  attackerProficiency,
-  attackerProficientWith,
-  attackerStats,
-  damageModifier,
-  damageParts,
-  droppedNote,
-  resolveAttack,
-} from '../combat/AttackResolve.js';
+import { resolveAttack } from '../combat/AttackResolve.js';
+import { SWINGS, readAttackTweaks, swingKind } from '../combat/AttackTweaks.js';
+import { attackLine, hitDamage, hitLines, prepareSwing } from '../combat/WeaponSwing.js';
+import { skipsTurn } from '../combat/CombatView.js';
 import { findCombatant, combatantsAsTargets, defendedDamage } from './combatants.js';
 import { applyToTarget } from './combatantWrites.js';
-import { skipsTurn } from '../combat/CombatView.js';
-import { defenseNote } from '../entities/DamageDefenses.js';
 import { spendRollRiders } from './riderSpend.js';
 import { offerWard, pendingWard } from './shieldWard.js';
+import { attackDialog } from './attackFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
-
-/**
- * The situational overrides a pre-roll dialog can add to one attack: the mode
- * of the d20, bonus or penalty dice and a flat bonus on the attack roll, and
- * extra dice and a flat rider on the damage. `twoHanded` swings a versatile
- * weapon with both hands, so the damage uses the two-handed dice. `longRange`
- * fires past the weapon's normal range, which slants the roll toward
- * disadvantage. `thrown` throws a melee weapon instead of striking with it,
- * which makes the swing a ranged attack for every rule that asks.
- * `freeAction` swings without spending the turn's Attack action, which is how
- * the GM takes a swing the action economy has no room for. `offhand` is the
- * second swing of two-weapon fighting: it costs the bonus action rather than
- * the Attack action, and its damage carries no ability bonus. `reaction` is an
- * opportunity attack, which costs the reaction and rolls like a normal swing.
- * `cover` raises the defender's AC for this swing, and `sneak` adds the
- * attacker's Sneak Attack dice to the damage. Both are the GM's call, because
- * nothing here reads a barrel on the map or where the rogue is standing.
- * Every field defaults to nothing, so a plain Enter in the dialog rolls the
- * unmodified attack.
- * @typedef {{
- *   mode?: AttackMode,
- *   twoHanded?: boolean,
- *   longRange?: boolean,
- *   thrown?: boolean,
- *   freeAction?: boolean,
- *   offhand?: boolean,
- *   reaction?: boolean,
- *   cover?: import('../combat/Cover.js').CoverLevel,
- *   sneak?: boolean,
- *   attackDice?: number,
- *   attackDie?: import('../types/dice.js').DieType,
- *   attackFlat?: number,
- *   damageDice?: number,
- *   damageDie?: import('../types/dice.js').DieType,
- *   damageFlat?: number,
- * }} AttackTweaks
- */
-
-/**
- * What the dialog's mode control can say. `auto` is the default and reads the
- * mode off the condition chips, falling back to the dice tray's standing
- * toggle. The other three are the GM's call for this one attack, and each of
- * them beats both, including `normal`, which is how a GM cancels a standing
- * toggle for one roll.
- * @typedef {'auto' | import('../types/dice.js').RollMode} AttackMode
- */
-
-/** The mode control's options, in the order they read best. */
-const MODE_OPTIONS = [
-  { value: 'auto', label: 'Auto (from conditions)' },
-  { value: 'normal', label: 'Normal' },
-  { value: 'advantage', label: 'Advantage' },
-  { value: 'disadvantage', label: 'Disadvantage' },
-];
-
-/** The dice the pre-roll dialog offers for a bonus or penalty die. */
-const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
-  'd4',
-  'd6',
-  'd8',
-  'd10',
-  'd12',
-]);
-
-/**
- * The three swings a combatant can take, and what each one costs. `main` draws
- * on the Attack action and the swings Extra Attack banks behind it. `offhand`
- * is the second swing of two-weapon fighting. `reaction` is an opportunity
- * attack. Each row carries what the budget spends, what the dialog is titled,
- * what its opt-out box says, what the log adds to the attack line, and what the
- * toast says when the turn cannot pay.
- * @typedef {'main' | 'offhand' | 'reaction'} SwingKind
- */
-const SWINGS = {
-  main: {
-    cost: /** @type {const} */ ('attack'),
-    title: 'Attack with',
-    optOut: 'no attack left this turn',
-    note: '',
-    blocked: 'has no attack left this turn',
-  },
-  offhand: {
-    cost: /** @type {const} */ ('bonus'),
-    title: 'Off-hand attack with',
-    optOut: 'bonus action already used',
-    note: ', off-hand',
-    blocked: 'already used their bonus action this turn',
-  },
-  reaction: {
-    cost: /** @type {const} */ ('reaction'),
-    title: 'Opportunity attack with',
-    optOut: 'reaction already used',
-    note: ', opportunity attack',
-    blocked: 'already used their reaction',
-  },
-};
-
-/**
- * Which of the three swings the dialog's answers describe. A swing is a
- * main-hand one unless it says otherwise, and no swing is two of these at once.
- * @param {AttackTweaks} tweaks
- * @returns {SwingKind}
- */
-export function swingKind(tweaks) {
-  if (tweaks.reaction) return 'reaction';
-  if (tweaks.offhand) return 'offhand';
-  return 'main';
-}
-
-/**
- * Whether the participant's turn can pay for the given swing. A main-hand swing
- * asks the attack bank, because Extra Attack buys more than one swing per
- * action and Haste adds one more. The other two ask for their own part of the
- * turn.
- * @param {import('../types/combat.js').Participant} participant
- * @param {SwingKind} kind
- * @param {number} perAction how many swings one Attack action buys
- * @param {boolean} [extraAction] whether a chip gives the swinger an extra action
- * @returns {boolean}
- */
-export function canSwing(participant, kind, perAction, extraAction = false) {
-  if (kind === 'main') return attacksAvailable(participant, perAction, extraAction) > 0;
-  return canSpend(participant, SWINGS[kind].cost);
-}
+/** @typedef {import('../combat/AttackTweaks.js').AttackTweaks} AttackTweaks */
 
 /**
  * Who can attack and who is left to attack. The attacker is a party character
@@ -199,33 +57,6 @@ export function liveAttackSides(app, participant, defenderId) {
   const defender = sides.defenders.find((d) => d.id === defenderId);
   if (!defender) return { refusal: 'That target is down or gone, so the attack did not roll.' };
   return { attacker: sides.attacker, defender };
-}
-
-/**
- * Read the pre-roll dialog's answers into the override shape the roll takes.
- * A blank or unreadable field counts as no override.
- * @param {Record<string, string>} values
- * @returns {AttackTweaks}
- */
-export function readAttackTweaks(values) {
-  return {
-    mode: /** @type {AttackMode} */ (values['mode'] || 'auto'),
-    twoHanded: values['two-handed'] === '1',
-    // The range control of a ranged weapon says 'normal' or 'long'. On a
-    // thrown melee weapon it says 'melee', 'thrown', or 'thrown-long', so a
-    // dagger can stab at the same dice it throws with.
-    longRange: values['range'] === 'long' || values['range'] === 'thrown-long',
-    thrown: values['range'] === 'thrown' || values['range'] === 'thrown-long',
-    freeAction: values['free-action'] === '1',
-    cover: /** @type {import('../combat/Cover.js').CoverLevel} */ (values['cover'] || 'none'),
-    sneak: values['sneak'] === '1',
-    attackDice: Number(values['atk-count']) || 0,
-    attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
-    attackFlat: Number(values['atk-flat']) || 0,
-    damageDice: Number(values['dmg-count']) || 0,
-    damageDie: /** @type {import('../types/dice.js').DieType} */ (values['dmg-die']),
-    damageFlat: Number(values['dmg-flat']) || 0,
-  };
 }
 
 /**
@@ -301,75 +132,18 @@ export function rollWeaponAttack(
       return;
     }
   }
-  const stats = attackerStats(attacker);
-  // A finesse weapon reads the attacker here: it takes the higher of the
-  // attacker's STR and DEX.
-  const ability = attackAbility(weapon, stats);
-  const abilityMod = abilityModOf(stats, ability);
-  // A character reads the level ladder. A rated creature reads the challenge
-  // rating ladder, the same one its saves and spells use.
-  const proficiency = attackerProficiency(attacker);
-  const proficient = attackerProficientWith(attacker, weapon);
-  // An attack roll is a d20 test, so exhaustion takes 2 off it for each level.
-  // Both kinds of attacker carry the level, so a tired foe swings worse too.
-  // Damage is untouched: the penalty is on the roll, not on the hit.
-  const tired = d20Penalty(attacker);
-  const attackBonus = abilityMod + (proficient ? proficiency : 0) + tired;
-  // Bonus attack dice join the d20 in the tray's selection, so they roll in
-  // view. `attackTweak` rolls penalty dice and folds them into the modifier,
-  // and keeps the values in its note for the log.
-  const tweak = attackTweak(
-    tweaks.attackDice ?? 0,
-    tweaks.attackDie ?? 'd4',
-    tweaks.attackFlat ?? 0,
-  );
-  // A Bless or Bane chip on the attacker adds its die here, without the GM
-  // typing it into the dialog. Its dice roll outside the tray, the same way
-  // the dialog's penalty dice already do, so a bonus and a penalty read the
-  // same in the log.
-  const rider = rollRiders(riderSources(attacker), 'attack', rng);
-  // The chips on both sides decide the mode. Reach matters, because a prone
-  // defender is easier to hit in melee and harder to hit at range. The
-  // weapon's kind is the reach signal, and a thrown melee weapon counts as
-  // ranged for the throw the GM picked in the dialog.
-  const melee = weaponKind(weapon) !== 'ranged' && !tweaks.thrown;
-  const conditionQuery = /** @type {const} */ ({
-    roller: attacker.conditions,
-    target: defender.conditions,
-    kind: 'attack',
-    melee,
-  });
-  // A mode the GM picked in the dialog wins over the chips, and it is always
-  // passed on, so a picked `normal` also cancels the tray's standing toggle
-  // for this roll. Under `auto`, a null mode means no chip slanted the roll,
-  // and the key stays off the selection so the tray's toggle still applies.
-  // A shot past normal range adds one disadvantage slant, and so does armor
-  // the attacker is not trained for, because every weapon attack rolls off
-  // STR or DEX. Both fold in with the chip slants under the 5e rule: any
-  // advantage cancels any number of disadvantages to a straight roll.
-  const picked = tweaks.mode && tweaks.mode !== 'auto' ? tweaks.mode : null;
-  const longSlant = tweaks.longRange ? 'disadvantage' : null;
-  const badWear = unproficientWear(attacker);
-  const wearSlant = badWear.length > 0 ? 'disadvantage' : null;
-  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant]);
-  // Cover is the GM's call in the dialog, and it raises the AC of this one
-  // swing. Nothing on the map says who stands behind what, so no rule here
-  // could work it out.
-  const cover = coverBonus(tweaks.cover);
-  const ac = defender.ac + cover;
+  const setup = prepareSwing({ attacker, defender, weapon, tweaks, rng });
+  const { ac, autoCrit, rider } = setup;
   const { result } = app.actions.rollDice(
     {
-      counts: { d20: 1, ...tweak.counts },
-      modifier: attackBonus + tweak.modifier + rider.modifier,
-      ...(mode ? { mode } : {}),
+      counts: { d20: 1, ...setup.tweak.counts },
+      modifier: setup.modifier,
+      ...(setup.mode ? { mode: setup.mode } : {}),
     },
     ac,
   );
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
-  // A helpless defender turns any melee hit into a critical one, without a
-  // natural 20.
-  const autoCrit = autoCrits(defender.conditions, { melee });
   // A roll that hits can still miss when the defender raises its AC with a
   // reaction (Shield). The question comes before the log line, so the line
   // states the AC that the roll answered to in the end. A natural 20 hits
@@ -382,98 +156,39 @@ export function rollWeaponAttack(
     const { crit, hit, outcome } = raised
       ? resolveAttack({ natural, total: result.total, ac: warded, autoCrit })
       : first;
-    // An advantage or disadvantage attack notes the discarded d20, so the log
-    // shows both dice and matches the tray's own readout.
-    const modeNote = droppedNote(d20, result.selection.mode);
-    const tweakNote = tweak.note ? `, ${tweak.note}` : '';
-    const riderNote = rider.note ? `, ${rider.note}` : '';
-    // Naming the chips keeps a cancelled pair readable: the log says why the
-    // roll came out straight, not just that it did.
-    // A GM-picked mode replaces the chip reasons, because the chips no longer
-    // decide the roll and naming them would say the opposite of what happened.
-    const slantReasons = [
-      modeReasons(conditionQuery),
-      longSlant && !picked ? 'long range disadvantage' : '',
-      wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-    const reasons = picked ? `${picked} set by the GM` : slantReasons;
-    const conditionNote = reasons ? `, ${reasons}` : '';
-    const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
-    const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
-    // An off-hand swing and an opportunity attack both roll to hit like any other
-    // swing, so the note sits on the attack line: it says where the missing damage
-    // bonus went, or which part of the turn the swing came out of.
-    const handNote = swing.note;
-    // The AC in the log is the one the roll answered to, and the cover note says
-    // where the difference came from.
-    const coverAC = cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
-    const wardAC = raised && ward ? ` (${ward.spell.name} +${raised})` : '';
     app.actions.logEvent(
       'combat',
-      `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote} — ${outcome}.`,
+      attackLine(setup, {
+        attacker,
+        defender,
+        weapon,
+        tweaks,
+        swingNote: swing.note,
+        total: result.total,
+        d20,
+        rollMode: result.selection.mode,
+        raised,
+        wardName: ward ? ward.spell.name : null,
+        outcome,
+      }),
     );
     spendRollRiders(app, attacker.id, rider);
     if (!hit) {
       app.toasts.show(`${result.total} vs AC ${warded}: ${attacker.name} misses ${defender.name}.`);
       return;
     }
-    // A crit rolls every damage die twice, including the dialog's added dice.
-    // The ability modifier still adds only once, and proficiency never
-    // reaches damage. A two-handed swing of a versatile weapon reads the
-    // two-handed dice instead of the one-handed ones. The live attacker must
-    // still have the other hand free, because the dialog read the equipment
-    // before its await.
-    const twoHanded =
-      tweaks.twoHanded &&
-      hasFreeHandFor(attacker, weapon) &&
-      'versatileDamage' in weapon &&
-      weapon.versatileDamage?.length;
-    // Sneak Attack adds its dice only on a hit, so the flag is spent here rather
-    // than beside the swing. An attacker without the feature, or a weapon that
-    // is neither finesse nor ranged, has no dice to add, whatever the dialog
-    // said.
-    const sneakDice = tweaks.sneak && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
+    const { damage, sneakDice } = hitDamage(setup, { attacker, weapon, tweaks, crit, rng });
+    // Sneak Attack adds its dice only on a hit, so the flag is spent here
+    // rather than beside the swing.
     if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
-    const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
-      crit,
-      bonusDice: tweaks.damageDice ?? 0,
-      bonusDie: tweaks.damageDie ?? 'd4',
-      sneakDice,
-    });
-    // The second hand of two-weapon fighting adds no ability bonus to damage. A
-    // negative modifier still applies, so the swing of a weak character is still
-    // weak.
-    const damageMod = tweaks.offhand ? offhandDamageModifier(abilityMod) : abilityMod;
-    const damage = rollDamage(parts, damageModifier(damageMod, tweaks.damageFlat ?? 0), rng);
-    const inflicts =
-      'statusEffects' in weapon && weapon.statusEffects?.length
-        ? `, inflicting ${weapon.statusEffects.join(', ')}`
-        : '';
-    const blow = crit ? 'critically hits' : 'hits';
-    // The dice are already inside the detail, so the note only names how many of
-    // them came from Sneak Attack. A crit doubled that count too.
-    const sneakNote =
-      sneakDice > 0 ? `, with sneak attack ${crit ? sneakDice * 2 : sneakDice}d6` : '';
-    // The defender's resistances, vulnerabilities, and immunities change what
-    // it takes, and the log names them beside the roll.
     const taken = defendedDamage(app, defender.id, damage.byType);
-    const defended = defenseNote(taken.notes, taken.total);
-    // The travelogue keeps the raw damage dice as detail. The toast below
-    // keeps only the short per-type totals as text.
-    app.actions.logEvent(
-      'combat',
-      `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}${defended}.`,
-    );
+    const lines = hitLines({ weapon, defenderName: defender.name, crit, damage, sneakDice, taken });
+    app.actions.logEvent('combat', lines.log);
     // Applies the damage on the spot through the shared write path. Every
     // combatant tracks HP, and the function logs a defeat or a drop to 0
     // only once.
     applyToTarget(app, defender.id, taken.total, false, { crit });
-    const text = defended ? `${taken.total} damage` : damage.text || 'no damage';
-    app.toasts.show(
-      `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${text}${inflicts}.`,
-    );
+    app.toasts.show(lines.toast);
   };
   if (ward && result.total < ac + ward.bonus) {
     const hitLine = `${attacker.name} hits ${defender.name} with ${weapon.name} (${result.total} vs AC ${ac}).`;
@@ -507,20 +222,26 @@ export function rollWeaponAttack(
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
- * @param {{ defenderId?: string | null, offhand?: boolean, reaction?: boolean }}
+ * @param {{
+ *   defenderId?: string | null,
+ *   offhand?: boolean,
+ *   reaction?: boolean,
+ *   prompt?: typeof promptModal,
+ * }} [options] If a defender is already picked on the combat board, it pre-fills
  *   [options] If a defender is already picked on the combat board, it pre-fills
  *   the dialog's target. The common flow is to click the card, click the weapon,
  *   then press Enter. `offhand` makes this the second swing of two-weapon
  *   fighting, which costs the bonus action and drops the ability bonus from its
  *   damage. `reaction` makes it an opportunity attack, which costs the reaction
  *   and can come on another combatant's turn.
+ *   `prompt` renders the dialog, and a test passes its own answers.
  */
 export async function weaponAttack(
   app,
   combat,
   participant,
   weapon,
-  { defenderId = null, offhand = false, reaction = false } = {},
+  { defenderId = null, offhand = false, reaction = false, prompt = promptModal } = {},
 ) {
   const sides = attackParticipants(app, combat, participant);
   if (!sides) return;
@@ -529,184 +250,16 @@ export async function weaponAttack(
     app.toasts.show('No defender left standing.');
     return;
   }
-  // Every attack pauses at a pre-roll dialog. The dialog picks the defender
-  // and applies any situational overrides: bonus or penalty dice on the
-  // attack roll (Bless +1d4, Bane -1d4), and extra damage such as a smite's
-  // dice or a flat rider. Every override defaults to zero and sits behind a
-  // collapsed disclosure, so a plain Enter rolls the unmodified attack. Bonus
-  // damage folds into the weapon's own damage type and doubles on a crit,
-  // like all damage dice. The attack-roll dice do not double, because they
-  // modify the d20, not the damage.
-  const bonusDieOptions = BONUS_DICE.map((d) => ({ value: d, label: d }));
-  // A versatile weapon offers the two-handed grip when the other hand is
-  // free. A ranged or thrown weapon with a stated range offers the long-range
-  // shot. Both sit in the open part of the dialog, because the GM decides
-  // them per swing.
-  const versatile =
-    hasWeaponProperty(weapon, 'versatile') &&
-    hasFreeHandFor(attacker, weapon) &&
-    'versatileDamage' in weapon &&
-    weapon.versatileDamage?.length;
-  // A thrown melee weapon can also be struck with, so its control names the
-  // melee swing as its own default choice. A ranged weapon can only shoot,
-  // so its control offers the two distances alone.
-  const thrownMelee = weaponKind(weapon) !== 'ranged' && hasWeaponProperty(weapon, 'thrown');
-  const range =
-    weaponKind(weapon) === 'ranged' || thrownMelee
-      ? 'range' in weapon
-        ? weapon.range
-        : undefined
-      : undefined;
-  const rangeOptions = range
-    ? thrownMelee
-      ? [
-          { value: 'melee', label: 'Melee' },
-          { value: 'thrown', label: `Thrown (${range.normal} ft)` },
-          { value: 'thrown-long', label: `Thrown long (${range.long} ft, disadvantage)` },
-        ]
-      : [
-          { value: 'normal', label: `Normal (${range.normal} ft)` },
-          { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
-        ]
-    : [];
-  const swing = SWINGS[swingKind({ offhand, reaction })];
-  const cannotPay = !canSwing(
+  const dialog = attackDialog({
+    attacker,
+    defenders,
     participant,
-    swingKind({ offhand, reaction }),
-    attacksPerAction(attacker),
-    hasExtraAction(attacker.conditions),
-  );
-  const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
-  const values = await promptModal(
-    `${swing.title} ${weapon.name}`,
-    [
-      {
-        name: 'target',
-        label: 'Defender',
-        type: 'select',
-        options: defenders.map((d) => ({
-          value: d.id,
-          label: `${d.name} (AC ${d.ac})`,
-        })),
-        // A board-picked defender opens pre-selected. If no defender holds
-        // that id, for example after a deselect or a defeat, the dialog
-        // falls back to the first defender in the list.
-        ...(defenderId && defenders.some((d) => d.id === defenderId) ? { value: defenderId } : {}),
-        full: true,
-      },
-      // The mode sits with the defender, not behind the advanced disclosure.
-      // Advantage is the most common call a GM makes at the table, so the GM
-      // sets it here and does not leave the dialog to use the dice tray's
-      // toggle.
-      {
-        name: 'mode',
-        label: 'Roll',
-        type: 'select',
-        value: 'auto',
-        options: MODE_OPTIONS,
-        full: true,
-      },
-      // Cover is a plain GM call, so it sits in the open part beside the mode.
-      // The app knows nothing about walls or barrels, and it never will until
-      // tokens have a distance between them.
-      {
-        name: 'cover',
-        label: 'Target cover',
-        type: 'select',
-        value: 'none',
-        options: COVER_LEVELS.map((level) => ({ value: level.value, label: level.label })),
-        full: true,
-      },
-      // The Sneak Attack box appears for an attacker that has the feature, has
-      // not used it this turn, and swings a finesse or ranged weapon. Whether
-      // the rogue earned it, from advantage or from an ally beside the
-      // target, is the GM's call at the table.
-      ...(sneakDice > 0 && canSpend(participant, 'sneak')
-        ? [
-            {
-              name: 'sneak',
-              label: `Sneak Attack (+${sneakDice}d6)`,
-              type: /** @type {const} */ ('checkbox'),
-              value: false,
-              full: true,
-            },
-          ]
-        : []),
-      ...(versatile
-        ? [
-            {
-              name: 'two-handed',
-              label: 'Wield two-handed',
-              type: /** @type {const} */ ('checkbox'),
-              value: false,
-              full: true,
-            },
-          ]
-        : []),
-      // This box appears only on a turn that cannot pay for the swing, because
-      // that is the only time the answer matters. Ticking it swings anyway, for
-      // a rule the action economy here does not carry. Until it is ticked, Roll
-      // attack stays disabled, because rollWeaponAttack refuses the swing.
-      // Each of the three swings names the part of the turn it could not pay
-      // with.
-      ...(cannotPay
-        ? [
-            {
-              name: 'free-action',
-              label: `Ignore action cost (${swing.optOut})`,
-              type: /** @type {const} */ ('checkbox'),
-              value: false,
-              full: true,
-            },
-          ]
-        : []),
-      ...(range
-        ? [
-            {
-              name: 'range',
-              label: 'Range',
-              type: /** @type {const} */ ('select'),
-              value: rangeOptions[0].value,
-              options: rangeOptions,
-              full: true,
-            },
-          ]
-        : []),
-      { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0, advanced: true },
-      {
-        name: 'atk-die',
-        label: 'Attack: die',
-        type: 'select',
-        value: 'd4',
-        options: bonusDieOptions,
-        advanced: true,
-      },
-      {
-        name: 'dmg-count',
-        label: 'Damage: bonus dice',
-        type: 'number',
-        value: 0,
-        min: 0,
-        advanced: true,
-      },
-      {
-        name: 'dmg-die',
-        label: 'Damage: die',
-        type: 'select',
-        value: 'd4',
-        options: bonusDieOptions,
-        advanced: true,
-      },
-      { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0, advanced: true },
-      { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0, advanced: true },
-    ],
-    {
-      submitLabel: 'Roll attack',
-      wide: true,
-      advancedLabel: 'Situational modifiers',
-      ...(cannotPay ? { submitRequires: ['free-action'] } : {}),
-    },
-  );
+    weapon,
+    defenderId,
+    offhand,
+    reaction,
+  });
+  const values = await prompt(dialog.title, dialog.fields, dialog.options);
   if (!values) return;
   const live = liveAttackSides(app, participant, values.target);
   if ('refusal' in live) {

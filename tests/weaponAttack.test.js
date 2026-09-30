@@ -1,13 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  attackParticipants,
-  canSwing,
-  readAttackTweaks,
-  rollWeaponAttack,
-  swingKind,
-  weaponAttack,
-} from '../src/app/weaponAttack.js';
+import { attackParticipants, rollWeaponAttack, weaponAttack } from '../src/app/weaponAttack.js';
+import { canSwing, readAttackTweaks, swingKind } from '../src/combat/AttackTweaks.js';
 import { roll } from '../src/dice/DiceRoller.js';
 import { addItem, createCharacter, withHP, getHP } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';

@@ -300,7 +300,7 @@ turn that can take the swing. The button sends `offhand: true` to
 positive ability modifier and keeps a negative one, because the rule removes
 the bonus and a penalty is not a bonus.
 
-`weaponAttack.js` has one table of the three swings a combatant can take: the
+`combat/AttackTweaks.js` has one table of the three swings a combatant can take: the
 main-hand swing, the off-hand swing, and the opportunity attack. Each row
 states what the swing spends, the dialog title, the text of the opt-out box,
 what the log adds to the attack line, and the toast for a turn that cannot
