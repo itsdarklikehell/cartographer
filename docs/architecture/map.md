@@ -689,10 +689,11 @@ An inn, a shop, and a tavern of at least `PLAN_MIN_SIZE` (8) cells a side
 follow fixed floor plans in `src/map/GeneratorInnShop.js` instead of the
 split. `floorPlan` picks the plan by environ from `FLOOR_PLANS`. A wall
 across the north of the building makes the back rooms. In an inn and a shop,
-its door sits at the west end. A row of tables two cells in front of that
-wall is the bar of an inn or the counter of a shop. The strip behind the row joins the back
-door to the front room past the east end of the row, so the furnisher never
-has to drop a table to keep the back rooms reachable.
+its door sits at the west end. A row two cells in front of that wall is the
+bar of an inn, made of tables, or the counter of a shop, made of counter
+pieces. The strip behind the row joins the back door to the front room past
+the east end of the row, so the furnisher never has to drop a piece of the
+row to keep the back rooms reachable.
 
 The back of an inn is a kitchen in the west and a pantry in the east. The
 common room fills the front with tables, and stairs up stand against its east
@@ -701,7 +702,9 @@ the `inn` environ. `generateGuestFloor` lays that floor out as a corridor
 along the same row, with the stairs down at its east end above the stairs
 up, and a row of guest rooms on each side. Each guest room has a door onto
 the corridor and a bed. The back of a shop is one storeroom of barrels and
-chests, and shelves line the side walls of its sales floor.
+chests, and shelves line the side walls of its sales floor. The counter of a
+shop has plain sections, one till section in its middle, and an end piece
+that closes its east end.
 
 A tavern turns its bar to run down `barColumn`, two cells in from the east
 wall, from the back wall to two cells short of the south wall. The door of
@@ -720,10 +723,10 @@ Each interior generator then furnishes its map through
 `src/map/GeneratorFurnish.js`. A furnishing is an overlay on a floor tile, and
 `furnisher` refuses a cell where it does not fit.
 
-An obstacle, such as a pillar, a table, a bed, or a bookshelf, never goes
-beside a door or a staircase. After each obstacle, the furnisher walks the
-level from the way in, and it takes the obstacle back when a floor cell
-becomes unreachable. The walk never crosses a staircase, so an obstacle cannot
+An obstacle, such as a pillar, a table, a bed, a bookshelf, a shelf, or a
+counter, never goes beside a door or a staircase. After each obstacle, the
+furnisher walks the level from the way in, and it takes the obstacle back
+when a floor cell becomes unreachable. The walk never crosses a staircase, so an obstacle cannot
 leave a staircase as the only way to a cell.
 
 A castle puts a throne and two rows of pillars in its largest room. Each other

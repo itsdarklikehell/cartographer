@@ -564,9 +564,9 @@ A town building takes its furnishings from what it is.
 
 #### Obstacles, doors, and stairs
 
-A pillar, a table, a bed, and a bookshelf are obstacles. The party never
-lands on an obstacle or a wall when it enters a map, and a new link never
-goes on one.
+A pillar, a table, a bed, a bookshelf, a shelf, and a counter are
+obstacles. The party never lands on an obstacle or a wall when it enters
+a map, and a new link never goes on one.
 
 The party enters an interior on the outer door nearest the side that it
 comes from. In an interior with no outer door, the party lands on the

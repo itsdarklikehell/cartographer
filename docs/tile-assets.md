@@ -304,10 +304,23 @@ transparent ground and draws as an overlay on a floor tile.
 | `table` | `obstacle` | A dining room, and the room behind the door of a building |
 | `hearth` | `plain` | The north wall of the room behind the door of a building |
 | `bookshelf` | `obstacle` | The north wall of a library |
+| `shelf` | `obstacle` | The side walls of the sales floor of a shop |
+| `counter` | `obstacle` | The plain sections of the counter across the sales floor of a shop |
+| `counter-till` | `obstacle` | One section in the middle of the counter of a shop |
+| `counter-end-e` | `obstacle` | The east end of the counter of a shop |
+| `counter-end-w` | `obstacle` | No generator puts it. A GM paints it at the west end of a counter |
 | `barrel` | `plain` | The corners of a storeroom |
 | `rubble` | `plain` | Random floor cells of a dungeon or a cave |
 | `pool` | `plain` | Small groups of cells in a cave |
 | `trapdoor` | `stairs-down` | No generator puts it. A GM paints it over a floor |
+
+The `shelf` shows goods for sale: jars, bolts of cloth, sacks, and a basket.
+The `counter` and `counter-till` pieces draw their top and their front
+panel from edge to edge, so a row of them joins into one long counter. The
+till section adds a brass scale, a ledger, and a coin box. An end piece
+closes the side that its name gives, so `counter-end-e` sits at the east
+end of a row and joins the section to its west. The palette has no way to
+rotate or mirror a furnishing, so each end is its own tile.
 
 ## Rule meanings
 
@@ -350,7 +363,7 @@ A tile exists for the app only when its family table names it.
 | `TOWN_BUILDINGS` | `TileCatalog.js` | The 22 span-2 town buildings |
 | `TOWN_WALL_KINDS` | `TileKinds.js` | The ten town wall, gate, and water gate pieces, each with its rule meaning |
 | `INTERIOR_KINDS` | `TileKinds.js` | The 23 interior pieces, each with its rule meaning |
-| `FURNISHING_KINDS` | `TileKinds.js` | The 12 furnishings, each with its rule meaning |
+| `FURNISHING_KINDS` | `TileKinds.js` | The 17 furnishings, each with its rule meaning |
 
 `TilePalette.addCustom` registers a tile that a GM loads at runtime. A
 runtime tile is not in these tables, and it cannot replace a built-in tile.

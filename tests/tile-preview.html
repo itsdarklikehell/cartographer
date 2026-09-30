@@ -55,6 +55,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>House (a hearth and bookshelves, and a storeroom with barrels over a trapdoor)</h2>
 <div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-house"></div>
 
+<h2>Shop (a stocked storeroom, a counter across the sales floor, and shelves of goods)</h2>
+<div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-shop"></div>
+
 <h2>Cave level (rock walls, floor variants, pools, rubble, a mouth on the north and west borders)</h2>
 <div class="grid" style="grid-template-columns: repeat(7, 64px);" id="interior-cave"></div>
 
@@ -210,7 +213,8 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   // Furnishings are overlays, so each one stacks over a floor tile. The pool
   // and the rubble also appear over a cave floor.
   const FURNISHINGS = ['altar', 'chest', 'pillar', 'throne', 'bed', 'table',
-    'hearth', 'bookshelf', 'barrel', 'rubble', 'pool', 'trapdoor'];
+    'hearth', 'bookshelf', 'shelf', 'counter-end-w', 'counter', 'counter-till',
+    'counter-end-e', 'barrel', 'rubble', 'pool', 'trapdoor'];
   const CAVE_FURNISHINGS = ['rubble', 'pool'];
   document.getElementById('furnishings').innerHTML = [
     ...FURNISHINGS.map((f, i) => [`interior-floor-${(i % 3) + 1}`, f]),
@@ -238,6 +242,20 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['wall-v'], ['floor-2'], ['floor-3', 'table'], ['floor-1'], ['door-v'], ['floor-2', 'trapdoor'], ['wall-v'],
     ['door-v'], ['floor-3'], ['floor-1'], ['floor-2', 'bed'], ['wall-v'], ['floor-3', 'barrel'], ['wall-v'],
     ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-tee-n'], ['wall-h'], ['wall-corner-nw'],
+  ].map((ks) => cell(...ks.map(I))).join('');
+
+  // A shop: a storeroom across the back, a counter with a till across the
+  // sales floor, closed by an end piece before the gap at its east end, and
+  // shelves of goods on the side walls.
+  document.getElementById('interior-shop').innerHTML = [
+    ['wall-corner-se'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-corner-sw'],
+    ['wall-v'], ['floor-1', 'barrel'], ['floor-2', 'barrel'], ['floor-3'], ['floor-1', 'barrel'], ['floor-2', 'chest'], ['wall-v'],
+    ['wall-tee-e'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-h'], ['wall-tee-w'],
+    ['wall-v'], ['floor-3'], ['floor-1'], ['floor-2'], ['floor-3'], ['floor-1'], ['wall-v'],
+    ['wall-v'], ['floor-2', 'counter'], ['floor-3', 'counter-till'], ['floor-1', 'counter-end-e'], ['floor-2'], ['floor-3'], ['wall-v'],
+    ['wall-v'], ['floor-1', 'shelf'], ['floor-2'], ['floor-3'], ['floor-1'], ['floor-2', 'shelf'], ['wall-v'],
+    ['wall-v'], ['floor-3', 'shelf'], ['floor-1'], ['floor-2', 'table'], ['floor-3'], ['floor-1', 'shelf'], ['wall-v'],
+    ['wall-corner-ne'], ['wall-h'], ['wall-h'], ['door-h'], ['wall-h'], ['wall-h'], ['wall-corner-nw'],
   ].map((ks) => cell(...ks.map(I))).join('');
 
   // A cave level: rough rock surrounds the floor, and one mouth sits on the

@@ -116,19 +116,26 @@ export const shopWalls = backWall;
 
 /**
  * Furnish a shop laid out by `shopWalls`. The storeroom has barrels and
- * chests. The counter crosses the sales floor with a gap of two cells at
- * its east end, and shelves line the side walls in front of it. A large
- * shop also has a display table in the middle of the floor.
+ * chests. The counter crosses the sales floor from the west wall, with a
+ * gap of two cells at its east end. It has one till section in its middle
+ * and an end piece that closes its east end. Shelves line the side walls in
+ * front of it. A large shop also has a display table in the middle of the
+ * floor.
  * @param {Place} place @param {() => number} rng @param {number} size
  */
 export function furnishShop(place, rng, size) {
   const depth = backDepth(size);
-  for (let x = 1; x <= size - 4; x++) place(x, depth + 3, 'table');
+  const last = size - 4;
+  const till = (1 + last) >> 1;
+  for (let x = 1; x <= last; x++) {
+    const piece = x === last ? 'counter-end-e' : x === till ? 'counter-till' : 'counter';
+    place(x, depth + 3, piece);
+  }
   stock(place, rng, 2, size - 2, depth);
   if (depth >= 3) place(1, depth, 'chest');
   for (let y = depth + 5; y <= size - 3; y++) {
-    place(1, y, 'bookshelf');
-    place(size - 2, y, 'bookshelf');
+    place(1, y, 'shelf');
+    place(size - 2, y, 'shelf');
   }
   if (size >= 12) place(size >> 1, depth + 6, 'table');
 }

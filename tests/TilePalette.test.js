@@ -161,8 +161,15 @@ test('TilePalette ships with building-interior pieces', () => {
 
 test('TilePalette ships with furnishing overlays', () => {
   const palette = new TilePalette();
-  assert.equal(palette.listVariants('furnishing').length, 12);
+  assert.equal(palette.listVariants('furnishing').length, 17);
   assert.equal(palette.getInteriorPiece('bookshelf')?.label, 'Bookshelf');
+  assert.equal(palette.getInteriorPiece('shelf')?.label, 'Shelf');
+  assert.equal(palette.getInteriorPiece('counter-end-e')?.label, 'Counter End E');
+  assert.equal(palette.getInteriorPiece('counter-till')?.type, 'furnishing');
+  assert.equal(
+    palette.getInteriorPiece('counter')?.imageRef,
+    'assets/tiles/interior/interior-counter.svg',
+  );
   assert.equal(
     palette.getInteriorPiece('trapdoor')?.imageRef,
     'assets/tiles/interior/interior-trapdoor.svg',

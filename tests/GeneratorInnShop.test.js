@@ -77,12 +77,20 @@ test('a shop has a counter, a stocked storeroom, and shelves, and every tile is 
       assert.equal(shop.entry, `${doorColumn(size)},${size - 1}`, why);
       assert.deepEqual(stranded(shop.tiles, size, shop.entry), [], why);
       assert.equal(shop.stairsUp, null, why);
-      const counter = shop.tiles.filter(
-        (t) => t.id.endsWith(`,${backDepth(size) + 3}`) && String(t.overlayRef).includes('table'),
-      );
-      assert.equal(counter.length, size - 4, why);
+      // The counter runs from the west wall: plain sections, one till in
+      // the middle, and an end piece before the gap at the east end.
+      const row = Array.from({ length: size - 2 }, (_, i) => {
+        const ref = String(at(shop.tiles, `${i + 1},${backDepth(size) + 3}`).overlayRef);
+        return ref.match(/interior-(counter[\w-]*)\.svg/)?.[1] ?? null;
+      });
+      const pieces = row.slice(0, size - 4);
+      assert.equal(pieces.at(-1), 'counter-end-e', why);
+      assert.equal(pieces.indexOf('counter-till'), ((size - 3) >> 1) - 1, why);
+      assert.equal(pieces.filter((p) => p === 'counter').length, size - 6, why);
+      assert.deepEqual(row.slice(size - 4), [null, null], why);
       assert.ok(count(shop.tiles, 'chest') >= 1, why);
-      if (size >= 14) assert.ok(count(shop.tiles, 'bookshelf') >= 4, why);
+      if (size >= 14) assert.ok(count(shop.tiles, 'shelf') >= 4, why);
+      assert.equal(count(shop.tiles, 'bookshelf'), 0, why);
       // One wall with one door splits the storeroom from the sales floor.
       const wallRow = shop.tiles.filter((t) => t.id.endsWith(`,${backDepth(size) + 1}`));
       assert.equal(wallRow.filter((t) => /door/.test(t.imageRef)).length, 1, why);

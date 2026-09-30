@@ -37,7 +37,17 @@ test('kindOf gives the cave pieces and the furnishings their meanings', () => {
   assert.equal(kindOf(interiorArt('cave-floor-2')), 'floor');
   assert.equal(kindOf(interiorArt('cave-wall')), 'wall');
   assert.equal(kindOf(interiorArt('cave-mouth-v')), 'door');
-  for (const kind of ['pillar', 'table', 'bed', 'bookshelf']) {
+  for (const kind of [
+    'pillar',
+    'table',
+    'bed',
+    'bookshelf',
+    'shelf',
+    'counter',
+    'counter-till',
+    'counter-end-e',
+    'counter-end-w',
+  ]) {
     assert.equal(kindOf(interiorArt(kind)), 'obstacle', kind);
   }
   assert.equal(kindOf(interiorArt('trapdoor')), 'stairs-down');

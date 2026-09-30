@@ -47,9 +47,9 @@ export const INTERIOR_KINDS = {
 
 /**
  * Furnishings, overlays with a transparent ground that go on a floor tile.
- * A pillar, a table, a bed, and a bookshelf are obstacles, and a trapdoor
- * leads down like stairs down. The other pieces are `plain`, so the tile
- * keeps the meaning of the floor under it.
+ * A pillar, a table, a bed, a bookshelf, a shelf, and each counter piece are
+ * obstacles, and a trapdoor leads down like stairs down. The other pieces
+ * are `plain`, so the tile keeps the meaning of the floor under it.
  * @type {Record<string, TileKind>}
  */
 export const FURNISHING_KINDS = {
@@ -61,6 +61,11 @@ export const FURNISHING_KINDS = {
   table: 'obstacle',
   hearth: 'plain',
   bookshelf: 'obstacle',
+  shelf: 'obstacle',
+  counter: 'obstacle',
+  'counter-till': 'obstacle',
+  'counter-end-e': 'obstacle',
+  'counter-end-w': 'obstacle',
   barrel: 'plain',
   rubble: 'plain',
   pool: 'plain',
