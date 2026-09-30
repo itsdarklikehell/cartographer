@@ -1,6 +1,7 @@
 /** @typedef {import('../types/quest.js').Quest} Quest */
 /** @typedef {import('../types/quest.js').QuestLink} QuestLink */
 /** @typedef {import('../types/quest.js').QuestObjective} QuestObjective */
+/** @typedef {import('../types/quest.js').QuestReward} QuestReward */
 /** @typedef {import('./ExampleWorld.js').Place} Place */
 
 /**
@@ -25,10 +26,10 @@ const map = (nodeId) => ({ kind: 'place', nodeId, tileId: null });
 /**
  * One active quest. The objectives get their ids from their order.
  * @param {string} id @param {string} title @param {string} notes
- * @param {{ revealed?: boolean, steps: Omit<QuestObjective, 'id'>[], links: QuestLink[], unlocks?: string[] }} parts
+ * @param {{ revealed?: boolean, steps: Omit<QuestObjective, 'id'>[], links: QuestLink[], unlocks?: string[], reward?: QuestReward }} parts
  * @returns {Quest}
  */
-const quest = (id, title, notes, { revealed = false, steps, links, unlocks = [] }) => ({
+const quest = (id, title, notes, { revealed = false, steps, links, unlocks = [], reward }) => ({
   id,
   title,
   notes,
@@ -37,14 +38,23 @@ const quest = (id, title, notes, { revealed = false, steps, links, unlocks = [] 
   objectives: steps.map((s, i) => ({ id: `o${i + 1}`, ...s })),
   links,
   unlocks,
+  ...(reward ? { reward } : {}),
 });
+
+/**
+ * A reward of experience points for each character, with optional gold.
+ * @param {number} xp @param {number} [gp] @returns {QuestReward}
+ */
+const each = (xp, gp = 0) => ({ gp, xp, per: 'each' });
 
 /**
  * The quests of the example campaign. The main chain leads from the raids on
  * Briarwick Vale to the barrow of King Ostrand, and to the Castellan of
  * Thornhold, who opens the way for him. The side quests each give a clue to
  * the Castellan or a tool for the barrow. Only the first two quests start
- * revealed, with the two personal quests of Wren and Brannoc.
+ * revealed, with the personal quests of Mirelle, Wren, and Brannoc. Each
+ * quest lists in `unlocks` the quests that its completion offers to reveal,
+ * and the quest XP before the barrow brings the party close to level 5.
  * @param {(name: string) => Place} at the story places of the example world
  * @returns {Quest[]}
  */
@@ -65,12 +75,14 @@ export function exampleQuests(at) {
           secret('Bram names the hermit Odo'),
         ],
         links: [map('briarwick'), who('innkeeper-bram'), who('caravan-master-dorn')],
+        unlocks: ['the-goblin-raids', 'the-hermit-of-graypeak', 'dorns-sealed-cargo'],
+        reward: each(100),
       },
     ),
     quest(
       'wolves-on-the-vale-road',
       'Wolves on the Vale Road',
-      'A wolf pack hunts the road through Briarwick Vale, and Dorn will not move his wagons until it is gone. He pays 25 gp. If the party asks about his cargo on the road, he says only that it is sealed and paid for.',
+      'A wolf pack hunts the road through Briarwick Vale, and Dorn will not move his wagons until it is gone. He pays each of them 25 gp. If the party asks about his cargo on the road, he says only that it is sealed and paid for.',
       {
         revealed: true,
         steps: [
@@ -80,6 +92,7 @@ export function exampleQuests(at) {
           secret('See the Thornhold address on his sealed crates'),
         ],
         links: [spot('wolf1'), who('gray-wolf-1'), who('caravan-master-dorn')],
+        reward: each(200, 25),
       },
     ),
     quest(
@@ -94,20 +107,23 @@ export function exampleQuests(at) {
           secret('Find his orders under the pale seal, and the silver that paid him'),
         ],
         links: [spot('farm'), who('farmer-hedda'), spot('snagtooth'), who('snagtooth')],
+        unlocks: ['the-pale-seal', 'the-fallen-wardstone'],
+        reward: each(300),
       },
     ),
     quest(
       'the-pale-seal',
       "The Pale King's Seal",
-      "Snagtooth's orders carry a pale crown pressed into gray wax. Reeve Maera knows it as the seal of King Ostrand, and she knows that the seal lies in the crypt of Thornhold. Fresh wax means that someone at Thornhold took it out. The graves that Sister Alwyn keeps were opened the same month.",
+      "Snagtooth's orders carry a pale crown pressed into gray wax. Reeve Maera knows it as the seal of King Ostrand, and she knows that the seal lies in the crypt of Thornhold. Fresh wax means that someone at Thornhold took it out. The shire records show that the seal left the crypt in the month the graves of Sister Alwyn opened.",
       {
         steps: [
           step('Show the orders to Reeve Maera'),
           step('Learn who King Ostrand was'),
-          step('Ask Sister Alwyn about the open graves'),
           secret('Maera knows the seal belongs in the Thornhold crypt'),
         ],
-        links: [who('reeve-maera'), who('sister-alwyn'), spot('graveyard')],
+        links: [who('reeve-maera'), map('thornhold')],
+        unlocks: ['the-lord-of-thornhold'],
+        reward: each(300),
       },
     ),
     quest(
@@ -123,6 +139,8 @@ export function exampleQuests(at) {
           secret('Odo tells of the counter-key'),
         ],
         links: [spot('odo'), who('hermit-odo'), who('skalvyr'), map('graypeak')],
+        unlocks: ['the-barrow-king'],
+        reward: each(300),
       },
     ),
     quest(
@@ -137,6 +155,7 @@ export function exampleQuests(at) {
           secret('Goblin rope marks show who pulled it down'),
         ],
         links: [spot('wardstones'), who('snagtooth'), who('farmer-hedda')],
+        reward: each(200),
       },
     ),
     quest(
@@ -152,6 +171,8 @@ export function exampleQuests(at) {
           secret('Find the empty place of the seal in the crypt'),
         ],
         links: [map('thornhold'), who('lord-aldemar'), who('crypt-shade'), who('castellan-irenne')],
+        unlocks: ['the-hand-that-writes', 'the-hollowvein-knocking'],
+        reward: each(300),
       },
     ),
     quest(
@@ -173,6 +194,7 @@ export function exampleQuests(at) {
           spot('cultist1'),
           map('thornhold'),
         ],
+        reward: each(400),
       },
     ),
     quest(
@@ -193,6 +215,7 @@ export function exampleQuests(at) {
           who('ostrand'),
           who('castellan-irenne'),
         ],
+        reward: each(500),
       },
     ),
     quest(
@@ -206,6 +229,8 @@ export function exampleQuests(at) {
           secret('Keep the counter-key from the Castellan'),
         ],
         links: [who('caravan-master-dorn'), spot('dorn'), who('castellan-irenne')],
+        unlocks: ['the-silver-road'],
+        reward: each(200),
       },
     ),
     quest(
@@ -225,6 +250,7 @@ export function exampleQuests(at) {
           who('drowned-watchman-1'),
           spot('drowned1'),
         ],
+        reward: each(100, 10),
       },
     ),
     quest(
@@ -239,6 +265,8 @@ export function exampleQuests(at) {
           secret('The diggers were paid under the pale seal'),
         ],
         links: [map('hollowvein'), who('hollowvein-knocker'), who('sella-the-smith')],
+        unlocks: ['the-barrow-king'],
+        reward: each(300),
       },
     ),
     quest(
@@ -252,6 +280,7 @@ export function exampleQuests(at) {
           secret('Her price points at Irenne'),
         ],
         links: [spot('grelka'), who('grelka'), who('bog-zombie-1')],
+        reward: each(100),
       },
     ),
     quest(
@@ -265,6 +294,8 @@ export function exampleQuests(at) {
           secret('The tithe roll names Hollowell as a warden house'),
         ],
         links: [spot('silverRoad'), who('giant-scorpion'), map('ashen-reach')],
+        unlocks: ['the-barrow-king'],
+        reward: each(200),
       },
     ),
     quest(
@@ -279,6 +310,7 @@ export function exampleQuests(at) {
           secret('Learn that the buyer of the silver is Irenne'),
         ],
         links: [who('corvin-the-smuggler'), map('saltmere'), who('castellan-irenne')],
+        reward: each(200),
       },
     ),
     quest(
@@ -293,6 +325,23 @@ export function exampleQuests(at) {
           secret('His warden ring marks Brannoc as heir to a warden house'),
         ],
         links: [map('hollowvein'), spot('knocker'), who('hollowvein-knocker')],
+        reward: each(200),
+      },
+    ),
+    quest(
+      'the-opened-graves',
+      'The Opened Graves',
+      'Sister Alwyn wrote to the temple for Mirelle. Three graves in her yard at Briarwick were opened from the inside, and the dead walked east toward the Barrowdowns. They opened in the same month that the wardstone fell and the pale seal left the Thornhold crypt. The Reeve can confirm the dates from the shire records. Alwyn blesses weapons against the risen dead: for one day, a blessed weapon deals radiant damage.',
+      {
+        revealed: true,
+        steps: [
+          step('Answer the letter of Sister Alwyn at the temple in Briarwick'),
+          step('Look over the open graves'),
+          step('Ask Sister Alwyn what she saw'),
+          secret('The graves opened in the month the pale seal left Thornhold'),
+        ],
+        links: [who('sister-alwyn'), spot('graveyard'), who('reeve-maera')],
+        reward: each(200),
       },
     ),
   ];

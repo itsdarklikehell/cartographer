@@ -7,6 +7,7 @@ import { toCaster } from '../src/entities/Caster.js';
 import { buildExampleContent } from '../src/campaign/ExampleContent.js';
 import { tileKind } from '../src/map/TileKinds.js';
 import { opensOutward } from '../src/map/MapExits.js';
+import { coerceCR, crXP } from '../src/data/challenge.js';
 
 const campaign = buildExampleCampaign(new TilePalette());
 
@@ -134,4 +135,79 @@ test('the prose of the example uses no em-dashes', () => {
 test('the example content refuses a world that lacks one of its story places', () => {
   const world = { grid: campaign.grid, places: {} };
   assert.throws(() => buildExampleContent(world), /no place named start/);
+});
+
+/** @param {string} id */
+const questOf = (id) => {
+  const found = campaign.quests.find((q) => q.id === id);
+  assert.ok(found, id);
+  return found;
+};
+
+test('the example quests reveal each other along the story, and the barrow has three ways in', () => {
+  const ids = new Set(campaign.quests.map((q) => q.id));
+  for (const q of campaign.quests) {
+    for (const id of q.unlocks) assert.ok(ids.has(id) && id !== q.id, `${q.id} unlocks ${id}`);
+  }
+  const unlockedBy = (/** @type {string} */ id) =>
+    campaign.quests.filter((q) => q.unlocks.includes(id)).map((q) => q.id);
+  assert.deepEqual(unlockedBy('the-barrow-king'), [
+    'the-hermit-of-graypeak',
+    'the-hollowvein-knocking',
+    'the-silver-road',
+  ]);
+  assert.deepEqual(unlockedBy('the-pale-seal'), ['the-goblin-raids']);
+  // The party meets Petra and Grelka before the GM reveals their quests.
+  assert.deepEqual(unlockedBy('dead-water'), []);
+  assert.deepEqual(unlockedBy('the-mire-hags-bargain'), []);
+  // Every quest that starts hidden has a quest that reveals it, or a person to meet.
+  for (const q of campaign.quests.filter((shown) => !shown.revealed)) {
+    const met = ['dead-water', 'the-mire-hags-bargain'].includes(q.id);
+    assert.ok(met || unlockedBy(q.id).length > 0, `${q.id} has a way to be revealed`);
+  }
+});
+
+test('Mirelle has a personal quest for the open graves, apart from the pale seal', () => {
+  const graves = questOf('the-opened-graves');
+  assert.equal(graves.revealed, true);
+  assert.ok(graves.links.some((l) => l.kind === 'creature' && l.creatureId === 'sister-alwyn'));
+  const seal = questOf('the-pale-seal');
+  assert.ok(seal.objectives.every((o) => !/alwyn/i.test(o.text)));
+});
+
+test('the quest rewards pay what the story promises and bring the party near level 5', () => {
+  assert.deepEqual(questOf('wolves-on-the-vale-road').reward, { gp: 25, xp: 200, per: 'each' });
+  assert.equal(questOf('dead-water').reward?.gp, 10);
+  assert.ok(campaign.quests.every((q) => q.reward?.per === 'each' && q.reward.xp > 0));
+  // The fights and quests of the main line before the barrow.
+  const quests = [
+    'rumors-at-the-waystation',
+    'wolves-on-the-vale-road',
+    'the-goblin-raids',
+    'the-pale-seal',
+    'the-hermit-of-graypeak',
+    'the-lord-of-thornhold',
+    'the-hand-that-writes',
+    'dorns-sealed-cargo',
+  ];
+  const foes = [
+    ...['gray-wolf-1', 'gray-wolf-2', 'gray-wolf-3', 'gray-wolf-4', 'dire-wolf-1', 'dire-wolf-2'],
+    ...['bandit-1', 'bandit-2', 'bandit-captain'],
+    ...['goblin-raider-1', 'goblin-raider-2', 'snagtooth', 'camp-bugbear'],
+    ...['camp-goblin1', 'camp-goblin2', 'skalvyr', 'crypt-shade'],
+    ...[
+      'thornhold-guard-1',
+      'thornhold-guard-2',
+      'castellan-irenne',
+      'pale-sworn-1',
+      'pale-sworn-2',
+    ],
+  ];
+  const party = campaign.characters;
+  const fightXP = foes.reduce((sum, id) => sum + crXP(coerceCR(creature(id).cr)), 0);
+  const questXP = quests.reduce((sum, id) => sum + (questOf(id).reward?.xp ?? 0), 0);
+  for (const c of party) {
+    const total = c.xp + Math.floor(fightXP / party.length) + questXP;
+    assert.ok(total >= 6300 && total < 7000, `${c.id} reaches ${total} XP before the barrow`);
+  }
 });

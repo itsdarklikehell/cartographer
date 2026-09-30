@@ -222,8 +222,8 @@ furnishings.
 | Map areas | 115 in all. Each region has its own towns, keep, dungeon, and caves |
 | Interiors | Furnished buildings in Briarwick and in the port of Saltmere. The Barrow of the Old King has three levels |
 | Party | Four level-4 characters: Ser Aldric, Mirelle, Wren Tallowby, and Brannoc Hollowell |
-| Quests | Sixteen: nine that lead to the barrow and seven side quests |
-| Handouts | Sixteen. Twelve start hidden, and four are personal letters |
+| Quests | Seventeen: nine that lead to the barrow and eight side quests |
+| Handouts | Eighteen. Fourteen start hidden, and four are personal letters |
 | People | Eleven NPCs, including a staffed inn, smithy, and temple in Briarwick, and a smuggler and a harbormaster in Saltmere |
 | Foes | Field enemies in every biome, minor bosses, a major boss, and a bestiary of ten reusable templates |
 
@@ -242,6 +242,17 @@ Warding Key. The hermit Odo gives the key, or the smith Sella recasts the
 counter-key from the crates of Dorn into one. When the party gets it, add
 an item of that name to the inventory of one character. You can also unlock
 the barrow at any time.
+
+Five quests start revealed: Rumors at the Waystation, Wolves on the Vale
+Road, and the personal quests of Mirelle, Wren, and Brannoc. When you
+complete a quest, the app offers to reveal the quests that it unlocks. For
+example, Rumors at the Waystation unlocks The Goblin Raids, The Hermit of
+Graypeak, and Dorn's Sealed Cargo. The quests of Harbormaster Petra and the
+mire hag Grelka unlock from no quest, so reveal them when the party meets
+them. Every quest pays XP to each character. With the fights of the main line,
+the quests before the barrow bring each character to about 6,500 XP, the
+start of level 5. Wolves on the Vale Road also pays 25 gp each, and Dead
+Water pays 10 gp each.
 
 The quest steps that would expose the Castellan stay hidden from the
 players until you reveal them. Her secret is only in GM notes. The party
