@@ -9,6 +9,7 @@ import {
   pipReadout,
   slotColumnLabel,
   slotLineReadout,
+  slotGroupReadout,
 } from '../src/view/StatBars.js';
 
 /** @param {number} current @param {number} max @param {object} [extra] */
@@ -122,10 +123,21 @@ test('the read-only line lists every pool in one sentence', () => {
       { id: 'slots-1', name: 'Level 1 slots', current: 3, max: 4 },
       { id: 'pact-2', name: 'Pact slots', current: 0, max: 2 },
     ]),
-    'Spell slots — level 1 slots: 3 of 4, level 2 pact slots: 0 of 2',
+    'Spell slots. Level 1 slots: 3 of 4 free. Level 2 pact slots: 0 of 2 free',
   );
 });
 
 test('a non-caster has nothing to read out', () => {
-  assert.equal(slotLineReadout([]), 'Spell slots — ');
+  assert.equal(slotLineReadout([]), 'Spell slots');
+});
+
+test('a slot column names its free and total slots', () => {
+  assert.equal(
+    slotGroupReadout({ id: 'slots-1', name: 'Level 1 slots', current: 2, max: 3 }),
+    'Level 1 slots: 2 of 3 free',
+  );
+  assert.equal(
+    slotGroupReadout({ id: 'pact-3', name: 'Pact slots', current: 0, max: 2 }),
+    'Level 3 pact slots: 0 of 2 free',
+  );
 });

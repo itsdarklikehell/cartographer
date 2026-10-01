@@ -110,16 +110,23 @@ export function pipReadout(pool, available, allowRestore) {
 }
 
 /**
+ * One spell level's slots as a phrase, such as "Level 1 slots: 2 of 3
+ * free". It names a pip column for a screen reader and for the column's
+ * tooltip, so a reader does not have to know that a filled pip is free.
+ * @param {ResourcePool} pool
+ * @returns {string}
+ */
+export function slotGroupReadout(pool) {
+  const noun = isPactPool(pool) ? 'pact slots' : 'slots';
+  return `Level ${slotLevelOf(pool)} ${noun}: ${pool.current} of ${pool.max} free`;
+}
+
+/**
  * The whole slot line as one sentence, for the read-only view where the
  * pips are decoration, not controls.
  * @param {ResourcePool[]} pools
  * @returns {string}
  */
 export function slotLineReadout(pools) {
-  const parts = pools.map(
-    (pool) =>
-      `level ${slotLevelOf(pool)} ${isPactPool(pool) ? 'pact slot' : 'slot'}s: ` +
-      `${pool.current} of ${pool.max}`,
-  );
-  return `Spell slots — ${parts.join(', ')}`;
+  return ['Spell slots', ...pools.map(slotGroupReadout)].join('. ');
 }

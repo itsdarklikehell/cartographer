@@ -1,7 +1,13 @@
 import { bareButton } from './buttons.js';
 import { setTip } from './Tooltip.js';
 import { classNames, el } from './dom.js';
-import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../view/StatBars.js';
+import {
+  barReadout,
+  pipReadout,
+  slotColumnLabel,
+  slotGroupReadout,
+  slotLineReadout,
+} from '../view/StatBars.js';
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
@@ -122,12 +128,24 @@ export function buildStatBar(pool, opts) {
  */
 export function buildSlotLine(pools, onToggle, allowRestore = true) {
   const groups = el('span', 'slot-line__groups');
+  // A key to the pip glyphs, matching the training-dot key of the skills
+  // block. Screen readers skip it, because each column already says how
+  // many of its slots are free.
+  const legend = el(
+    'span',
+    'slot-line__legend u-row u-g3 u-muted',
+    el('span', '', el('span', 'slot-line__key-pip', '●'), ' Free'),
+    el('span', '', el('span', 'slot-line__key-pip', '○'), ' Spent'),
+  );
+  legend.setAttribute('aria-hidden', 'true');
   const wrap = el(
     'span',
     'stat-bar slot-line u-row u-g2',
     el('span', 'stat-bar__label u-muted', 'Slots'),
-    groups,
+    el('span', 'slot-line__body u-col u-g1', groups, legend),
   );
+  /** @type {HTMLElement[]} */
+  const groupEls = [];
   // Each pip element matches one slot, in pool order. update can walk
   // pools and pips together without reading the shape of the DOM.
   /** @type {HTMLElement[][]} */
@@ -161,7 +179,12 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
       row.push(pip);
     }
     pipsByPool.push(row);
-    groups.appendChild(el('span', 'slot-line__group', el('span', 'u-muted', level), pips));
+    const group = el('span', 'slot-line__group', el('span', 'u-muted', level), pips);
+    // A named group gives a screen reader the column's count before it
+    // reads the pip controls inside.
+    if (onToggle) group.setAttribute('role', 'group');
+    groupEls.push(group);
+    groups.appendChild(group);
   }
 
   /** @type {ResourcePool[]} */
@@ -171,6 +194,11 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
   function update(next) {
     livePools = next;
     next.forEach((pool, poolIndex) => {
+      const group = groupEls[poolIndex];
+      if (group) {
+        setTip(group, slotGroupReadout(pool));
+        if (onToggle) group.setAttribute('aria-label', slotGroupReadout(pool));
+      }
       pipsByPool[poolIndex]?.forEach((pip, i) => {
         const available = i < pool.current;
         pip.textContent = available ? '●' : '○';

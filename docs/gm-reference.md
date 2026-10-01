@@ -2164,7 +2164,10 @@ The character detail card in the Sheet tab of the sidebar has four tabs.
 The collapsed sheet shows the name, the race, a full-width HP bar with
 damage and heal steppers, and one pip group per spell level for a caster. The
 number field after the heal button sets how many HP each stepper click
-moves. It starts at 1. A filled pip is an unspent slot. A click spends or restores it.
+moves. It starts at 1. A filled pip is an unspent slot, and a click spends or
+restores it. A key under the pips reads "Free" and "Spent". Each level
+column names its count for a screen reader and in its tooltip, such as "Level
+1 slots: 2 of 3 free".
 
 The expanded sheet adds these items:
 

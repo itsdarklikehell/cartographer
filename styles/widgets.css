@@ -317,9 +317,10 @@
 
   /* The line reserves one row of groups even when it has nothing to show, so
      selecting a non-caster after a caster does not move the rows below the
-     header. One row is a level label over one 24 px pip button. A pool holds
-     at most four slots, so its pips always fit on one row. */
-  min-height: calc(var(--text-label) * 1.5 + 0.1rem + 24px);
+     header. One row is a level label over one 24 px pip button, and the pip
+     key sits under it. A pool keeps at most four slots, so its pips always
+     fit on one row. */
+  min-height: calc(var(--text-label) * 2.6 + 0.1rem + var(--space-1) + 24px);
 }
 
 /* The reserved line for a character with no slot pools at all. In the
@@ -329,6 +330,21 @@
 .slot-line--empty {
   display: none;
   visibility: hidden;
+}
+
+.slot-line__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The key to the filled and empty pip glyphs, in the size of the level labels. */
+.slot-line__legend {
+  font-size: var(--text-label);
+  line-height: 1.1;
+}
+
+.slot-line__key-pip {
+  color: var(--mana);
 }
 
 .slot-line__groups {
