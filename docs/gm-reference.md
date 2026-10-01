@@ -445,8 +445,8 @@ The inspector heading names the selected cell, for example "Column 11, row 11". 
 
 | Field | Meaning |
 | --- | --- |
-| POI type | The point-of-interest marker on the tile. None is the default |
-| Discoverable | The point of interest stays hidden until the party steps onto its tile, or walks through the tile into the sub-map that it links to |
+| Marker | The point-of-interest marker on the tile. None is the default |
+| Discoverable | The point of interest stays hidden until the party steps onto its tile, or walks through the tile into the sub-map that it links to. The hint under the checkbox reads "Hidden until the party steps here." |
 | Notes | Text for the GM. The GM sees it on hover in Play mode. The Player view does not show it, but the text is in the saved campaign |
 | Zooms into | The child node that this tile leads to. Nothing is the default |
 | Set party start here | Places the spawn tile of the party |

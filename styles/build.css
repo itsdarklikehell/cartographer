@@ -307,6 +307,12 @@ body.mode-build .app-sidebar {
   color: var(--text);
 }
 
+/* The one-line hint under the Discoverable checkbox, indented to the label text. */
+.tile-inspector__hint {
+  margin: 0 0 0 1.6rem;
+  font-size: var(--text-label);
+}
+
 .tile-inspector__notes {
   resize: vertical;
   font-family: inherit;

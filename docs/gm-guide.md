@@ -251,7 +251,7 @@ each sub-map that the generation made.
 
 1. In the **Paint** tab, pick the **Inspect** tool.
 2. Click the tile. The **Tile** tab opens with the tile inspector.
-3. Set **POI type**, for example **Settlement** or **Dungeon**.
+3. Set **Marker**, for example **Settlement** or **Dungeon**.
 4. For a secret, select **Discoverable**. The marker stays hidden until the
    party steps onto the tile. On a tile that links to a sub-map, the party
    discovers it when it walks through the tile.

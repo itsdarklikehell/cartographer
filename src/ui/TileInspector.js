@@ -11,9 +11,12 @@ import { capitalize } from '../util/text.js';
 /** @type {(POIType | '')[]} */
 const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'custom'];
 
+/** Numbers the hint ids, so two inspectors on one page never share one. */
+let hintCount = 0;
+
 /**
  * Mount the tile inspector: a form over a single tile's TileMetadata, with
- * POI type, discoverable flag, and notes. In Build mode, the fields are
+ * point-of-interest marker, discoverable flag, and notes. In Build mode, the fields are
  * editable, and each edit calls onChange with a metadata patch. In Play
  * mode, the same panel is read-only, so a GM can see a tile's notes
  * during a session without editing them. Call setTile(tile, editable) to
@@ -45,7 +48,7 @@ export function mountTileInspector(container, opts) {
 
   const coordLabel = el('div', 'tile-inspector__coord u-muted');
 
-  // POI type
+  // Point-of-interest marker
   const typeSelect = select(
     POI_TYPES.map((value) => ({ value, label: value === '' ? 'None' : capitalize(value) })),
     '',
@@ -55,7 +58,7 @@ export function mountTileInspector(container, opts) {
       poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
     });
   });
-  const typeField = labeled('POI type', typeSelect, { className: 'tile-inspector__field' });
+  const typeField = labeled('Marker', typeSelect, { className: 'tile-inspector__field' });
 
   // Discoverable
   const discInput = el('input');
@@ -67,13 +70,17 @@ export function mountTileInspector(container, opts) {
     discInput,
     ' Discoverable',
   );
+  // The hint names what the flag does, which the one word does not.
+  const discHint = el('p', 'tile-inspector__hint u-muted', 'Hidden until the party steps here.');
+  discHint.id = `tile-inspector-disc-hint-${++hintCount}`;
+  discInput.setAttribute('aria-describedby', discHint.id);
 
   // Notes
   const notesInput = textareaField('', { rows: 4, className: 'tile-inspector__notes' });
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
   const notesField = labeled('Notes', notesInput, { className: 'tile-inspector__field' });
 
-  form.append(coordLabel, typeField, discField, notesField);
+  form.append(coordLabel, typeField, el('div', 'u-col', discField, discHint), notesField);
 
   // The region link is optional. It names which child node this tile
   // zooms into. It shows only when the caller supplies linking, for
