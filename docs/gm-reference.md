@@ -1244,7 +1244,7 @@ The combat screen runs one fight at the full width of the page.
 | --- | --- |
 | Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
 | Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
-| Right column | The **Log** and **Map** tabs, with the dice tray docked below them. **Log** shows the combat log. **Map** shows a read-only map of nine by nine tiles around the party, with the fog of the Play map and a marker on each foe tile |
+| Right column | The **Log** and **Map** tabs, with the dice tray docked below them. **Log** shows the combat log. **Map** shows a read-only map of nine by nine tiles around the party, with the fog of the Play map and a marker on the tile of each hostile creature that still stands. Markers show only near the party, as on the Play map |
 | Bottom | The turn ribbon: one chip per combatant in initiative order, with its name and number, as in "Gray Wolf 2" |
 
 | Ribbon or card mark | Meaning |

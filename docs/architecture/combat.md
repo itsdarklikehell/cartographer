@@ -65,6 +65,7 @@ src/combat/HPLines.js ........ pure: the log lines for a damage or heal the
                                GM applies from the amount field
 src/combat/SaveLines.js ...... pure: the GM and player versions of a save
                                spell's log lines
+src/combat/FightMarkers.js ... pure: the foe tiles that the fight map marks
 src/ui/CombatSetup.js ........ the setup dialog: one initiative row per
                                combatant, and the Roll initiative fill
 src/ui/CombatScreen.js ....... the screen: composes the columns, the board,
@@ -910,10 +911,15 @@ Above the log, `buildTabs` adds a Log tab and a Map tab. The Map tab holds
 `MapRenderer` as the main map. `map/FightFrame.js` works out the tile size
 and the offsets that center a window of nine by nine tiles on the party
 tile. The canvas has no pan, zoom, or click handling. `combatWiring.js`
-passes `getMapView`, which reads the party position from `partyTracker`
-and marks the tile of each creature in the order. The map keeps the fog, so
-a Player tab shows nothing that the Play map hides. The screen redraws the
-map on each render while the Map tab shows, and when the GM opens the tab.
+passes `getMapView`, which reads the party position from `partyTracker`.
+`combat/FightMarkers.js` marks the tile of each hostile creature of the
+order that still stands, which is the rule of the Play map. A companion, a
+summoned ally, or a defeated foe gets no marker. The view also passes the
+marker range of the Play map (twice the reveal radius of `partyTracker`)
+and `fogDim` for the GM role. So the GM sees the terrain under a
+see-through fog, and a Player tab gets opaque fog and shows nothing that
+its Play map hides. The screen redraws the map on each render while the
+Map tab shows, and when the GM opens the tab.
 
 ### The turn ribbon
 

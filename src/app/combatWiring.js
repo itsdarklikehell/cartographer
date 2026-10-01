@@ -1,6 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountCombatScreen } from '../ui/CombatScreen.js';
 import { buildCombatView, isGone } from '../combat/CombatView.js';
+import { foeTiles } from '../combat/FightMarkers.js';
 import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
@@ -94,23 +95,20 @@ export function wireCombatScreen(app) {
     },
     isGM: () => isGM(state.role),
     // The read-only fight map draws the party node around the party, with
-    // the fog that the Play map shows, and marks each foe tile of the order.
+    // the fog, the marker range, and the foe markers of the Play map. The GM
+    // sees the terrain under a see-through fog, as on the Play map.
     getMapView: () => {
       if (!state.combat) return null;
       const position = app.partyTracker.getPosition();
       const node = position ? app.grid.getNode(position.nodeId) : null;
       if (!position || !node) return null;
-      const foeTiles = new Set();
-      for (const p of state.combat.order) {
-        const found = findCombatant(app, p.id);
-        const at = found?.kind === 'creature' ? found.entity.location : null;
-        if (at && at.nodeId === node.id) foeTiles.add(at.tileId);
-      }
       return {
         node,
         partyTileId: position.tileId,
-        encounterTileIds: [...foeTiles],
+        encounterTileIds: foeTiles(state.combat.order, node.id, (id) => findCombatant(app, id)),
         revealAll: false,
+        fogDim: isGM(state.role),
+        markerRange: app.partyTracker.revealRadius * 2,
         label: `Map of the fight area in ${node.name}, centered on the party`,
       };
     },

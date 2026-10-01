@@ -17,6 +17,8 @@ const SIDE = 320;
  *   partyTileId: string | null,
  *   encounterTileIds: string[],
  *   revealAll: boolean,
+ *   fogDim: boolean,
+ *   markerRange: number,
  *   label: string,
  * }} CombatMapView
  */
@@ -25,7 +27,8 @@ const SIDE = 320;
  * A read-only map of the fight area for the combat screen. It draws the
  * party node with the same MapRenderer as the main map, centered on the
  * fight tile, with no pan, zoom, or click handling. `getView` returns null
- * when no fight runs, and the canvas then stays blank.
+ * when no fight runs, and the canvas then stays blank. The view names the fog
+ * style and the marker range, which follow the Play map.
  * @param {() => CombatMapView | null} getView
  * @returns {{ element: HTMLElement, update: () => void }}
  */
@@ -58,7 +61,8 @@ export function mountCombatMap(getView) {
       offsetY: frame.offsetY,
       scale: 1,
       revealAll: view.revealAll,
-      markerRange: RADIUS * 2,
+      fogDim: view.fogDim,
+      markerRange: view.markerRange,
       partyTileId: view.partyTileId,
       encounterTileIds: view.encounterTileIds,
       selectedTileId: null,
