@@ -32,9 +32,9 @@ import { hpTargetId } from '../view/CombatHpTarget.js';
 export function mountActiveColumn(callbacks, loadoutOf) {
   const element = el('aside', 'combat-screen__active');
 
-  // The damage or heal amount survives re-renders. Every HP edit triggers a
-  // re-render. This lets the GM apply the same number to several combatants
-  // without retyping it.
+  // The damage or heal amount stays across the re-renders of one turn. Every
+  // HP edit triggers a re-render. This lets the GM apply the same number to
+  // several combatants without retyping it, as for an area spell.
   let hpAmount = 1;
 
   // The combatant the GM picked in the HP box. A new card selection or a new
@@ -80,8 +80,12 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     element.appendChild(facts);
 
     const selectedId = callbacks.getSelectedTargetId();
-    const context = `${selectedId}|${inspectedId}`;
+    const turn = `${view.round}:${view.turnIndex}`;
+    const context = `${turn}|${selectedId}|${inspectedId}`;
     if (context !== hpContext) {
+      // A new turn also resets the amount, so a 7 typed for one hit does
+      // not deal 7 again on the next combatant's turn.
+      if (!hpContext.startsWith(`${turn}|`)) hpAmount = 1;
       hpPick = null;
       hpContext = context;
     }

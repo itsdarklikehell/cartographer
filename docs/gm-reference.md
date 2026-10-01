@@ -1183,7 +1183,9 @@ name that combatant, as in **Heal Mirelle**. The target defaults to the card
 selected on the board, then to the inspected combatant, then to the
 combatant whose turn it is. A new selection on the board resets the target.
 A selection lasts for one turn, and **Next turn** clears it. A dying ally
-can be selected, so you can heal it on a foe's turn.
+can be selected, so you can heal it on a foe's turn. The **Amount** stays
+for the rest of the turn, so you can apply one area spell's damage to
+several targets, and a new turn sets it back to 1.
 
 | Viewer | Loadout shown on a card |
 | --- | --- |
