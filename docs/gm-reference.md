@@ -2028,14 +2028,18 @@ a fight or from the sheet outside one.
 
 The Spellbook tab of the character detail card lists every spell that the
 class of the character can learn, grouped by spell level. It also lists
-any spell that the character knows from another source.
+any spell that the character knows from another source. Each spell is a
+card with its name and one line with the school, the casting time, and the
+range. The cards fill one column in the sidebar and several in the full
+sheet.
 
 | Element | Meaning |
 | --- | --- |
 | Heading | The caster classes, the prepared count against the limit (for a class that prepares), and the cantrip count against the limit |
+| Level heading | The spell level, and the free slots of that level, as "3 of 4 slots" |
 | Known badge | The character knows the spell |
 | Prepared badge | The character prepared the spell |
-| Spell row | Opens the spell detail, with Learn, Prepare, Unprepare, and Forget |
+| Spell card | Opens the spell detail, with Learn, Prepare, Unprepare, and Forget |
 
 A multiclass caster picks the class that a new spell records under. The
 list offers the caster classes whose spell list has the spell. If no class

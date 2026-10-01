@@ -2269,6 +2269,7 @@ The parts of the sheet have their own modules:
 | `ui/CharacterLevelBanner.js` | The level-up banner at the top of the sheet, and the level-up text that the party roster also shows |
 | `ui/InventoryEquipment.js` | The paperdoll of the Equipment tab and the item picker that a slot card opens. `view/EquipSlots.js` lists the items a slot can take and writes the short stat line of a card and the detail line of a picker option |
 | `ui/InventoryPanel.js` | The Inventory tab: the search box, the item tiles under one heading per type, and the detail pane with the full row of the chosen item. `view/ItemTiles.js` writes the tile text and picks the item that the pane shows |
+| `ui/SpellbookPanel.js` | The Spellbook tab: the spell cards under one heading per level. `view/SpellCards.js` writes the line of a card and the free slot count of a level heading |
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |
 | `ui/CharacterConditions.js` | The condition chips, the held concentration, the exhaustion pips, and the death-save block |

@@ -284,3 +284,48 @@
   line-height: 1.5;
   white-space: pre-wrap;
 }
+
+/* The spell cards: a grid of cards under each level heading, with the free
+   slots of the level beside the heading. */
+.spellbook {
+  container-type: inline-size;
+}
+
+.spellbook__level-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.spellbook__slots {
+  font-size: var(--text-label);
+  white-space: nowrap;
+}
+
+.spellbook .spellbook__list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: var(--space-2);
+}
+
+.spellbook .spellbook__row {
+  align-items: flex-start;
+  min-height: 3.25rem;
+  padding: var(--space-2);
+  border-radius: var(--radius);
+  text-align: left;
+}
+
+.spellbook__row-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.spellbook__row-line {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}

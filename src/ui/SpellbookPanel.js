@@ -19,6 +19,8 @@ import { primaryClass } from '../entities/Multiclass.js';
 import { casterName, spellListOf } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { sameDeps, spellListDeps } from '../view/SheetStructure.js';
+import { levelSlotText, spellCardLine } from '../view/SpellCards.js';
+import { getSlotPools } from '../entities/SpellSlots.js';
 import { badge, bareButton, emptyState, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
 import { promptModal } from './Modal.js';
@@ -251,12 +253,20 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     root.appendChild(heading);
 
     for (const group of groups) {
+      // The heading counts the free slots of the level, and a cast or a rest
+      // rewrites the count in place.
+      const slots = el('span', 'spellbook__slots u-muted');
+      const writeSlots = () => {
+        if (current) slots.textContent = levelSlotText(getSlotPools(current), group.level);
+      };
+      writeSlots();
+      writers.push(writeSlots);
       root.appendChild(
         el(
           'div',
           'u-col u-g1',
-          sectionLabel(group.label),
-          el('div', 'spellbook__list u-col', ...group.spells.map(buildRow)),
+          el('div', 'spellbook__level-head', sectionLabel(group.label), slots),
+          el('div', 'spellbook__list', ...group.spells.map(buildRow)),
         ),
       );
     }
@@ -276,9 +286,15 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
    */
   function buildRow(spell) {
     const badges = el('span', 'spellbook__row-badges');
+    // The detail line is for sight. The accessible name stays the spell name.
+    const line = el('span', 'spellbook__row-line', spellCardLine(spell));
+    line.setAttribute('aria-hidden', 'true');
     badges.setAttribute('aria-hidden', 'true');
     const row = bareButton(
-      [el('span', 'spellbook__row-name', spell.name), badges],
+      [
+        el('span', 'spellbook__row-text', el('span', 'spellbook__row-name', spell.name), line),
+        badges,
+      ],
       () => {
         if (current) openSpell(current, spell);
       },

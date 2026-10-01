@@ -101,6 +101,7 @@ body.sheet-full.mode-play #panel-equipment {
   max-width: none;
 }
 
-body.sheet-full.mode-play #panel-inventory {
+body.sheet-full.mode-play #panel-inventory,
+body.sheet-full.mode-play #panel-spellbook {
   max-width: none;
 }
