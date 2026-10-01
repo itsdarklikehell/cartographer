@@ -7,6 +7,7 @@ import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { exhaustionReadout } from '../view/ExhaustionView.js';
 import { buildProgressSection } from './CharacterProgress.js';
+import { buildFeaturesSection } from './CharacterFeatures.js';
 import { levelUpBanner } from './CharacterLevelBanner.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { effectiveStat } from '../entities/Stats.js';
@@ -127,6 +128,11 @@ function customPools(character) {
  *   HP costs a death save, and a step on a concentrating character calls for
  *   the CON save, all of which log. Without it, the steppers change the HP
  *   pool alone.
+ * @param {(() => void) | null} [openFull]
+ *   Opens the full-page sheet. The Level up button of the banner calls it
+ *   first, so the GM lands on the Progression section of the full sheet,
+ *   where the improvement and feature choices are. Without it, the banner
+ *   stays in the card it was built in.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -140,6 +146,7 @@ export function mountCharacterSheet(
   deathSaves = null,
   exhaustion = null,
   hpStep = null,
+  openFull = null,
 ) {
   let current = initial;
   // The HP amount field is rebuilt on each render. This value refills it,
@@ -248,6 +255,7 @@ export function mountCharacterSheet(
       onCommit: commit,
       notify,
       getProgress: () => progressSection,
+      openFull,
     });
     const body = el('div', 'character-sheet__body', head, headSide);
     const main = el('div', 'character-sheet__col character-sheet__col--main');
@@ -494,6 +502,11 @@ export function mountCharacterSheet(
     const skills = buildSkillsBlock(character, checkOpts);
     skills.classList.add('character-sheet__skills');
     body.appendChild(skills);
+
+    // The feature cards span the full width under the skills, so the grid
+    // takes as many card columns as the sheet is wide.
+    const features = buildFeaturesSection(live, { editBase: perms.editBase, onCommit: commit });
+    if (features) body.appendChild(features);
 
     // This is a read-only list of castable spells grouped by level, each
     // opening a Cast or Close detail. It shows only for casters, since the

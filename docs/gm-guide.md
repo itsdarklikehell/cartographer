@@ -610,7 +610,8 @@ that.
    level to assign. Click the row to open the sheet. A banner at the top
    says how many levels wait.
 3. Click **Level up** in the banner (or **Assign level** in the
-   Progression block), pick the class, and click **Assign**. To
+   Progression block). The full sheet opens with the Progression block and
+   the Features cards. Pick the class, and click **Assign**. To
    multiclass, click **Add a class** instead. The list shows which classes
    the ability scores of the character allow.
 4. If the level gives an ability score improvement, click **+2 ability** to

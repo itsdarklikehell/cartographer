@@ -2273,8 +2273,8 @@ such as "Level 1 slots: 3 of 4 free".
 While a character has a level to assign, an ability score improvement, or a
 class feature choice left, a banner at the top of the sheet says so, such as
 "Ready to level up: 1 level to assign." The GM's **Level up** button opens
-**Assign a level** for a pending level. For an improvement or a feature
-choice, it moves focus to the Progression block. A Player tab shows the
+the full sheet. For a pending level, it then opens **Assign a level**. For
+an improvement or a feature choice, it moves focus to the Progression block. A Player tab shows the
 banner with no button. The party row of the character shows a **Level up**
 mark at the same time.
 
@@ -2285,7 +2285,7 @@ The expanded sheet adds these items:
 - custom resource pools
 - the Progression block
 - the hit-dice pool
-- the class features unlocked by level
+- the Features section, with one card for each class feature, race trait, and feat. A class feature with a claimed choice has a **Change** button for the GM
 - the six saving throws and the 18 skills, with the bonus of each
 - passive Perception
 - the Conditions block

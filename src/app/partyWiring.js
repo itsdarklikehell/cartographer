@@ -271,6 +271,9 @@ export function wireParty(app, reloadView = null) {
         if (character) applyToTarget(app, character.id, amount, isHeal);
       },
     },
+    // The Level up button of the sheet's banner opens the full sheet, where
+    // the progression section is.
+    () => fullSheet.open(),
   );
 
   // The Spellbook tab manages learn, prepare, and forget actions for the

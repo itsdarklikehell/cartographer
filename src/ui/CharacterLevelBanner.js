@@ -27,8 +27,9 @@ export function levelUpText(character) {
  * A viewer who can edit the character gets a Level up button. It opens the
  * class assignment for a pending level. Otherwise it moves focus to the
  * improvement or feature choice in the progression section, which
- * `getProgress` returns. A viewer who cannot edit the character reads the
- * banner only. It returns null when no step waits.
+ * `getProgress` returns. With `openFull`, the button first opens the full
+ * sheet, which shows the progression section. A viewer who cannot edit the
+ * character reads the banner only. It returns null when no step waits.
  * @param {Character} character
  * @param {{
  *   editBase: boolean,
@@ -36,6 +37,7 @@ export function levelUpText(character) {
  *   onCommit: (character: Character) => void,
  *   notify: (message: string) => void,
  *   getProgress: () => HTMLElement | null,
+ *   openFull?: (() => void) | null,
  * }} opts
  * @returns {HTMLElement | null}
  */
@@ -51,6 +53,7 @@ export function levelUpBanner(character, opts) {
   banner.setAttribute('role', 'status');
   if (!opts.editBase) return banner;
   const onClick = () => {
+    opts.openFull?.();
     if (levels > 0) {
       assignLevelFlow(opts.live, opts);
       return;

@@ -246,15 +246,6 @@
   color: var(--text);
 }
 
-.character-sheet__features summary {
-  cursor: pointer;
-}
-
-.character-sheet__features ul {
-  margin: var(--space-1) 0 0;
-  padding-left: var(--space-4);
-}
-
 .character-sheet__resources {
   margin-top: var(--space-4);
 }

@@ -2273,7 +2273,8 @@ The parts of the sheet have their own modules:
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |
 | `ui/CharacterConditions.js` | The condition chips, the held concentration, the exhaustion pips, and the death-save block |
-| `ui/CharacterProgress.js` | The class rows with subclass, the pending-level assignment, pending ASI and feat choices, feature grants, unlocked features, and the hit-dice pool |
+| `ui/CharacterProgress.js` | The class rows with subclass, the pending-level assignment, pending ASI and feat choices, feature grants, and the hit-dice pool |
+| `ui/CharacterFeatures.js` | The Features section: one card per class feature, race trait, and feat, with the Change button of a claimed feature grant. `view/FeatureCards.js` groups the cards and writes the detail line of a feat |
 | `ui/LevelAssignFlow.js` | The dialogs of assigning a level: class, multiclass skills, subclass, and feature picks |
 | `ui/ImprovementFlow.js` | The dialogs of an ability score improvement or a feat |
 

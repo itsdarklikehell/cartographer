@@ -4,15 +4,10 @@ import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { getClasses, pendingLevels } from '../entities/Multiclass.js';
 import { assignOptions, className } from '../entities/LevelAssign.js';
-import { pendingASISlots, listASIChoices, unlockedFeatures } from '../entities/LevelUp.js';
+import { pendingASISlots, listASIChoices } from '../entities/LevelUp.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
-import {
-  undoLastChoice,
-  withExpertise,
-  applyFeatureGrant,
-  undoFeatureGrant,
-} from '../entities/Progression.js';
-import { featureKey, getFeatureChoices, pendingFeatureGrants } from '../entities/FeatureGrants.js';
+import { undoLastChoice, withExpertise, applyFeatureGrant } from '../entities/Progression.js';
+import { pendingFeatureGrants } from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { hasExpertiseSource } from '../entities/ExpertiseSources.js';
 import { buildInvocationRows } from './InvocationPicker.js';
@@ -20,7 +15,6 @@ import { askFeatureStamp, assignLevelFlow } from './LevelAssignFlow.js';
 import { chooseASI, chooseFeat } from './ImprovementFlow.js';
 import { skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
-import { fightingStyle } from '../data/fightingStyles.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../entities/FeatureGrants.js').FeatureStamp} FeatureStamp */
@@ -31,36 +25,14 @@ import { fightingStyle } from '../data/fightingStyles.js';
  * XP levels wait here until spent), pending ability-score improvements
  * (apply an increase, take a feat, undo the last choice), pending class
  * feature grants with their prompted picks, the warlock's pact boon and
- * invocations (see InvocationPicker.js), the GM's expertise grant, the
- * unlocked class features, and the hit-dice pools with their short-rest
- * spend. The level dialogs live in LevelAssignFlow.js and the improvement
+ * invocations (see InvocationPicker.js), the GM's expertise grant, and the
+ * hit-dice pools with their short-rest spend. The unlocked class features
+ * have their own section (CharacterFeatures.js). The level dialogs live in
+ * LevelAssignFlow.js and the improvement
  * dialogs in ImprovementFlow.js. All rule logic lives in the entity modules LevelAssign, LevelUp,
  * FeatureGrants, HitDice, and Proficiencies. This file is DOM wiring over
  * them, verified visually.
  */
-
-/**
- * The picks a claimed feature grant recorded, as one display line. Only
- * what the grant actually added shows, so a pick the character already
- * had from the GM or a feat does not repeat here.
- * @param {import('../types/entities.js').FeatureChoice | undefined} choice
- * @returns {string}
- */
-function grantPicksText(choice) {
-  if (!choice) return '';
-  const g = choice.granted ?? {};
-  const style = choice.style ? fightingStyle(choice.style) : undefined;
-  const parts = [
-    ...(style ? [`${style.name} (${style.text})`] : []),
-    ...(g.skills ?? []).map(skillName),
-    ...(g.saves ?? []),
-    ...(g.expertise ?? []).map(skillName),
-    ...(g.armor ?? []),
-    ...(g.tools ?? []),
-    ...(g.languages ?? []),
-  ];
-  return [...new Set(parts)].join(', ');
-}
 
 /**
  * Build the progression section. Return null when the character has
@@ -244,59 +216,6 @@ export function buildProgressSection(getCharacter, opts) {
       textButton('Set expertise', runExpertise, {
         ariaLabel: 'Choose which skills have expertise',
       }),
-    );
-  }
-
-  async function rechooseFeature(/** @type {string} */ key) {
-    const from = getCharacter();
-    const undone = undoFeatureGrant(from, key);
-    if (undone === from) return;
-    const grant = pendingFeatureGrants(undone).find((g) => featureKey(g) === key);
-    const stamp = grant ? await askFeatureStamp(undone, grant) : null;
-    // Undo and claim again on the character read after the dialog closes.
-    const live = getCharacter();
-    const liveUndone = undoFeatureGrant(live, key);
-    const next = stamp ? applyFeatureGrant(liveUndone, stamp) : liveUndone;
-    if (next !== live) opts.onCommit(next);
-  }
-
-  const features = unlockedFeatures(character);
-  if (features.length > 0) {
-    const claimed = getFeatureChoices(character);
-    section.appendChild(
-      el(
-        'details',
-        'character-sheet__features u-muted',
-        el('summary', '', `Class features (${features.length})`),
-        el(
-          'ul',
-          'u-col u-g1',
-          ...features.map((feature) => {
-            const li = el(
-              'li',
-              '',
-              `${feature.name} — ${className(feature.classId)} ${feature.level}`,
-            );
-            const key = featureKey({
-              classId: feature.classId,
-              classLevel: feature.level,
-              name: feature.name,
-            });
-            const choice = claimed[key];
-            const picked = grantPicksText(choice);
-            if (picked) li.append(`: ${picked}`);
-            if (choice && opts.editBase) {
-              li.append(' ');
-              li.appendChild(
-                textButton('Change', () => rechooseFeature(key), {
-                  ariaLabel: `Choose the ${feature.name} grants again`,
-                }),
-              );
-            }
-            return li;
-          }),
-        ),
-      ),
     );
   }
 

@@ -12,6 +12,7 @@
 @import url('styles/forms.css'); /* inline authoring forms: wrapper, rows, captions, control sizes */
 @import url('styles/character.css'); /* character sheet, inventory */
 @import url('styles/paperdoll.css'); /* equipment slot cards and the item picker */
+@import url('styles/sheet-features.css'); /* feature cards of the character sheet */
 @import url('styles/inventory-grid.css'); /* the item tiles and the detail pane */
 @import url('styles/session.css'); /* encounters, in-game time, NPCs, initiative */
 @import url('styles/party.css'); /* status conditions, party roster */
