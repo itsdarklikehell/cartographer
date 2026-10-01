@@ -48,7 +48,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
     className: 'build-encounters',
     getRows: () => callbacks.getEncounters(),
     dependsOn: () => `${callbacks.defeatedCount?.() ?? 0}:${callbacks.templateCount?.() ?? 0}`,
-    emptyMessage: 'No encounters on this map.',
+    emptyMessage: 'No foes on this map.',
     classes: { row: 'build-encounters__row u-col u-g1', head: 'u-row u-g2' },
     buildBody: (encounter) => {
       const where = encounter.location ? describeTile(encounter.location.tileId) : 'unplaced';

@@ -58,17 +58,15 @@ export function featSummary(feat) {
 /** The one-line summary for a creature row. A foe leads with its combat
  * numbers, and everyone else with who they are. A rated foe shows its
  * challenge rating first, because the encounter budget reads the rating,
- * and an unrated foe shows its level and tier instead.
+ * and an unrated foe shows its tier and level instead. The tier reads
+ * "Mob" or "Legend", the same words as the creature form.
  * @param {CreatureTemplate} entry
  * @returns {string} */
 export function creatureSummary(entry) {
   if (entry.disposition === 'hostile') {
     const cr = entry.cr != null ? crLabel(entry.cr) : '';
-    const rank = cr
-      ? `CR ${cr}, `
-      : entry.level != null
-        ? `level ${entry.level} ${entry.tier}, `
-        : '';
+    const tier = entry.tier === 'legend' ? 'Legend' : 'Mob';
+    const rank = cr ? `CR ${cr}, ` : entry.level != null ? `${tier}, level ${entry.level}, ` : '';
     return [
       `${rank}${entry.maxHP} HP`,
       entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
