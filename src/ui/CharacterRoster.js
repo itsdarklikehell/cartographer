@@ -4,6 +4,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
 import { buildStatBar, emptyStatBar } from './CharacterBars.js';
+import { openContextMenu } from './ContextMenu.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -102,6 +103,31 @@ export function mountCharacterRoster(container, options) {
   /** Whether a row gets the place-on-map action. */
   const placeShown = () => Boolean(options.onPlace) && (options.canPlace?.() ?? true);
 
+  /**
+   * The row's "More" button, which opens a menu with Grant XP, when the
+   * caller offers it, and Delete.
+   * @param {Character} character
+   * @returns {HTMLButtonElement}
+   */
+  function moreButton(character) {
+    const onGrantXP = options.onGrantXP;
+    const items = [
+      ...(onGrantXP ? [{ label: 'Grant XP', onSelect: () => onGrantXP(character.id) }] : []),
+      { label: `Delete ${character.name}`, onSelect: () => options.onDelete(character.id) },
+    ];
+    const button = iconButton(
+      'more',
+      `More actions for ${character.name}`,
+      () => {
+        const rect = button.getBoundingClientRect();
+        openContextMenu(items, { clientX: rect.left, clientY: rect.bottom });
+      },
+      { className: 'character-roster__more', title: 'Grant XP or delete' },
+    );
+    button.setAttribute('aria-haspopup', 'menu');
+    return button;
+  }
+
   /** @param {boolean} manage @param {Character[]} characters @param {string | null} selectedId */
   function paint(manage, characters, selectedId) {
     // Clearing the root drops focus to the document body, the same hazard
@@ -146,16 +172,6 @@ export function mountCharacterRoster(container, options) {
           ),
         );
       }
-      if (manage && options.onGrantXP) {
-        row.appendChild(
-          iconButton(
-            'sparkles',
-            `Grant XP to ${character.name}`,
-            () => options.onGrantXP?.(character.id),
-            { className: 'character-roster__xp', title: 'Grant XP' },
-          ),
-        );
-      }
       if (manage && options.playerTabHref) {
         row.appendChild(
           iconLink(
@@ -176,14 +192,9 @@ export function mountCharacterRoster(container, options) {
           ),
         );
       }
-      if (manage) {
-        row.appendChild(
-          iconButton('remove', `Delete ${character.name}`, () => options.onDelete(character.id), {
-            variant: 'danger',
-            className: 'character-roster__delete',
-          }),
-        );
-      }
+      // Grant XP and Delete sit in a menu behind one "More" button, so a
+      // click in a busy Play list does not delete a character by mistake.
+      if (manage) row.appendChild(moreButton(character));
       root.appendChild(row);
     }
 

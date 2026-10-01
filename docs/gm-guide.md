@@ -596,8 +596,8 @@ that.
 1. In the **Party** panel, click **Award Party XP** to give XP to each
    character at once. To split a total instead, set **Award** to **A total,
    split evenly**, and the caption shows the XP that each character gets. To
-   give XP to one character, click the sparkle button on their row
-   (**Grant XP**).
+   give XP to one character, click the three-dot button on their row and
+   then **Grant XP**.
 2. Open the character sheet and find the Progression block. It shows how
    many levels wait to be assigned.
 3. Click **Assign level**, pick the class, and click **Assign**. To

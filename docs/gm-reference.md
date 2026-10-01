@@ -2129,10 +2129,9 @@ character detail card shows.
 | --- | --- | --- |
 | Row name | Everyone | Selects the character |
 | Edit HP and AC (pencil) | GM | Opens the HP and AC dialog |
-| Grant XP (sparkle) | GM | Grants XP to that character alone. The default is 100 |
 | Open player tab (arrow out of a box) | GM | Opens a Player tab bound to that character in a new browser tab |
 | Place on map | GM, while the party is split | Moves that character. See [Party splitting](#party-splitting) |
-| Delete | GM | Deletes the character |
+| More actions (three dots) | GM | Opens a menu with **Grant XP**, which grants XP to that character alone (the default is 100), and **Delete**, which deletes the character after a confirm |
 | New character | GM | Opens character creation |
 | Award Party XP | GM | Grants XP to every character: the same amount to each, or a total split evenly and rounded down. The default is 100 per character |
 | Spectator tab | GM | Opens a Player tab bound to no character |
