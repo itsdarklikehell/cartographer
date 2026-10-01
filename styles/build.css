@@ -387,3 +387,43 @@ body:not(.mode-build) .map-controls__tool {
   font-weight: 600;
   color: var(--text);
 }
+
+/* The empty state over a map with no tiles in Build mode. The wrapper lets
+   pointer events through to the canvas, and only the card takes them. */
+.map-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  pointer-events: none;
+}
+
+.map-empty[hidden],
+body:not(.mode-build) .map-empty {
+  display: none;
+}
+
+.map-empty__card {
+  pointer-events: auto;
+  max-width: 22rem;
+  padding: var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-2);
+  text-align: center;
+  align-items: center;
+}
+
+.map-empty__title {
+  margin: 0;
+  font-weight: 600;
+}
+
+.map-empty__hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}

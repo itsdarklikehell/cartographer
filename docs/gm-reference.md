@@ -298,6 +298,10 @@ left, the map is in the center, and the Build rail is on the right.
 | Tile | The tile inspector for the selected cell |
 | Encounters | Two subtabs: Foes for hostile creatures, and NPCs for friendly and neutral people |
 
+A map with no tiles shows a card over the canvas. **Paint tiles** opens the
+Paint tab and puts focus on the palette. **Generate map** opens the Generate
+dialog. The card goes away after the first tile is painted.
+
 ### Node kinds
 
 The world is a tree of nodes. The top node is the world map. Regions and

@@ -7,23 +7,27 @@ import {
 } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { mustGetElement } from '../ui/dom.js';
+import { mountBuildEmptyMap } from '../ui/BuildEmptyMap.js';
+import { isBlankMap, PAINT_TAB } from '../view/BuildTool.js';
 
 /**
- * Wire the Build-rail map tools: stroke-level undo, and a fog-free PNG export
- * of the current node. These live in the Build rail, so only the GM in Build
+ * Wire the Build map tools: stroke-level undo, a fog-free PNG export of the
+ * current node, and the card over a map with no tiles. Only the GM in Build
  * mode sees them. A player never sees these tools.
  * @param {import('../types/app.js').AppContext} app
  * @param {import('./mapWiring.js').MapEnv} env
  * @param {() => void} undoStroke
+ * @param {{ select: (tabId: string) => void }} buildTabs the Build rail tab strip
+ * @returns {{ syncEmptyMap: () => void }} call after each draw of the map
  */
-export function wireMapBuildTools(app, env, undoStroke) {
+export function wireMapBuildTools(app, env, undoStroke, buildTabs) {
   const { grid, navigator, toasts } = app;
   mustGetElement('stroke-undo-btn').addEventListener('click', undoStroke);
   mustGetElement('header-stroke-undo-btn').addEventListener('click', undoStroke);
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
     // An empty map exports a blank image, so the GM hears why instead.
-    if (!node.tiles.some((tile) => tile?.imageRef)) {
+    if (isBlankMap(node)) {
       toasts.show(`"${node.name}" has no tiles yet, so there is nothing to export.`);
       return;
     }
@@ -48,4 +52,22 @@ export function wireMapBuildTools(app, env, undoStroke) {
         : `Exported "${node.name}" as PNG.`,
     );
   });
+
+  // A map with no tiles shows a card over the canvas with the two ways to
+  // fill it. "Paint tiles" opens the Paint tab and focuses the palette.
+  const shownNode = () => env.mapCanvas.node ?? navigator.getCurrentNode();
+  const emptyMap = mountBuildEmptyMap(mustGetElement('map-viewport'), {
+    isBlank: () => isBlankMap(shownNode()),
+    getName: () => shownNode().name,
+    onPaint: () => {
+      buildTabs.select(PAINT_TAB);
+      const palette = mustGetElement('palette-container');
+      /** @type {HTMLElement | null} */ (
+        palette.querySelector('.palette__swatch[tabindex="0"]') ??
+          palette.querySelector('.palette__swatch')
+      )?.focus();
+    },
+    onGenerate: () => mustGetElement('generate-btn').click(),
+  });
+  return { syncEmptyMap: emptyMap.sync };
 }

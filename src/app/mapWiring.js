@@ -52,6 +52,8 @@ export function wireMapView(app) {
   let buildTab = PAINT_TAB;
   // The tool chip mounts with the map toolbar below.
   let syncToolChip = () => {};
+  // The empty-map card mounts with the Build tools below.
+  let syncEmptyMap = () => {};
   const buildTabs = wireTabs(mustGetElement('build-tabs'), {
     onSelect: (id) => {
       buildTab = id;
@@ -382,7 +384,10 @@ export function wireMapView(app) {
     // character, and no further.
     markerRange: partyTracker.revealRadius * 2,
     getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
-    onViewChange: () => mapControls?.update(),
+    onViewChange: () => {
+      mapControls?.update();
+      syncEmptyMap();
+    },
     onCellHover: travel.onCellHover,
     onStrokeCell: authoring.onStrokeCell,
     onStrokeEnd: authoring.onStrokeEnd,
@@ -535,7 +540,7 @@ export function wireMapView(app) {
   };
   new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 
-  wireMapBuildTools(app, env, authoring.undoStroke);
+  syncEmptyMap = wireMapBuildTools(app, env, authoring.undoStroke, buildTabs).syncEmptyMap;
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { effectiveBrush, toolChipLabel, PAINT_TAB } from '../src/view/BuildTool.js';
+import { effectiveBrush, isBlankMap, toolChipLabel, PAINT_TAB } from '../src/view/BuildTool.js';
 
 const grass = { id: 'grass', type: 'grass', label: 'Grass', imageRef: 'g', custom: false };
 
@@ -18,4 +18,13 @@ test('the chip names what a click on the map does', () => {
   assert.equal(toolChipLabel('region', 'Ashogate'), 'Painting: Ashogate region');
   assert.equal(toolChipLabel('region', null), 'Clearing region links');
   assert.equal(toolChipLabel(grass, null), 'Painting: Grass');
+});
+
+test('a map is blank until one cell has tile art', () => {
+  assert.equal(isBlankMap({ tiles: [] }), true);
+  assert.equal(isBlankMap({ tiles: [null, { imageRef: null }] }), true);
+  const painted = { tiles: [null, { imageRef: 'grass' }] };
+  assert.equal(isBlankMap(painted), false);
+  // The second call reads the cache for the same node object.
+  assert.equal(isBlankMap(painted), false);
 });
