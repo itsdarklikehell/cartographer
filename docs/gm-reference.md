@@ -361,7 +361,7 @@ view when the page scrolls.
 | Chevron | Opens or closes the nodes under a row |
 | Find a place | Shows only the nodes whose names contain the text, and the rows above them. Each match shows the name of its parent after a comma, as in "Temple, Ashogate". It shows when the world has 12 or more nodes. Escape clears it |
 | Row name | In Build mode, opens that map. In Play mode, see [Play layout](#play-layout) |
-| Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu. Delete shows in red below a rule. Its confirm counts the maps it removes, the creatures that become unplaced, and the handouts that become campaign-wide |
+| Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu. Delete shows in red below a rule. Its confirm counts the maps it removes, the creatures that become unplaced, the handouts that become campaign-wide, and the quest links that go with the maps |
 
 A branch is closed when the tree first shows it. The exceptions are the top
 node and the rows above the current map. When the map in view changes, the
@@ -2971,6 +2971,8 @@ Press `?` anywhere for the shortcut reference.
 | Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, and the second press travels |
 | Shift+F10, Menu key on the map | Open the tile menu for the cursor cell (Build mode) |
 | Arrows, Home, End in the World tree | Move between rows, and open or close a row |
+| Enter, Space in the World tree | Open the map of the row |
+| Shift+F10, Menu key in the World tree | Open the row menu |
 | Tab, first press on the page | Show the skip links **Skip to the map** and, in Build mode, **Skip to the build tools** |
 
 Save, Undo, Redo, and the mode keys work in a GM tab only. The map keys

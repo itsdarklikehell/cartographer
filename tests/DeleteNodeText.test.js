@@ -18,3 +18,22 @@ test('the question counts maps, creatures, and handouts', () => {
   assert.match(many, /3 creatures placed there/);
   assert.match(many, /1 handout bound there/);
 });
+
+test('the question counts the quest links that go with the maps', () => {
+  const one = deleteNodeQuestion({
+    name: 'Vale',
+    maps: 1,
+    creatures: 0,
+    handouts: 0,
+    questLinks: 1,
+  });
+  assert.match(one, /1 quest link to these maps goes too\./);
+  const two = deleteNodeQuestion({
+    name: 'Vale',
+    maps: 1,
+    creatures: 0,
+    handouts: 0,
+    questLinks: 2,
+  });
+  assert.match(two, /2 quest links to these maps go too\./);
+});

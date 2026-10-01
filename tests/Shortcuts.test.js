@@ -68,6 +68,10 @@ test('the help dialog documents every shortcut', () => {
     '+ / -: zoom',
     'Arrow off an edge twice: leave through that side (the first press lights the exit)',
     'Shift+F10 or Menu key: open the tile menu (Build)',
+    'In the World tree:',
+    'Up / Down: move between rows. Home / End: first / last row',
+    'Right / Left: open / close a row, or move to its child / parent',
+    'Enter / Space: open the map. Shift+F10 or Menu key: open the row menu',
   ]);
 });
 

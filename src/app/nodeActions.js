@@ -11,6 +11,7 @@ import { clampInt } from '../util/num.js';
 import { resyncMapViews } from './mapResync.js';
 import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
 import { lockFields, readLockFields } from '../map/NodeLock.js';
+import { linksIn } from '../quest/QuestLinks.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -183,6 +184,7 @@ export function createNodeActions(app, env) {
       maps: doomed.size,
       creatures: state.creatures.filter((c) => c.location && doomed.has(c.location.nodeId)).length,
       handouts: state.handouts.filter((h) => h.nodeId && doomed.has(h.nodeId)).length,
+      questLinks: linksIn(state.quests, doomed).length,
     });
     const ok = await confirmModal(question, { variant: 'danger', confirmLabel: 'Delete' });
     if (!ok) return;
