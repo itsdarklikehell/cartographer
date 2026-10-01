@@ -434,8 +434,10 @@ body:not(.mode-build) .map-empty {
   display: none;
 }
 
+/* The card frame and its text let a click through to the canvas below, so the
+   cells under the card still paint. Only the buttons take the pointer. */
 .map-empty__card {
-  pointer-events: auto;
+  pointer-events: none;
   max-width: 22rem;
   padding: var(--space-4);
   border: 1px solid var(--border-strong);
@@ -444,6 +446,10 @@ body:not(.mode-build) .map-empty {
   box-shadow: var(--shadow-2);
   text-align: center;
   align-items: center;
+}
+
+.map-empty__card .btn {
+  pointer-events: auto;
 }
 
 .map-empty__title {
