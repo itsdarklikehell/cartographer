@@ -65,7 +65,13 @@ src/combat/HPLines.js ........ pure: the log lines for a damage or heal the
                                GM applies from the amount field
 src/combat/SaveLines.js ...... pure: the GM and player versions of a save
                                spell's log lines
+src/combat/SpentCost.js ...... pure: the note on an action bar button whose
+                               cost the turn already spent
 src/combat/FightMarkers.js ... pure: the foe tiles that the fight map marks
+src/view/CombatSelection.js .. pure: the turn key, and how long the picked
+                               target stays held
+src/map/FightFrame.js ........ pure: the tile size and offsets that center
+                               the fight map on the party
 src/ui/CombatSetup.js ........ the setup dialog: one initiative row per
                                combatant, and the Roll initiative fill
 src/ui/CombatScreen.js ....... the screen: composes the columns, the board,
@@ -77,6 +83,8 @@ src/ui/CombatRibbon.js ....... the turn ribbon: the round heading, one chip
 src/ui/CombatActiveColumn.js . the left column: the inspected combatant's
                                facts, HP controls, chips, concentration,
                                death saves, loadout, and action bar
+src/ui/CombatMap.js .......... the read-only map of the fight area in the
+                               Map tab
 src/ui/CombatLog.js .......... the log column: a role="log" list that only
                                adds the rows logged since its last update
 src/ui/CombatantCard.js ...... one board card, which is also a target-picker
@@ -924,7 +932,7 @@ Map tab shows, and when the GM opens the tab.
 
 ### The turn ribbon
 
-The turn ribbon runs under the columns. It shows one chip per participant, in
+The turn ribbon runs above the columns. It shows one chip per participant, in
 order, with the name and initiative. A long name ends in an ellipsis, and the
 number that tells two foes of one name apart stays whole (`chipName`). The
 current turn is ringed and marked
