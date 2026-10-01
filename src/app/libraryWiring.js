@@ -372,6 +372,7 @@ export function wireLibrary(app) {
     facets: [
       { id: 'class', label: 'Class', all: 'All classes' },
       { id: 'level', label: 'Level', all: 'All levels' },
+      { id: 'school', label: 'School', all: 'All schools' },
     ],
     getEntries: () =>
       activeSpellEntries()

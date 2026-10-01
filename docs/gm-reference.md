@@ -2894,8 +2894,9 @@ A custom entry overrides a default with the same name. For equipment, the
 name and the type must both match. An edit that changes the disposition of
 a creature moves the entry to the other subtab.
 
-The Spells tab has **Class** and **Level** filters beside the name filter,
-and the Foes subtab of the Creatures tab has a **Challenge rating** filter.
+The Spells tab has **Class**, **Level**, and **School** filters beside the
+name filter, and the Foes subtab of the Creatures tab has a **Challenge
+rating** filter.
 Each filter offers only the values that the entries have.
 
 The equipment form shows its **Preset** picker only for a new entry. An

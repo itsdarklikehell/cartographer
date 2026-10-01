@@ -14,6 +14,14 @@ test('spellTags lists each class and the level', () => {
     'level:2',
   ]);
   assert.deepEqual(spellTags(/** @type {any} */ ({ level: 0 })), ['level:0']);
+  assert.deepEqual(spellTags(/** @type {any} */ ({ level: 1, school: 'evocation' })), [
+    'level:1',
+    'school:evocation',
+  ]);
+  assert.deepEqual(facetOptions([{ tags: ['school:evocation'] }], 'school', 'All schools'), [
+    { value: '', label: 'All schools' },
+    { value: 'school:evocation', label: 'Evocation' },
+  ]);
 });
 
 test('creatureTags gives a rated creature its challenge rating', () => {

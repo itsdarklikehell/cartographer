@@ -12,7 +12,11 @@ import { capitalize } from '../util/text.js';
 
 /** @param {Spell} spell @returns {string[]} */
 export function spellTags(spell) {
-  return [...(spell.classes ?? []).map((c) => `class:${c}`), `level:${spell.level}`];
+  return [
+    ...(spell.classes ?? []).map((c) => `class:${c}`),
+    `level:${spell.level}`,
+    ...(spell.school ? [`school:${spell.school}`] : []),
+  ];
 }
 
 /** @param {CreatureTemplate} entry @returns {string[]} */
@@ -23,6 +27,7 @@ export function creatureTags(entry) {
 /** The option label of one tag value, per facet. */
 const LABELS = /** @type {Record<string, (value: string) => string>} */ ({
   class: capitalize,
+  school: capitalize,
   level: (v) => (v === '0' ? 'Cantrip' : `Level ${v}`),
   cr: (v) => `CR ${crLabel(Number(v))}`,
 });
