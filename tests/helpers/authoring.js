@@ -51,6 +51,7 @@ export function authoring({ mode = 'build', scale = 1 } = {}) {
   const env = /** @type {any} */ ({
     selectedTileId: null,
     activeBrush: { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` },
+    buildTab: 'build-tab-paint',
     fogTool: null,
     mapCanvas: {
       refreshNodeTiles: () => {},

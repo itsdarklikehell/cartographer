@@ -62,6 +62,9 @@ export function mountRegionPicker(source) {
   function pick(id) {
     refresh();
     if (regions.some((r) => r.id === id)) picker.value = id;
+    // A pick from code fires the same event as a pick by the GM, so a
+    // listener that names the region (the map tool chip) stays current.
+    picker.dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   async function createAndPick() {

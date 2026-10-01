@@ -364,6 +364,11 @@ The Palette card has four tool buttons and five sections of swatches. A
 click on a swatch picks it as the brush, and a drag paints it on every cell
 that the pointer crosses.
 
+A brush paints only while the Paint tab is open. On the Tile and Encounters
+tabs, a click on the map selects the cell, the same as Inspect. A chip at the
+right end of the map toolbar names the tool that a click uses, such as
+**Painting: Grass**, **Painting: Briarwick region**, or **Inspect**.
+
 | Tool | What a click or drag does |
 | --- | --- |
 | Inspect | Selects one cell and opens it in the Tile tab. This is the starting tool |

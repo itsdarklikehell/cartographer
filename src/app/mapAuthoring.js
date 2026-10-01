@@ -26,6 +26,7 @@ import {
 import { revertEdit } from '../map/EditRevert.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { resyncMapViews } from './mapResync.js';
+import { effectiveBrush } from '../view/BuildTool.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -261,27 +262,30 @@ export function createMapAuthoring(app, env) {
       }
       return;
     }
+    // A brush paints only while the Paint tab shows it. On the other rail
+    // tabs a click inspects the tile instead.
+    const active = effectiveBrush(env.activeBrush, env.buildTab);
     // A whole drag counts as one stroke. One snapshot on the first cell
     // makes the stroke the unit of undo. Inspect mode does not change data.
-    if (first && env.activeBrush === 'region' && !env.palettePanel.regionPicker.hasRegions()) {
+    if (first && active === 'region' && !env.palettePanel.regionPicker.hasRegions()) {
       strokeHeld = true;
       void paintFirstRegion(id);
       return;
     }
     if (strokeHeld) return;
-    if (first && env.activeBrush) snapshotEdit(navigator.getCurrentNode());
-    if (env.activeBrush === 'region') {
+    if (first && active) snapshotEdit(navigator.getCurrentNode());
+    if (active === 'region') {
       if (paintRegionCell(id)) strokeTouched = true;
-    } else if (env.activeBrush === 'erase') {
+    } else if (active === 'erase') {
       strokeTouched = true;
       applyToTile(id, (node) => eraseTile(node, id));
-    } else if (env.activeBrush === 'erase-path') {
+    } else if (active === 'erase-path') {
       strokeTouched = true;
       applyToTile(id, (node) => erasePath(node, id));
-    } else if (env.activeBrush) {
+    } else if (active) {
       // Capture the brush here so the closure below keeps the non-null
       // type check.
-      const brush = env.activeBrush;
+      const brush = active;
       const overlay = isOverlayType(brush.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
       // A scaled stamp is a single placement, not a stroke. Dragging at 2x
@@ -321,7 +325,11 @@ export function createMapAuthoring(app, env) {
       toasts.show(`The Region brush left ${what} unchanged. Use the Tile tab to relink one.`);
       keptEntrances.clear();
     }
-    if (strokeTouched && state.mode === 'build' && env.activeBrush === 'erase') {
+    if (
+      strokeTouched &&
+      state.mode === 'build' &&
+      effectiveBrush(env.activeBrush, env.buildTab) === 'erase'
+    ) {
       unbindErasedTiles();
     }
     finishEdit();

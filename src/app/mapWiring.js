@@ -19,6 +19,8 @@ import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
+import { mountBuildToolChip } from '../ui/BuildToolChip.js';
+import { PAINT_TAB, effectiveBrush, toolChipLabel } from '../view/BuildTool.js';
 import { isDefeated } from '../entities/Creature.js';
 import { isGM } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
@@ -47,7 +49,15 @@ export function wireMapView(app) {
   // The Build rail's tab strip (Paint, Tile, Encounters) keeps the rail one
   // screen tall instead of stacking every card. Selecting a tile jumps to the
   // Tile tab below. A user drives every other tab change.
-  const buildTabs = wireTabs(mustGetElement('build-tabs'));
+  let buildTab = PAINT_TAB;
+  // The tool chip mounts with the map toolbar below.
+  let syncToolChip = () => {};
+  const buildTabs = wireTabs(mustGetElement('build-tabs'), {
+    onSelect: (id) => {
+      buildTab = id;
+      syncToolChip();
+    },
+  });
   // The Encounters tab's nested Mobs and NPCs strip splits the two rosters.
   wireTabs(mustGetElement('build-encounter-tabs'));
 
@@ -57,6 +67,9 @@ export function wireMapView(app) {
     /** @type {unknown} */ ({
       selectedTileId: null, // tile id selected for inspection/editing in Build mode
       activeBrush: null, // active Build-mode paint brush
+      get buildTab() {
+        return buildTab;
+      },
       fogTool: null, // active Play-mode GM fog brush
       goToNode,
       selectTile,
@@ -400,6 +413,7 @@ export function wireMapView(app) {
     palette,
     (brush) => {
       env.activeBrush = brush;
+      syncToolChip();
     },
     tileTooltip,
     {
@@ -422,6 +436,11 @@ export function wireMapView(app) {
   miniMap = chrome.miniMap;
   mapControls = chrome.mapControls;
   const { syncMapOccluders } = chrome;
+  syncToolChip = mountBuildToolChip(mapControls.element, () => {
+    const region = grid.getNode(palettePanel.regionPicker.getTarget() ?? '');
+    return toolChipLabel(effectiveBrush(env.activeBrush, buildTab), region?.name ?? null);
+  }).sync;
+  palettePanel.regionPicker.root.addEventListener('change', syncToolChip);
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.
   // The brush silently owns the left mouse button, so a key must give it back.
@@ -449,6 +468,7 @@ export function wireMapView(app) {
     mapCanvas.setRevealAll(mode === 'build');
     syncFogDim();
     if (mode === 'build') palettePanel.show();
+    syncToolChip();
     tileTooltip.hide();
     // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
     // down settles the authoring gesture and the crosshair for the new mode.

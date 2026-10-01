@@ -299,6 +299,12 @@ argument.
 - `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
   Build rail, and the Undo stroke button that the header shows in Build mode.
 
+The palette brush paints only while the Build rail shows the Paint tab.
+`MapEnv.buildTab` names the open tab, and `effectiveBrush` in
+`src/view/BuildTool.js` turns any other tab into Inspect. The tool chip
+(`src/ui/BuildToolChip.js`) sits at the end of the map toolbar and shows
+`toolChipLabel` for the same effective brush.
+
 #### Map resync
 
 `mapResync.js` defines the resync step that these modules share.

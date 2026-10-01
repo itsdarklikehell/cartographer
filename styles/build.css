@@ -361,3 +361,21 @@ body.mode-build .app-sidebar {
   text-align: center;
   pointer-events: none;
 }
+
+/* The Build-mode tool chip on the map toolbar. It names what a click on the
+   map does, so a brush whose palette is out of view never paints unseen. */
+.map-controls__tool {
+  max-width: 16rem;
+  margin-left: var(--space-2);
+  padding: 0 var(--space-2);
+  overflow: hidden;
+  border-left: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
+  font-size: var(--text-label);
+  color: var(--overlay-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+body:not(.mode-build) .map-controls__tool {
+  display: none;
+}

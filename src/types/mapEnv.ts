@@ -32,6 +32,8 @@ export interface MapEnv {
   nodeActions: ReturnType<typeof createNodeActions>;
   selectedTileId: string | null;
   activeBrush: Brush;
+  /** The id of the open Build rail tab. A brush paints only on the Paint tab. */
+  buildTab: string;
   fogTool: 'reveal' | 'hide' | null;
   goToNode: (nodeId: string) => void;
   selectTile: (tileId: string) => void;

@@ -334,3 +334,12 @@ test('a region stroke leaves a site entrance linked and says so once', () => {
     'The Region brush left a site entrance unchanged. Use the Tile tab to relink one.',
   ]);
 });
+
+test('a brush inspects instead of painting while another rail tab is open', () => {
+  const { gestures, env, grid, calls } = authoring();
+  env.buildTab = 'build-tab-tile';
+  gestures.onStrokeCell(0, 2, null, true);
+  gestures.onStrokeEnd();
+  assert.notEqual(getTile(grid.getNode('keep') ?? null, '0,2')?.imageRef, `${INTERIOR}-door-v.svg`);
+  assert.deepEqual(calls, ['selectTile']);
+});
