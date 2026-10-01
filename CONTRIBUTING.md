@@ -111,6 +111,32 @@ The build writes minified bundles to `dist/`. Each bundle name has a content has
 
 The deploy script installs the exact versions in the lockfile, builds, and pushes. The commit on `gh-pages` names the version from `package.json`.
 
+## The docs site
+
+The production build also copies the documentation into `dist/`, and GitHub Pages builds it with Jekyll when the deploy pushes the branch. The docs are served at <https://cartographer.tbmh.org/docs/>. The Markdown files keep their paths from the repository, so a relative link works the same on GitHub and on the site. The Jekyll plugin `jekyll-relative-links` changes each `.md` link to the built page. `docs/index.md` is the home page of the site.
+
+The files that only the site uses are in `site/`, which has the same layout as the root of the `gh-pages` branch:
+
+| File | What it does |
+| --- | --- |
+| `site/_config.yml` | The Jekyll settings, the plugin list, and the default layout for each page |
+| `site/_layouts/docs.html` | The page template: header, sidebar, page text, and the previous and next links |
+| `site/_data/docs_nav.yml` | The sidebar, in reading order |
+| `site/docs/assets/` | The stylesheet and the script of the site |
+| `site/robots.txt` | Allows every crawler, and gives the address of `sitemap.xml`, which `jekyll-sitemap` writes |
+
+`scripts/docs-site.js` lists the files to copy. It adds an empty front matter block to each Markdown file, because Jekyll skips a `README.md` or `CONTRIBUTING.md` that has none. `docs/gallery.html` is not copied, because it loads the source modules and the production build ships only the bundle.
+
+When you add a document, add it to `site/_data/docs_nav.yml`. `tests/DocsSite.test.js` fails when a page is missing from the sidebar, when a sidebar entry has no page, or when a relative link or a heading anchor has no target.
+
+To see the site before a deploy, start Docker and run this command:
+
+```bash
+pnpm run docs:preview
+```
+
+The script builds `dist/` and runs the `github-pages` gem in a container, which is the Jekyll build of the server. Open `http://127.0.0.1:4000/docs/`. The first run builds the container image, which takes a few minutes. The preview does not rebuild after an edit, so stop it and run it again.
+
 ## Send a change
 
 - Keep each pull request to one feature or one fix.

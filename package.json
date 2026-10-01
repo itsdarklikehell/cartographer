@@ -17,6 +17,7 @@
     "build": "node scripts/build.cjs",
     "dev": "node scripts/build.cjs --watch",
     "deploy": "bash scripts/deploy.sh",
+    "docs:preview": "sh scripts/docs-preview.sh",
     "guide": "node scripts/build-dev-guide.mjs",
     "guide:check": "node scripts/build-dev-guide.mjs --check"
   },

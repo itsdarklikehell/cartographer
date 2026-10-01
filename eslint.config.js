@@ -9,7 +9,14 @@ export default [
   // pre-commit hook of the main checkout.
   { ignores: ['.claude/**'] },
   {
-    files: ['src/**/*.js', 'tests/**/*.js', 'bench/**/*.js', 'docs/gallery/**/*.js'],
+    files: [
+      'src/**/*.js',
+      'tests/**/*.js',
+      'bench/**/*.js',
+      'docs/gallery/**/*.js',
+      'scripts/docs-site.js',
+      'site/**/*.js',
+    ],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

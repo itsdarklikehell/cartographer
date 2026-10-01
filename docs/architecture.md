@@ -105,7 +105,9 @@ fonts/            the bundled typefaces (see fonts/README.md)
 library/          campaign-library.json, the custom library loaded at startup
 tests/            node --test suites, and HTML preview pages for the browser
 bench/            performance harnesses (see bench/README.md)
-scripts/          the esbuild build, the deploy script, the developer guide build
+scripts/          the esbuild build, the deploy script, the developer guide build,
+                  the list of docs site files
+site/             the Jekyll layout, settings, and assets of the docs site
 hooks/            the versioned pre-commit hook
 docs/             this documentation
 ```

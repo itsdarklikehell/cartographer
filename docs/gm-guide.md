@@ -5,8 +5,8 @@
 [first session tutorial](tutorial-gm-first-session.md) first.*
 
 Each task in this guide starts with the app open in a browser, in the GM
-role. To start the app, follow [Quick start](../README.md#quick-start) in
-the README.
+role. To start the app, follow [Local setup](index.md#local-setup) on
+the documentation home page.
 
 The header has two switches that control what you see. The mode switch
 selects **Play**, **Build**, or **Library**. The role switch, with the label

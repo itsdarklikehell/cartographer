@@ -10,7 +10,7 @@ where each part of the app is.
 ## Before you start
 
 You need the app open in a browser. To start it on your computer, follow
-[Quick start](../README.md#quick-start) in the README.
+[Local setup](index.md#local-setup) on the documentation home page.
 
 > **Warning:** Load example replaces the campaign that is open now. If you
 > have a campaign of your own, click **Export** first to keep a copy of it.

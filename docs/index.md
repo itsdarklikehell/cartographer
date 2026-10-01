@@ -4,30 +4,22 @@ Campaign Builder is a browser app for building and running the world of a D&D ca
 
 The app runs entirely in one browser tab. It has no server and no account. It keeps each campaign in the local storage of the browser, and you move a campaign between browsers with a JSON export file.
 
-![Play mode: the fog-revealed map with the session panels alongside](docs/images/play-mode-light.png)
+This site has the guides for GMs who run a campaign in the app, and for contributors who change its code. To try the app, open the [hosted build](https://cartographer.tbmh.org).
 
-## Quick start
+![Play mode: the fog-revealed map with the session panels alongside](images/play-mode-light.png)
 
-You need [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/) 11.
+## Where to start
 
-1. Clone the repository, and open a terminal in it.
-2. Install the development tools:
+| You want to | Read |
+| --- | --- |
+| Run your first session with the example campaign | [First session as GM](tutorial-gm-first-session.md) |
+| Find the steps for one task, such as painting a region or staging an encounter | [GM guide](gm-guide.md) |
+| Look up a control, a field, a limit, or a rule | [GM reference](gm-reference.md) |
+| Make your first change to the code | [Your first code change](tutorial-first-code-change.md) |
+| Set up the tools, run the checks, and send a change | [Contributing](../CONTRIBUTING.md) |
+| Learn how the code is organized | [Architecture](architecture.md) |
 
-   ```bash
-   pnpm install
-   ```
-
-3. Start the dev server:
-
-   ```bash
-   pnpm run dev
-   ```
-
-4. Open `http://127.0.0.1:8080` in a browser.
-
-The app opens in Play mode with a blank campaign. On the first visit, a **Welcome, GM** card offers three ways to start: build by hand, generate a world, or load the example campaign. Click **Welcome** in the header to open the card again. At any time, click **Load example** in the header to load the example campaign. If port 8080 is in use, the dev server fails to start, so stop the other process first.
-
-A hosted build runs at <https://cartographer.tbmh.org>. The hosted build can be older than the source in this repository. Each origin has its own local storage, so a campaign that you save on the hosted build does not appear on your dev server. Use **Export** and **Import** to move it.
+[All documents](README.md) lists every page by kind.
 
 ## Features
 
@@ -90,28 +82,37 @@ The data model accepts custom tile images, but the app has no control that adds 
 - Bind a Player tab to one character, so that player runs their own turns in a fight.
 - Keep the tabs of one browser in step. Each save in the GM tab reaches the other tabs without a reload.
 
-The Player role hides GM information on the screen, but it is not a security control. A person at that browser can read the whole campaign from its storage. See [Limits of the Player view](docs/gm-reference.md#limits-of-the-player-view).
+The Player role hides GM information on the screen, but it is not a security control. A person at that browser can read the whole campaign from its storage. See [Limits of the Player view](gm-reference.md#limits-of-the-player-view).
 
 ### Appearance
 
 - Switch between the light and dark themes in the header, or follow the setting of the operating system. The app keeps the choice for each browser.
 
-![Build mode: world tree, editable map, and the paint palette](docs/images/build-mode.png)
+![Build mode: world tree, editable map, and the paint palette](images/build-mode.png)
 
-![Combat: the full-width fight screen with the board, log, and turn ribbon](docs/images/combat-screen.png)
+![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)
 
-![Play mode in the dark theme](docs/images/play-mode-dark.png)
+![Play mode in the dark theme](images/play-mode-dark.png)
 
-## Documentation for GMs
+## Local setup
 
-You can read every document below on the [docs site](https://cartographer.tbmh.org/docs/), with a sidebar and a list of the headings on each page.
+You need [Node.js](https://nodejs.org/) 22 or later and [pnpm](https://pnpm.io/) 11.
 
-| Document | Use it to |
-| --- | --- |
-| [First session as GM](docs/tutorial-gm-first-session.md) | Load the example campaign and run one session from start to end |
-| [GM guide](docs/gm-guide.md) | Find the steps for one task, such as painting a region or staging an encounter |
-| [GM reference](docs/gm-reference.md) | Look up a control, a field, a limit, or a rule |
+1. Clone the [repository](https://github.com/wetherc/cartographer), and open a terminal in it.
+2. Install the development tools:
 
-## Contributing
+   ```bash
+   pnpm install
+   ```
 
-[CONTRIBUTING.md](CONTRIBUTING.md) tells you how to set up the tools, run the checks, and send a change. [docs/README.md](docs/README.md) lists every document by kind. To learn the code, start with [Your first code change](docs/tutorial-first-code-change.md), then read [Architecture](docs/architecture.md).
+3. Start the dev server:
+
+   ```bash
+   pnpm run dev
+   ```
+
+4. Open `http://127.0.0.1:8080` in a browser.
+
+The app opens in Play mode with a blank campaign. On the first visit, a **Welcome, GM** card offers three ways to start: build by hand, generate a world, or load the example campaign. Click **Welcome** in the header to open the card again. At any time, click **Load example** in the header to load the example campaign. If port 8080 is in use, the dev server fails to start, so stop the other process first.
+
+The hosted build can be older than the source in this repository. Each origin has its own local storage, so a campaign that you save on the hosted build does not appear on your dev server. Use **Export** and **Import** to move it.

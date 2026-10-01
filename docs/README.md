@@ -17,6 +17,11 @@ If you run a campaign, start with [First session as GM](tutorial-gm-first-sessio
 If you change the code, start with [First code change](tutorial-first-code-change.md)
 and then read [Architecture](architecture.md).
 
+The deploy also publishes these documents as a website at
+<https://cartographer.tbmh.org/docs/>. Its home page is [index.md](index.md),
+which covers what the README covers. [Contributing](../CONTRIBUTING.md#the-docs-site)
+describes how the site is built.
+
 ## Tutorials
 
 | Document | What you do |

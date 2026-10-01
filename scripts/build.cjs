@@ -83,6 +83,11 @@ async function build() {
       throw new Error('Bundle outputs not found in the esbuild metafile.');
     }
     await writeHtml(path.basename(jsName), path.basename(bootName), path.basename(cssName));
+    // The docs site goes to production only. In watch mode dist/docs is a
+    // link to the source docs/ directory, and a copy would write into it.
+    const { copySite } = await import('./docs-site.js');
+    const count = await copySite(process.cwd(), outdir);
+    console.log(`[build] Copied ${count} docs site files.`);
     console.log('[build] Build complete.');
   }
 }
