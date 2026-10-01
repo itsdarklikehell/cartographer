@@ -86,7 +86,7 @@ export function createNodeActions(app, env) {
    */
   async function addChildNode(parentId) {
     const values = await promptModal(
-      'New node',
+      'New map',
       [
         { name: 'name', label: 'Name', value: 'New region' },
         { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
@@ -226,7 +226,7 @@ export function createNodeActions(app, env) {
     const node = grid.getNode(nodeId);
     if (!node) return;
     const values = await promptModal(
-      'Edit node',
+      'Map settings',
       [
         { name: 'name', label: 'Name', value: node.name },
         { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
