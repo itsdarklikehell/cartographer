@@ -53,8 +53,8 @@ export function wireMapBuildTools(app, env, undoStroke, buildTabs) {
     );
   });
 
-  // A map with no tiles shows a card over the canvas with the two ways to
-  // fill it. "Paint tiles" opens the Paint tab and focuses the palette.
+  // A map with no tiles shows a card over the canvas. In Build mode it has
+  // the two ways to fill the map, and in Play mode it names the empty map. "Paint tiles" opens the Paint tab and focuses the palette.
   const shownNode = () => env.mapCanvas.node ?? navigator.getCurrentNode();
   const emptyMap = mountBuildEmptyMap(mustGetElement('map-viewport'), {
     isBlank: () => isBlankMap(shownNode()),
@@ -68,6 +68,7 @@ export function wireMapBuildTools(app, env, undoStroke, buildTabs) {
       )?.focus();
     },
     onGenerate: () => mustGetElement('generate-btn').click(),
+    onBuild: () => app.actions.setMode('build'),
   });
   return { syncEmptyMap: emptyMap.sync };
 }

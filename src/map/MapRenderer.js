@@ -9,6 +9,7 @@ import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { INK } from './CanvasInk.js';
 import { frontierIds } from './FogOfWar.js';
 import { renderRegionOverlays } from './RegionOverlay.js';
+import { isBlankMap } from './BlankMap.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
 // the PNG export, resolve a ref through this module.
@@ -143,7 +144,11 @@ export class MapRenderer {
       const groupCover = this._renderGroupImages(view, frame);
       this._renderSpanImages(view, frame, groupCover);
       this._renderTiles(view, groupCover);
-      this._renderCellGrid(view, frame);
+      // An empty map in Play mode draws no grid and no coordinate labels,
+      // so the empty-state card sits on a plain canvas. Build mode keeps
+      // them, because the GM paints the first tiles against the grid.
+      const bare = !view.revealAll && isBlankMap(view.node);
+      if (!bare) this._renderCellGrid(view, frame);
       this._renderRegionGroups(view, frame);
       this._decorations.renderSelection(view);
       this._markers.renderEncounterMarkers(view);
@@ -153,8 +158,10 @@ export class MapRenderer {
       this._markers.renderPartyMarker(view);
       this._markers.renderCharacterTokens(view);
       this._decorations.renderCursor(view);
-      this._renderMapBoundsBorder(view);
-      this._decorations.renderCoordinates(view);
+      if (!bare) {
+        this._renderMapBoundsBorder(view);
+        this._decorations.renderCoordinates(view);
+      }
       // This draws last, over the coordinate labels. The return arrows are
       // the one piece of chrome that is also a control, so nothing can draw
       // on top of them.

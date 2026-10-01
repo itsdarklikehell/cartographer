@@ -419,8 +419,10 @@ body:not(.mode-build) .map-controls__tool {
   color: var(--text);
 }
 
-/* The empty state over a map with no tiles in Build mode. The wrapper lets
-   pointer events through to the canvas, and only the card takes them. */
+/* The empty state over a map with no tiles. Build mode shows the card with
+   the paint and generate buttons, and Play mode shows the plain card. The
+   wrapper lets pointer events through to the canvas, and only the card
+   buttons take them. */
 .map-empty {
   position: absolute;
   inset: 0;
@@ -432,7 +434,11 @@ body:not(.mode-build) .map-controls__tool {
 }
 
 .map-empty[hidden],
-body:not(.mode-build) .map-empty {
+body.mode-library .map-empty,
+body.mode-combat .map-empty,
+body.mode-build .map-empty__card--play,
+body:not(.mode-build) .map-empty__card--build,
+body.role-player .map-empty__gm {
   display: none;
 }
 

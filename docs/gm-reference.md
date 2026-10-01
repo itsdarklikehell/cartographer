@@ -302,6 +302,10 @@ A map with no tiles shows a card over the canvas. **Paint tiles** opens the
 Paint tab and puts focus on the palette. **Generate map** opens the Generate
 dialog. The card goes away after the first tile is painted.
 
+In Play mode, a map with no tiles draws no grid and no coordinate labels.
+A plain card names the empty map. For the GM, its **Open Build mode** button
+switches to Build mode. A Player tab shows only the name.
+
 ### Node kinds
 
 The world is a tree of nodes. The top node is the world map. Regions and
