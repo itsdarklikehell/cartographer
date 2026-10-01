@@ -63,7 +63,7 @@ position, its open panel, and its map zoom and pan.
 | `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. The tab shows the GM view again only after you remove the parameter from the URL |
 | The padlock beside the role switch | Locks the tab to the Player view after a confirmation. The padlock shows only in a Player tab. The lock lasts until you close the tab |
 | `?character=<id>` on the URL | Binds the tab to one character. The id is the name of the character in lower case, with hyphens in place of spaces |
-| The Playing as dropdown in the Party card | Sets the same binding from inside the tab. A tab opened from a link with `?character=` locks the dropdown on its character, so the player cannot switch to another sheet |
+| The Playing as dropdown in the Party card | Sets the same binding from inside the tab. A tab opened from a link with `?character=` locks the dropdown on its character, so the player cannot switch to another sheet. If the tab loses that character, because another tab takes it over or the GM deletes it, the dropdown unlocks |
 
 In a GM tab, the Party card has a link on each character row and a
 Spectator tab button. Each one opens a Player tab. See
@@ -2218,7 +2218,7 @@ character detail card shows.
 | Award Party XP | GM | Grants XP to every character: the same amount to each, or a total split evenly and rounded down. The default is 100 per character |
 | Spectator tab | GM | Opens a Player tab bound to no character |
 | Allow splitting the party | GM | See [Party splitting](#party-splitting) |
-| Playing as | Player tab | Binds the tab to a character. Locked in a tab opened from a player tab link |
+| Playing as | Player tab | Binds the tab to a character. Locked in a tab opened from a player tab link, until the tab loses its character |
 
 Open player tab is an ordinary link, so a middle-click or the "Open in new
 tab" menu of the browser also works on it. Spectator tab is a button. It

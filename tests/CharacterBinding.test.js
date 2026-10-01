@@ -5,6 +5,7 @@ import {
   characterParam,
   initialBinding,
   partyPermissions,
+  pickerLocked,
   playerTabHref,
 } from '../src/view/CharacterBinding.js';
 import { claimLock, isHeldByOther } from '../src/storage/GMLock.js';
@@ -101,4 +102,14 @@ test('character lock keys are per character and drive the shared lock logic', ()
   assert.ok(held);
   assert.equal(claimLock(held, 'tab-b', now + 1), null);
   assert.equal(isHeldByOther(held, 'tab-b', now + 1), true);
+});
+
+test('pickerLocked locks only while the tab plays the character its URL names', () => {
+  assert.equal(pickerLocked('?role=player&character=hero', 'hero'), true);
+  // The URL character was taken over or deleted, so the tab is a spectator.
+  assert.equal(pickerLocked('?role=player&character=hero', null), false);
+  // A pick after that binds another character, and the player can still switch.
+  assert.equal(pickerLocked('?role=player&character=hero', 'sage'), false);
+  assert.equal(pickerLocked('?role=player', 'hero'), false);
+  assert.equal(pickerLocked('?role=player', null), false);
 });

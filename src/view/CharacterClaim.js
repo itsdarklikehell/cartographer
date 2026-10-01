@@ -17,8 +17,8 @@ import { createHeartbeatLock } from '../storage/GMLock.js';
 import {
   BOUND_CHARACTER_SESSION_KEY,
   characterLockKey,
-  characterParam,
   initialBinding,
+  pickerLocked,
 } from './CharacterBinding.js';
 import { el } from '../ui/dom.js';
 import { select, setOptions } from '../ui/formFields.js';
@@ -64,6 +64,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
       boundId = null;
       sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
       toast(`Another tab took over ${lost}; this tab is now a spectator.`, { level: 'error' });
+      lockPicker();
       spectate();
     },
   });
@@ -116,7 +117,13 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   // A tab opened from the GM's player-tab link (?character=<id>) plays
   // that character only, so the picker locks and a player cannot switch
   // to another sheet. A spectator tab, or a tab bound by a pick, keeps it.
-  picker.disabled = characterParam(location.search) !== null && boundId !== null;
+  // The lock follows the binding. A tab that loses the URL character to a
+  // takeover or a deletion becomes a spectator, and the picker unlocks so
+  // the player can pick again without a reload.
+  function lockPicker() {
+    picker.disabled = pickerLocked(location.search, boundId);
+  }
+  lockPicker();
 
   picker.addEventListener('change', () => {
     const took = setBinding(picker.value === '' ? null : picker.value);
@@ -131,6 +138,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   function updatePicker() {
     // A binding whose character left the roster resolves to spectator, with no message.
     if (boundId && !getCharacters().some((c) => c.id === boundId)) setBinding(null);
+    lockPicker();
     const options = [
       { value: '', label: 'Spectator (view only)' },
       ...getCharacters().map((character) => ({ value: character.id, label: character.name })),

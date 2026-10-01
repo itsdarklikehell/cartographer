@@ -39,6 +39,18 @@ export function characterParam(search) {
 }
 
 /**
+ * True when the "Playing as" picker locks: the tab plays the character that
+ * its URL names. A spectator tab, a tab bound by a pick, and a URL tab that
+ * lost its character keep the picker. This function is pure.
+ * @param {string} search A location.search string.
+ * @param {string | null} boundId the character this tab plays, or null
+ * @returns {boolean}
+ */
+export function pickerLocked(search, boundId) {
+  return boundId !== null && boundId === characterParam(search);
+}
+
+/**
  * The query string that opens a player tab. With an id, the tab binds to that
  * character. With null, it opens as a spectator. The GM follows it from the
  * Party panel, so nobody types the parameters by hand. This function is pure.
