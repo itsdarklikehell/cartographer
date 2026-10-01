@@ -436,7 +436,10 @@ body {
 }
 
 /* Segmented control (Play/Build, theme, GM/Player, dice-tray d20 mode): a
-   bordered strip of joined .btn segments with the active one accent-filled. */
+   bordered strip of joined .btn segments. The active segment takes a tinted
+   fill, accent text, and an accent bar on its bottom edge. A solid accent
+   fill marks the primary action (.btn--primary, such as Save), so a current
+   state and a button that acts do not look the same. */
 .seg-switch {
   display: inline-flex;
   gap: 0;
@@ -456,12 +459,15 @@ body {
 }
 
 .seg-switch__btn--active {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface));
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 0 -3px 0 var(--accent);
 }
 
 .seg-switch__btn--active:hover {
-  background: var(--accent-hover);
+  background: color-mix(in srgb, var(--accent) 22%, var(--surface));
+  color: var(--accent-hover);
 }
 
 /* Selectable list row (world-tree nodes, roster members): a full-width

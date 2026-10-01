@@ -12,6 +12,7 @@ import {
 import { saveCampaign } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { isGM } from '../view/ViewRole.js';
+import { saveStatusText } from '../view/SaveStatus.js';
 import { wirePlayerPatches } from './playerPatches.js';
 import { savesHeld } from '../storage/ShortenedLoad.js';
 import { confirmSaveWhileHeld } from './shortenedLoadPrompts.js';
@@ -90,6 +91,17 @@ export function wireCampaignActions(app) {
     autosaveTimer = null;
   }
 
+  /** @type {number | null} epoch ms of the last write from this tab, or null before one */
+  let savedAt = null;
+  const saveStatus = document.getElementById('save-status');
+  function showSaveStatus() {
+    if (saveStatus) saveStatus.textContent = saveStatusText(dirty, savedAt, Date.now());
+  }
+  // The minute count beside Save goes stale while the table plays, so it
+  // refreshes twice a minute.
+  setInterval(showSaveStatus, 30_000);
+  showSaveStatus();
+
   /** @param {boolean} next */
   function setDirty(next) {
     if (next && !dirty) dirtySince = Date.now();
@@ -99,11 +111,9 @@ export function wireCampaignActions(app) {
     // between the first unsaved change and the write that clears it.
     if (dirty) startAutosavePolling();
     else stopAutosavePolling();
-    const saveBtn = document.getElementById('save-btn');
-    if (saveBtn) {
-      saveBtn.classList.toggle('btn--attention', dirty);
-      saveBtn.textContent = dirty ? 'Save •' : 'Save';
-    }
+    if (!next) savedAt = Date.now();
+    document.getElementById('save-btn')?.classList.toggle('btn--attention', dirty);
+    showSaveStatus();
   }
 
   /** True when a fight was running at the previous mutation. */

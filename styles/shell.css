@@ -190,3 +190,21 @@ body.role-locked #role-switch-container {
     margin-left: 0;
   }
 }
+
+/* The title with the save status under it. The status says whether the
+   campaign on screen is in storage yet. Its line keeps its height while
+   empty, so the header does not grow on the first change. */
+.app-header__brand {
+  display: flex;
+  flex-direction: column;
+}
+
+.save-status {
+  min-height: calc(var(--text-label) * var(--line-body));
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+body.role-player .save-status {
+  display: none;
+}

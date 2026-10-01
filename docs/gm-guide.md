@@ -51,8 +51,9 @@ not a campaign file, a message says so and nothing changes.
 
 ## Save and back up
 
-1. Click **Save**, or press Ctrl+S (Cmd+S on a Mac). While you have
-   unsaved changes, the button reads **Save •**.
+1. Click **Save**, or press Ctrl+S (Cmd+S on a Mac). The line under the title
+   reads "Unsaved changes" until the next write, and then "Saved just now"
+   or the minutes since the last write.
 2. Before a large edit, click **Export**. The browser downloads the whole
    campaign as a `.json` file. The file also contains your library
    customizations, so one export moves both.

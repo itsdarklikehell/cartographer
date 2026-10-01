@@ -33,7 +33,12 @@
   <script src="src/boot.js"></script>
 
   <header class="app-header u-row u-wrap u-g4">
-    <h1>Campaign Builder</h1>
+    <!-- The save status sits under the title, where it costs no width in a
+         header row that is close to full on a laptop screen. -->
+    <div class="app-header__brand">
+      <h1>Campaign Builder</h1>
+      <span id="save-status" class="save-status"></span>
+    </div>
     <div id="mode-switch-container"></div>
     <!-- At phone width the actions and the view switches fold behind this
          button, so the header takes two rows instead of four. A wider window
