@@ -55,7 +55,7 @@ export function mountDiceTray(container, opts = {}) {
 
   /**
    * One compact die cell: the die name, a minus button, the count, and a plus
-   * button. The cells sit in a grid of two columns.
+   * button. The cells sit in a grid that fits the tray width.
    * @param {string} label the short name shown in the cell
    * @param {string} name the name that the button labels read
    * @param {() => number} read

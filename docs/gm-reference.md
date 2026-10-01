@@ -2953,7 +2953,7 @@ steppers, and it does not read typed dice expressions.
 
 | Control | Values |
 | --- | --- |
-| Die counts | A small cell for each of d4, d6, d8, d10, d12, d20, and d100, with a minus button, the count, and a plus button. The cells sit in two columns, and a die with a count other than zero shows in the accent color |
+| Die counts | A small cell for each of d4, d6, d8, d10, d12, d20, and d100, with a minus button, the count, and a plus button. The cells fill as many columns as the tray width allows, and a die with a count other than zero shows in the accent color |
 | Modifier | The **mod** cell after the dice: a flat number, set with plus and minus buttons |
 | d20 mode | A switch under the dice: Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
 | DC | The field beside the Roll button: an optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |

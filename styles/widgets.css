@@ -63,13 +63,15 @@
   display: none;
 }
 
-/* The dice sit in a grid of two columns. Each cell is a small plate with the
-   die name, a minus button, the count, and a plus button. A die with a count
-   other than zero takes the accent color, so the loaded dice read at a
-   glance. */
+/* The dice sit in a grid that fits as many columns as the tray width allows.
+   Each cell is a small plate with the die name, a minus button, the count, and
+   a plus button. A cell needs 8rem for "d100" and its two buttons, so a
+   narrower cell would push the label under the minus button. A tray narrower
+   than one cell falls back to one full-width column. A die with a count other
+   than zero takes the accent color, so the loaded dice read at a glance. */
 .dice-tray__dice {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(8rem, 100%), 1fr));
   gap: var(--space-1);
 }
 
@@ -89,8 +91,7 @@
 }
 
 .dice-tray__label {
-  flex: 1;
-  min-width: 0;
+  flex: 1 0 auto;
   font-size: var(--text-label);
   font-weight: 600;
   color: var(--text-muted);
