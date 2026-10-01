@@ -1033,7 +1033,9 @@ last creature in it, but a kill does not.
 
 ### The outcome banner
 
-Once `fightOutcome` settles, the screen shows a banner under the ribbon. The
+Once `fightOutcome` settles, the screen shows a banner at the bottom center
+of the window. It floats with `position: fixed`, so the ribbon and the
+columns do not move when it appears. The
 banner states that the party is victorious or defeated. It tells the GM that
 combat stays open until the GM ends it. At that point, End combat takes the
 primary emphasis from the turn-end button. Turns still advance, so the party

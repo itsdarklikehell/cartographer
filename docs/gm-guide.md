@@ -495,7 +495,8 @@ still open stays until you end the fight. To bring the foes back, click
     **Fled**. Check the value, and click **End and award**. Each character
     gets that amount. To keep fighting, click **Back to the fight**.
 
-When the last foe drops, a banner announces the victory and the fight stays
+When the last foe drops, a banner at the bottom of the screen announces the
+victory, and the fight stays
 open. The party can heal, and everyone can read the log before you end it.
 The party can also attack a creature on its own side, for example a
 bystander that the party turns on. To start a fight with a friendly or

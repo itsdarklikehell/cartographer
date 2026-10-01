@@ -50,11 +50,21 @@ body.mode-combat .app-buildrail {
   min-width: 0;
 }
 
-/* The banner under the ribbon once one side is down. The fight stays up until
-   the GM ends it, so the banner has to be the thing that says why nothing is
-   attacking any more. The border takes the outcome's color, the wording carries
-   it for anyone who cannot see the difference. */
+/* The banner once one side is down. The fight stays up until the GM ends it,
+   so the banner says why nothing attacks any more. The border takes the
+   outcome's color, and the wording gives it for anyone who cannot see the
+   difference. The banner floats at the bottom center of the window and takes
+   no layout space, so the ribbon and the three columns stay where they are
+   when the last foe drops. */
 .combat-screen__notice {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-4);
+  z-index: 20;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--space-4));
+  box-shadow: var(--shadow-3);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
