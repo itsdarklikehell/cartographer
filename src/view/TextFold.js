@@ -12,7 +12,9 @@ export const NOTES_FOLD_LENGTH = 90;
 export const HANDOUT_FOLD_LENGTH = 160;
 
 /**
- * Whether a text is long enough to fold behind a More button.
+ * Whether a text is long enough to fold behind a More button. The count is
+ * a guess at the line width, and `ui/FoldText.js` hides the button when
+ * the folded lines show the whole text at the width on screen.
  * @param {string | undefined} text
  * @param {number} limit
  * @returns {boolean}

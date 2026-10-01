@@ -18,11 +18,20 @@ export function foldText(tag, className, text, opts) {
   const body = el(tag, className, text);
   if (!opts.fold) return [body];
   body.classList.toggle(`${className}--folded`, !opts.open);
-  const more = textButton(opts.open ? 'Less' : 'More', opts.onToggle, {
-    className: 'fold-text__more',
-  });
+  const label = opts.open ? 'Less' : 'More';
+  const more = textButton(label, opts.onToggle, { className: 'fold-text__more' });
   more.setAttribute('aria-expanded', String(opts.open));
-  more.setAttribute('aria-label', `${opts.open ? 'Fold' : 'Show all'} ${opts.subject}`);
+  // The name starts with the visible word, so a speech command such as
+  // "click More" finds the button (WCAG 2.5.3, Label in Name).
+  more.setAttribute('aria-label', `${label}: ${opts.subject}`);
   more.dataset.focusKey = opts.focusKey;
+  if (!opts.open && typeof ResizeObserver !== 'undefined') {
+    // The fold rule counts characters, so a long note in a wide box can fit
+    // in its folded lines. The button hides while the clamp clips nothing,
+    // and shows again when a narrower box makes the text overflow.
+    new ResizeObserver(() => {
+      more.hidden = body.scrollHeight <= body.clientHeight + 1;
+    }).observe(body);
+  }
   return [body, more];
 }
