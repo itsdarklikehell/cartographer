@@ -1250,7 +1250,8 @@ The combat screen runs one fight at the full width of the page.
 | Ribbon or card mark | Meaning |
 | --- | --- |
 | Ring on a chip | The current turn |
-| **Current turn** tag and blue edge on a card | The current turn |
+| **Current turn** tag and blue bar along the top of a card | The current turn |
+| Red left edge on a card | A foe |
 | Accent ring on a card | The selected target |
 | Sword on a chip | A foe |
 | Strike-through | A defeated combatant |

@@ -203,28 +203,32 @@ body.mode-combat .app-buildrail {
 
 /* On the board the card is a .btn-bare button: the target picker. The accent
    ring marks the held selection, kept distinct from the ribbon's focus-ring on
-   the current turn. */
+   the current turn. Hover and selection leave the left edge alone, so a foe
+   keeps its danger edge. */
 .combatant-card--selectable {
   width: 100%;
 }
 
-.combatant-card--selectable:hover {
-  border-color: var(--accent);
+.combatant-card--selectable:hover,
+.combatant-card--selected {
+  border-top-color: var(--accent);
+  border-right-color: var(--accent);
+  border-bottom-color: var(--accent);
 }
 
-.combatant-card--selected,
-.combatant-card--selected:hover {
-  border-color: var(--accent);
+.combatant-card--selected {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-/* The card whose turn it is gets a raised fill and a "Current turn" tag in
-   the mana tint, so it reads apart from the accent ring of the selected
-   target and the danger edge of a foe. The tag spells the state out in text. */
+/* The card whose turn it is gets a raised fill, a mana bar along its top, and
+   a "Current turn" tag in the mana tint, so it reads apart from the accent
+   ring of the selected target. The bar is an inset shadow, which adds no
+   height and leaves the left edge to the side of the combatant. The tag spells
+   the state out in text. */
 .combatant-card--current {
   background: var(--surface-raised);
-  border-left-color: var(--mana);
+  box-shadow: inset 0 3px 0 var(--mana);
 }
 
 .combatant-card__turn {
