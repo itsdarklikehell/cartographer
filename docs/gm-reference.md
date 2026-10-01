@@ -858,9 +858,10 @@ While a fog brush is picked up, a click paints fog instead of moving the
 party. A second click on the same brush button, or Escape, puts the brush
 down. A change of mode or of map also puts the brush down.
 
-When a map opens, the view fits the whole map. If the map is too large to
-show at a readable size, the view centers on the party instead, and **Fit
-map to view** shows the whole map at a smaller size. In a Player
+When a map opens in Build mode, the view fits the whole map, even when its
+tiles then draw small. In Play mode the view fits the revealed tiles. If they
+are too large to show at a readable size, the view centers on the party
+instead, and **Fit map to view** shows them all at a smaller size. In a Player
 tab, it centers on the bound character. The view then follows the party
 until you pan or zoom.
 

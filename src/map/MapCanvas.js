@@ -201,7 +201,10 @@ export class MapCanvas {
       minScale: this.minZoom,
       maxScale: this.maxZoom,
       sides,
-      readableScale: this._fitWhole ? 0 : readableScale(ts),
+      // Build mode always frames the whole map, because the GM edits all
+      // of it. The readable floor would cut off the right and bottom of a
+      // large region.
+      readableScale: this._fitWhole || this.revealAll ? 0 : readableScale(ts),
       focus: focus && { x: focus.x - area.x * ts, y: focus.y - area.y * ts },
     });
     this.scale = fitted.scale;
