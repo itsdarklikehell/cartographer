@@ -40,6 +40,8 @@ A Player tab hides the mode switch, the Campaign, History, and Transfer
 buttons, the fog controls, the Time panel buttons, and the party-split
 switch. It also hides the Encounters card while no fight runs, so the card does
 not tell the players that an area is safe.
+A Player tab bound to a character opens on the Sheet tab, so the player sees
+the map and that character's sheet side by side.
 
 The role applies to one browser tab. Only one tab at a time can hold the GM
 view. While a GM tab is open, every other tab of the same origin opens as a
