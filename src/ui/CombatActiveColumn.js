@@ -8,6 +8,7 @@ import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { select } from './formFields.js';
 import { hpTargetId } from '../view/CombatHpTarget.js';
+import { viewTurnKey } from '../view/CombatSelection.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
@@ -80,7 +81,7 @@ export function mountActiveColumn(callbacks, loadoutOf) {
     element.appendChild(facts);
 
     const selectedId = callbacks.getSelectedTargetId();
-    const turn = `${view.round}:${view.turnIndex}`;
+    const turn = viewTurnKey(view);
     const context = `${turn}|${selectedId}|${inspectedId}`;
     if (context !== hpContext) {
       // A new turn also resets the amount, so a 7 typed for one hit does

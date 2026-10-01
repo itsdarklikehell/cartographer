@@ -6,15 +6,29 @@
  */
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
+/** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 
 /**
- * The key of the turn in progress, or null when no fight runs. Two refreshes
- * on one turn give the same key, and a new round on the same index does not.
+ * The key of the turn in progress, or null when no fight runs. It names the
+ * round and the id of the turn holder. The index of the holder is not part
+ * of the key, because a newcomer sorted above the holder, or a drop earlier
+ * in the order, moves the index inside one turn. A drop of the holder itself
+ * keeps the index and passes the turn, and the new holder id changes the key.
  * @param {CombatState | null} combat
  * @returns {string | null}
  */
 export function turnKey(combat) {
-  return combat ? `${combat.round}:${combat.index}` : null;
+  return combat ? `${combat.round}:${combat.order[combat.index]?.id ?? ''}` : null;
+}
+
+/**
+ * The same key as `turnKey`, read from a combat view. The view lists one row
+ * for each participant of the order, in the same order.
+ * @param {CombatView} view
+ * @returns {string}
+ */
+export function viewTurnKey(view) {
+  return `${view.round}:${view.rows[view.turnIndex]?.id ?? ''}`;
 }
 
 /**

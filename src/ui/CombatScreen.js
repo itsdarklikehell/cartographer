@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { fightOutcome } from '../combat/CombatView.js';
 import { focusKey, refocusTarget } from '../combat/FocusRestore.js';
+import { viewTurnKey } from '../view/CombatSelection.js';
 import { combatantCard } from './CombatantCard.js';
 import { mountActiveColumn } from './CombatActiveColumn.js';
 import { mountCombatLog } from './CombatLog.js';
@@ -319,7 +320,7 @@ export function mountCombatScreen(container, callbacks) {
   function announceTurn(view) {
     const row = view.rows[view.turnIndex];
     if (!row) return;
-    const key = `${view.round}:${row.id}`;
+    const key = viewTurnKey(view);
     if (key === announcedTurn) return;
     announcedTurn = key;
     announcer.textContent = `Round ${view.round}: ${row.name ?? 'Unknown combatant'}'s turn.`;

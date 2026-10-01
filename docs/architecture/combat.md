@@ -226,7 +226,11 @@ a defeated foe would keep its pressed ring after the attack dialog stopped
 using the pick. `heldTarget` in `view/CombatSelection.js` also releases the
 target when the turn changes, because a target picked for one combatant's
 attack would otherwise open the next combatant's dialogs and HP box on the
-same card, which can be that combatant's own card.
+same card, which can be that combatant's own card. `turnKey` names a turn
+by the round and the id of the turn holder, and the HP box of the active
+column resets its amount on the same key. The key leaves out the index into
+the order, because a summon sorted above the holder, or a drop earlier in
+the order, moves that index in the middle of one turn.
 
 ## The action budget
 
