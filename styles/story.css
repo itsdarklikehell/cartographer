@@ -59,6 +59,19 @@
    Quest log
    ========================================================================== */
 
+/* Below the Play shell width the page scrolls as a whole, so the log
+   scrolls itself once it outgrows most of the window. A campaign with many
+   quests then does not push the NPCs and Handouts cards far down the page,
+   and an open quest still fits without an inner scroll. The stable gutter
+   keeps room for the scrollbar at all times, because a scrollbar that shows
+   only on hover moves every row button to the left under the pointer.
+   styles/play-shell.css lifts the limit inside the Play shell. */
+.quest-panel {
+  max-height: max(24rem, 70vh);
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
 .quest-panel__group {
   margin-bottom: var(--space-2);
 }

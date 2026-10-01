@@ -2828,9 +2828,11 @@ A dead character gets no share. The travelogue line reads, for example,
 "The party receives 50 gp and 300 XP each." Set both amounts to 0 to
 remove the reward.
 
-The Quests panel grows with its list, and the Story tab scrolls around it.
-A click on a control keeps the scroll position of the tab, and a revealed
-or hidden quest keeps its place in the order.
+On a window wider than about 1,090 pixels, the Quests panel grows with its
+list, and the Story tab scrolls around it. On a narrower window, the panel
+scrolls once its list is taller than most of the window. A click on a
+control keeps the scroll position, and a revealed or hidden quest keeps its
+place in the order.
 
 The Player view lists only revealed quests. It shows the objectives that
 are not hidden, and it hides the notes and the links.

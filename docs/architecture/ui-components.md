@@ -386,7 +386,8 @@ The helper owns the root element, the clear and rebuild, the row loop, the
 group headings, and the handler contract below. It also keeps keyboard
 focus across a rebuild: `captureFocus` and `restoreFocus`
 (`src/ui/focusMemory.js`) find the rebuilt control by its tag, type, class,
-and accessible name. A root that scrolls itself keeps its scroll position across a rebuild too.
+and accessible name. A root that scrolls itself, such as the quest log below the Play shell
+width, keeps its scroll position across a rebuild too.
 A root that grows with its content, such as the quest log in its sidebar
 tab, keeps its old height until the rebuild ends, so the scrolling tab
 panel around it does not clamp its scroll position while the root is
