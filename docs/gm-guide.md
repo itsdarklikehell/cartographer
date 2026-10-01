@@ -78,7 +78,7 @@ version of each GM-only line without the secret number, such as the total of
 a Sleep pool or the save bonus of a foe.
 
 1. Click **Save** in your GM tab. Other tabs show only what you saved.
-2. In the **Party** panel below the map, click **Spectator tab** below the
+2. In the **Party** panel, click **Spectator tab** below the
    roster. A new browser tab opens in the Player view. You can also add
    `?role=player` to the URL of a tab yourself.
 3. Put that tab on the display that faces the table.

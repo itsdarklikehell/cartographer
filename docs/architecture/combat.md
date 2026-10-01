@@ -886,7 +886,7 @@ show a foe's AC to every viewer.
 
 The dice tray sits under the log. The app has one tray. While combat mode is
 active, the screen moves the whole `#dice-tray-container` card into the column
-with `appendChild`, and it puts the card back below the map on exit. Moving
+with `appendChild`, and it puts the card back in the play dock on exit. Moving
 the element keeps the handle of `diceWiring.js` valid, because the app mounts
 the tray once and never looks it up again.
 

@@ -161,9 +161,12 @@ export function wireParty(app, reloadView = null) {
     // The place action only exists while the GM allows splitting the party.
     canPlace: () => state.splitParty,
     playerTabHref,
+    // A click on a row also opens the Sheet tab of the sidebar, so the sheet
+    // shows beside the map. The tab's own click handler does the switch.
     onSelect: (id) => {
       selectCharacter(id);
       followCharacter(id);
+      document.getElementById('tab-character')?.click();
     },
     ...rosterActions(app, { scope, selectCharacter }),
   });

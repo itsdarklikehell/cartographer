@@ -1331,14 +1331,17 @@ The few layout switches are in known places:
   a section column sits under each on the second row. The two tracks split
   the card `1.4fr` to `1fr`, and the body stops at `--sheet-measure-body`.
   Below the query, `--sheet-measure` caps the one stacked column.
-- **Card width.** The sheet measures live on `:root` and not on
-  `.character-sheet`, because `.belowmap-sheet` caps itself at
-  `--sheet-measure-body` plus the card's padding and border, and a variable
-  on the sheet is not visible to the card around it. Without the cap, a
-  2560- or 3840-pixel-wide screen gives the card hundreds of pixels that the
-  sheet cannot use, and the tab strip stretches across the empty part.
-  `.belowmap-side` caps itself for the same reason, and `.app-belowmap`
-  centers the pair so that the extra room sits outside both cards.
+- **Card width.** The sheet card fills the Sheet tab of the Play sidebar,
+  so the sidebar width sets it. The sheet measures live on `:root` and not
+  on `.character-sheet`, so a rule outside the sheet can read them.
+  `.app-dock` caps its width at 30rem when it stacks below the map,
+  because a roster row and the dice tray rows cannot fill more.
+- **Play shell.** `styles/play-shell.css` makes Play mode a fixed screen
+  of `100dvh` above the stacking point of `responsive.css`. A grid on
+  `.app-center` draws the dock left of the map, the dock and each sidebar
+  tab panel scroll on their own, and the dice tray is `position: sticky`
+  at the bottom of the dock. The cards do not scroll on their own, because
+  a scroll box clips the `.card__title` that straddles the card frame.
 - **Body classes for mode and role.** `body.mode-play`, `.mode-build`,
   `.mode-library`, `.mode-combat`, `.role-gm`, `.role-player`,
   `.role-locked`, and `.sidebar-collapsed` show or hide whole regions, so a

@@ -17,7 +17,7 @@ Build, and Library. Only a GM tab shows the mode switch.
 
 | Mode | Layout | Purpose |
 | --- | --- | --- |
-| Play | The map, the Party and Dice Tray cards and the character detail card below the map, and a sidebar of session panels | Run a session: party movement, fog, encounters, and combat |
+| Play | The map, the Party and Dice Tray cards in the dock beside it, and a sidebar of session panels and the character sheet | Run a session: party movement, fog, encounters, and combat |
 | Build | The World tree rail, the editable map, and the Build rail with the Paint, Tile, and Encounters tabs | Author the world: maps, points of interest, regions, and staged creatures |
 | Library | No map. Four tabs of templates | Curate the reusable templates that the preset pickers offer |
 
@@ -764,14 +764,17 @@ Play mode is where you run a session.
 | --- | --- |
 | Above the map | The breadcrumb trail. A click on a crumb, except the last, opens that map without moving the party. The party marker shows on the tile that leads down to the party |
 | Map | The current map, the map controls, the mini-map, and the ways out |
-| Below the map | The Party card, the Dice Tray, and the character detail card |
-| Sidebar | Three tabs of session panels |
+| Dock | The Party card, with the Dice Tray pinned to its bottom edge. A wide window shows the dock left of the map, and a narrow window shows it below the map |
+| Sidebar | Three tabs of session panels and the Sheet tab |
 
 | Sidebar tab | Panels |
 | --- | --- |
 | Session | World, Time, Encounters, and Initiative |
 | Story | Quests, NPCs, and Handouts |
 | Log | Travelogue |
+| Sheet | The character detail card of the selected character |
+
+On a window wider than about 1,090 pixels, Play mode fits the screen and the page does not scroll. The dock and the sidebar each scroll on their own, so the map, the party, the dice tray, and the open sheet stay in view together. A click on a row of the Party card selects that character and opens the Sheet tab.
 
 **Hide panels** collapses the sidebar and gives the map the full width.
 
@@ -2122,7 +2125,7 @@ always opens a new browser tab, and it has no link menu.
 
 ### Character detail card
 
-The character detail card below the map has four tabs.
+The character detail card in the Sheet tab of the sidebar has four tabs.
 
 | Tab | Contents |
 | --- | --- |

@@ -1,0 +1,104 @@
+/* ==========================================================================
+   Play shell: on a window wider than the stacking point of responsive.css,
+   Play mode is a fixed screen of 100dvh with no page scroll. The map fills
+   the center, the play dock (party roster and dice tray) sits on its left,
+   and the sidebar tabs sit on its right. Each column scrolls on its own, so
+   the map, the party, the dice, and the open sheet stay in view together.
+   Combat, Build, and Library mode keep the scrolling page.
+   ========================================================================== */
+
+@media (min-width: 68.0625rem) {
+  body.mode-play {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  body.mode-play .app-header {
+    flex: none;
+  }
+
+  body.mode-play .app-main {
+    flex: 1;
+    min-height: 0;
+    flex-wrap: nowrap;
+    align-items: stretch;
+  }
+
+  /* The dock comes after the map in the markup, so a narrow window stacks it
+     below the map. The grid draws it on the left here. */
+  body.mode-play .app-center {
+    display: grid;
+    grid-template-columns: 20rem minmax(0, 1fr);
+    grid-template-areas: 'dock map';
+    gap: var(--space-4);
+    min-height: 0;
+  }
+
+  body.mode-play .app-map {
+    grid-area: map;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    padding-bottom: var(--space-4);
+  }
+
+  body.mode-play .map-viewport {
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.mode-play #map-canvas {
+    height: 100%;
+  }
+
+  /* The dock scrolls as one column, and the dice tray sticks to its bottom
+     edge, so the tray stays on screen under a long roster. The cards do not
+     scroll on their own, because a scroll box clips the card title that
+     straddles the frame. */
+  body.mode-play .app-dock {
+    grid-area: dock;
+    max-width: none;
+    min-height: 0;
+    padding: 0 var(--space-1) var(--space-4) 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  body.mode-play #dice-tray-container {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-top: auto;
+  }
+
+  /* In the narrow dock, a roster row puts the name on its own line above the
+     HP meter, so a long name does not break inside a word. */
+  body.mode-play .app-dock .character-roster__select {
+    flex-wrap: wrap;
+  }
+
+  body.mode-play .app-dock .character-roster__label {
+    flex-basis: 100%;
+    overflow-wrap: normal;
+  }
+
+  body.mode-play .app-sidebar {
+    min-height: 0;
+  }
+
+  body.mode-play .sidebar-panels {
+    flex: 1;
+    min-height: 0;
+  }
+
+  body.mode-play .sidebar-panels > .tabs__panel {
+    flex: 1;
+    min-height: 0;
+    padding: 0 var(--space-1) var(--space-4);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}

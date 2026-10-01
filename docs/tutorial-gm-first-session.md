@@ -146,8 +146,8 @@ The app keeps the record of a defeated foe instead of deleting it.
 
 ## 7. Manage a character
 
-1. In the **Party** panel below the map, click **Mirelle**. The character
-   sheet opens beside the roster.
+1. In the **Party** panel, click **Mirelle**. The character
+   sheet opens in the Sheet tab of the sidebar.
 2. Find the HP bar. The minus button on the left does 1 damage, and the
    plus button on the right heals 1.
 3. Find the **Slots** row. Mirelle is a cleric, so the sheet shows spell slots.
