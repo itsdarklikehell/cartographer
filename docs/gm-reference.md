@@ -377,8 +377,8 @@ tree opens the rows above it and scrolls to its row.
 
 The tree takes one Tab stop. Inside it, Up and Down move between rows, and
 Home and End go to the first and last row. Right opens a closed row or
-moves into an open one, and Left closes an open row or moves to the row
-above it. Enter opens the map of the row. In Build mode, Shift+F10 or the
+moves into an open one, and Left closes an open row or moves to its
+parent row. Enter opens the map of the row. In Build mode, Shift+F10 or the
 Menu key opens the actions menu of the row.
 
 ### Palette tools
@@ -3045,7 +3045,7 @@ Press `?` anywhere for the shortcut reference.
 | Arrows, Home, End in the World tree | Move between rows, and open or close a row |
 | Enter, Space in the World tree | Open the map of the row |
 | Shift+F10, Menu key in the World tree | Open the row menu |
-| Tab, first press on the page | Show the skip links **Skip to the map** and, in Build mode, **Skip to the build tools** |
+| Tab, first press on the page | Show the skip links **Skip to the map** (Play and Build mode) and **Skip to the build tools** (Build mode) |
 
 Save, Undo, Redo, and the mode keys work in a GM tab only. The map keys
 work after you click the map or move focus to it.

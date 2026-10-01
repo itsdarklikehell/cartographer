@@ -96,7 +96,11 @@
   transform: none;
 }
 
-body:not(.mode-build) .skip-link--build {
+/* Library and Combat mode hide the map, so a link to it would move focus
+   nowhere. */
+body:not(.mode-build) .skip-link--build,
+body.mode-library .skip-link:not(.skip-link--build),
+body.mode-combat .skip-link:not(.skip-link--build) {
   display: none;
 }
 
