@@ -295,6 +295,19 @@ body.mode-build .app-sidebar {
   pointer-events: none;
 }
 
+/* While Inspect, Region, or an eraser is the tool, the swatches fade. A
+   click on one still picks it as the brush, and hover or focus shows it at
+   full strength. */
+.palette--tool .palette__swatch img {
+  opacity: 0.45;
+  transition: opacity var(--transition-fast) ease;
+}
+
+.palette--tool .palette__swatch:hover img,
+.palette--tool .palette__swatch:focus-visible img {
+  opacity: 1;
+}
+
 /* ==========================================================================
    Tile inspector (Build-mode right rail)
    ========================================================================== */

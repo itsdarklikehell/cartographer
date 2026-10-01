@@ -94,6 +94,9 @@ export function mountPalettePanel(
    */
   function select(value, node) {
     brush = value;
+    // A tool that is not a tile brush (Inspect, Region, or an eraser) dims the
+    // swatches, so they do not read as the active brush.
+    root.classList.toggle('palette--tool', value === null || typeof value === 'string');
     for (const s of selectables) {
       const active = s === node;
       s.classList.toggle('palette__item--active', active);
