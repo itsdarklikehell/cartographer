@@ -1,6 +1,7 @@
 import { describeCursor, describeNode, placeNoun } from '../map/MapDescription.js';
 import { linkTileTo } from '../map/FogOfWar.js';
-import { authoringWarning } from '../map/MapExits.js';
+import { authoringWarning, needsLink } from '../map/MapExits.js';
+import { textButton } from '../ui/buttons.js';
 import { el, mustGetElement } from '../ui/dom.js';
 import { isGM } from '../view/ViewRole.js';
 
@@ -11,26 +12,44 @@ import { isGM } from '../view/ViewRole.js';
  * in the parent map leads to the node, or when an interior has no painted way
  * out. Play mode always offers a fallback exit, so both warnings point to an
  * unfinished map. The Build rail that shows them stays hidden everywhere else.
+ * When nothing leads to the node, a button beside the text opens the parent
+ * with the Region brush set to the node.
  *
- * The element stays in the document with no text, instead of being added
- * only when there is a message. A screen reader can miss a live region that
- * arrives together with its content. CSS hides the element when it is empty.
+ * The text element stays in the document with no text, instead of being
+ * added only when there is a message. A screen reader can miss a live region
+ * that arrives together with its content. CSS hides the box when the text is
+ * empty.
  * @param {AppContext} app
+ * @param {(parentId: string, childId: string) => void} onLink opens the parent
+ *   with the Region brush set to the child
  */
-export function createBuildWarning(app) {
+export function createBuildWarning(app, onLink) {
   const { grid, navigator } = app;
   const element = mustGetElement('build-warning');
+  const text = el('p', 'build-warning__text');
+  text.setAttribute('role', 'status');
+  /** @type {{ parentId: string, childId: string } | null} */
+  let link = null;
+  const button = textButton('', () => link && onLink(link.parentId, link.childId), {
+    className: 'build-warning__link',
+  });
+  button.hidden = true;
+  element.replaceChildren(text, button);
   let last = '';
   return {
     sync() {
       const node = navigator.getCurrentNode();
-      const text = authoringWarning(node, grid.getParent(node)) ?? '';
+      const parent = grid.getParent(node);
+      const message = authoringWarning(node, parent) ?? '';
+      link = parent && needsLink(node, parent) ? { parentId: parent.id, childId: node.id } : null;
+      button.hidden = !link;
+      if (parent) button.textContent = `Link from ${parent.name}`;
       // This element is a live region, and syncExits runs on every party step
       // and every paint stroke. An unconditional write re-announces an
       // unchanged sentence each time.
-      if (text === last) return;
-      last = text;
-      element.textContent = text;
+      if (message === last) return;
+      last = message;
+      text.textContent = message;
     },
     /** A sentence set while the rail stayed hidden is never announced. A reset
      * makes the next sync write it again, once Build mode shows the rail. */

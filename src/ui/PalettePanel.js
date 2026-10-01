@@ -49,7 +49,7 @@ import { columnsFromTops, rovingTarget } from './rovingIndex.js';
  * @param {(brush: Brush) => void} onBrushChange
  * @param {ReturnType<typeof import('./TileTooltip.js').mountTileTooltip>} [tooltip]
  * @param {import('./RegionPicker.js').RegionSource} [regions] the children the Region brush can paint
- * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, show: () => void, regionPicker: ReturnType<typeof mountRegionPicker> }}
+ * @returns {{ getBrush: () => Brush, getScale: () => number, setKind: (kind: string) => void, show: () => void, regionPicker: ReturnType<typeof mountRegionPicker>, useRegion: (childId: string) => void }}
  */
 export function mountPalettePanel(
   container,
@@ -384,5 +384,14 @@ export function mountPalettePanel(
     for (const section of sections.values()) section.load();
   }
 
-  return { getBrush: () => brush, getScale: () => scale, setKind, show, regionPicker };
+  /**
+   * Pick the Region brush with the given child as its target.
+   * @param {string} childId
+   */
+  function useRegion(childId) {
+    select('region', regionBtn);
+    regionPicker.pick(childId);
+  }
+
+  return { getBrush: () => brush, getScale: () => scale, setKind, show, regionPicker, useRegion };
 }

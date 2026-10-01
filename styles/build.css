@@ -154,13 +154,17 @@ body.mode-build .app-sidebar {
   display: none;
 }
 
-/* An authoring problem with the node in view, at the top of the rail hidden
-   above so it shows whichever Build tab is open and nowhere else. The text takes
-   the body colour and the warning colour goes to the border and a tint:
+/* An authoring problem with the node in view. It sits under the Build tabs, so
+   it shows whichever tab is open, and the tabs stay in place when it comes and
+   goes. The text takes the body colour and the warning colour goes to the border and a tint:
    --warning is a mid amber that clears AA against a surface only at heading
    sizes, and this line is label-sized. */
 .build-warning {
   margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
   border-left: 3px solid var(--warning);
   border-radius: var(--radius-sm);
@@ -168,9 +172,15 @@ body.mode-build .app-sidebar {
   font-size: var(--text-label);
 }
 
-/* Nothing to warn about. The element stays in the document for the sake of its
-   live region, so the empty state is a styling matter rather than a JS one. */
-.build-warning:empty {
+.build-warning__text {
+  flex: 1 1 12rem;
+  margin: 0;
+}
+
+/* Nothing to warn about. The text element stays in the document for the sake
+   of its live region, so the empty state is a styling matter rather than a JS
+   one. */
+.build-warning:has(.build-warning__text:empty) {
   display: none;
 }
 

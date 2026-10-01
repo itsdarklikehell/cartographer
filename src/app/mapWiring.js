@@ -168,7 +168,16 @@ export function wireMapView(app) {
     env.worldTree?.update();
   }
 
-  const buildWarning = createBuildWarning(app);
+  // "Link from <parent>" opens the parent on the Paint tab with the Region
+  // brush set to the node, so the next stroke there links it.
+  const buildWarning = createBuildWarning(app, (parentId, childId) => {
+    goToNode(parentId);
+    buildTabs.select(PAINT_TAB);
+    env.palettePanel?.useRegion(childId);
+    app.toasts.show(
+      `Paint tiles on ${grid.getNode(parentId)?.name ?? 'the parent map'} to link them to ${grid.getNode(childId)?.name ?? 'this map'}.`,
+    );
+  });
 
   /** @type {ReturnType<typeof mountExitList> | null} assigned after the viewport mounts */
   let exitList = null;

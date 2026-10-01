@@ -305,11 +305,12 @@ above or below.
 
 Build mode warns you when the party cannot get into a node or out of it.
 
-1. Look for a warning triangle in the World tree, or a warning above the
+1. Look for a warning triangle in the World tree, or a warning below the
    tabs of the right rail. On a closed branch, the triangle has a number
    that counts the warnings inside it. Open the branch to find the node.
-2. If the warning reads "Nothing leads here", link a tile on the parent map
-   to this node.
+2. If the warning reads "Nothing leads here", click **Link from (parent)**.
+   The parent map opens with the Region brush set to this node. Paint the
+   tiles that lead here.
 3. If the warning reads "No way out" on an interior, paint an outer door or
    a staircase.
 4. If the warning reads "No way out" on an outdoor sub-region, paint a tile

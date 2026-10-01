@@ -753,14 +753,14 @@ character form.
 
 ### Link warnings
 
-Build mode shows a warning above the tool tabs when the node in view has no
+Build mode shows a warning below the tool tabs when the node in view has no
 way in or no way out. The World tree marks each node with a problem with a
 warning triangle. A closed branch shows a triangle and the number of nodes
 inside it that have a warning.
 
 | Warning | Meaning |
 | --- | --- |
-| Nothing leads here | No tile on the parent map links to this node |
+| Nothing leads here | No tile on the parent map links to this node. The "Link from (parent)" button opens the parent on the Paint tab with the Region brush set to this node |
 | No way out | The node is linked, but it has no outer door, no usable staircase, and no painted parent tile beside its block |
 
 Neither problem strands a party. A node without an authored way out offers

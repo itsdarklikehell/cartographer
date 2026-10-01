@@ -1558,8 +1558,10 @@ These warnings describe an unfinished map. A party is never stranded, because
 `findExits` gives Play mode a fallback either way, and the check writes
 nothing to the node.
 
-The `#build-warning` element is a permanent `role="status"` live region, and
-CSS hides it while it is empty. Its writes are compared against the last
+The text inside `#build-warning` is a permanent `role="status"` live region,
+and CSS hides the box while the text is empty. When nothing leads to the node
+(`needsLink`), a "Link from <parent>" button sits beside the text. It opens
+the parent on the Paint tab with the Region brush set to the node. Its writes are compared against the last
 text, because `syncExits` runs on every party step and every paint stroke,
 and an unchanged sentence would otherwise be announced again each time.
 

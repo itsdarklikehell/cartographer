@@ -353,6 +353,18 @@ export function authoringWarning(node, parent) {
   return node && parent ? warningFor(node, parent) : null;
 }
 
+/**
+ * True when no tile of the parent links to the node, so the fix is a Region
+ * stroke on the parent. The Build warning then offers a button that opens
+ * the parent with the Region brush set to this node.
+ * @param {MapNode | null} node
+ * @param {MapNode | null} parent
+ * @returns {boolean}
+ */
+export function needsLink(node, parent) {
+  return !!node && !!parent && !blockFor(parent, node.id);
+}
+
 /** @type {(node: MapNode, parent: MapNode) => string | null} */
 const warningFor = memoizeByIdentity2((node, parent) => {
   if (!blockFor(parent, node.id)) {

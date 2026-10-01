@@ -9,6 +9,7 @@ import {
   exitsInReach,
   findExits,
   isSealedInterior,
+  needsLink,
   nearestSide,
   paintedDistance,
   stairwayTo,
@@ -459,6 +460,16 @@ test('a node nothing in the parent links to is warned about before anything else
   assert.equal(
     authoringWarning(sealedOrphan, bare),
     'Nothing leads here: link a tile on Saltmere Coast to this map.',
+  );
+  assert.equal(needsLink(unlinked, bare), true);
+  assert.equal(needsLink(unlinked, null), false);
+  assert.equal(needsLink(null, bare), false);
+  assert.equal(
+    needsLink(
+      child,
+      parentWithBlock(() => true),
+    ),
+    false,
   );
   // The root has no parent to be linked from.
   assert.equal(authoringWarning(unlinked, null), null);
