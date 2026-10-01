@@ -77,3 +77,16 @@ test('no start without a town, or with no tree at all', () => {
   nodes[2].tiles = [tile('0,0', GRASS, 'far')];
   assert.equal(worldStart(nodes), null);
 });
+
+test('the start skips a marker tile that has no map yet', () => {
+  const ruins = {
+    ...tile('1,0', GRASS),
+    metadata: { ...tile('1,0', GRASS).metadata, poiType: 'ruins' },
+  };
+  const nodes = [
+    node('root', null, 'region'),
+    node('vale', 'root', 'region', [tile('1,1', GRASS, 'town'), ruins, tile('2,1', GRASS)]),
+    node('town', 'vale', 'region'),
+  ];
+  assert.deepEqual(worldStart(nodes), { nodeId: 'vale', tileId: '2,1' });
+});

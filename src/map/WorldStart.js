@@ -17,8 +17,10 @@ const STEPS = [
 ];
 
 /**
- * Whether the party can start on a tile: dry land with no link, so the
- * first click in Play mode walks instead of entering a map.
+ * Whether the party can start on a tile: dry land with no link and no
+ * marker, so the first click in Play mode walks instead of entering a map.
+ * A site past the generation budget keeps its marker art but gets no link,
+ * so the marker check keeps the party off a "ruins" tile with no map.
  * @param {Tile | undefined} tile
  * @returns {tile is Tile}
  */
@@ -26,6 +28,7 @@ function isOpenLand(tile) {
   return (
     tile !== undefined &&
     !tile.childNodeId &&
+    !tile.metadata.poiType &&
     !isBlocked(tile) &&
     !isDeepWater(tile) &&
     !tile.imageRef.startsWith('assets/tiles/water/')
@@ -38,8 +41,8 @@ function isOpenLand(tile) {
  * sub-map of a region that is itself a region, such as a village or a
  * city. A blank campaign starts the party at column 1, row 1 of the world
  * map, which a generated world often turns into open sea. With this start,
- * a GM who opens Play mode next sees the party beside a town. Returns null when no region has a settlement with open
- * land beside it.
+ * a GM who opens Play mode next sees the party beside a town. Returns null
+ * when no region has a settlement with open land beside it.
  * @param {TreeNode[]} nodes the generated tree, top map first
  * @returns {{ nodeId: string, tileId: string } | null}
  */
