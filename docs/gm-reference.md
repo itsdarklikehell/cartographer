@@ -29,7 +29,8 @@ the full width. See [Combat screen](#combat-screen).
 The role switch sits at the right end of the header. Its accessible name is
 Viewer, and its options are GM and Player. The first switch to Player in a
 browser shows the toast "Player view. Click GM to return.", because the
-Player view hides the mode switch and the campaign controls.
+Player view hides the mode switch and the campaign controls. A tab that
+another tab forces out of the GM view does not show this toast.
 
 | Role | Sees | Can change |
 | --- | --- | --- |
@@ -826,7 +827,7 @@ Play mode is where you run a session.
 | Log | Travelogue |
 | Sheet | The character detail card of the selected character |
 
-On a window wider than about 1,090 pixels, Play mode fits the screen and the page does not scroll. The dock and the sidebar each scroll on their own, so the map, the party, the dice tray, and the open sheet stay in view together. A click on a row of the Party card selects that character and opens the Sheet tab.
+On a window wider than about 1,090 pixels, Play mode fits the screen and the page does not scroll. The dock and the sidebar each scroll on their own, so the map, the party, the dice tray, and the open sheet stay in view together. A click on a row of the Party card selects that character and opens the Sheet tab. While **Hide panels** is on, the click selects the character and leaves the hidden sidebar on its tab.
 
 **Hide panels** collapses the sidebar and gives the map the full width.
 

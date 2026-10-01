@@ -129,12 +129,21 @@ export function wireSessionControls(app) {
   // released on a clean close or a switch to Player. Its onYield covers the
   // case where this tab was frozen past the TTL and another tab took over
   // GM: this tab yields rather than run two GM views.
+  // True while onYield forces the switch to Player. The first-run Player
+  // hint then stays hidden, because its "Click GM to return" fails while the
+  // other tab holds the lock.
+  let yielding = false;
   const gmLock = createHeartbeatLock({
     onYield: () => {
       app.toasts.show('Another tab took over the GM view; this one switched to the Player view.', {
         level: 'error',
       });
-      roleSwitch.setValue('player');
+      yielding = true;
+      try {
+        roleSwitch.setValue('player');
+      } finally {
+        yielding = false;
+      }
     },
   });
 
@@ -173,7 +182,7 @@ export function wireSessionControls(app) {
       if (role === 'player') gmLock.release();
       // The first switch to Player in this browser hides the mode switch and
       // the campaign controls, so a toast names the way back.
-      if (role === 'player' && next === 'player' && app.state.role === 'gm') {
+      if (role === 'player' && next === 'player' && app.state.role === 'gm' && !yielding) {
         if (localStorage.getItem(PLAYER_HINT_KEY) !== '1') {
           writeStored(PLAYER_HINT_KEY, '1');
           app.toasts.show('Player view. Click GM to return.');

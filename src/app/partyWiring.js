@@ -155,6 +155,14 @@ export function wireParty(app, reloadView = null) {
     refreshRoster: () => characterRoster.update(),
   });
 
+  // While "Hide panels" is on, the sidebar is hidden, and a switch to the
+  // Sheet tab shows nothing. The GM would then find the Sheet tab in place
+  // of the tab they left when they show the panels again.
+  const showSheetTab = () => {
+    if (document.body.classList.contains('sidebar-collapsed')) return;
+    document.getElementById('tab-character')?.click();
+  };
+
   const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
     getCharacters: () => state.characters,
     getSelectedId: scope.getSelectedId,
@@ -167,12 +175,12 @@ export function wireParty(app, reloadView = null) {
     onSelect: (id) => {
       selectCharacter(id);
       followCharacter(id);
-      document.getElementById('tab-character')?.click();
+      showSheetTab();
       fullSheet.update();
     },
     onOpenSheet: (id) => {
       selectCharacter(id);
-      document.getElementById('tab-character')?.click();
+      showSheetTab();
       fullSheet.open();
     },
     ...rosterActions(app, { scope, selectCharacter }),
