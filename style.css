@@ -11,6 +11,7 @@
 @import url('styles/widgets.css'); /* breadcrumb, dice tray, disclosure headers, HP healthbar */
 @import url('styles/forms.css'); /* inline authoring forms: wrapper, rows, captions, control sizes */
 @import url('styles/character.css'); /* character sheet, inventory */
+@import url('styles/paperdoll.css'); /* equipment slot cards and the item picker */
 @import url('styles/session.css'); /* encounters, in-game time, NPCs, initiative */
 @import url('styles/party.css'); /* status conditions, party roster */
 @import url('styles/story.css'); /* travelogue, quest log */

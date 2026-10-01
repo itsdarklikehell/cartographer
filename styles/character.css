@@ -569,32 +569,6 @@
   min-width: 0;
 }
 
-/* Equipment slots: label + item picker per wearable slot, above the item list. */
-.inventory-panel__equipment {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: var(--space-1) var(--space-2);
-  padding-bottom: var(--space-2);
-  margin-bottom: var(--space-2);
-  border-bottom: 1px solid var(--border);
-}
-
-/* The display:grid above would otherwise defeat the hidden attribute the
-   Equipment/Inventory tabs toggle with. */
-.inventory-panel__equipment[hidden] {
-  display: none;
-}
-
-.inventory-panel__slot {
-  display: contents;
-}
-
-.inventory-panel__slot select {
-  min-width: 0;
-  font-size: var(--text-label);
-}
-
 /* One collapsible type heading per classification carried, with its rows
    indented under it so the heading reads as the parent of the group. */
 .inventory-panel__group + .inventory-panel__group {

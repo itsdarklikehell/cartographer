@@ -1,78 +1,138 @@
-import {
-  EQUIPMENT_SLOTS,
-  itemType,
-  itemSummary,
-  equipBlocker,
-  getEquipped,
-} from '../entities/Equipment.js';
-import { hasWeaponProperty } from '../entities/Weapons.js';
+import { EQUIPMENT_SLOTS } from '../entities/Equipment.js';
+import { armorClass } from '../entities/Armor.js';
 import { withEquipped } from '../entities/Progression.js';
+import { slotChoices, slotStat, pickerDetail } from '../view/EquipSlots.js';
 import { el } from './dom.js';
-import { select } from './formFields.js';
+import { openDialog } from './Modal.js';
+import { textButton } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {(typeof EQUIPMENT_SLOTS)[number]} EquipmentSlot */
 
 /**
- * This is the Equipment tab of the inventory panel: slot pickers for what a
- * character wears and wields. It is split out of InventoryPanel.js, which
- * keeps the mount, tabs, and disclosure shell. The item rows live in
- * InventoryRows.js.
+ * This is the Equipment tab of the inventory panel: a paperdoll of slot
+ * cards around a plate with the character's name and AC. A slot card shows
+ * the item's name and one short stat line. A click opens a picker that
+ * lists every item the slot can take with its full details, so long item
+ * text wraps inside the dialog instead of overflowing a select. The text
+ * comes from the pure view/EquipSlots.js. InventoryPanel.js keeps the mount
+ * and the tabs, and InventoryRows.js keeps the item rows.
  */
 
 /**
- * Equipment slot rows. Each row shows a labeled select for one slot. Its
- * options are limited to inventory items that `equipBlocker` allows, so a
- * potion never appears in the armor pickers, a single ring is not offered
- * for the second ring slot, and the off hand offers nothing while a
- * two-handed weapon fills the main hand. Options sort by the slot's
- * preference, then by name. An already-equipped item that no longer passes
- * the filter, for example in a legacy save, still shows, so a GM can see
- * it and unequip it.
- *
- * The character arrives as a getter because these rows outlive changes
- * made elsewhere on the sheet. A slot's options depend only on the
- * inventory and the other slots, so the panel leaves the rows standing when
- * a sibling panel commits an unrelated change. The equip call below must write against
- * that newer character.
+ * The paperdoll. The character arrives as a getter because the panel keeps
+ * these cards standing when a sibling panel commits an unrelated change, and
+ * an equip must write against that newer character.
  * @param {() => Character} getCharacter
  * @param {(next: Character) => void} commit
- * @param {boolean} playable false renders the pickers disabled, for a read-only view
+ * @param {boolean} playable false renders the cards disabled, for a read-only view
  * @returns {HTMLElement}
  */
 export function buildEquipment(getCharacter, commit, playable) {
   const character = getCharacter();
-  const section = el('div', 'inventory-panel__equipment');
-  for (const slot of EQUIPMENT_SLOTS) {
-    const equippedId = getEquipped(character, slot.key)?.id ?? '';
-    const eligible = character.inventory
-      .filter((i) => !equipBlocker(character, slot.key, i) || i.id === equippedId)
-      .sort((a, b) => {
-        const rank = (/** @type {typeof a} */ i) => {
-          const at = slot.accepts.indexOf(itemType(i));
-          return at === -1 ? slot.accepts.length : at;
-        };
-        return rank(a) - rank(b) || a.name.localeCompare(b.name);
-      });
-    // A two-handed weapon fills both hands, so the empty off hand names it.
-    const main = getEquipped(character, 'mainHand');
-    const bothHands =
-      slot.key === 'offHand' && !equippedId && !!main && hasWeaponProperty(main, 'two-handed');
-    const picker = select(
-      [
-        { value: '', label: bothHands ? `Both hands on ${main.name}` : '—' },
-        ...eligible.map((item) => {
-          const summary = itemSummary(item);
-          return { value: item.id, label: summary ? `${item.name} (${summary})` : item.name };
-        }),
-      ],
-      equippedId,
-    );
-    picker.disabled = !playable || bothHands;
-    picker.addEventListener('change', () =>
-      commit(withEquipped(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
-    );
+  const grid = el('div', 'paperdoll__grid');
+  grid.appendChild(
+    el(
+      'div',
+      'paperdoll__plate',
+      el('span', 'paperdoll__name', character.name),
+      el('span', 'paperdoll__ac', `AC ${armorClass(character)}`),
+    ),
+  );
+  for (const slot of EQUIPMENT_SLOTS)
+    grid.appendChild(slotCard(getCharacter, commit, playable, slot));
+  return el('div', 'inventory-panel__equipment paperdoll', grid);
+}
 
-    section.append(el('label', 'inventory-panel__slot', el('span', 'u-muted', slot.label), picker));
-  }
-  return section;
+/**
+ * One framed slot card. It is a button that opens the picker, and it is
+ * disabled in a read-only view and while a two-handed weapon fills the off
+ * hand.
+ * @param {() => Character} getCharacter
+ * @param {(next: Character) => void} commit
+ * @param {boolean} playable
+ * @param {EquipmentSlot} slot
+ */
+function slotCard(getCharacter, commit, playable, slot) {
+  const { equipped, bothHands } = slotChoices(getCharacter(), slot);
+  const name = equipped?.name ?? (bothHands ? `Both hands on ${bothHands}` : 'Empty');
+  const stat = equipped ? slotStat(equipped) : '';
+  const card = el(
+    'button',
+    `paperdoll__slot${equipped ? '' : ' paperdoll__slot--empty'}`,
+    el('span', 'paperdoll__slot-label', slot.label),
+    el('span', 'paperdoll__slot-item', name),
+    ...(stat ? [el('span', 'paperdoll__slot-stat', stat)] : []),
+  );
+  card.type = 'button';
+  card.dataset.slot = slot.key;
+  card.disabled = !playable || !!bothHands;
+  card.setAttribute('aria-label', `${slot.label}: ${name}${stat ? `, ${stat}` : ''}. Change`);
+  card.addEventListener('click', async () => {
+    const picked = await pickItem(getCharacter(), slot, card);
+    if (picked === undefined) return;
+    // The commit rebuilds the cards, so focus moves to the new card of this slot.
+    const host = card.closest('.paperdoll')?.parentElement;
+    commit(withEquipped(getCharacter(), slot.key, picked));
+    /** @type {HTMLElement | null | undefined} */ (
+      host?.querySelector(`.paperdoll__slot[data-slot="${slot.key}"]`)
+    )?.focus();
+  });
+  return card;
+}
+
+/**
+ * Ask which item goes into one slot. The result is the item id, null for
+ * an empty slot, or undefined when the GM cancels or keeps the same item.
+ * @param {Character} character
+ * @param {EquipmentSlot} slot
+ * @param {HTMLElement} opener
+ * @returns {Promise<string | null | undefined>}
+ */
+function pickItem(character, slot, opener) {
+  const { equipped, items } = slotChoices(character, slot);
+  const current = equipped?.id ?? '';
+  const list = el('div', 'equip-picker__list');
+  list.setAttribute('role', 'radiogroup');
+  list.setAttribute('aria-label', slot.label);
+  /** @type {HTMLInputElement[]} */
+  const radios = [];
+  /**
+   * @param {string} value
+   * @param {string} name
+   * @param {string} detail
+   */
+  const option = (value, name, detail) => {
+    const radio = el('input');
+    radio.type = 'radio';
+    radio.name = 'equip-picker';
+    radio.value = value;
+    radio.checked = value === current;
+    radios.push(radio);
+    const text = el('span', 'equip-picker__text', el('span', 'equip-picker__name', name));
+    if (detail) text.appendChild(el('span', 'equip-picker__detail', detail));
+    list.appendChild(el('label', 'equip-picker__option', radio, text));
+  };
+  option('', 'Empty', `Nothing in the ${slot.label.toLowerCase()} slot`);
+  for (const item of items) option(item.id, item.name, pickerDetail(item));
+  const hint = el('p', 'modal__message', `Nothing in the inventory fits this slot.`);
+  return openDialog({
+    className: 'equip-picker',
+    title: slot.label,
+    form: true,
+    returnFocus: opener,
+    build: (close) => ({
+      body: items.length ? [list] : [hint, list],
+      actions: [
+        textButton('Cancel', () => close('cancel')),
+        textButton('Equip', () => close('equip'), { variant: 'primary' }),
+      ],
+      initialFocus: radios.find((r) => r.checked) ?? radios[0],
+    }),
+    result: (value) => {
+      if (value !== 'equip') return undefined;
+      const chosen = radios.find((r) => r.checked)?.value ?? current;
+      return chosen === current ? undefined : chosen || null;
+    },
+  });
 }

@@ -2642,9 +2642,13 @@ log names the feature, as in "Wren casts Circle of Death (Mystic Arcanum)."
 
 ### Inventory and equipment
 
-The Equipment tab has nine slots: Helmet, Armor, Gloves, Greaves, Main
-hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists only the
-items that its slot accepts. 5e armor has no Helmet, Gloves, or Greaves
+The Equipment tab shows nine slot cards around a plate with the
+character's name and AC: Helmet, Armor, Gloves, Greaves, Main hand, Off
+hand, Ranged, Ring 1, and Ring 2. A card shows the item's name and one
+short stat line, such as "AC 17, heavy" or "1d8 slashing". Click a card to
+open its picker. The picker lists **Empty** and every item that the slot
+accepts, each with its full details, and **Equip** puts the chosen item in
+the slot. 5e armor has no Helmet, Gloves, or Greaves
 slot, so those three are a house rule. The item form marks their types
 with "(house rule)", and a note under the AC row says so too.
 
@@ -2661,8 +2665,8 @@ with "(house rule)", and a note under the AC row says so too.
 
 One item fills as many slots as its quantity. So a single ring goes on one
 hand, and a pair of daggers can fill both hands. A two-handed weapon in the
-main hand empties the off hand. The Off hand picker stays closed until the
-weapon comes out of the main hand.
+main hand empties the off hand. The Off hand card reads "Both hands on" the weapon, and it stays closed
+until the weapon comes out of the main hand.
 
 The Inventory tab has the item list, a search box over names and
 descriptions, a type filter, and one collapsible heading per item type.

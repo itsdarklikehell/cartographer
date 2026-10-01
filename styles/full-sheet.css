@@ -80,3 +80,23 @@ body.sheet-full.mode-play #open-full-sheet {
   align-self: flex-start;
   margin-bottom: var(--space-2);
 }
+
+/* The page frames the sheet in the full view, so the card drops its own
+   frame there. Without this the bar rule and the card border draw two lines
+   at the top. */
+body.sheet-full.mode-play #full-sheet .sheet-card {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding-inline: 0;
+}
+
+body.sheet-full.mode-play #full-sheet .sheet-card::before {
+  display: none;
+}
+
+/* The paperdoll uses the width of the page instead of the narrow measure of
+   the sidebar panel. */
+body.sheet-full.mode-play #panel-equipment {
+  max-width: none;
+}
