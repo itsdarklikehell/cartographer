@@ -44,12 +44,20 @@
 }
 
 /* The Generate dialog's seed row and live layout preview. */
+/* The form fills the dialog up to 34rem. The dialog is at most 90vw wide
+   with its padding inside, so a 90vw form would overflow it on a phone. */
 .modal--generate .modal__form {
-  min-width: min(34rem, 90vw);
+  min-width: min(34rem, calc(90vw - 2 * var(--space-5) - 2px));
+}
+
+/* The seed row wraps on a narrow screen, so Reroll stays in view. */
+.generate-dialog__seed {
+  flex-wrap: wrap;
 }
 
 .generate-dialog__seed .field {
-  flex: 1;
+  flex: 1 1 10rem;
+  min-width: 0;
 }
 
 /* The actions stay pinned to the bottom of the dialog while the fields
