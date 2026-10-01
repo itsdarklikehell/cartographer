@@ -78,14 +78,6 @@ body.mode-build .app-dock {
 /* A held fog brush takes over the left button, so the pointer has to say so:
    without this the only sign is a pressed icon, and clicks that no longer move
    the party read as a dead map. */
-/* Build mode has no panels under the map, so the map takes the rest of the
-   viewport. The 8.875rem is the header, the breadcrumb, the map frame, and
-   the page padding below it. With less, the page scrolls by a few pixels at
-   1440 x 900. */
-body.mode-build #map-canvas {
-  height: max(32rem, calc(100dvh - 8.875rem));
-}
-
 #map-canvas.is-fog-brush {
   cursor: crosshair;
 }

@@ -357,8 +357,11 @@ nobody moves.
 ### World tree
 
 The World tree in the Build rail and the World panel in Play mode show the
-same node tree. Each tree scrolls in its own box. The Build rail stays in
-view when the page scrolls.
+same node tree. Each tree scrolls in its own box. On a window wider than
+about 1090 px, Build mode fits the window and the page does not scroll. The
+World tree, each Build rail tab, and the palette swatches scroll in their own
+box, and only when their content is taller than the window. A wider window
+gives the Build rail more width, so the palette shows more swatches in a row.
 
 | Control | What it does |
 | --- | --- |

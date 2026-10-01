@@ -1171,8 +1171,8 @@ an earlier one, so the order is part of the contract:
 6. `forms.css`: the inline authoring form's frame, rows, captions, and
    control sizes
 7. `character.css`, `session.css`, `party.css`, `story.css`, `quest.css`,
-   `library.css`, `spells.css`, `combat.css`: one sheet for each feature
-   area
+   `library.css`, `spells.css`, `combat.css`, `play-shell.css`,
+   `build-shell.css`: one sheet for each feature area
 8. `responsive.css`: narrow-viewport stacking. **Keep this sheet last.**
 
 Add a new feature sheet in the feature block, with an `@import` and a
@@ -1367,6 +1367,14 @@ The few layout switches are in known places:
   tab panel scroll on their own, and the dice tray is `position: sticky`
   at the bottom of the dock. The cards do not scroll on their own, because
   a scroll box clips the `.card__title` that straddles the card frame.
+- **Build shell.** `styles/build-shell.css` makes Build mode the same kind
+  of fixed screen. The Build rail width is `clamp(19rem, 22vw, 30rem)`, and
+  the swatch grid uses `repeat(auto-fill, minmax(2.875rem, 1fr))`, so a
+  wider window adds swatch columns. On the Paint tab the Palette card takes
+  the height that Generate and Tools leave, and `.palette__sections`
+  scrolls inside it down to a 7rem minimum. Below that, the tab panel
+  scrolls. In the stacked layout the page scrolls and the sections have no
+  scroll box.
 - **Body classes for mode and role.** `body.mode-play`, `.mode-build`,
   `.mode-library`, `.mode-combat`, `.role-gm`, `.role-player`,
   `.role-locked`, and `.sidebar-collapsed` show or hide whole regions, so a

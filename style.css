@@ -19,4 +19,5 @@
 @import url('styles/spells.css'); /* spell authoring form, spellbook, cast modal */
 @import url('styles/combat.css'); /* Combat mode: the full-width fight screen */
 @import url('styles/play-shell.css'); /* Play mode: the fixed screen with its own scrolling columns */
+@import url('styles/build-shell.css'); /* Build mode: the fixed screen with its own scrolling rails */
 @import url('styles/responsive.css'); /* narrow-viewport stacking; keep last */

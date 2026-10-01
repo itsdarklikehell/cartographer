@@ -15,14 +15,10 @@
   gap: var(--space-4);
 }
 
-/* The Build rail that contains the world tree stays in view while the page
-   scrolls, and the tree scrolls inside it. The rail is never taller than the
-   window, so the rows below the fold of a large world stay reachable without
-   a scroll of the whole page. */
+/* The tree scrolls inside the rail that contains it. build-shell.css sets
+   the rail height on a wide window, and responsive.css caps it when the rail
+   stacks below the map. */
 .app-buildrail--tree {
-  position: sticky;
-  top: var(--space-4);
-  max-height: calc(100dvh - 2 * var(--space-4));
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -256,10 +252,10 @@ body.mode-build .app-sidebar {
   margin-bottom: var(--space-3);
 }
 
-/* Collapsible swatch sections (Terrain / Roads / Buildings / Interior); the
-   section list scrolls as a whole rather than each grid individually. */
+/* Collapsible swatch sections (Terrain / Roads / Buildings / Interior). The
+   section list scrolls as a whole rather than each grid individually, when
+   build-shell.css gives it a fixed height. */
 .palette__sections {
-  max-height: 18rem;
   overflow-y: auto;
   /* Expanding a section can summon the vertical scrollbar, which narrows the
      content box mid-layout and flashes a horizontal scrollbar. Reserve the
@@ -276,7 +272,9 @@ body.mode-build .app-sidebar {
 
 .palette__grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  /* As many 2.875rem columns as the rail width allows, so a wider rail shows
+     more swatches per row. */
+  grid-template-columns: repeat(auto-fill, minmax(2.875rem, 1fr));
   gap: var(--space-1);
   padding-bottom: var(--space-2);
 }
