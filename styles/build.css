@@ -390,7 +390,18 @@ body.mode-build .app-sidebar {
   color: var(--text);
   font-size: var(--text-label);
   text-align: center;
+  align-items: center;
   pointer-events: none;
+}
+
+.map-pick-hint__text {
+  margin: 0;
+}
+
+/* Only the Cancel button takes the pointer, so a click beside it still
+   reaches the tile under the hint. */
+.map-pick-hint .btn {
+  pointer-events: auto;
 }
 
 /* The Build-mode tool chip on the map toolbar. It names what a click on the

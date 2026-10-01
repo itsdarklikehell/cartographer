@@ -1175,7 +1175,7 @@ needs a caster class.
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
 | Location (map), Column, Row | The selected cell, or the middle of the map when no cell is selected | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
-| Pick on map | | Closes the dialog until you click a tile of the map in view. Then the dialog opens again with your values, and the map, column, and row of that tile. Press Escape to go back without a change. A click while the dialog waits does not move the party or paint |
+| Pick on map | | Closes the dialog until you click a tile of the map in view. Then the dialog opens again with your values, and the map, column, and row of that tile. Press Escape, or **Cancel** in the hint over the map, to go back without a change. A click while the dialog waits does not move the party or paint |
 | Move to the party | | Sets the map, column, and row to the party's tile |
 
 A line under **Row** warns when the tile is outside the map, has no

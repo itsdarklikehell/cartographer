@@ -1,4 +1,6 @@
 import { tileIdAt } from '../map/MapGeometry.js';
+import { textButton } from '../ui/buttons.js';
+import { el } from '../ui/dom.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -55,8 +57,9 @@ export function armTilePick(host, onPick) {
 
 /**
  * Wait for the GM to click one tile of the map in view. A hint over the map
- * says what to do, and Escape cancels. The result is the map and tile that
- * the GM clicked, or null on cancel.
+ * says what to do, and Escape or its Cancel button cancels. The button
+ * gives a touch screen, which has no Escape key, a way out. The result is
+ * the map and tile that the GM clicked, or null on cancel.
  * @param {AppContext} app
  * @param {string} [hint]
  * @returns {Promise<EncounterLocation | null>}
@@ -66,16 +69,23 @@ export function pickMapTile(
   hint = 'Click a tile to place the creature. Press Escape to cancel.',
 ) {
   const canvas = app.views.mapCanvas;
-  const note = document.createElement('p');
-  note.className = 'map-pick-hint';
-  note.setAttribute('role', 'status');
-  note.textContent = hint;
+  /** @type {() => void} */
+  let disarm = () => {};
+  /** @type {(result: EncounterLocation | null) => void} */
+  let finish = () => {};
+  const text = el('p', 'map-pick-hint__text', hint);
+  text.setAttribute('role', 'status');
+  const cancel = textButton('Cancel', () => {
+    disarm();
+    finish(null);
+  });
+  const note = el('div', 'map-pick-hint u-row u-g2', text, cancel);
   canvas.canvas.parentElement?.appendChild(note);
   return new Promise((resolve) => {
     // A pick puts the map callbacks back by itself, after the click or at
-    // the end of the drag. Escape puts them back at once.
+    // the end of the drag. Escape and Cancel put them back at once.
     /** @param {EncounterLocation | null} result */
-    const finish = (result) => {
+    finish = (result) => {
       document.removeEventListener('keydown', onKey, true);
       note.remove();
       resolve(result);
@@ -88,7 +98,7 @@ export function pickMapTile(
       disarm();
       finish(null);
     };
-    const disarm = armTilePick(canvas, (x, y) =>
+    disarm = armTilePick(canvas, (x, y) =>
       finish({ nodeId: app.navigator.getCurrentNode().id, tileId: tileIdAt(x, y) }),
     );
     document.addEventListener('keydown', onKey, true);
