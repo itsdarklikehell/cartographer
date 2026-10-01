@@ -248,7 +248,7 @@ test('Shield turns a Fire Bolt aside after it rolls and before it lands', async 
   assert.equal(hpOf(app, 'mage'), 30);
   const casts = app.log.findIndex((l) => l === 'Evoker casts Fire Bolt.');
   const shield = app.log.findIndex((l) => l === 'Mage casts Shield at level 1.');
-  const miss = app.log.findIndex((l) => l === 'Fire Bolt: 15 to hit vs AC 17 — misses Mage.');
+  const miss = app.log.findIndex((l) => l === 'Fire Bolt: 15 to hit vs AC 17, misses Mage.');
   assert.ok(casts >= 0 && casts < shield && shield < miss, app.log.join('\n'));
 });
 

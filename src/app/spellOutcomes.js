@@ -321,7 +321,7 @@ function applyAttack(app, spell, result, casterId) {
         : '';
       app.actions.logEvent(
         'combat',
-        `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${logName(app, o.target)}${splashed}.`,
+        `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode}, ${verb} ${logName(app, o.target)}${splashed}.`,
       );
       if (splash) applyToTarget(app, o.target.id, splash.total, false);
       dealt += splash?.total ?? 0;

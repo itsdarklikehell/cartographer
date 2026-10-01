@@ -169,14 +169,14 @@ function reactionRow(row, reaction) {
   const name = row.name ?? 'Unknown combatant';
   const buttons = [
     ...reaction.weapons.map((weapon) =>
-      textButton(weapon.name, () => reaction.onAttack(weapon), {
+      textButton(`Opportunity attack: ${weapon.name}`, () => reaction.onAttack(weapon), {
         icon: 'sword',
         ariaLabel: `Opportunity attack by ${name} with ${weapon.name}`,
         title: `Roll an opportunity attack with ${weapon.name}, which spends the reaction of ${name}`,
       }),
     ),
     ...reaction.spells.map((spell) =>
-      textButton(spell.name, () => reaction.onCast(spell), {
+      textButton(`Cast ${spell.name}`, () => reaction.onCast(spell), {
         icon: 'sparkles',
         ariaLabel: `Cast ${spell.name} as a reaction by ${name}`,
         title: `Cast ${spell.name}, which spends the reaction of ${name}`,

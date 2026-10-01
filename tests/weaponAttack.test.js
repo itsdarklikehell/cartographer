@@ -205,7 +205,7 @@ test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
     app.log[0],
     /^Hero attacks Goblin with Sword \(STR \+3, proficiency \+2\): 20 to hit/,
   );
-  assert.match(app.log[0], /vs AC 10 — hit\.$/);
+  assert.match(app.log[0], /vs AC 10, hit\.$/);
   assert.match(app.log[1], /^Sword hits Goblin for /);
   // 5 on the die plus the STR modifier.
   assert.equal(app.state.creatures[0].currentHP, 20 - 8);
@@ -229,7 +229,7 @@ test('a natural 20 crits, doubles the damage dice, and says so', () => {
     weapon: /** @type {any} */ (SWORD),
     rng: scripted([7 / 8]),
   });
-  assert.match(app.log[0], /— critical hit\.$/, 'a natural 20 beats any AC');
+  assert.match(app.log[0], /, critical hit\.$/, 'a natural 20 beats any AC');
   assert.match(app.log[1], /^Sword critically hits Goblin for /);
   // Two dice at 8 plus the STR modifier of 3.
   assert.equal(app.state.creatures[0].currentHP, 40 - 19);
@@ -256,7 +256,7 @@ test('a miss logs the roll, says who missed, and lands no damage', () => {
     weapon: /** @type {any} */ (SWORD),
   });
   assert.equal(app.log.length, 1, 'a miss logs the attack and nothing else');
-  assert.match(app.log[0], /— miss\.$/);
+  assert.match(app.log[0], /, miss\.$/);
   assert.equal(app.state.creatures[0].currentHP, 20);
   assert.deepEqual(app.toastMessages, ['10 vs AC 25: Hero misses Goblin.']);
 });
@@ -280,7 +280,7 @@ test('a natural 1 misses however high the total', () => {
     defender: { id: 'goblin', name: 'Goblin', ac: 2 },
     weapon: /** @type {any} */ (SWORD),
   });
-  assert.match(app.log[0], /— natural 1, miss\.$/);
+  assert.match(app.log[0], /, natural 1, miss\.$/);
   assert.equal(app.state.creatures[0].currentHP, 20);
 });
 
@@ -523,7 +523,7 @@ test('a caster NPC takes its proficiency from its caster level', () => {
     weapon: /** @type {any} */ (fist),
     rng: scripted([0]),
   });
-  assert.match(app.log[0], /proficiency \+4\): 14 to hit vs AC 20 — miss\.$/);
+  assert.match(app.log[0], /proficiency \+4\): 14 to hit vs AC 20, miss\.$/);
 });
 
 test('a rider chip on the attacker joins the attack roll and the log', () => {
@@ -550,7 +550,7 @@ test('a rider chip on the attacker joins the attack roll and the log', () => {
     rng: scripted([2 / 4, 4 / 8]),
   });
   assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 8 }, target: 12 }]);
-  assert.match(app.log[0], /proficiency \+2, Bless \+1d4 \[3\]\): 13 to hit vs AC 12 — hit\.$/);
+  assert.match(app.log[0], /proficiency \+2, Bless \+1d4 \[3\]\): 13 to hit vs AC 12, hit\.$/);
 });
 
 test('an attacker with no rider chip rolls exactly what it rolled before', () => {
@@ -763,7 +763,7 @@ test('a melee hit on an unconscious defender crits without a natural 20', () => 
     weapon: /** @type {any} */ (SWORD),
     rng: () => 0.999,
   });
-  assert.match(app.log[0], /— critical hit\.$/);
+  assert.match(app.log[0], /, critical hit\.$/);
   // Two sword dice at 8 plus the STR modifier of 3.
   assert.equal(app.state.creatures[0].currentHP, 40 - 19);
 });
@@ -789,7 +789,7 @@ test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
     weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', kind: 'ranged' }),
     rng: () => 0.999,
   });
-  assert.match(app.log[0], /— hit\.$/);
+  assert.match(app.log[0], /, hit\.$/);
   // One bow die at 8 plus the DEX modifier of 3.
   assert.equal(app.state.creatures[0].currentHP, 40 - 11);
 });
@@ -1344,7 +1344,7 @@ test('cover can turn a hit into a miss', () => {
     weapon: /** @type {any} */ (SWORD),
     tweaks: { cover: 'three-quarters' },
   });
-  assert.match(app.log[0], /vs AC 15 \(10 three-quarters cover \+5\) — miss\./);
+  assert.match(app.log[0], /vs AC 15 \(10 three-quarters cover \+5\), miss\./);
   assert.equal(app.log.length, 1, 'no damage was rolled');
   assert.equal(app.toastMessages[0], '14 vs AC 15: Hero misses Goblin.');
 });

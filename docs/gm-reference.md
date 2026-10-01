@@ -1457,8 +1457,8 @@ of these conditions are true:
 - The combatant can still act.
 - Its reaction is unspent.
 
-The row has one button per melee weapon for an opportunity attack. It also
-has one button per spell that casts as a reaction, such as Shield.
+The row has one button per melee weapon, as in **Opportunity attack: Rapier**. It also
+has one button per spell that casts as a reaction, as in **Cast Shield**.
 
 Apart from a hit on a Shield caster or an attack on a creature with
 Redirect Attack (see below), the app does not watch for a trigger. It

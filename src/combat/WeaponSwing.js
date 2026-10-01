@@ -234,7 +234,7 @@ export function attackLine(setup, roll) {
   // where the difference came from.
   const coverAC = setup.cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
   const wardAC = raised && roll.wardName ? ` (${roll.wardName} +${raised})` : '';
-  return `${roll.attackerName ?? attacker.name} attacks ${roll.defenderName ?? defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${tiredNote}${styleNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote} — ${roll.outcome}.`;
+  return `${roll.attackerName ?? attacker.name} attacks ${roll.defenderName ?? defender.name} with ${weapon.name}${handNote} (${setup.ability} ${formatModifier(setup.abilityMod)}, ${proficiencyNote}${tiredNote}${styleNote}${tweakNote}${riderNote}${conditionNote}): ${roll.total} to hit vs AC ${warded}${coverAC}${wardAC}${modeNote}, ${roll.outcome}.`;
 }
 
 /**

@@ -596,7 +596,7 @@ test('a missed attack logs the roll against AC and leaves HP alone', () => {
     writeBack: () => {},
     rng: seq([d20(2)]),
   });
-  assert.match(app.log[1], /to hit vs AC 14 — misses Goblin\.$/);
+  assert.match(app.log[1], /to hit vs AC 14, misses Goblin\.$/);
   assert.equal(app.state.creatures[0].currentHP, 10);
 });
 
