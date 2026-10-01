@@ -1021,6 +1021,14 @@ stays in the NPCs panel. Each row shows the name on one line, and the HP and
 the column and row on a second line. On a GM tab, the **Amount** field of a
 row sets how much the damage and heal buttons of that row apply.
 
+The Nearby encounters tab shows one line for each group of foes that share
+a name, such as "Gray Wolf x4". The line shows the HP of the group added
+up and the distance of the nearest one in tiles. The nearest group comes
+first. Every defeated foe goes into one "Defeated (2)" line at the end. On
+a GM tab, click a line to open the full rows of its foes, with the same
+controls as an Active encounter row. One line opens at a time. A Player
+tab shows each line as text, with the HP band instead of the bar.
+
 A GM tab also shows these controls:
 
 | Control | What it does |
@@ -1220,7 +1228,8 @@ within the nearby range, nearest first, with the distance in tiles. Tick
 **Join** on a row to bring that foe into the fight. A joined foe rolls
 initiative with the others. The Stealth contest covers only the rows above
 the list. During a fight, the **Nearby encounters** tab has an **Add to
-fight** button on each hostile row that is not in the fight. It rolls
+fight** button on each hostile row that is not in the fight. Open the line
+of the foe to reach its row. It rolls
 initiative for the foe, logs the roll, and puts the foe into the order.
 
 Combatants that share a name get a number after it, such as "Goblin

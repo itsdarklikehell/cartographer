@@ -9,6 +9,7 @@ import { casterSummary } from '../entities/Caster.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
+import { mountNearbyList } from './NearbyList.js';
 import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { clampInt } from '../util/num.js';
@@ -57,6 +58,7 @@ import { describeTile } from '../map/TileCoords.js';
  *   getLabel?: (encounter: Encounter) => string,
  *   canAddToFight?: (encounter: Encounter) => boolean,
  *   onAddToFight?: (encounter: Encounter) => void,
+ *   getPosition?: () => { nodeId: string, tileId: string } | null,
  * }} callbacks
  * `getLabel` gives the name a row shows, such as "Roadside Bandit 2" for the
  * second of two foes with one name.
@@ -68,6 +70,9 @@ import { describeTile } from '../map/TileCoords.js';
  * players do not get.
  * `canAddToFight` and `onAddToFight` give a Nearby row an "Add to fight"
  * button for the GM, on each row that `canAddToFight` allows.
+ * `getPosition` gives the party's tile, which the Nearby tab measures each
+ * foe's distance from. The Nearby tab lists its foes in groups (see
+ * `NearbyList.js`).
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {
@@ -98,6 +103,7 @@ export function mountEncounterPanel(container, callbacks) {
   /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(encounter, fn) {
     callbacks.onUpdate(fn(encounter));
+    nearbyList.update();
     // A row write can defeat or revive a foe, which moves the rating. The
     // list panel repaints only its own rows after an action, so the
     // difficulty line re-derives here.
@@ -199,6 +205,7 @@ export function mountEncounterPanel(container, callbacks) {
           if (!ok) return false;
           callbacks.onDelete(encounter.id);
           renderDifficulty();
+          nearbyList.update();
         },
       },
     ];
@@ -258,6 +265,7 @@ export function mountEncounterPanel(container, callbacks) {
         getEntity: () => encounter,
         onSet: (level) => {
           onSetExhaustion(encounter, level);
+          nearbyList.update();
           // The sixth level defeats the creature, which moves the rating.
           renderDifficulty();
         },
@@ -394,17 +402,16 @@ export function mountEncounterPanel(container, callbacks) {
     (next ?? tab)?.focus();
   }
 
-  const nearbyList = mountListPanel(nearbyPanel, {
-    ...rowOptions,
-    actions: nearbyActions,
-    dependsOn: joinable,
+  const nearbyList = mountNearbyList(nearbyPanel, {
+    list: { ...rowOptions, actions: nearbyActions, dependsOn: joinable, emptyMessage: '' },
     getRows: () => callbacks.getNearbyEncounters(),
+    getPosition: () => callbacks.getPosition?.() ?? null,
+    gate,
     emptyMessage: 'No encounters nearby.',
-    classes: { ...rowOptions.classes, add: 'encounter-panel__add' },
     addButtons: () => [
       // The caller creates and stores the encounter. A non-null return
       // only signals that the visible list can have changed.
-      callbacks.onAdd ? { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd } : null,
+      callbacks.onAdd ? { label: 'New creature', icon: 'add', onClick: callbacks.onAdd } : null,
       callbacks.onAddFromTemplate
         ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
         : null,

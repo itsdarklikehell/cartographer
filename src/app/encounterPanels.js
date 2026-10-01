@@ -158,6 +158,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
         hostileGroup(state.creatures, app.partyTracker.getPosition()),
       ),
     getNearbyEncounters: () => encounterLists().nearby,
+    getPosition: () => app.partyTracker.getPosition(),
     onUpdate: (edited) => {
       // Log the transition into defeat exactly once. Compare against the
       // pre-update creature so damage that keeps it down does not log again.

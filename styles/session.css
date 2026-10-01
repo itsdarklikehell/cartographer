@@ -62,6 +62,68 @@
   font-size: var(--text-label);
 }
 
+/* The compact Nearby list: one line per group of foes. For the GM, each
+   line is a disclosure button that opens the full rows of its members. */
+.encounter-panel__nearby {
+  gap: var(--space-1);
+}
+
+.encounter-panel__line {
+  align-items: center;
+  width: 100%;
+  min-height: 2rem;
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  text-align: left;
+}
+
+.encounter-panel__line--toggle {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.encounter-panel__line--toggle:hover {
+  background: var(--surface-sunken);
+}
+
+.encounter-panel__line--toggle .icon {
+  transition: transform 120ms ease;
+}
+
+.encounter-panel__line--toggle[aria-expanded='true'] {
+  border-color: var(--border);
+}
+
+.encounter-panel__line--toggle[aria-expanded='true'] .icon {
+  transform: rotate(90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .encounter-panel__line--toggle .icon {
+    transition: none;
+  }
+}
+
+.encounter-panel__line-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.encounter-panel__distance {
+  white-space: nowrap;
+}
+
+/* The open group's member rows, set in under its line. */
+.encounter-panel__members {
+  padding: 0 0 var(--space-2) var(--space-2);
+}
+
 /* ==========================================================================
    In-game time
    ========================================================================== */
