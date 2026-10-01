@@ -435,10 +435,10 @@ A bestiary template is a saved copy of a foe that you can place again.
 5. Set **Count** to the number of copies, set the map and the tile, and
    click **Add**.
 
-The copy starts at full health on the tile that you picked. A template is a
-snapshot, so later edits to the live foe do not change it. To remove a
+Each copy starts at full health on the tile that you picked. A template is
+a snapshot, so later edits to the live foe do not change it. To remove a
 template, click **Remove template** in the same list, pick it, and click
-**Remove**.
+**Remove**. Then click **Delete** in the confirmation.
 
 ### Clear defeated foes
 

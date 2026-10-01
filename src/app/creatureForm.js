@@ -208,7 +208,7 @@ export async function addFromLibrary(app) {
   const values = await promptModal(
     'Add from bestiary',
     [
-      { name: 'filter', label: 'Filter by name', placeholder: 'Wolf' },
+      { name: 'filter', label: 'Filter by name', type: 'search', placeholder: 'Wolf' },
       {
         name: 'template',
         label: 'Template',
@@ -248,7 +248,7 @@ export async function addFromLibrary(app) {
 
 /**
  * Remove one template from the campaign bestiary, after a pick and one
- * confirm. Library entries are not offered, because Library mode manages
+ * danger confirm. Library entries are not offered, because Library mode manages
  * them. Resolves to true if a template is removed.
  * @param {AppContext} app
  * @returns {Promise<boolean>}
@@ -268,13 +268,14 @@ export async function removeTemplate(app) {
           .map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` })),
       },
     ],
-    {
-      message: 'Creatures already placed from the template stay on the map.',
-      submitLabel: 'Remove',
-    },
+    { submitLabel: 'Remove' },
   );
   const template = values && state.bestiary.find((t) => t.id === values.template);
   if (!template) return false;
+  // The pick dialog opens with focus on the select, so Enter submits it at
+  // once. The danger confirm opens with focus on Cancel.
+  if (!(await confirmDelete(template.name, 'Creatures already placed from it stay on the map.')))
+    return false;
   state.bestiary = removeById(state.bestiary, template.id);
   app.actions.markDirty();
   app.toasts.show(`Removed "${template.name}" from the bestiary.`);

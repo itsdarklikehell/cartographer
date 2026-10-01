@@ -367,7 +367,14 @@ export function promptModal(title, fields, options = {}) {
                 })
               : textField(field.value === undefined ? '' : String(field.value), {
                   placeholder: field.placeholder,
+                  type: field.type === 'search' ? 'search' : 'text',
                 });
+          // A search field narrows another field, and an Enter that submits
+          // from it acts on a choice that the GM has not looked at yet.
+          if (field.type === 'search')
+            plain.addEventListener('keydown', (event) => {
+              if (event.key === 'Enter') event.preventDefault();
+            });
           input = plain;
           getters[field.name] = () => plain.value;
         }

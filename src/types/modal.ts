@@ -42,9 +42,12 @@ interface FieldBase {
   disabled?: boolean;
 }
 
-/** A single-line text or number input. `min` and `max` bound a number field. */
+/**
+ * A single-line text or number input. `min` and `max` bound a number field.
+ * A `search` field narrows another field, and Enter in it does not submit.
+ */
 export interface TextModalField extends FieldBase {
-  type?: 'text' | 'number';
+  type?: 'text' | 'number' | 'search';
   value?: string | number;
   min?: number;
   max?: number;

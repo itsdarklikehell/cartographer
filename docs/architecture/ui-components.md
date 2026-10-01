@@ -777,6 +777,7 @@ the widget:
 | `type` | Widget | Value in the result record |
 | --- | --- | --- |
 | `'text'` *(default)* | `input.field` | The string |
+| `'search'` | `input.field` with `type=search`. Enter in it does not submit the dialog, because it narrows another field. The rail form has no renderer for it | The string |
 | `'number'` | `input.field` with `type=number`, honoring `min` and `max` | The string. An out-of-range value moves to the nearer bound on `change`, not on each keystroke |
 | `'textarea'` | `textarea.field`, `rows` lines tall | The string |
 | `'checkbox'` | One on/off box | `'1'` when checked, `''` when not |

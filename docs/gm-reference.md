@@ -785,8 +785,8 @@ people.
 | Control | What it does |
 | --- | --- |
 | New creature | Opens the creature dialog for a new foe |
-| From bestiary | Opens the Bestiary dialog. Type part of a name in **Filter by name** to narrow the list, pick a template and a count, then add that many full-health copies at a map and tile. **Pick on map** fills the map and tile from one click on the map |
-| Remove template | Removes one campaign template from the bestiary. It shows while the campaign bestiary has a template |
+| From bestiary | Opens the **Add from bestiary** dialog. Type part of a name in **Filter by name** to narrow the list. Enter in the filter does not add a copy. Then pick a template, a count, and a map and tile, and click **Add** to place that many full-health copies. **Pick on map** fills the map and tile from one click on the map |
+| Remove template | Removes one campaign template from the bestiary, after a confirmation. It shows while the campaign bestiary has a template |
 | Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
 | Edit, Delete on a row | Edits or deletes that creature |
 
@@ -1091,7 +1091,7 @@ A GM tab also shows these controls:
 | --- | --- |
 | Start combat | Opens the combat setup for the party, the creatures of the Active encounter tab, and any friendly or neutral creature on the tile of the party |
 | New creature | Opens the creature dialog for a new foe |
-| From bestiary | Opens the Bestiary dialog |
+| From bestiary | Opens the **Add from bestiary** dialog |
 | Save as a bestiary template, on a row | Stores that creature as a campaign template |
 
 ### The difficulty hint
@@ -2996,9 +2996,9 @@ name and the type must both match. An edit that changes the disposition of
 a creature moves the entry to the other subtab.
 
 The Spells tab has **Class**, **Level**, and **School** filters beside the
-name filter, and the Foes subtab of the Creatures tab has a **Challenge
-rating** filter.
-Each filter offers only the values that the entries have.
+name filter, and the Creatures tab has a **Challenge rating** filter on
+both subtabs.
+Each filter offers only the values that the entries of the subtab in view have, and a filter with no values hides.
 
 The equipment form shows its **Preset** picker only for a new entry. An
 edit of an existing entry hides it, because a pick would overwrite the
