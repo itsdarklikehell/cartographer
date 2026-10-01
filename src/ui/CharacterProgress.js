@@ -194,8 +194,8 @@ export function buildProgressSection(getCharacter, opts) {
     addText(row, line);
     if (opts.editBase) {
       row.appendChild(
-        textButton('Undo', () => opts.onCommit(undoLastChoice(getCharacter())), {
-          ariaLabel: 'Undo the last improvement choice',
+        textButton('Revert last choice', () => opts.onCommit(undoLastChoice(getCharacter())), {
+          ariaLabel: 'Revert the last improvement choice',
         }),
       );
     }

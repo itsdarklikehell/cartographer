@@ -607,7 +607,7 @@ that.
    raise one or two abilities. To take a feat instead, click **Take feat**
    and pick a feat from the library. For a feat that is not in the list, pick **Custom (name
    only)**.
-5. To take back the last choice, click **Undo** beside it.
+5. To take back the last choice, click **Revert last choice** beside it.
 6. If the level reaches the subclass level of the class, pick the subclass
    in the dialog that opens. To pick it later, click **Cancel**.
 

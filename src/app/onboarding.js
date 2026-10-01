@@ -57,15 +57,15 @@ function showOnboarding(app) {
     overlay.remove();
   };
 
-  /** @param {string} label @param {string} hint @param {() => void} action */
-  const option = (label, hint, action) => {
+  /** @param {string} label @param {string} hint @param {() => void} action @param {boolean} [primary] */
+  const option = (label, hint, action, primary = false) => {
     const button = textButton(
       label,
       () => {
         dismiss();
         action();
       },
-      { className: 'onboarding__option' },
+      { className: 'onboarding__option', variant: primary ? 'primary' : undefined },
     );
     card.appendChild(el('div', 'u-col u-g1', button, el('p', 'onboarding__hint u-muted', hint)));
   };
@@ -77,8 +77,13 @@ function showOnboarding(app) {
     app.actions.setMode('build');
     mustGetElement('generate-btn').click();
   });
-  option('Load the example campaign', 'See a filled-in world first.', () =>
-    mustGetElement('example-btn').click(),
+  // The example is the quickest way for a new GM to see every panel in use,
+  // so it is the primary choice.
+  option(
+    'Load the example campaign',
+    'See a filled-in world first.',
+    () => mustGetElement('example-btn').click(),
+    true,
   );
 
   card.appendChild(textButton('Dismiss', dismiss, { className: 'onboarding__skip' }));

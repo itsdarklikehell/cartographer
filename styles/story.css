@@ -49,6 +49,12 @@
   font-size: var(--text-label);
 }
 
+/* .btn sets display, which beats the hidden attribute, and an empty log has
+   nothing to clear. */
+.travelog__clear[hidden] {
+  display: none;
+}
+
 /* ==========================================================================
    Quest log
    ========================================================================== */
