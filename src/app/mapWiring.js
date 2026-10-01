@@ -495,6 +495,7 @@ export function wireMapView(app) {
   app.actions.onModeChanged = (mode) => {
     mapCanvas.setRevealAll(mode === 'build');
     syncFogDim();
+    syncMapOccluders();
     if (mode === 'build') palettePanel.show();
     syncToolChip();
     tileTooltip.hide();

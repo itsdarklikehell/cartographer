@@ -336,7 +336,7 @@ export function readableScale(tileSize) {
  * east band is wide, and room for it shrinks a map on a narrow canvas far
  * more than the band needs, so that band slides clear of the map instead. A
  * tall occluder at the top corner pushes the left or right side past it. A
- * floating occluder, such as the mini-map, reserves no room, because the map
+ * floating occluder, such as the mini-map in Play mode, reserves no room, because the map
  * may pass under it. On the left, the side also keeps `lead` past a tall
  * occluder for the row labels. A
  * wide occluder at the top, such as the zoom toolbar, pushes the top side

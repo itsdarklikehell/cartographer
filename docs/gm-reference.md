@@ -972,9 +972,13 @@ return arrows. A click on an arrow travels.
 An exit arrow that the mini-map would cover moves along its side of the map
 until it is clear.
 
-The mini-map floats over the top-left corner of the map, and the map fits
-the canvas as if it were not there. Coordinate digits and region names
-under the mini-map hide. Collapse the mini-map to see them.
+In Play mode, the mini-map floats over the top-left corner of the map, and
+the map fits the canvas as if it were not there. Coordinate digits and
+region names under the mini-map hide. Collapse the mini-map to see them. In
+Build mode, the map fits clear of the mini-map, so a click or a paint
+stroke on a corner tile does not land on the mini-map. After you pan or zoom,
+tiles can pass under the mini-map in either mode, and a click there does
+nothing.
 
 ### Party splitting
 

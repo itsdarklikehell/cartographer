@@ -78,7 +78,7 @@ export function coordLabelLayout(view, tileSize) {
   // the zoom toolbar, moves the whole column run below it, and a tall box
   // moves the whole row run right of it. The boxes go in order of their far
   // edge, so a run that moves past one box is tested against the next. A
-  // floating box, such as the mini-map, moves no run, and
+  // floating box, such as the mini-map in Play mode, moves no run, and
   // visibleCoordLabels drops the digits under it instead.
   const boxes = (view.occluders ?? []).filter((o) => !o.float);
   for (const o of [...boxes].sort((a, b) => a.y + a.h - (b.y + b.h))) {
@@ -108,9 +108,9 @@ export function coordLabelLayout(view, tileSize) {
  * reach up into the column strip is left out, and when the row run is pinned,
  * a column label whose plate would reach left into the row strip is left out.
  * Without this rule, a column run moved below the zoom toolbar draws over the
- * first row labels, and a row run moved right of the mini-map draws over the
- * first column labels. A label whose plate overlaps a floating box, such as
- * the mini-map, is left out too.
+ * first row labels, and a row run moved right of the Build-mode mini-map draws
+ * over the first column labels. A label whose plate overlaps a floating box,
+ * such as the mini-map in Play mode, is left out too.
  * @param {CoordView} view
  * @param {CoordLayout} layout
  * @returns {{ columns: { text: string, x: number }[], rows: { text: string, y: number }[] }}

@@ -1494,8 +1494,9 @@ where it is.
 The coordinate digits move off the same HTML. `coordLabelLayout` takes the
 rectangles as `view.occluders`. A wide box, such as the zoom toolbar, moves
 the whole run of column digits below it, and a tall box, such as the
-mini-map, moves the whole run of row digits right of it. A digit that stays
-under the other kind of box is hidden by it. The band geometry keeps the
+mini-map in Build mode, moves the whole run of row digits right of it. A
+digit that stays under the other kind of box is hidden by it. In Play mode
+the mini-map floats, and the digits under it hide (see below). The band geometry keeps the
 HTML rectangles apart as `chrome`, because its own `occluders` list also
 contains the digit strips, and a strip tested against itself would move.
 
@@ -1507,12 +1508,18 @@ A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
 the height of a band to a north or south side that has an exit, and pushes
 the top side below the zoom toolbar, with room for the column label plate
 there (1.5 times the largest label font). The inset that decides whether a
-box sits at an edge scales with the pixel ratio. The mini-map rectangle has
-`float: true`, so a fit keeps no column for it and the map passes under it.
+box sits at an edge scales with the pixel ratio. In Play mode the mini-map
+rectangle has `float: true`, so a fit keeps no column for it and the map
+passes under it.
 `visibleCoordLabels` (`CoordLabels.js`) drops each coordinate digit whose
 plate overlaps a floating box, and a region name skips any spot under one.
-The GM collapses the mini-map to see those digits. A west or east band is wide, so a fit keeps no room
-for it, and the band slides clear instead. The exits and the occluders reach
+The GM collapses the mini-map to see those digits. In Build mode the
+rectangle has no `float`, because the mini-map catches the clicks and paint
+strokes aimed at the cells under it. A fit then starts past it, as for any tall
+box at the left edge or wide box at the top. `onModeChanged` in `mapWiring.js`
+sends the rectangles again on each mode switch. A pan or a zoom by the GM can
+still move cells under the mini-map in either mode. A west or east band is
+wide, so a fit keeps no room for it, and the band slides clear instead. The exits and the occluders reach
 `MapCanvas` after `setNode` fits, so `setExits` and `setOccluders` refit a
 view the user has not panned or zoomed when the exit sides or the rectangles
 change.
