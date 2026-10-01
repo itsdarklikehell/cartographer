@@ -6,6 +6,7 @@ import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/S
 import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { exhaustionReadout } from '../view/ExhaustionView.js';
+import { d20Penalty } from '../entities/Exhaustion.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildFeaturesSection } from './CharacterFeatures.js';
 import { levelUpBanner } from './CharacterLevelBanner.js';
@@ -22,6 +23,7 @@ import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
+import { setTip } from './Tooltip.js';
 import { numberField } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -180,7 +182,7 @@ export function mountCharacterSheet(
 
   /**
    * Mark a piece of the sheet for the full sheet alone. The sidebar card is
-   * the summary, and full-sheet.css hides these pieces there. The same DOM
+   * the summary, and sheet-summary.css hides these pieces there. The same DOM
    * moves between the two places, so the mark is a class, not a second build.
    * @template {HTMLElement} T
    * @param {T} node
@@ -376,11 +378,10 @@ export function mountCharacterSheet(
     // Initiative, passive Perception, and the proficiency bonus are the other
     // numbers a GM asks for in play, so they join AC and speed on one line.
     const initBadge = el('span', 'character-sheet__init u-muted');
-    initBadge.title = 'Initiative bonus (DEX modifier)';
     const ppBadge = el('span', 'character-sheet__pp u-muted');
-    ppBadge.title = 'Passive Perception';
+    setTip(ppBadge, 'Passive Perception');
     const profBadge = el('span', 'character-sheet__prof u-muted');
-    profBadge.title = 'Proficiency bonus';
+    setTip(profBadge, 'Proficiency bonus');
 
     // A penalty that reaches every d20 roll belongs in the headline, not only
     // beside the conditions. The badge is empty at level 0, which is where most
@@ -416,7 +417,16 @@ export function mountCharacterSheet(
       // Speed follows a STR edit as well, because armor too heavy for the
       // wearer costs 10 feet.
       speedBadge.textContent = `${walkSpeed(shown)} ft`;
-      initBadge.textContent = `Init ${formatModifier(abilityModifier(effectiveStat(shown, 'dex').total))}`;
+      // Initiative rolls with the exhaustion penalty, as in rollInitiative.
+      const dex = abilityModifier(effectiveStat(shown, 'dex').total);
+      const tiredInit = d20Penalty(shown);
+      initBadge.textContent = `Init ${formatModifier(dex + tiredInit)}`;
+      setTip(
+        initBadge,
+        tiredInit
+          ? `Initiative bonus: DEX modifier ${formatModifier(dex)}, exhaustion ${tiredInit}`
+          : 'Initiative bonus (DEX modifier)',
+      );
       ppBadge.textContent = `PP ${passivePerception(shown)}`;
       profBadge.textContent = `Prof ${formatModifier(characterProficiency(shown))}`;
       speedBadge.title = speedNote(shown);

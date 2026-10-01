@@ -6,6 +6,7 @@ import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
 import { buildStatBar, emptyStatBar } from './CharacterBars.js';
 import { markMenuButton, toggleMenuFrom } from './ContextMenu.js';
+import { setTip } from './Tooltip.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -144,7 +145,7 @@ export function mountCharacterRoster(container, options) {
     const text = levelUpText(character);
     if (!text) return null;
     const mark = el('span', 'character-roster__level-up', 'Level up');
-    mark.title = text;
+    setTip(mark, text);
     return mark;
   }
 

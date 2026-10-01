@@ -2298,7 +2298,8 @@ of the card, with the current and maximum HP above it. Under the bar, the
 GM gets a **Damage** button, an amount field, and a **Heal** button. The
 amount field sets how many HP each click moves. It starts at 1. The level
 line gives AC, initiative (**Init**), speed, passive Perception (**PP**),
-the proficiency bonus (**Prof**), and XP.
+the proficiency bonus (**Prof**), and XP. Init includes the exhaustion
+penalty, as the initiative roll of a fight does.
 
 A caster gets one line per spell level, such as "1st", then the pips, then
 the free count, such as "3 of 4". A filled pip is a free slot. A spent pip is
@@ -2310,7 +2311,8 @@ While a character has a level to assign, an ability score improvement, or a
 class feature choice left, a banner at the top of the sheet says so, such as
 "Ready to level up: 1 level to assign." The GM's **Level up** button opens
 the full sheet. For a pending level, it then opens **Assign a level**. For
-an improvement or a feature choice, it moves focus to the Progression block.
+an improvement or a feature choice, it moves focus to the **+2 ability** or
+**Choose** button of the Progression block.
 A Player tab shows the banner with no button. The party row of the character
 shows a **Level up** mark at the same time.
 

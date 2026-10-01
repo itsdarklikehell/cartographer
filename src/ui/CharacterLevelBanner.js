@@ -60,7 +60,11 @@ export function levelUpBanner(character, opts) {
     }
     const progress = opts.getProgress();
     progress?.scrollIntoView({ block: 'nearest' });
-    progress?.querySelector('button')?.focus();
+    // The improvement and feature-choice buttons sit after the subclass and
+    // "Add a class" buttons, so the banner looks for its own mark.
+    /** @type {HTMLButtonElement | null | undefined} */ (
+      progress?.querySelector('button[data-pending]')
+    )?.focus();
   };
   banner.appendChild(
     textButton('Level up', onClick, {

@@ -109,8 +109,11 @@ export function buildProgressSection(getCharacter, opts) {
     const where = `${className(first.classId)} ${first.classLevel}`;
     addText(row, `${slots.length} improvement${slots.length === 1 ? '' : 's'} pending (${where})`);
     if (opts.editBase) {
+      const asi = textButton('+2 ability', () => chooseASI(getCharacter, opts));
+      // The level-up banner focuses the first button marked pending.
+      asi.dataset.pending = '';
       row.append(
-        textButton('+2 ability', () => chooseASI(getCharacter, opts)),
+        asi,
         textButton('Take feat', () => chooseFeat(getCharacter, opts)),
       );
     }
@@ -141,11 +144,11 @@ export function buildProgressSection(getCharacter, opts) {
       `${grants.length} feature choice${grants.length === 1 ? '' : 's'} pending (${where})`,
     );
     if (opts.editBase) {
-      row.appendChild(
-        textButton('Choose', runFeatureGrants, {
-          ariaLabel: 'Choose the pending class feature grants',
-        }),
-      );
+      const choose = textButton('Choose', runFeatureGrants, {
+        ariaLabel: 'Choose the pending class feature grants',
+      });
+      choose.dataset.pending = '';
+      row.appendChild(choose);
     }
   }
 
