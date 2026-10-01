@@ -142,7 +142,8 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
       };
     },
     px,
-    cellBoxes(blockedIds, view, size),
+    // A name also keeps out from under the floating mini-map.
+    [...cellBoxes(blockedIds, view, size), ...(view.occluders ?? []).filter((o) => o.float)],
   );
   boxes.forEach((box, i) => {
     if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;

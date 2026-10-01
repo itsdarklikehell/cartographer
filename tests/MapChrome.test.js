@@ -233,3 +233,22 @@ test('visibleCoordLabels drops column labels left of a row run moved right of a 
   // The columns are not pinned here, so every row label draws.
   assert.equal(rows.length, 12);
 });
+
+test('a floating box reserves no fit room and hides only the digits under it', () => {
+  const miniMap = { x: 0, y: 0, w: 170, h: 190, float: true };
+  assert.deepEqual(fitSides({ lead: 64, trail: 16, occluders: [miniMap], canvasWidth: 900 }), {
+    top: 64,
+    right: 16,
+    bottom: 16,
+    left: 64,
+  });
+  const map = { ...view, node, offsetX: 60, offsetY: 60, occluders: [miniMap] };
+  const layout = coordLabelLayout(map, 48);
+  assert.ok(layout);
+  assert.equal(layout.rowPinned, false);
+  const { columns, rows } = visibleCoordLabels(map, layout);
+  assert.ok(columns.length > 0 && columns.length < 10);
+  assert.ok(columns.every((c) => c.x > 170));
+  assert.ok(rows.length > 0 && rows.length < 12);
+  assert.ok(rows.every((r) => r.y > 190));
+});

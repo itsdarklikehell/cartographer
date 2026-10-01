@@ -1503,13 +1503,14 @@ zoom toolbar with `clientRectToBuffer`. It does this from a `ResizeObserver`
 on each of them and on each canvas resize.
 
 A fitted view keeps room for this chrome. `fitSides` (`MapGeometry.js`) adds
-the height of a band to a north or south side that has an exit, pushes the
-left side past a mini-map at the top-left corner, and pushes the top side
-below the zoom toolbar, with room for the column label plate there (1.5 times
-the largest label font). The inset that decides whether a box sits at an
-edge scales with the pixel ratio. Past the mini-map, the left side keeps the full label
-width. A map taller than the canvas starts at its top edge, and a smaller gap
-puts the labels of rows 1 to 3 under the mini-map. A west or east band is wide, so a fit keeps no room
+the height of a band to a north or south side that has an exit, and pushes
+the top side below the zoom toolbar, with room for the column label plate
+there (1.5 times the largest label font). The inset that decides whether a
+box sits at an edge scales with the pixel ratio. The mini-map rectangle has
+`float: true`, so a fit keeps no column for it and the map passes under it.
+`visibleCoordLabels` (`CoordLabels.js`) drops each coordinate digit whose
+plate overlaps a floating box, and a region name skips any spot under one.
+The GM collapses the mini-map to see those digits. A west or east band is wide, so a fit keeps no room
 for it, and the band slides clear instead. The exits and the occluders reach
 `MapCanvas` after `setNode` fits, so `setExits` and `setOccluders` refit a
 view the user has not panned or zoomed when the exit sides or the rectangles

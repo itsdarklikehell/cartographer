@@ -961,6 +961,10 @@ return arrows. A click on an arrow travels.
 An exit arrow that the mini-map would cover moves along its side of the map
 until it is clear.
 
+The mini-map floats over the top-left corner of the map, and the map fits
+the canvas as if it were not there. Coordinate digits and region names
+under the mini-map hide. Collapse the mini-map to see them.
+
 ### Party splitting
 
 The **Allow splitting the party** checkbox in the Party card lets each

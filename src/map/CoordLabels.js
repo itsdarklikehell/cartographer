@@ -75,11 +75,12 @@ export function coordLabelLayout(view, tileSize) {
   let rowPinned = view.offsetX - pad < pad;
   let rowX = rowPinned ? pad : view.offsetX - pad;
   // HTML over the canvas hides a digit drawn under it. A wide box, such as
-  // the zoom toolbar, moves the whole column run below it, and a tall box,
-  // such as the mini-map, moves the whole row run right of it. The boxes go
-  // in order of their far edge, so a run that moves past one box is tested
-  // against the next.
-  const boxes = view.occluders ?? [];
+  // the zoom toolbar, moves the whole column run below it, and a tall box
+  // moves the whole row run right of it. The boxes go in order of their far
+  // edge, so a run that moves past one box is tested against the next. A
+  // floating box, such as the mini-map, moves no run, and
+  // visibleCoordLabels drops the digits under it instead.
+  const boxes = (view.occluders ?? []).filter((o) => !o.float);
   for (const o of [...boxes].sort((a, b) => a.y + a.h - (b.y + b.h))) {
     if (o.w <= o.h || !(o.x < right && left < o.x + o.w)) continue;
     if (colY - half < o.y + o.h && o.y < colY + half) {
@@ -108,7 +109,8 @@ export function coordLabelLayout(view, tileSize) {
  * a column label whose plate would reach left into the row strip is left out.
  * Without this rule, a column run moved below the zoom toolbar draws over the
  * first row labels, and a row run moved right of the mini-map draws over the
- * first column labels.
+ * first column labels. A label whose plate overlaps a floating box, such as
+ * the mini-map, is left out too.
  * @param {CoordView} view
  * @param {CoordLayout} layout
  * @returns {{ columns: { text: string, x: number }[], rows: { text: string, y: number }[] }}
@@ -120,18 +122,25 @@ export function visibleCoordLabels(view, layout) {
   const half = fontSize * 0.6;
   const rowTop = colPinned && layout.columns ? layout.columns.y + layout.columns.h : -Infinity;
   const colLeft = rowPinned && layout.rows ? layout.rows.x + layout.rows.w : -Infinity;
+  const floats = (view.occluders ?? []).filter((o) => o.float);
+  /** @type {(x: number, y: number, w: number, h: number) => boolean} */
+  const hidden = (x, y, w, h) =>
+    floats.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
+  const rowHalf = layout.rows ? layout.rows.w / 2 : 0;
   const columns = [];
   for (let i = 0; i < width; i++) {
     const x = view.offsetX + (i + 0.5) * size;
     const text = String(toDisplay(i));
     const plateHalf = (text.length * fontSize * 0.6) / 2 + fontSize * 0.25;
     if (x < 0 || x > view.canvasWidth || x - plateHalf < colLeft) continue;
+    if (hidden(x - plateHalf, layout.colY - half, plateHalf * 2, half * 2)) continue;
     columns.push({ text, x });
   }
   const rows = [];
   for (let i = 0; i < height; i++) {
     const y = view.offsetY + (i + 0.5) * size;
     if (y < 0 || y > view.canvasHeight || y - half < rowTop) continue;
+    if (hidden(layout.rowX - rowHalf, y - half, rowHalf * 2, half * 2)) continue;
     rows.push({ text: String(toDisplay(i)), y });
   }
   return { columns, rows };

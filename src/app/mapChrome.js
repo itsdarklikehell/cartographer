@@ -48,20 +48,23 @@ export function mountMapChrome(app, env, hooks) {
   // the edge exit bands move off the part of the canvas they cover. The
   // observers fire when either shows, hides, or changes size. A canvas
   // resize changes the buffer scale, so the resize handler calls this too.
+  // The mini-map floats over the map: a fit keeps no column for it, and the
+  // coordinate digits under it hide.
   const syncMapOccluders = () => {
     const canvasRect = canvasEl.getBoundingClientRect();
     const boxes = [miniMap.element, mapControls?.element].filter(
       (box) => box && !box.hidden && box.offsetParent !== null,
     );
     mapCanvas.setOccluders(
-      boxes.map((box) =>
-        clientRectToBuffer(
+      boxes.map((box) => ({
+        ...clientRectToBuffer(
           /** @type {HTMLElement} */ (box).getBoundingClientRect(),
           canvasRect,
           canvasEl.width,
           canvasEl.height,
         ),
-      ),
+        float: box === miniMap.element,
+      })),
     );
   };
   const occluderObserver = new ResizeObserver(syncMapOccluders);

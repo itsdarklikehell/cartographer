@@ -335,10 +335,10 @@ export function readableScale(tileSize) {
  * south side with an edge exit adds `bandDepth` for its exit band. A west or
  * east band is wide, and room for it shrinks a map on a narrow canvas far
  * more than the band needs, so that band slides clear of the map instead. A
- * tall occluder at the top corner, such as the mini-map, pushes the left or
- * right side past it. On the left, the side also keeps `lead` past the
- * occluder for the row labels. With only a small inset there, the labels of
- * the first rows of a map taller than the canvas draw under the mini-map. A
+ * tall occluder at the top corner pushes the left or right side past it. A
+ * floating occluder, such as the mini-map, reserves no room, because the map
+ * may pass under it. On the left, the side also keeps `lead` past a tall
+ * occluder for the row labels. A
  * wide occluder at the top, such as the zoom toolbar, pushes the top side
  * below it, with `labelDepth` left for the column label plate (half of
  * `lead` when not given). The caller scales `inset` and `labelDepth` by the
@@ -348,7 +348,7 @@ export function readableScale(tileSize) {
  *   trail: number,
  *   exitSides?: import('../types/map.js').ExitSide[],
  *   bandDepth?: number,
- *   occluders?: { x: number, y: number, w: number, h: number }[],
+ *   occluders?: { x: number, y: number, w: number, h: number, float?: boolean }[],
  *   canvasWidth: number,
  *   inset?: number,
  *   labelDepth?: number,
@@ -368,7 +368,7 @@ export function fitSides(opts) {
     left: lead,
   };
   for (const o of opts.occluders ?? []) {
-    if (o.y > inset * 2) continue;
+    if (o.float || o.y > inset * 2) continue;
     if (o.w > o.h) sides.top = Math.max(sides.top, o.y + o.h + labelDepth);
     else if (o.x <= inset * 2) sides.left = Math.max(sides.left, o.x + o.w + lead);
     else if (o.x + o.w >= canvasWidth - inset * 2) {

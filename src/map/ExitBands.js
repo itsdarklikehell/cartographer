@@ -40,8 +40,12 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * @property {number} [pixelRatio] buffer px per CSS px
  */
 
-/** A rect in buffer px. */
-/** @typedef {{ x: number, y: number, w: number, h: number }} Rect */
+/**
+ * A rect in buffer px. `float` marks a box that floats over the map, such as
+ * the mini-map. A fit reserves no room for it, and the coordinate labels
+ * under it hide instead of moving the whole run.
+ * @typedef {{ x: number, y: number, w: number, h: number, float?: boolean }} Rect
+ */
 
 /** The band's rect in buffer px, with the type size its label is drawn at. */
 /** @typedef {{ x: number, y: number, w: number, h: number, fontSize: number }} ExitBand */
