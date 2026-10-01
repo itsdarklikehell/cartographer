@@ -780,8 +780,8 @@ When the party steps onto the tile, a message names the handout and offers a
 1. Click the chevron on the quest row to show its details.
 2. Click **Objective**, type the step, and submit. To keep the step off the
    Player view, select **GM only (players do not see it)**.
-3. To mark a step done, click the ring in front of it. The ring is also on
-   the collapsed row, so you do not need to open the details. For a GM-only
+3. To mark a step done, open the quest with the chevron or the title, and
+   then click the ring in front of the step. For a GM-only
    step of a revealed quest, a dialog asks whether to reveal the step to
    players. After the last step, a dialog offers to complete the quest.
 4. To change the text of a step, click the text.

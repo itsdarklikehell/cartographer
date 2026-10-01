@@ -386,8 +386,8 @@ The helper owns the root element, the clear and rebuild, the row loop, the
 group headings, and the handler contract below. It also keeps keyboard
 focus across a rebuild: `captureFocus` and `restoreFocus`
 (`src/ui/focusMemory.js`) find the rebuilt control by its tag, type, class,
-and accessible name. A root that scrolls itself, such as the quest log below the Play shell
-width, keeps its scroll position across a rebuild too.
+and accessible name. A root that scrolls itself, such as the quest log
+below the Play shell width, keeps its scroll position across a rebuild too.
 A root that grows with its content, such as the quest log in its sidebar
 tab, keeps its old height until the rebuild ends, so the scrolling tab
 panel around it does not clamp its scroll position while the root is
@@ -1372,9 +1372,12 @@ The few layout switches are in known places:
 - **Play shell.** `styles/play-shell.css` makes Play mode a fixed screen
   of `100dvh` above the stacking point of `responsive.css`. A grid on
   `.app-center` draws the dock left of the map, the dock and each sidebar
-  tab panel scroll on their own, and the dice tray is `position: sticky`
-  at the bottom of the dock. The cards do not scroll on their own, because
-  a scroll box clips the `.card__title` that straddles the card frame.
+  tab panel scroll on their own. The dock is a flex column. The dice tray
+  takes its natural height at the bottom (`flex: none; margin-top: auto`),
+  and the Party card takes the rest. The roster inside the Party card
+  (`#party-container > .character-roster`) scrolls when the tray opens,
+  and the card itself does not, because a scroll box clips the
+  `.card__title` that straddles the card frame.
 - **Build shell.** `styles/build-shell.css` makes Build mode the same kind
   of fixed screen. The Build rail width is `clamp(19rem, 22vw, 30rem)`, and
   the swatch grid uses `repeat(auto-fill, minmax(2.875rem, 1fr))`, so a

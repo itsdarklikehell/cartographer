@@ -90,8 +90,10 @@ call order in `main.js` a dependency order:
 | 7 | `wireMapView` | Draws the first map, and returns the `MapEnv` |
 | 8 | `wireGenerateAction` | Takes the `MapEnv` from step 7 |
 | 9 | `wireDiceTray` | Mounts the dice tray and registers `rollDice` |
-| 10 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
-| 11 | `wireShortcuts` | Adds the global key listener |
+| 10 | `wireHeaderMenu` | Wires the phone Menu button of the header, which reads only the header markup |
+| 11 | `wireSessionControls` | Applies the starting role at once, which refreshes four panels and re-points the character sheet |
+| 12 | `wirePhoneViews` | Reads the sidebar tabs that step 11 wires, to follow the selected tab |
+| 13 | `wireShortcuts` | Adds the global key listener |
 
 ### State that stays out of `app.state`
 
@@ -809,6 +811,15 @@ It also calls `wireHandoutCue` (`handoutCue.js`), which registers
 closes, and the merge of a Player tab patch calls it too. It toasts each
 hidden handout on the party tile, or on a character tile, once per session.
 
+Last, `wireStory` calls `mountStoryCards` (`ui/StoryCards.js`) on the
+Story tab. It gives the Quests, NPCs, and Handouts cards a fold button,
+and it puts a jump row at the top of the tab. Each jump button shows the
+`data-row-count` that the list panel inside its card writes at each
+paint. `view/FoldMemory.js` keeps the fold state of each card, and of each
+quest group in `ui/QuestPanel.js`, per browser. It reads localStorage
+directly and writes through `writeStored`, so the footprint ledger records
+each write (see [Persistence](persistence.md)).
+
 #### Handout visibility
 
 The handout panel renders only what `Handouts.handoutsFor` and `revealedFor` return for the
@@ -965,6 +976,17 @@ character. Both locks come from `createHeartbeatLock` in
 `sessionControls.js` claims the single GM key and yields by switching to the
 Player view. `view/CharacterClaim.js` claims a per-character key from
 `characterLockKey` and yields by dropping to spectator.
+
+### headerMenu.js
+
+`headerMenu.js` wires the Menu button of the header. The stylesheet shows
+the button only at phone width, where the class `app-header--menu-open` on
+the header shows the folded actions and view switches. A press on a button
+inside the menu runs that action and closes the menu. The closed menu hides
+the pressed button, so the module moves focus to the Menu button when focus
+was inside the menu. An action that opens a dialog moves focus into the
+dialog first, and the dialog keeps it. Escape and a pointer press outside
+the header also close the menu.
 
 ### phoneViews.js
 
