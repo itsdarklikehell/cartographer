@@ -370,10 +370,12 @@ body.mode-build .app-sidebar {
   text-decoration: underline;
 }
 
-/* The hint over the map while a creature dialog waits for a tile pick. */
+/* The hint over the map while a creature dialog waits for a tile pick. It
+   sits below the map toolbar (2.25rem tall at the top of the map), so the
+   zoom and pan buttons stay in reach during the pick. */
 .map-pick-hint {
   position: absolute;
-  top: var(--space-3);
+  top: calc(2 * var(--space-2) + 2.25rem);
   left: 50%;
   z-index: 2;
   width: max-content;
