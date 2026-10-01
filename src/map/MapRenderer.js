@@ -8,7 +8,7 @@ import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { INK } from './CanvasInk.js';
 import { frontierIds } from './FogOfWar.js';
-import { renderRegionOverlays } from './RegionOverlay.js';
+import { renderRegionNames, renderRegionOverlays } from './RegionOverlay.js';
 import { isBlankMap } from './BlankMap.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
@@ -151,6 +151,9 @@ export class MapRenderer {
       if (!bare) this._renderCellGrid(view, frame);
       this._renderRegionGroups(view, frame);
       this._decorations.renderSelection(view);
+      // Names draw after the selection outline, so the outline never cuts
+      // through a name plate.
+      this._renderRegionNames(view, frame);
       this._markers.renderEncounterMarkers(view);
       this._markers.renderNPCMarkers(view);
       this._markers.renderHandoutMarkers(view);
@@ -532,7 +535,13 @@ export class MapRenderer {
   /** @param {MapView} view
    * @param {{ revealedIds: RevealedIds | null }} frame */
   _renderRegionGroups(view, frame) {
-    renderRegionOverlays(
+    renderRegionOverlays(this.ctx, view, frame.revealedIds, this.tileSize);
+  }
+
+  /** @param {MapView} view
+   * @param {{ revealedIds: RevealedIds | null }} frame */
+  _renderRegionNames(view, frame) {
+    renderRegionNames(
       this.ctx,
       view,
       frame.revealedIds,

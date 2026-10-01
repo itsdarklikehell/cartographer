@@ -13,7 +13,8 @@ const REGION_LABEL_PX = 12;
 
 /**
  * Draw the region overlays of the node in view: a tint over each region's
- * cells, a border along its outline, and its name. Each region takes the
+ * cells and a border along its outline. `renderRegionNames` draws the names
+ * in a later pass, over the selection outline. Each region takes the
  * color of its `regionSlots` slot, so two regions that share a border show
  * two colors. The tint and the border are clipped to the region's cells, and
  * in Play mode to the cells the party has revealed, so a region never shows
@@ -26,17 +27,8 @@ const REGION_LABEL_PX = 12;
  * @param {MapView} view
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds the revealed tile ids, or null in Build mode
  * @param {number} tileSize base tile size in buffer px at scale 1
- * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
- * @param {string[]} [blockedIds] tiles with a token or marker, which no name plate covers
  */
-export function renderRegionOverlays(
-  ctx,
-  view,
-  revealedIds,
-  tileSize,
-  getNodeName,
-  blockedIds = [],
-) {
+export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
   if (!view.node || view.regionGroups.length === 0) return;
   const size = tileSize * view.scale;
   // The view's groups, not the groups of view.node. During a stroke the
@@ -88,12 +80,12 @@ export function renderRegionOverlays(
     ctx.stroke(outline);
     ctx.restore();
   }
-  renderRegionNames(ctx, view, revealedIds, size, getNodeName, blockedIds);
 }
 
 /**
- * Draw the name of each region, after every tint, so a later region's tint
- * never covers an earlier region's name. A name draws outside the region's
+ * Draw the name of each region, after every tint and after the selection
+ * outline, so neither a later region's tint nor the outline crosses a name.
+ * A name draws outside the region's
  * clip, so a long name on a small region reads in full. Its default spot is
  * the region's first cell in reading order. In Play mode that is the first
  * revealed cell, so the plate never sits in fog. `placeLabels` moves a name
@@ -105,13 +97,14 @@ export function renderRegionOverlays(
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds
- * @param {number} size the on-screen tile size in buffer px
+ * @param {number} tileSize base tile size in buffer px at scale 1
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
- * @param {string[]} blockedIds
+ * @param {string[]} [blockedIds] tiles with a token or marker, which no name plate covers
  */
-function renderRegionNames(ctx, view, revealedIds, size, getNodeName, blockedIds) {
+export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName, blockedIds = []) {
   const node = view.node;
-  if (!node || !getNodeName) return;
+  if (!node || !getNodeName || view.regionGroups.length === 0) return;
+  const size = tileSize * view.scale;
   const px = view.pixelRatio ?? 1;
   const fontSize = Math.round(REGION_LABEL_PX * px);
   const padX = 4 * px;

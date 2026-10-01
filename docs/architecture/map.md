@@ -129,6 +129,8 @@ clear of the names already placed. The renderer also passes the tiles of the
 party token, each character token, and each visible creature marker. A name
 skips a spot that covers one of those tiles, and often moves to the spot
 above the region instead.
+The names draw in their own pass after the selection outline, so the outline
+of a selected tile never cuts through a name plate.
 
 The view field `highlightRegionId` names one child node. Its groups draw the
 tint three times over and a border twice as wide. Build mode sets it to the
