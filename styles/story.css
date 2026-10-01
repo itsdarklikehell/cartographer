@@ -53,17 +53,6 @@
    Quest log
    ========================================================================== */
 
-/* The log scrolls itself once it outgrows most of the window, so a campaign
-   with many quests does not push the panels under it off the rail, and an
-   open quest still fits without an inner scroll. The stable gutter keeps
-   room for the scrollbar at all times. A scrollbar that shows only on hover
-   moves every row button to the left under the pointer. */
-.quest-panel {
-  max-height: max(24rem, 70vh);
-  overflow-y: auto;
-  scrollbar-gutter: stable;
-}
-
 .quest-panel__group {
   margin-bottom: var(--space-2);
 }

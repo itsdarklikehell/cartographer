@@ -101,6 +101,14 @@
     overflow-y: auto;
     overscroll-behavior: contain;
   }
+
+  /* The tab panel scrolls, so the travelogue list inside it does not keep a
+     scroll box of its own. Two nested scroll boxes catch the wheel at the
+     inner edge and hide where the list ends. */
+  body.mode-play .travelog__list {
+    max-height: none;
+    overflow-y: visible;
+  }
 }
 
 /* ==========================================================================

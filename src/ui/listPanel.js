@@ -253,8 +253,12 @@ export function mountListPanel(container, options) {
     const memo = captureFocus(root, document.activeElement);
     // A root that scrolls itself, such as the quest log, drops back to the
     // top when it is cleared. Without the restore, the row the GM just
-    // clicked jumps away from the pointer.
+    // clicked jumps away from the pointer. A list that grows with its content
+    // sits in a scrolling ancestor instead, such as a sidebar tab panel. The
+    // old height stays on the root through the rebuild, so the ancestor does
+    // not clamp its own scroll position while the list is empty.
     const { scrollTop } = root;
+    root.style.minHeight = `${root.offsetHeight}px`;
     root.innerHTML = '';
     /** @type {RowContext<T>} */
     const ctx = { gm, render, action };
@@ -304,6 +308,7 @@ export function mountListPanel(container, options) {
 
     restoreFocus(root, memo);
     root.scrollTop = scrollTop;
+    root.style.minHeight = '';
   }
 
   function render() {
