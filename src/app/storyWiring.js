@@ -218,7 +218,7 @@ export function wireStory(app) {
     onEdit: (npc) => creatureForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
-    pinAdd: true, // Leads with "New NPC", to match the Mobs subtab.
+    pinAdd: true, // Leads with "New NPC", to match the Foes subtab.
   });
 
   const questList = wireEntityList(app, {

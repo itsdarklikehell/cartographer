@@ -135,7 +135,7 @@ map is in the center. The rail on the right has three tabs:
 - **Paint** has the **Generate** card, the **Tools** card, and the
   **Palette**.
 - **Tile** has the tile inspector.
-- **Encounters** has the **Mobs** and **NPCs** lists.
+- **Encounters** has the **Foes** and **NPCs** lists.
 
 ![Build mode: world tree, editable map, and the paint palette](images/build-mode.png)
 
@@ -395,7 +395,7 @@ region.
 1. Switch to **Build** mode and open the map for the encounter.
 2. In the **Paint** tab, pick **Inspect** and click the tile for the
    encounter.
-3. Open the **Encounters** tab, then the **Mobs** tab.
+3. Open the **Encounters** tab, then the **Foes** tab.
 4. Click **New creature**. The **New creature** dialog opens, with the
    selected tile already set as its location.
 5. Set **Name**, **Creature type**, **Max HP**, **Level**, and **Tier**. The
@@ -412,7 +412,7 @@ region.
    and **Row**.
 9. Click **Add**.
 
-The foe shows in the Mobs list and on its tile. You can also right-click a
+The foe shows in the Foes list and on its tile. You can also right-click a
 tile in Build mode and click **New foe here**.
 
 To change a staged encounter later, click the pencil on its row. The edit
@@ -425,7 +425,7 @@ A bestiary template is a saved copy of a foe that you can place again.
 1. In Play mode, find the foe in the **Encounters** panel.
 2. Click the save icon on its row (**Save as template**). The app stores
    the foe as a campaign template.
-3. To place a copy, switch to **Build** mode. In the **Mobs** list of the
+3. To place a copy, switch to **Build** mode. In the **Foes** list of the
    **Encounters** tab, click **From bestiary**.
 4. Pick the template, or an entry from the library.
 5. Set **Count** to the number of copies, set the map and the tile, and
@@ -439,7 +439,7 @@ template, click **Remove template** in the same list, pick it, and click
 ### Clear defeated foes
 
 1. Switch to **Build** mode and open the map that has the defeated foes.
-2. Open the **Encounters** tab, then the **Mobs** tab.
+2. Open the **Encounters** tab, then the **Foes** tab.
 3. Click **Clear defeated (N)**. N is the number of hostile creatures at 0
    HP on this map. The button shows only when N is more than zero.
 4. Click **Remove** in the confirmation.

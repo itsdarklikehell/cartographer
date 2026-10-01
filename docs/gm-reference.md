@@ -296,7 +296,7 @@ left, the map is in the center, and the Build rail is on the right.
 | --- | --- |
 | Paint | Generate, Tools, and Palette |
 | Tile | The tile inspector for the selected cell |
-| Encounters | Two subtabs: Mobs for foes, and NPCs for friendly and neutral people |
+| Encounters | Two subtabs: Foes for hostile creatures, and NPCs for friendly and neutral people |
 
 ### Node kinds
 
@@ -739,7 +739,7 @@ a plain "Return to (parent)" button.
 ### Encounters tab
 
 The Encounters tab of the Build rail stages creatures on the map in view.
-The Mobs subtab lists foes, and the NPCs subtab lists friendly and neutral
+The Foes subtab lists foes, and the NPCs subtab lists friendly and neutral
 people.
 
 | Control | What it does |
