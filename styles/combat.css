@@ -459,14 +459,18 @@ body.mode-combat .app-buildrail {
 }
 
 /* A button whose cost the turn already spent. It stays live, because its
-   dialog lets the GM waive the cost, and its tooltip names the reason. */
+   dialog lets the GM waive the cost, and its tooltip names the reason. A
+   muted label and a dashed edge mark it. A live control needs 4.5:1 label
+   contrast, and --text-muted keeps that on every surface in both themes. */
 .combat-action-bar__button--spent {
-  opacity: 0.55;
+  border-style: dashed;
+  color: var(--text-muted);
 }
 
 .combat-action-bar__button--spent:hover,
 .combat-action-bar__button--spent:focus-visible {
-  opacity: 1;
+  border-style: solid;
+  color: var(--text);
 }
 
 /* A pip the GM can press keeps a border, so it reads as a control. A spent

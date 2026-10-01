@@ -1437,8 +1437,9 @@ A weapon button in the action bar opens the attack dialog.
 The Actions heading on the combat screen shows three pips: Action, Bonus
 action, and Reaction. A free pip has a filled dot. A spent pip has an empty
 ring, and its label is struck through. A combatant with Extra Attack also
-shows how many swings are left. A button that needs a spent cost is dimmed,
-and its tooltip names the cost, as in "Action spent".
+shows how many swings are left. A button that needs a spent cost has a
+muted label and a dashed edge, and its tooltip names the cost, as in
+"Action spent".
 
 | What | Cost |
 | --- | --- |
