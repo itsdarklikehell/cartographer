@@ -455,3 +455,15 @@
   color: var(--danger);
   font-weight: 600;
 }
+
+/* The More or Less button under a folded text (FoldText.js). */
+.fold-text__more {
+  align-self: flex-start;
+  min-height: 0;
+  padding: 0 var(--space-1);
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: var(--text-label);
+  text-decoration: underline;
+}

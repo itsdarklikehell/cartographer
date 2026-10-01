@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { NOTES_FOLD_LENGTH, foldsNotes, showsCombatBars } from '../src/view/NpcCard.js';
+import { showsCombatBars } from '../src/view/NpcCard.js';
+import { HANDOUT_FOLD_LENGTH, NOTES_FOLD_LENGTH, foldsText } from '../src/view/TextFold.js';
 
 /** @returns {any} */
 const npc = (extra = {}) => ({ id: 'n', name: 'Dorn', ...extra });
@@ -16,8 +17,9 @@ test('showsCombatBars keeps the bars while a condition or exhaustion stays', () 
   assert.equal(showsCombatBars(npc({ exhaustion: 2 }), false), true);
 });
 
-test('foldsNotes folds only notes past the fold length', () => {
-  assert.equal(foldsNotes(undefined), false);
-  assert.equal(foldsNotes('x'.repeat(NOTES_FOLD_LENGTH)), false);
-  assert.equal(foldsNotes('x'.repeat(NOTES_FOLD_LENGTH + 1)), true);
+test('foldsText folds only text past the limit', () => {
+  assert.equal(foldsText(undefined, NOTES_FOLD_LENGTH), false);
+  assert.equal(foldsText('x'.repeat(NOTES_FOLD_LENGTH), NOTES_FOLD_LENGTH), false);
+  assert.equal(foldsText('x'.repeat(NOTES_FOLD_LENGTH + 1), NOTES_FOLD_LENGTH), true);
+  assert.equal(foldsText('x'.repeat(HANDOUT_FOLD_LENGTH + 1), HANDOUT_FOLD_LENGTH), true);
 });

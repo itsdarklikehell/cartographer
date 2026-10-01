@@ -2752,6 +2752,9 @@ A handout is read-aloud text or lore, with an optional picture.
 
 A handout starts hidden. The eye toggle reveals it to players or hides it
 again. A badge beside the title reads **Shown** or **Hidden**.
+A shown handout lists its text under the title. In a GM tab, a long text
+shows three lines, and **More** shows the rest. A Player tab shows the
+whole text.
 
 When the party, or a character on their own tile, steps onto a tile with a
 hidden handout, the GM tab shows a message such as "The party stands on

@@ -5,7 +5,9 @@ import { isGM } from '../view/ViewRole.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountListPanel } from './listPanel.js';
-import { foldsNotes, showsCombatBars } from '../view/NpcCard.js';
+import { showsCombatBars } from '../view/NpcCard.js';
+import { NOTES_FOLD_LENGTH, foldsText } from '../view/TextFold.js';
+import { foldText } from './FoldText.js';
 
 /** @typedef {import('../types/creature.js').Creature} NPC */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -80,23 +82,18 @@ export function mountNPCPanel(container, callbacks) {
    */
   function notesOf(npc, render) {
     if (!npc.notes) return [];
-    const text = el('span', 'npc-panel__notes', npc.notes);
-    if (!foldsNotes(npc.notes)) return [text];
     const open = openNotes.has(npc.id);
-    text.classList.toggle('npc-panel__notes--folded', !open);
-    const more = textButton(
-      open ? 'Less' : 'More',
-      () => {
+    return foldText('span', 'npc-panel__notes', npc.notes, {
+      fold: foldsText(npc.notes, NOTES_FOLD_LENGTH),
+      open,
+      subject: `notes on ${npc.name}`,
+      focusKey: `notes:${npc.id}`,
+      onToggle: () => {
         if (open) openNotes.delete(npc.id);
         else openNotes.add(npc.id);
         render();
       },
-      { className: 'npc-panel__more' },
-    );
-    more.setAttribute('aria-expanded', String(open));
-    more.setAttribute('aria-label', `${open ? 'Fold' : 'Show all'} notes on ${npc.name}`);
-    more.dataset.focusKey = `notes:${npc.id}`;
-    return [text, more];
+    });
   }
 
   return mountListPanel(container, {
