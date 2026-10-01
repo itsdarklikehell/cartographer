@@ -64,6 +64,9 @@ export function sheetDeps(character, perms, catalogStamp) {
     character.stats,
     character.classes,
     character.asiChoices,
+    // The Features cards and the level-up banner read the claimed feature
+    // choices. Undoing a choice that granted nothing else changes only this.
+    character.featureChoices,
     character.proficiencies,
     character.inventory,
     character.equipment,

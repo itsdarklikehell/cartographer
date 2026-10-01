@@ -99,10 +99,11 @@ export function buildFeaturesSection(getCharacter, opts) {
     if (undone === from) return;
     const grant = pendingFeatureGrants(undone).find((g) => featureKey(g) === key);
     const stamp = grant ? await askFeatureStamp(undone, grant) : null;
+    // Cancel keeps the current choice.
+    if (!stamp) return;
     // Undo and claim again on the character read after the dialog closes.
     const live = getCharacter();
-    const liveUndone = undoFeatureGrant(live, key);
-    const next = stamp ? applyFeatureGrant(liveUndone, stamp) : liveUndone;
+    const next = applyFeatureGrant(undoFeatureGrant(live, key), stamp);
     if (next !== live) opts.onCommit(next);
   }
 

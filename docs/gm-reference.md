@@ -2322,7 +2322,7 @@ The Character tab of the full sheet adds these items to the summary:
 - the Progression block, with the hit-dice pool
 - the Features section, with one card for each class feature, race trait,
   and feat. A class feature with a claimed choice has a **Change** button
-  for the GM
+  for the GM. Cancel in its dialog keeps the current choice
 - the castable spells
 
 A dot in front of each save or skill shows how trained the character is.

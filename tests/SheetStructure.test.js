@@ -140,3 +140,9 @@ test('level, XP, stats, classes, inventory, and the spellbook all rebuild', () =
     false,
   );
 });
+
+test('a change to the claimed feature choices rebuilds', () => {
+  const claimed = { ...hero, featureChoices: { 'fighter-1-style': ['defense'] } };
+  assert.equal(same(hero, claimed), false);
+  assert.equal(same(claimed, { ...claimed }), true);
+});
