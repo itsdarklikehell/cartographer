@@ -35,6 +35,7 @@ import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
 import { generateDialog } from '../ui/GenerateDialog.js';
 import { resyncMapViews } from './mapResync.js';
+import { worldStart } from '../map/WorldStart.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -76,7 +77,14 @@ export function wireGenerateAction(app, env) {
   const { palette, grid, navigator, partyTracker, state } = app;
 
   const generateBtn = mustGetElement('generate-btn');
-  generateBtn.addEventListener('click', async () => {
+  /**
+   * Open the Generate dialog for the current node and apply the choice.
+   * `presets` starts the Archetype and Sub-maps fields on given values when
+   * the node offers that archetype.
+   * @param {{ archetype?: string, depth?: string }} [presets]
+   * @returns {Promise<boolean>} whether a map was generated
+   */
+  async function openGenerate(presets = {}) {
     const node = navigator.getCurrentNode();
     // A node that its parent reaches by a staircase is a level of a stack.
     // It keeps the staircase back to its parent, so the dialog offers only
@@ -157,8 +165,12 @@ export function wireGenerateAction(app, env) {
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,
       returnFocus: generateBtn,
+      archetype: archetypes.some((a) => a.value === presets.archetype)
+        ? presets.archetype
+        : undefined,
+      depth: presets.depth,
     });
-    if (!values) return;
+    if (!values) return false;
     const removed = linkedDescendants([...grid.nodes.values()], node);
     if (
       node.tiles.length > 0 &&
@@ -167,7 +179,7 @@ export function wireGenerateAction(app, env) {
         confirmLabel: 'Replace',
       }))
     ) {
-      return;
+      return false;
     }
     const tree = expandTree(
       palette,
@@ -301,6 +313,15 @@ export function wireGenerateAction(app, env) {
         ),
       );
     }
+    // A new world puts the party beside its first town, inside that town's
+    // region, so Play mode opens on land. The snapshot above records the
+    // party, so undo puts it back.
+    const start = !parent && values.archetype === 'world' ? worldStart(tree.nodes) : null;
+    const startNode = start ? grid.getNode(start.nodeId) : undefined;
+    if (start && startNode) {
+      partyTracker.moveTo(start.nodeId, start.tileId);
+      grid.updateNode(partyTracker.reveal(startNode, [start.tileId]));
+    }
     env.finishEdit();
     // The removal and the moves above change which creatures stand on the
     // party's tile, which is what a running fight is scoped to.
@@ -314,5 +335,10 @@ export function wireGenerateAction(app, env) {
     app.toasts.show(
       `Generated ${values.archetype} map in "${gen.name}"${extra} (seed ${values.seed}).${unbuilt}`,
     );
-  });
+    return true;
+  }
+
+  generateBtn.addEventListener('click', () => void openGenerate());
+  // The Welcome card starts a world with its regions and towns.
+  app.actions.generateWorld = () => openGenerate({ archetype: 'world', depth: '9' });
 }

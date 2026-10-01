@@ -904,6 +904,13 @@ always get their maps, even past the budget.
 10, and the Levels field of the Generate dialog has the same limit. With no
 limit, a vast dungeon of 500 levels builds 500 nodes.
 
+**World start.** `worldStart` in `src/map/WorldStart.js` reads a generated
+tree and returns an open land tile beside the first settlement, inside the
+region that contains it. A settlement is a region sub-map of a region. The
+Generate action (`app/generateAction.js`) moves the party there after it
+generates a world on the top map. Without it, the party of a blank campaign
+stands at column 1, row 1 of the world map, which is usually sea.
+
 **Regeneration.** When the GM regenerates a node that its parent reaches by
 a staircase, the new node keeps that staircase. `stackPlace` in
 `src/map/RegenerateNode.js` reads the stairway (`MapExits.stairwayTo`) and

@@ -99,6 +99,7 @@ export function mountMapNarration(app, canvas) {
         showNotes: isGM(state.role),
         markerVisible,
         placeNoun: placeNoun(node, parent && linkTileTo(parent, node.id)),
+        partyEmpty: state.characters.length === 0,
       });
       // Write only when the narration changes. Assigning textContent replaces
       // the live region's text node, and a screen reader watches that node.

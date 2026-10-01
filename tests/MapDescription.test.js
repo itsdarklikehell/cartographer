@@ -43,6 +43,16 @@ test('describeNode reports the party position when the party is in the node', ()
   assert.match(text, /Party at column 1, row 1\./);
 });
 
+test('describeNode names the start point of a party with no characters', () => {
+  const text = describeNode(
+    node(),
+    { nodeId: 'world', tileId: '0,0' },
+    { partyEmpty: true },
+  ).status;
+  assert.match(text, /Party start at column 1, row 1\. The party has no characters yet\./);
+  assert.doesNotMatch(text, /Party at/);
+});
+
 test('describeNode omits party position when the party is elsewhere', () => {
   const text = describeNode(node(), { nodeId: 'region', tileId: '0,0' }).status;
   assert.doesNotMatch(text, /Party at/);

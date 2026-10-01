@@ -47,6 +47,10 @@ const SUBMAP_DEPTHS = [
  * `size` is the preset that the Size field starts on, and it defaults to
  * medium.
  *
+ * `archetype` and `depth` are the presets of the Archetype and Sub-maps
+ * fields. The Welcome card passes the world archetype and every level, so
+ * "Generate a world" builds a world with its regions and towns.
+ *
  * `returnFocus` is the element that takes focus back when the dialog closes.
  * The Generate button passes itself: Safari does not focus a button on
  * click, so without this the dismissal lands wherever focus was before the
@@ -55,6 +59,8 @@ const SUBMAP_DEPTHS = [
  *   archetypes: { value: string, label: string }[],
  *   sizes: { value: string, label: string }[],
  *   size?: string,
+ *   archetype?: string,
+ *   depth?: string,
  *   stacked?: string[],
  *   maxLevels?: number,
  *   nested?: string[],
@@ -88,7 +94,7 @@ export function generateDialog(options) {
 
       const archetypeSelect = field(
         'Archetype',
-        select(options.archetypes, options.archetypes[0]?.value ?? ''),
+        select(options.archetypes, options.archetype ?? options.archetypes[0]?.value ?? ''),
       );
 
       const sizeSelect = field('Size', select(options.sizes, options.size ?? 'medium'));
@@ -110,7 +116,7 @@ export function generateDialog(options) {
 
       // The Sub-maps field shows for the archetypes in `nested` alone, whose
       // maps have places that open into maps of their own.
-      const depthSelect = field('Sub-maps', select(SUBMAP_DEPTHS, '0'));
+      const depthSelect = field('Sub-maps', select(SUBMAP_DEPTHS, options.depth ?? '0'));
       const depthField = /** @type {HTMLElement} */ (depthSelect.closest('.modal__field'));
       const syncDepth = () =>
         depthField.classList.toggle(

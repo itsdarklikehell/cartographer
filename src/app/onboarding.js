@@ -2,6 +2,7 @@ import { el, mustGetElement } from '../ui/dom.js';
 import { textButton } from '../ui/buttons.js';
 import { isBlankCampaign } from '../campaign/Campaigns.js';
 import { writeStored } from '../storage/Footprint.js';
+import { showNextSteps } from './onboardingNext.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -73,10 +74,14 @@ function showOnboarding(app) {
   option('Build it by hand', 'Switch to Build mode and paint tiles.', () =>
     app.actions.setMode('build'),
   );
-  option('Generate a world', 'Switch to Build mode and auto-generate a map.', () => {
-    app.actions.setMode('build');
-    mustGetElement('generate-btn').click();
-  });
+  option(
+    'Generate a world',
+    'Switch to Build mode and generate a world with its regions and towns.',
+    async () => {
+      app.actions.setMode('build');
+      if (await app.actions.generateWorld()) showNextSteps(app);
+    },
+  );
   // The example is the quickest way for a new GM to see every panel in use,
   // so it is the primary choice.
   option(

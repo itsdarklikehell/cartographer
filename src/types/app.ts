@@ -178,6 +178,9 @@ export interface AppActions {
   // Build-mode tile selection alone (the roster follows a split party).
   centerOnLocation(location: EncounterLocation): void;
   undoStroke(): void;
+  // generateAction: open the Generate dialog on the world archetype with every
+  // level of sub-maps. Resolves to whether a map was generated.
+  generateWorld(): Promise<boolean>;
   onModeChanged(mode: AppMode): void;
   onRoleChanged(role: ViewRole): void;
   // sessionControls

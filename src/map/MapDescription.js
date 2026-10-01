@@ -19,8 +19,11 @@ import { capitalize } from '../util/text.js';
  *   showNotes?: boolean,
  *   markerVisible?: (tileId: string) => boolean,
  *   placeNoun?: string | null,
+ *   partyEmpty?: boolean,
  * }} DescribeOptions
  * `placeNoun` names what the node is, such as "a village" (see `placeNoun`).
+ * `partyEmpty` is true when the party has no characters yet, so the party
+ * position reads as the start point and not as a party that stands there.
  */
 
 /**
@@ -190,7 +193,10 @@ export function describeNode(node, party, options = {}) {
 
   if (party && party.nodeId === node.id) {
     const coords = parseCoords(party.tileId);
-    if (coords) parts.push(`Party at column ${toDisplay(coords.x)}, row ${toDisplay(coords.y)}.`);
+    const where = coords && `column ${toDisplay(coords.x)}, row ${toDisplay(coords.y)}`;
+    if (where && options.partyEmpty) {
+      parts.push(`Party start at ${where}. The party has no characters yet.`);
+    } else if (where) parts.push(`Party at ${where}.`);
   }
 
   if (pois.length) {

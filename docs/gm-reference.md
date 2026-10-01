@@ -455,10 +455,10 @@ dialog shows a preview of the exact layout before it changes anything.
 
 | Field | Default | Values |
 | --- | --- | --- |
-| Archetype | The first in the list | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
+| Archetype | The first in the list. From **Generate a world** on the Welcome card: world | For a region: wilderness, highlands, frontier, desert, wetlands, island, town, or world. For an interior: dungeon, cave, castle, or building. For a level that stairs down lead to: dungeon, cave, or cellar. For a floor that stairs up lead to: upper floor |
 | Size | The size that fits the parent tiles that link to the node, or medium when none do | small (8x8), medium (14x14), large (22x22), huge (32x32), or vast (48x48) |
 | Levels | 1 | For a dungeon or a cave only: 1 to 10. A stack has at most 10 levels, so a deeper level allows fewer |
-| Sub-maps | None | For a region archetype only: None, One level down, or Every level |
+| Sub-maps | None. From **Generate a world** on the Welcome card: Every level | For a region archetype only: None, One level down, or Every level |
 | Seed | A random number | The number that reproduces the layout. **Reroll** picks a new seed |
 
 #### Links to the parent map
@@ -725,6 +725,13 @@ Generation always makes these maps, whatever the Sub-maps value:
 - the cellar under a trapdoor
 
 So a generated staircase or trapdoor always leads to a real map.
+
+A world generated on the top map moves the party start next to the first
+town, inside the region that contains that town. The party then starts on
+land. Undo puts the party back where it stood. After **Generate a world** on
+the Welcome card, a second card offers **Create a character** and **Check the
+party start**. Both switch to Play mode, and the first also opens the New
+character form.
 
 ### Link warnings
 
