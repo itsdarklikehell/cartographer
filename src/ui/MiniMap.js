@@ -24,13 +24,15 @@ const HIDDEN_KEY = 'campaign-builder:minimap-hidden';
  *
  * The caller decides what to show through `getView` and `revealAll`, and
  * calls `update` after anything that can change either one. `toggle` shows
- * or hides the mini-map, and the choice persists per browser.
+ * or hides the mini-map, and the choice persists per browser. `isAvailable`
+ * is false while the node in view has no parent view to show, such as the
+ * world map or a map that no tile links to.
  * @param {HTMLElement} container
  * @param {{
  *   getView: () => MiniMapView | null,
  *   revealAll: () => boolean,
  * }} options
- * @returns {{ update: () => void, isOpen: () => boolean, toggle: () => void, element: HTMLElement }}
+ * @returns {{ update: () => void, isOpen: () => boolean, isAvailable: () => boolean, toggle: () => void, element: HTMLElement }}
  */
 export function mountMiniMap(container, options) {
   const canvas = el('canvas', 'minimap__canvas');
@@ -145,10 +147,13 @@ export function mountMiniMap(container, options) {
     return `Mini-map of ${parent.name}. The party is in the ${compassArea(partyCell, parent.width, parent.height)} of it.`;
   }
 
+  let available = false;
+
   function update() {
-    const view = open ? options.getView() : null;
-    root.hidden = !view;
-    if (!view) return;
+    const view = options.getView();
+    available = view !== null;
+    root.hidden = !open || !view;
+    if (!open || !view) return;
     const { parent } = view;
     const scale = window.devicePixelRatio || 1;
     const size = miniMapTileSize(parent.width, parent.height, MAX_SIDE * scale);
@@ -170,5 +175,5 @@ export function mountMiniMap(container, options) {
     canvas.setAttribute('aria-label', describe(view));
   }
 
-  return { update, isOpen: () => open, toggle, element: root };
+  return { update, isOpen: () => open, isAvailable: () => available, toggle, element: root };
 }

@@ -1,5 +1,9 @@
 import { iconButton } from './buttons.js';
 import { append, el } from './dom.js';
+import { setTip } from './Tooltip.js';
+
+const MINI_MAP_LABEL = 'Mini-map of the parent map';
+const MINI_MAP_NONE = 'No mini-map: this map has no parent map that links to it';
 
 /**
  * Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, center on
@@ -12,6 +16,8 @@ import { append, el } from './dom.js';
  * The caller owns the active-tool state. `getTool` drives the pressed styling.
  * If `miniMap` is set, a toggle shows or hides the mini-map of the parent
  * map. The caller owns that choice too, and `isOpen` drives the pressed state.
+ * While `isAvailable` is false, the toggle is marked disabled with
+ * aria-disabled, so it stays focusable and its tooltip says why.
  * @param {HTMLElement} container
  * @param {{
  *   onZoomIn: () => void,
@@ -24,7 +30,7 @@ import { append, el } from './dom.js';
  *     onToolChange: (tool: 'reveal' | 'hide' | null) => void,
  *     onRevealAll: () => void,
  *   },
- *   miniMap?: { isOpen: () => boolean, onToggle: () => void },
+ *   miniMap?: { isOpen: () => boolean, isAvailable: () => boolean, onToggle: () => void },
  * }} callbacks
  * @returns {{ update: () => void, element: HTMLDivElement }}
  */
@@ -52,6 +58,8 @@ export function mountMapControls(container, callbacks) {
   let lastTool;
   /** @type {boolean | undefined} */
   let lastMiniMap;
+  /** @type {boolean | undefined} */
+  let lastAvailable;
 
   /** @param {HTMLButtonElement} btn @param {boolean} pressed */
   const setPressed = (btn, pressed) => {
@@ -61,7 +69,8 @@ export function mountMapControls(container, callbacks) {
 
   const miniMap = callbacks.miniMap;
   const miniMapToggle = miniMap
-    ? button('minimap', 'Mini-map of the parent map', () => {
+    ? button('minimap', MINI_MAP_LABEL, () => {
+        if (!miniMap.isAvailable()) return;
         miniMap.onToggle();
         update();
       })
@@ -74,13 +83,25 @@ export function mountMapControls(container, callbacks) {
     const zoom = `${Math.round(callbacks.getZoom() * 100)}%`;
     const active = callbacks.fog?.getTool() ?? null;
     const miniMapOpen = miniMap?.isOpen();
-    if (zoom === lastZoom && active === lastTool && miniMapOpen === lastMiniMap) return;
+    const available = miniMap?.isAvailable();
+    if (
+      zoom === lastZoom &&
+      active === lastTool &&
+      miniMapOpen === lastMiniMap &&
+      available === lastAvailable
+    )
+      return;
     lastZoom = zoom;
     lastTool = active;
     lastMiniMap = miniMapOpen;
+    lastAvailable = available;
     readout.textContent = zoom;
     for (const { el: btn, tool } of fogToggles) setPressed(btn, active === tool);
-    if (miniMapToggle) setPressed(miniMapToggle, Boolean(miniMapOpen));
+    if (miniMapToggle) {
+      setPressed(miniMapToggle, Boolean(miniMapOpen && available));
+      miniMapToggle.setAttribute('aria-disabled', String(!available));
+      setTip(miniMapToggle, available ? MINI_MAP_LABEL : MINI_MAP_NONE);
+    }
   }
 
   append(root, [

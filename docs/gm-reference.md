@@ -848,7 +848,7 @@ The map controls sit in a row over the map.
 | Zoom in, Zoom out | Change the zoom one step |
 | Fit map to view | Fits the map in the viewport, even when its tiles then draw small. In Play mode it fits the revealed tiles with a margin of two tiles, and at least 12 tiles on each side. Build mode, and a map with no revealed tile, fit the whole map |
 | Center on party | Brings the party back into view at the current zoom |
-| Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice. On a phone-width window the mini-map starts hidden until you show it |
+| Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice. On a phone-width window the mini-map starts hidden until you show it. On the world map, or on a map that no tile links to, the button is dimmed and does nothing, and its tooltip says that the map has no parent map |
 | Zoom readout | Shows the zoom as a percentage |
 | Reveal fog (brush) | GM only. Picks up the reveal brush. A click or Enter on a tile reveals it |
 | Hide fog (brush) | GM only. Picks up the hide brush. A click or Enter on a tile hides it |

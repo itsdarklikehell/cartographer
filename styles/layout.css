@@ -413,3 +413,13 @@ body.sidebar-collapsed .sidebar-panels {
 body.sidebar-collapsed .app-sidebar {
   width: auto;
 }
+
+/* The mini-map toggle on a map with no parent view. It stays focusable, so
+   its tooltip can say why it does nothing. */
+.map-controls__btn[aria-disabled='true'],
+.map-controls__btn[aria-disabled='true']:hover {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--overlay-text);
+}

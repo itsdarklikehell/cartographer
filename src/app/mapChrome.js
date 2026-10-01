@@ -114,7 +114,7 @@ export function mountMapChrome(app, env, hooks) {
         toasts.show(`Revealed all of "${node.name}".`);
       },
     },
-    miniMap: { isOpen: miniMap.isOpen, onToggle: miniMap.toggle },
+    miniMap: { isOpen: miniMap.isOpen, isAvailable: miniMap.isAvailable, onToggle: miniMap.toggle },
   });
   occluderObserver.observe(mapControls.element);
 
