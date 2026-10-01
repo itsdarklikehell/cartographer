@@ -2266,7 +2266,7 @@ The full sheet has four tabs.
 
 | Tab | Contents |
 | --- | --- |
-| Character | The whole character sheet. See [Sheet contents](#sheet-contents) |
+| Character | The whole character sheet. On a page about 1,500 pixels wide or more, the skill list takes a third column beside the two section columns. See [Sheet contents](#sheet-contents) |
 | Equipment | The nine equipment slots |
 | Inventory | The item list |
 | Spellbook | The spells that the character can learn, knows, and prepared. See [Spellbook tab](#spellbook-tab) |

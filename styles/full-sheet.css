@@ -105,3 +105,21 @@ body.sheet-full.mode-play #panel-inventory,
 body.sheet-full.mode-play #panel-spellbook {
   max-width: none;
 }
+
+/* On a wide screen the Character tab of the full sheet takes a third column
+   for the skill list, beside the two section columns. Without it the body
+   stops at the two-column measure and leaves a band of about 400 px empty
+   on the right at 1920 px. The left track keeps the HP bar and the saves at
+   their two-column width. The feature cards and the castable spells span all
+   three columns under them. */
+@container character-sheet (min-width: 90rem) {
+  #full-sheet .character-sheet__body {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr);
+    max-width: none;
+  }
+
+  #full-sheet .character-sheet__skills {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}

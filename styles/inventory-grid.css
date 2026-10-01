@@ -109,6 +109,12 @@
     position: sticky;
     top: 4rem;
   }
+
+  /* With the pane beside them the tiles have room to grow, so a two-word
+     name such as "Leather Armor" stays on one line. */
+  .inventory-panel__tiles {
+    grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+  }
 }
 
 .inventory-panel__detail .inventory-panel__label {
