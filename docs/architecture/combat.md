@@ -966,7 +966,9 @@ tile and its straight-line distance in tiles. The setup dialog shows them
 under "Add nearby foes" with a Join box, and only the ticked ones join the
 roster for Roll initiative and Start. `nearbyGroups` splits the list by
 tile, and a tile with two or more foes gets an "Add the whole group" box
-that ticks each Join box of the tile. During a fight, the Nearby tab gives each hostile
+that ticks each Join box of the tile. `groupTitle` names the creatures
+of the group in that box ("Gray Wolf x2, Goblin"), so a screen reader
+hears which creatures it adds. During a fight, the Nearby tab gives each hostile
 row outside the order an "Add to fight" button. `encounterPanels.js` rolls
 initiative for it and calls `app.actions.addCombatant`. The Nearby list
 repaints on the set of joinable ids through its `dependsOn`, so the button

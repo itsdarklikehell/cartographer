@@ -1352,7 +1352,7 @@ running fight. The log and the stored name keep the plain name.
 | PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
 | Join | A foe under **Add nearby foes**: tick it to add the foe to the fight |
-| Add the whole group | The label names the count and the distance, as in "Add the whole group (4), 4 tiles away". Ticks or clears the **Join** box of every nearby foe on one tile. It shows as mixed while only some are ticked |
+| Add the whole group | The label names the creatures, with a count for each name, and the distance, as in "Add the whole group (Gray Wolf x4), 4 tiles away". Ticks or clears the **Join** box of every nearby foe on one tile. It shows as mixed while only some are ticked |
 | Parley | Closes the dialog with no fight, and turns the foes neutral, and logs a line such as "The party settles the encounter without a fight. Goblin Scout 1 and Goblin Scout 2 stand down." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 

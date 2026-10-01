@@ -4,6 +4,7 @@ import {
   combatRoster,
   creatureParticipant,
   fightInReach,
+  groupTitle,
   initiativeLine,
   nearbyFoes,
   nearbyGroups,
@@ -109,4 +110,10 @@ test('nearbyGroups splits the nearby foes by tile, in the order of their first f
     [['a', 'c'], ['b']],
   );
   assert.deepEqual(nearbyGroups([]), []);
+});
+
+test('groupTitle names each creature once, with a count for repeats', () => {
+  assert.equal(groupTitle(['Gray Wolf', 'Gray Wolf', 'Gray Wolf', 'Gray Wolf']), 'Gray Wolf x4');
+  assert.equal(groupTitle(['Gray Wolf', 'Goblin', 'Gray Wolf']), 'Gray Wolf x2, Goblin');
+  assert.equal(groupTitle(['Goblin']), 'Goblin');
 });

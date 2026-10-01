@@ -169,3 +169,18 @@ export function initiativeLine(results) {
     .map((r) => `${r.name} ${r.value}${r.note ? ` (${r.note})` : ''}`)
     .join(', ')}.`;
 }
+
+/**
+ * The title of one nearby group for the "Add the whole group" box: each name
+ * once, in order of its first foe, with a count when more than one foe has
+ * it ("Gray Wolf x4", or "Gray Wolf x2, Goblin"). The box then tells which
+ * creatures it adds, and two groups at the same distance read apart.
+ * @param {string[]} names the plain names of the foes, without numbers
+ * @returns {string}
+ */
+export function groupTitle(names) {
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const name of names) counts.set(name, (counts.get(name) ?? 0) + 1);
+  return [...counts].map(([name, n]) => (n > 1 ? `${name} x${n}` : name)).join(', ');
+}

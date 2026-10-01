@@ -7,7 +7,7 @@ import { checkbox, numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
 import { numberedNames } from '../combat/DisplayNames.js';
-import { nearbyGroups } from '../combat/CombatRoster.js';
+import { groupTitle, nearbyGroups } from '../combat/CombatRoster.js';
 import { stealthStep } from './CombatSetupStealth.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -168,7 +168,8 @@ export function combatSetupModal(roster, callbacks = {}) {
         for (const group of nearbyGroups(nearby)) {
           /** @type {HTMLInputElement[]} */
           const boxes = [];
-          const all = group.length > 1 ? groupBox(group.length, group[0].distance, boxes) : null;
+          const title = groupTitle(group.map((foe) => described(foe.participant).name));
+          const all = group.length > 1 ? groupBox(title, group[0].distance, boxes) : null;
           if (all) body.push(all.row);
           for (const { participant, distance } of group) {
             const name = describe(participant).name;
@@ -289,14 +290,15 @@ const tilesAway = (distance) => `${distance} ${distance === 1 ? 'tile' : 'tiles'
  * The "Add the whole group" box above the foes of one tile. It ticks or
  * clears every Join box of the group, and it shows as mixed while only some
  * are ticked.
- * @param {number} count
+ * @param {string} title the names in the group (see `groupTitle`)
  * @param {number} distance
  * @param {HTMLInputElement[]} boxes the Join boxes, filled in after this call
  */
-function groupBox(count, distance, boxes) {
-  // The distance goes in the label text, so it shares the baseline of the
-  // checkbox label instead of floating beside it.
-  const all = checkbox(`Add the whole group (${count}), ${tilesAway(distance)}`, false, {
+function groupBox(title, distance, boxes) {
+  // The names and the distance go in the label text, so a screen reader
+  // hears which creatures the box adds, and the distance shares the baseline
+  // of the checkbox label instead of floating beside it.
+  const all = checkbox(`Add the whole group (${title}), ${tilesAway(distance)}`, false, {
     className: 'combat-setup__group',
   });
   all.input.addEventListener('change', () => {
