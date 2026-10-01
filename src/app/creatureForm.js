@@ -1,6 +1,6 @@
 import { promptModal, confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
 import { createCreature, editCreature } from '../entities/Creature.js';
-import { fromTemplate } from '../entities/CreatureTemplate.js';
+import { spawnCopies } from '../entities/CreatureTemplate.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import { locationFields, moveToPartyChange, readLocation } from './locationFields.js';
@@ -11,6 +11,7 @@ import { commitCreatures, rosterIds } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/creature.js').Creature} Creature */
+/** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 
 /**
  * This is the shared create/edit dialog behind every creature authoring
@@ -23,8 +24,8 @@ import { commitCreatures, rosterIds } from './combatants.js';
  * item, and the dialog creates the creature at the given default placement.
  * Either way, the change lands in `state.creatures`, the map markers and the
  * lists refresh, and a creature placed on the party's own tile is met on the
- * spot. The function returns the stored creature, or null on cancel or a
- * blank name.
+ * spot. The submit button stays disabled while the name is blank. The
+ * function returns the stored creature, or null on cancel.
  * @param {AppContext} app
  * @param {Creature | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
@@ -62,7 +63,9 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   const values = await promptModal(
     existing ? 'Edit creature' : 'New creature',
     [
-      ...creatureFields(source, gear, { stats }),
+      ...creatureFields(source, gear, { stats }).map((field) =>
+        field.name === 'name' ? { ...field, label: 'Name (required)' } : field,
+      ),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
         partyButton: true,
       }).map((field) => (field.name === 'nodeId' ? { ...field, full: true } : field)),
@@ -70,6 +73,9 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
+      // A blank name keeps Add disabled, so the dialog never closes on a
+      // form that the code below then throws away.
+      submitRequires: ['name'],
       onChange: (name, form) => partyChange(name, form) || statsChange(name, form),
     },
   );
@@ -155,26 +161,34 @@ export async function clearDefeated(app, nodeId) {
   return true;
 }
 
+/** The most copies one "From bestiary" spawn places on a tile. */
+const MAX_SPAWN = 20;
+
 /**
- * Spawn a fresh, full-health creature from a saved template. The template
+ * Spawn fresh, full-health creatures from a saved template. The template
  * source is the campaign bestiary plus the hostile entries of the built-in
- * and custom library. The new creature appears at a chosen map and tile,
- * and defaults to the Build-mode selected tile of the viewed node.
- * This same dialog can remove a stale campaign template. The GM manages
- * library entries in the Library tab instead.
+ * and custom library, grouped by source and sorted by name. The copies
+ * appear at a chosen map and tile, which defaults to the Build-mode selected
+ * tile of the viewed node. Removing a campaign template is a separate flow
+ * (`removeTemplate`), so this dialog only adds.
  * @param {AppContext} app
- * @returns {Promise<Creature | null>}
+ * @returns {Promise<Creature[] | null>}
  */
 export async function addFromLibrary(app) {
   const { state } = app;
   const library = activeCreatures().filter((t) => t.disposition === 'hostile');
   if (state.bestiary.length === 0 && library.length === 0) {
     await alertModal(
-      'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
+      'The bestiary is empty. Save a creature as a template first (the save icon on its row).',
       { title: 'Bestiary' },
     );
     return null;
   }
+  /** @param {CreatureTemplate[]} list @param {string} source @param {string} group */
+  const options = (list, source, group) =>
+    [...list]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => ({ value: `${source}:${t.id}`, label: `${t.name} (${t.maxHP} HP)`, group }));
   const values = await promptModal(
     'Add from bestiary',
     [
@@ -183,26 +197,11 @@ export async function addFromLibrary(app) {
         label: 'Template',
         type: 'select',
         options: [
-          ...state.bestiary.map((t) => ({
-            value: `campaign:${t.id}`,
-            label: `${t.name} (${t.maxHP} HP) — campaign`,
-          })),
-          ...library.map((t) => ({
-            value: `library:${t.id}`,
-            label: `${t.name} (${t.maxHP} HP) — library`,
-          })),
+          ...options(state.bestiary, 'campaign', 'This campaign'),
+          ...options(library, 'library', 'Library'),
         ],
       },
-      {
-        name: 'action',
-        label: 'Action',
-        type: 'select',
-        value: 'spawn',
-        options: [
-          { value: 'spawn', label: 'Spawn at the location below' },
-          { value: 'delete', label: 'Delete this template' },
-        ],
-      },
+      { name: 'count', label: 'Count', type: 'number', value: 1, min: 1, max: MAX_SPAWN },
       // This uses the same node picker and tile X/Y group as the creature
       // dialog. It defaults to the tile that the GM selected in the node
       // being viewed.
@@ -211,34 +210,53 @@ export async function addFromLibrary(app) {
         tileId: app.actions.getSelectedTileId() ?? '0,0',
       }),
     ],
-    { submitLabel: 'Apply' },
+    { submitLabel: 'Add' },
   );
   if (!values) return null;
-  const [source, templateId] = [
-    values.template.slice(0, values.template.indexOf(':')),
-    values.template.slice(values.template.indexOf(':') + 1),
-  ];
-  const template =
-    source === 'campaign'
-      ? state.bestiary.find((t) => t.id === templateId)
-      : library.find((t) => t.id === templateId);
-  if (!template) return null;
-  if (values.action === 'delete') {
-    if (source === 'library') {
-      app.toasts.show('Built-in and custom library entries are managed in the Library tab.');
-      return null;
-    }
-    state.bestiary = removeById(state.bestiary, template.id);
-    app.actions.markDirty();
-    app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
-    return null;
-  }
-  const created = fromTemplate(
-    template,
-    slugId(template.name, rosterIds(state)),
-    readLocation(app, values),
+  const at = values.template.indexOf(':');
+  const [source, templateId] = [values.template.slice(0, at), values.template.slice(at + 1)];
+  const template = (source === 'campaign' ? state.bestiary : library).find(
+    (t) => t.id === templateId,
   );
-  state.creatures = [...state.creatures, created];
+  if (!template) return null;
+  const count = Math.min(MAX_SPAWN, Number(values.count));
+  const created = spawnCopies(template, count, readLocation(app, values), rosterIds(state));
+  state.creatures = [...state.creatures, ...created];
   commitCreatures(app);
   return created;
+}
+
+/**
+ * Remove one template from the campaign bestiary, after a pick and one
+ * confirm. Library entries are not offered, because Library mode manages
+ * them. Resolves to true if a template is removed.
+ * @param {AppContext} app
+ * @returns {Promise<boolean>}
+ */
+export async function removeTemplate(app) {
+  const { state } = app;
+  if (state.bestiary.length === 0) return false;
+  const values = await promptModal(
+    'Remove a bestiary template',
+    [
+      {
+        name: 'template',
+        label: 'Template',
+        type: 'select',
+        options: [...state.bestiary]
+          .sort((a, b) => a.name.localeCompare(b.name))
+          .map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` })),
+      },
+    ],
+    {
+      message: 'Creatures already placed from the template stay on the map.',
+      submitLabel: 'Remove',
+    },
+  );
+  const template = values && state.bestiary.find((t) => t.id === values.template);
+  if (!template) return false;
+  state.bestiary = removeById(state.bestiary, template.id);
+  app.actions.markDirty();
+  app.toasts.show(`Removed "${template.name}" from the bestiary.`);
+  return true;
 }

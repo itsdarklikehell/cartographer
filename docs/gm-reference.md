@@ -744,14 +744,16 @@ people.
 
 | Control | What it does |
 | --- | --- |
-| New encounter | Opens the creature dialog for a new foe |
-| From bestiary | Opens the Bestiary dialog. Pick a template, then spawn a full-health copy at a map and tile, or delete a campaign template |
+| New creature | Opens the creature dialog for a new foe |
+| From bestiary | Opens the Bestiary dialog. Pick a template and a count, then add that many full-health copies at a map and tile |
+| Remove template | Removes one campaign template from the bestiary. It shows while the campaign bestiary has a template |
 | Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
 | Edit, Delete on a row | Edits or deletes that creature |
 
-The Bestiary lists the campaign templates and the hostile templates of the
-library. The spawn location defaults to the selected cell of the map in
-view.
+The Bestiary lists the campaign templates under "This campaign" and the
+hostile templates of the library under "Library", each sorted by name. The
+count adds up to 20 copies, and each copy gets its own number. The location
+defaults to the selected cell of the map in view.
 
 A defeated foe stays in the campaign until you remove it. **Clear
 defeated** counts the hostile creatures at 0 HP that stand on the map in
@@ -1041,7 +1043,7 @@ A GM tab also shows these controls:
 | Control | What it does |
 | --- | --- |
 | Start combat | Opens the combat setup for the party, the creatures of the Active encounter tab, and any friendly or neutral creature on the tile of the party |
-| New encounter | Opens the creature dialog for a new foe |
+| New creature | Opens the creature dialog for a new foe |
 | From bestiary | Opens the Bestiary dialog |
 | Save as a bestiary template, on a row | Stores that creature as a campaign template |
 
@@ -1091,13 +1093,13 @@ Build mode, from Play mode, and from the tile menu.
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| Name | Empty | The name shown in the panels and the log |
+| Name (required) | Empty | The name shown in the panels and the log. **Add** stays disabled while it is blank |
 | Role / faction (players see it) | Empty | A short description, such as "blacksmith". The Player view shows it next to the name |
-| Disposition | Neutral. Hostile for **New encounter** and **New foe here** | Hostile, neutral, or friendly. A hostile creature is a foe |
+| Disposition | Neutral. Hostile for **New creature** and **New foe here** | Hostile, neutral, or friendly. A hostile creature is a foe |
 | Creature type | Untyped | The SRD type, such as undead or beast. Sleep, the healing spells, Blight, Sunburst, and Sunbeam read it. An untyped creature matches no type rule, and a party character counts as humanoid |
 | Max HP | 4 | The full health pool |
 | Notes (GM only) | Empty | Text for the GM. The Player view does not show it |
-| Level (blank for none) | Blank. 1 for **New encounter** and **New foe here** | Sets the default stat block |
+| Level (blank for none) | Blank. 1 for **New creature** and **New foe here** | Sets the default stat block |
 | Tier | Mob | Mob for rank and file, Legend for an above-normal enemy. A legend always has higher stats than a mob of the same level |
 | Challenge rating | Unrated | The 5e rating, from 0 to 30. It sets the proficiency bonus that the creature rolls with, and its XP |
 | Save proficiencies | None | The saving throws that the creature is trained in |

@@ -27,7 +27,13 @@ import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { addLethargy } from './lethargy.js';
-import { creatureForm, deleteCreature, addFromLibrary, clearDefeated } from './creatureForm.js';
+import {
+  creatureForm,
+  deleteCreature,
+  addFromLibrary,
+  clearDefeated,
+  removeTemplate,
+} from './creatureForm.js';
 import { commitCreatures } from './combatants.js';
 import { logDefeatTransition, storeCreature } from './combatantWrites.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -249,6 +255,10 @@ export function wireEncounterPanels(app, { onStartCombat }) {
         { disposition: 'hostile', level: 1 },
       ),
     onAddFromTemplate: () => addFromLibrary(app),
+    onRemoveTemplate: async () => {
+      if (await removeTemplate(app)) app.views.buildFoes.update();
+    },
+    templateCount: () => state.bestiary.length,
     onClearDefeated: () => clearDefeated(app, app.navigator.getCurrentNode().id),
     defeatedCount: () =>
       clearableDefeated(state.creatures, state.combat, app.navigator.getCurrentNode().id).length,

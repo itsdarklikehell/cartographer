@@ -15,7 +15,7 @@ import { describeTile } from '../map/TileCoords.js';
 /**
  * Mount the Build-rail encounter authoring list. Each row shows one
  * encounter staged in the viewed node, or an unplaced one, with edit and
- * delete actions, its full stat block, and a New encounter button. A GM can
+ * delete actions, its full stat block, and a New creature button. A GM can
  * edit every stat in place here. A click on a placed encounter's name
  * focuses the map on its tile. Unlike the Play-mode EncounterPanel, this
  * panel has no combat logic. It lets a GM who builds a map stage, move, and
@@ -25,6 +25,8 @@ import { describeTile } from '../map/TileCoords.js';
  * scoped by the caller to the viewed node. Every change flows back through a
  * callback. `defeatedCount` counts the defeated foes placed in the viewed
  * node, and the Clear defeated button shows while it is above zero.
+ * `templateCount` counts the campaign bestiary, and the Remove template
+ * button shows while it is above zero.
  * @param {HTMLElement} container
  * @param {{
  *   getEncounters: () => Encounter[],
@@ -32,6 +34,8 @@ import { describeTile } from '../map/TileCoords.js';
  *   onAddFromTemplate?: () => Promise<unknown>,
  *   onClearDefeated?: () => Promise<unknown>,
  *   defeatedCount?: () => number,
+ *   onRemoveTemplate?: () => Promise<unknown>,
+ *   templateCount?: () => number,
  *   onEdit: (encounter: Encounter) => Promise<unknown>,
  *   onDelete: (encounter: Encounter) => Promise<unknown>,
  *   onUpdate: (encounter: Encounter) => void,
@@ -43,7 +47,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
   return mountListPanel(container, {
     className: 'build-encounters',
     getRows: () => callbacks.getEncounters(),
-    dependsOn: () => callbacks.defeatedCount?.() ?? 0,
+    dependsOn: () => `${callbacks.defeatedCount?.() ?? 0}:${callbacks.templateCount?.() ?? 0}`,
     emptyMessage: 'No encounters on this map.',
     classes: { row: 'build-encounters__row u-col u-g1', head: 'u-row u-g2' },
     buildBody: (encounter) => {
@@ -116,12 +120,17 @@ export function mountBuildEncounterPanel(container, callbacks) {
       });
     },
     // The button to spawn from a saved template, from the campaign bestiary
-    // or the library, sits beside New encounter. Authoring belongs to the Build rail.
+    // or the library, sits beside New creature. Authoring belongs to the
+    // Build rail. Remove template shows while the campaign bestiary has an
+    // entry.
     // Clear defeated removes the downed foes of the viewed node in one step.
     addButtons: () => [
-      { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd },
+      { label: 'New creature', icon: 'add', onClick: callbacks.onAdd },
       callbacks.onAddFromTemplate
         ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
+        : null,
+      callbacks.onRemoveTemplate && (callbacks.templateCount?.() ?? 0) > 0
+        ? { label: 'Remove template', icon: 'remove', onClick: callbacks.onRemoveTemplate }
         : null,
       callbacks.onClearDefeated && (callbacks.defeatedCount?.() ?? 0) > 0
         ? {
@@ -132,7 +141,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
           }
         : null,
     ],
-    // New encounter leads the panel and stays fixed while the list scrolls.
+    // New creature leads the panel and stays fixed while the list scrolls.
     // A GM can stage another enemy without scrolling past the roster.
     addPlacement: 'leading',
   });

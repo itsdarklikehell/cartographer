@@ -8,6 +8,7 @@ import { defenseFields } from './DamageDefenses.js';
 import { creatureTypeFields } from './CreatureType.js';
 import { attackTraitFields } from './CreatureAttacks.js';
 import { DISPOSITIONS, createCreature } from './Creature.js';
+import { slugId } from './Roster.js';
 
 /**
  * Creature templates: the reusable blueprint of a creature that the library
@@ -102,5 +103,25 @@ export function fromTemplate(template, id, location = null) {
     subclass: template.subclass,
     casterLevel: template.casterLevel,
     spellbook: template.spellbook ? copySpellbook(template.spellbook) : template.spellbook,
+  });
+}
+
+/**
+ * Spawn `count` fresh copies of one template at one location. Each copy gets
+ * its own id, made from the template name and kept apart from `takenIds`
+ * and from the ids of the copies before it, so four wolves read as
+ * "gray-wolf", "gray-wolf-2", and so on. A count below 1 spawns one copy.
+ * @param {CreatureTemplate} template
+ * @param {number} count
+ * @param {EncounterLocation | null} location
+ * @param {Iterable<string>} takenIds
+ * @returns {Creature[]}
+ */
+export function spawnCopies(template, count, location, takenIds) {
+  const taken = new Set(takenIds);
+  return Array.from({ length: Math.max(1, Math.floor(count) || 1) }, () => {
+    const id = slugId(template.name, taken);
+    taken.add(id);
+    return fromTemplate(template, id, location);
   });
 }

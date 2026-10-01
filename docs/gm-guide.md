@@ -396,7 +396,7 @@ region.
 2. In the **Paint** tab, pick **Inspect** and click the tile for the
    encounter.
 3. Open the **Encounters** tab, then the **Mobs** tab.
-4. Click **New encounter**. The **New creature** dialog opens, with the
+4. Click **New creature**. The **New creature** dialog opens, with the
    selected tile already set as its location.
 5. Set **Name**, **Creature type**, **Max HP**, **Level**, and **Tier**. The
    tier and the level set a default stat block and default gear. The type
@@ -428,12 +428,13 @@ A bestiary template is a saved copy of a foe that you can place again.
 3. To place a copy, switch to **Build** mode. In the **Mobs** list of the
    **Encounters** tab, click **From bestiary**.
 4. Pick the template, or an entry from the library.
-5. Keep **Spawn at the location below**, set the map and the tile, and
-   submit the dialog.
+5. Set **Count** to the number of copies, set the map and the tile, and
+   click **Add**.
 
 The copy starts at full health on the tile that you picked. A template is a
 snapshot, so later edits to the live foe do not change it. To remove a
-template, pick it and set the action to **Delete this template**.
+template, click **Remove template** in the same list, pick it, and click
+**Remove**.
 
 ### Clear defeated foes
 

@@ -28,7 +28,7 @@ export const overlaysSection = {
       render: () =>
         textButton('Open promptModal', async () => {
           const result = await promptModal(
-            'New encounter',
+            'New creature',
             [
               { name: 'name', label: 'Name', value: 'Goblin' },
               { name: 'hp', label: 'Hit points', type: 'number', value: '7', min: 1 },

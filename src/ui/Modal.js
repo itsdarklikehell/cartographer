@@ -156,8 +156,9 @@ function asInput(element) {
  * marked `advanced` collect into one collapsed `<details>` captioned by
  * `advancedLabel`, placed where the first advanced field appears. This lets a
  * plain Enter submit their defaults without the form showing them.
- * `submitRequires` names checkbox fields, and the submit button stays
- * disabled until every one of them is ticked. `validate` runs when the GM
+ * `submitRequires` names checkbox and text fields, and the submit button
+ * stays disabled until every named checkbox is ticked and every named text
+ * field has text. A named text field is marked `aria-required`. `validate` runs when the GM
  * presses the submit button. A non-empty message keeps the dialog open and
  * shows the message above the buttons. `message` puts a paragraph
  * above the fields, and the dialog names it as its description. The dismiss
@@ -425,16 +426,24 @@ export function promptModal(title, fields, options = {}) {
         type: 'submit',
         value: 'submit',
       });
-      // The checkboxes named by submitRequires hold the submit button
-      // disabled until every one is ticked, so the dialog does not take input
-      // that the caller then refuses.
-      const gates = (options.submitRequires ?? [])
-        .map((name) => inputs[name])
-        .filter((input) => input instanceof HTMLInputElement);
+      // The fields named by submitRequires keep the submit button disabled
+      // until every checkbox is ticked and every text field has text, so the
+      // dialog does not take input that the caller then refuses.
+      const gates = /** @type {HTMLInputElement[]} */ (
+        (options.submitRequires ?? [])
+          .map((name) => inputs[name])
+          .filter((input) => input instanceof HTMLInputElement)
+      );
+      const met = (/** @type {HTMLInputElement} */ input) =>
+        input.type === 'checkbox' ? input.checked : input.value.trim() !== '';
       const syncGates = () => {
-        submit.disabled = gates.some((input) => !(/** @type {HTMLInputElement} */ (input).checked));
+        submit.disabled = gates.some((input) => !met(input));
       };
-      for (const input of gates) input.addEventListener('change', syncGates);
+      for (const input of gates) {
+        if (input.type !== 'checkbox') input.setAttribute('aria-required', 'true');
+        input.addEventListener('change', syncGates);
+        input.addEventListener('input', syncGates);
+      }
       syncGates();
       // A refused submit cancels the click, so the form does not close. Enter
       // in a field submits through a click on this button too.
