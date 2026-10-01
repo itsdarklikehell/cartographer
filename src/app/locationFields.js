@@ -2,7 +2,7 @@ import { displayCoords, tileIdFromDisplay } from '../map/TileCoords.js';
 import { clampInt } from '../util/num.js';
 import { getTile } from '../map/TileGrid.js';
 import { isBlocked, isDeepWater } from '../map/TileKinds.js';
-import { pickMapTile } from './mapPick.js';
+import { canPickOnMap, pickMapTile } from './mapPick.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -44,6 +44,25 @@ export function locationOptions(nodes, pathOf) {
 }
 
 /**
+ * The options of the map picker: the unplaced option, then every node of
+ * the grid as `locationOptions` lists it.
+ * @param {AppContext} app
+ * @param {string} [unplacedLabel]
+ * @returns {FieldOption[]}
+ */
+function mapChoices(app, unplacedLabel = 'Unplaced (appears everywhere)') {
+  return [
+    { value: '', label: unplacedLabel },
+    ...locationOptions([...app.grid.nodes.values()], (id) =>
+      app.grid
+        .getBreadcrumb(id)
+        .map((b) => b.name)
+        .join(' / '),
+    ),
+  ];
+}
+
+/**
  * Modal fields for placing something on the map: a map picker (every node,
  * labelled by its breadcrumb path, plus an unplaced option) and the column
  * and row within the chosen node. The creature dialog and the bestiary
@@ -62,7 +81,8 @@ export function locationOptions(nodes, pathOf) {
  *   `partyButton` adds a "Move to the party" button, which
  *   `moveToPartyChange` handles.
  *   `pickButton` adds a "Pick on map" button, which `pickOnMapChange`
- *   handles.
+ *   handles. The button shows only in a mode that shows the map (see
+ *   `canPickOnMap`).
  *   `warn` adds a live line under the row that names a doubtful tile (see
  *   `placementWarning`), which `placementChange` keeps current.
  */
@@ -79,15 +99,7 @@ export function locationFields(app, location, options = {}) {
       label: 'Location (map)',
       type: /** @type {'select'} */ ('select'),
       value: location?.nodeId ?? '',
-      options: [
-        { value: '', label: options.unplacedLabel ?? 'Unplaced (appears everywhere)' },
-        ...locationOptions([...app.grid.nodes.values()], (id) =>
-          app.grid
-            .getBreadcrumb(id)
-            .map((b) => b.name)
-            .join(' / '),
-        ),
-      ],
+      options: mapChoices(app, options.unplacedLabel),
     },
     {
       name: 'tileX',
@@ -108,7 +120,7 @@ export function locationFields(app, location, options = {}) {
           },
         ]
       : []),
-    ...(options.pickButton
+    ...(options.pickButton && canPickOnMap(app.state.mode)
       ? [{ name: 'pickOnMap', label: 'Pick on map', type: /** @type {'button'} */ ('button') }]
       : []),
     ...(options.partyButton
@@ -150,6 +162,10 @@ function setPlacement(form, { nodeId, tileId }) {
  * kept. A pick writes the map in view and the clicked column and row into
  * the placement fields and updates the warning line. A cancel leaves the
  * fields as they were. It answers true when it handled the change.
+ *
+ * The GM can add a map while the dialog waits and then click a tile of it.
+ * The map choices are built again before the pick goes in, so the picker
+ * offers that map and does not fall back to the unplaced option.
  * @param {AppContext} app
  * @param {(app: AppContext) => Promise<EncounterLocation | null>} [pick]
  *   the map wait, replaced in tests
@@ -162,6 +178,7 @@ export function pickOnMapChange(app, pick = pickMapTile) {
     form.suspend?.(name, async () => {
       const at = await pick(app);
       if (!at) return;
+      form.setOptions('nodeId', mapChoices(app));
       setPlacement(form, at);
       warn('nodeId', form);
     });
@@ -232,7 +249,12 @@ export function placementWarning(node, column, row) {
   const [x, y] = [Number(column), Number(row)];
   if (!(x >= 1 && x <= node.width && y >= 1 && y <= node.height))
     return `That tile is outside this map, which is ${node.width} by ${node.height} tiles. The creature goes to the nearest tile inside it.`;
-  const tile = getTile(node, tileIdFromDisplay(x, y));
+  // `readLocation` rounds a fraction such as 3.5 down, so the warning names
+  // the tile that the save uses.
+  const tile = getTile(
+    node,
+    tileIdFromDisplay(clampInt(x, 1, node.width), clampInt(y, 1, node.height)),
+  );
   if (!tile) return 'That tile has no terrain.';
   if (isDeepWater(tile)) return 'That tile is deep water.';
   if (isBlocked(tile)) return 'That tile is a wall or an obstacle.';

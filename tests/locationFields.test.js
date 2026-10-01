@@ -180,6 +180,12 @@ test('placementWarning names a tile outside the map, an empty cell, water, and a
   assert.equal(placementWarning(painted, 3, 1), 'That tile is a wall or an obstacle.');
 });
 
+test('placementWarning rounds a fraction down to the tile that the save uses', () => {
+  assert.equal(placementWarning(painted, 1.5, 1), '');
+  assert.equal(placementWarning(painted, 2.9, 1), 'That tile is deep water.');
+  assert.match(placementWarning(painted, 3.5, 1), /outside/);
+});
+
 test('locationFields adds the warning line only when asked, hidden while empty', () => {
   const coveApp = stubApp({ grid: stubGrid([painted]) });
   assert.ok(!locationFields(coveApp, null).some((f) => f.name === 'placementNote'));
@@ -227,6 +233,14 @@ test('the pick button field comes before the party button', () => {
   assert.ok(!locationFields(app, null).some((f) => f.name === 'pickOnMap'));
 });
 
+test('the pick button shows only in a mode that shows the map', () => {
+  const picks = (/** @type {string} */ mode) =>
+    locationFields(stubApp({ grid: app.grid, state: { mode } }), null, {
+      pickButton: true,
+    }).some((f) => f.name === 'pickOnMap');
+  assert.deepEqual(['play', 'build', 'library', 'combat'].map(picks), [true, true, false, false]);
+});
+
 /**
  * A form stub whose `suspend` runs the work at once and records the field
  * it refocuses.
@@ -246,6 +260,8 @@ async function pickForm(picked) {
     },
     setLabel: (/** @type {string} */ n, /** @type {string} */ t) => calls.push(['label', n, t]),
     setHidden: (/** @type {string} */ n, /** @type {boolean} */ h) => calls.push(['hidden', n, h]),
+    setOptions: (/** @type {string} */ n, /** @type {any[]} */ o) =>
+      calls.push(['options', n, o.map((x) => x.value)]),
     suspend: (/** @type {string} */ n, /** @type {() => Promise<void>} */ work) => {
       calls.push(['suspend', n]);
       pending.push(work());
@@ -263,6 +279,7 @@ test('a map pick writes the picked map, column, and row, and updates the warning
   assert.deepEqual(values, { nodeId: 'vale', tileX: '3', tileY: '5' });
   assert.deepEqual(calls, [
     ['suspend', 'pickOnMap'],
+    ['options', 'nodeId', ['', 'world', 'vale']],
     ['label', 'placementNote', 'That tile has no terrain.'],
     ['hidden', 'placementNote', false],
   ]);

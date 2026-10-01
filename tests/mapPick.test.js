@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { armTilePick } from '../src/app/mapPick.js';
+import { armTilePick, canPickOnMap } from '../src/app/mapPick.js';
 
 /** A stand-in for the MapCanvas callbacks, which record each call. */
 function host() {
@@ -58,4 +58,25 @@ test('disarm cancels the pick', () => {
   h.onCellClick(1, 2);
   assert.equal(picked, false);
   assert.deepEqual(h.calls, ['click 1,2']);
+});
+
+test('a stroke with no end leaves no cell behind for the next stroke', () => {
+  const h = host();
+  /** @type {number[][]} */
+  const picks = [];
+  armTilePick(/** @type {any} */ (h), (x, y) => picks.push([x, y]));
+  // The first finger of a pinch starts a stroke, and the second finger
+  // cancels it with no stroke end.
+  /** @type {any} */ (h.onStrokeCell)(3, 4, null, true);
+  /** @type {any} */ (h.onStrokeCell)(12, 9, null, true);
+  /** @type {any} */ (h.onStrokeCell)(13, 9, null, false);
+  h.onStrokeEnd();
+  assert.deepEqual(picks, [[12, 9]]);
+});
+
+test('canPickOnMap is true only in the modes that show the map', () => {
+  assert.deepEqual(
+    /** @type {const} */ (['play', 'build', 'library', 'combat']).map(canPickOnMap),
+    [true, true, false, false],
+  );
 });

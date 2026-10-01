@@ -777,7 +777,12 @@ the spec. Their "Pick on map" button calls `pickMapTile` in `mapPick.js`.
 The dialog closes through the form handle's `suspend`, and
 `armTilePick` takes over the map callbacks for one click. Then the dialog
 opens again with its values, and the picked tile goes into the fields. A template form leaves them out, because a template has no
-position.
+position. `canPickOnMap` leaves the button out of Library mode and the
+combat screen, which hide the map. On a phone, `pickMapTile` sets
+`body[data-phone-view]` to the Map view for the wait and puts the earlier
+view back after it. A second `pickMapTile` cancels the pick that waits, so
+one pick waits at a time. Two waiting picks would save the first
+pick's callbacks as the usual ones and put them back on the map at the end.
 
 ### combatWiring.js
 
