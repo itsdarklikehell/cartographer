@@ -1,5 +1,6 @@
 import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
+import { captureFocus, restoreFocus } from './focusMemory.js';
 import { textField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
@@ -58,6 +59,12 @@ export function mountLibraryPanel(container, callbacks) {
   let activeSubtab = subtabs[0]?.id ?? null;
   /** True when an inline editor is open. The list is hidden in that case. */
   let editing = false;
+  /** Where the GM was when the editor opened: the focused control, and the
+   * scroll offset of each scrolled box around and inside the list. Hiding
+   * the list resets those offsets, so the close puts them back, and the GM
+   * returns to the row they edited instead of the top of a long list. */
+  /** @type {{ focus: import('./focusMemory.js').FocusMemo | null, scroll: [Element, number][] }} */
+  let memo = { focus: null, scroll: [] };
 
   // The chrome hides while an inline editor is open, instead of being
   // torn down. The filter text and the selected subtab come back
@@ -75,6 +82,7 @@ export function mountLibraryPanel(container, callbacks) {
   function openEditor(key) {
     const buildEditor = callbacks.buildEditor;
     if (!buildEditor) return;
+    memo = { focus: captureFocus(chrome, document.activeElement), scroll: scrolledBoxes(root) };
     editing = true;
     chrome.hidden = true;
     // The active subtab rides along, so a panel whose subtabs hold different
@@ -260,9 +268,27 @@ export function mountLibraryPanel(container, callbacks) {
       editing = false;
       editorHost.innerHTML = '';
       chrome.hidden = false;
+      refresh();
+      restoreFocus(chrome, memo.focus);
+      for (const [box, top] of memo.scroll) box.scrollTop = top;
+      return;
     }
     refresh();
   }
 
   return { update };
+}
+
+/**
+ * The scroll offsets of the page, of each ancestor of `root`, and of each
+ * box inside it, for every box that is scrolled away from its top.
+ * @param {HTMLElement} root
+ * @returns {[Element, number][]}
+ */
+function scrolledBoxes(root) {
+  /** @type {Element[]} */
+  const boxes = [...root.querySelectorAll('*')];
+  for (let node = root.parentElement; node; node = node.parentElement) boxes.push(node);
+  if (document.scrollingElement) boxes.push(document.scrollingElement);
+  return boxes.filter((box) => box.scrollTop > 0).map((box) => [box, box.scrollTop]);
 }

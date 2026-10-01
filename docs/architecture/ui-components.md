@@ -257,7 +257,9 @@ follows these rules:
   data belongs to the panel: which row is in edit mode, which section is
   open, which tab shows. For example, `LibraryPanel`'s `update` closes an
   open inline editor, but keeps its filter text and selected subtab. The
-  input and the tab strip are built once, and only the lists redraw.
+  input and the tab strip are built once, and only the lists redraw. The
+  close also puts back the focused control and the scroll offsets from when
+  the editor opened, because hiding the list resets them to the top.
 - **Every mutation leaves through a callback.** Panels do not write state
   and do not open dialogs. A panel calls `callbacks.onEdit(id)`, and the
   wiring module prompts, writes, and redraws. Panels then contain only DOM
