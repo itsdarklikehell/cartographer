@@ -18,6 +18,7 @@ import { el } from './dom.js';
  *
  * Escape closes the view, unless a dialog, a text field, or another handler
  * takes the key. Close puts focus back on the control that opened the view.
+ * The view does not open while the party is empty.
  * @param {HTMLElement} container the page section of the view
  * @param {{
  *   card: HTMLElement,
@@ -55,6 +56,12 @@ export function mountFullSheet(container, opts) {
 
   function update() {
     if (!isOpen()) return;
+    // A switcher with no tabs is an empty tablist, and the body would show
+    // no sheet, so the view closes when the party empties.
+    if (opts.getCharacters().length === 0) {
+      close();
+      return;
+    }
     const focused = switcher.contains(document.activeElement);
     const selected = opts.getSelectedId();
     switcher.innerHTML = '';
@@ -94,7 +101,7 @@ export function mountFullSheet(container, opts) {
   }
 
   function open() {
-    if (isOpen()) return;
+    if (isOpen() || opts.getCharacters().length === 0) return;
     opener = /** @type {HTMLElement | null} */ (document.activeElement);
     home.insertBefore(marker, opts.card);
     body.appendChild(opts.card);

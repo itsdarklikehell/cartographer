@@ -109,6 +109,7 @@ export function wireParty(app, reloadView = null) {
       // A handout for chosen characters shows only on their tabs, so a new
       // binding changes the list.
       app.views.handoutPanel.update();
+      syncOpenButton();
     },
     selectedId:
       claim.getBoundId() ??
@@ -200,6 +201,12 @@ export function wireParty(app, reloadView = null) {
     },
   });
   mustGetElement('open-full-sheet').addEventListener('click', () => fullSheet.open());
+  // With no character selected, the sheet card shows an empty state and the
+  // full sheet has nothing to show, so the open button hides.
+  function syncOpenButton() {
+    mustGetElement('open-full-sheet').hidden = !scope.getSelectedId();
+  }
+  syncOpenButton();
 
   // Resolve a spellbook's stored ids through the memoized active-library index.
   const resolveSpells = resolveSpellIds;

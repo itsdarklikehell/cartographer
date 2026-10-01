@@ -2272,8 +2272,9 @@ tab bound to a character shows the same card and the same button.
 **Open full sheet** at the top of the summary card opens the sheet the width
 of the page, in the way the combat screen takes the page. The party row
 menu (the three-dot button) has **Open full sheet** too, and the C key
-opens and closes it in Play mode. The map, the party dock, and the sidebar
-hide while it is open. The bar along the top has **Back to the map** and one
+opens and closes it in Play mode. With an empty party, the button hides
+and the C key does nothing. The map, the party dock, and the sidebar hide
+while it is open. The bar along the top has **Back to the map** and one
 tab per party member. Left and Right move between the tabs, and Home and End
 go to the first and last. **Back to the map** or Escape closes it and puts
 focus back on the control that opened it. In a text field, such as the

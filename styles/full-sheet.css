@@ -140,3 +140,8 @@ body.sheet-full.mode-play #panel-spellbook {
 body.sheet-full.mode-play .phone-views {
   display: none;
 }
+
+/* partyWiring.js hides the open button while no character is selected. */
+.sheet-card__open[hidden] {
+  display: none;
+}
