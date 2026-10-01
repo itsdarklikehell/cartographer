@@ -62,8 +62,39 @@ test('the site ships the Jekyll settings, the layout, and the home page', () => 
   for (const path of ['_config.yml', '_layouts/docs.html', '_data/docs_nav.yml', 'docs/index.md']) {
     assert.ok(published.has(path), path);
   }
-  assert.ok(!published.has('docs/gallery.html'));
-  assert.ok(![...published].some((p) => p.startsWith('docs/gallery/')));
+});
+
+test('the browser pages ship with the files they load', () => {
+  for (const path of [
+    'docs/dev-guide.html',
+    'docs/gallery.html',
+    'docs/tile-gallery.html',
+    'style.css',
+  ]) {
+    assert.ok(published.has(path), path);
+  }
+  // Follow each relative import from the UI gallery entry, as the browser does.
+  const seen = new Set();
+  const queue = ['docs/gallery/main.js'];
+  while (queue.length) {
+    const path = queue.pop();
+    if (seen.has(path)) continue;
+    seen.add(path);
+    assert.ok(published.has(path), path);
+    const source = readFileSync(join(ROOT, files.find((f) => f.to === path).from), 'utf8');
+    for (const m of source.matchAll(/^\s*(?:import|export)\b[^'"]*?from\s*'(\.[^']+)'/gm)) {
+      queue.push(normalize(join(dirname(path), m[1])));
+    }
+  }
+  assert.ok(seen.size > 20, 'the gallery imports the source modules');
+  // The stylesheet manifest imports each feature sheet.
+  const sheets = [
+    ...readFileSync(join(ROOT, 'style.css'), 'utf8').matchAll(/@import url\('([^']+)'\)/g),
+  ];
+  assert.ok(sheets.length > 0);
+  for (const [, sheet] of sheets) assert.ok(published.has(sheet), sheet);
+  const tiles = readFileSync(join(ROOT, 'tests/tile-preview.html'), 'utf8');
+  assert.ok(tiles.includes('../assets/tiles/'));
 });
 
 test('the pages outside docs/ ship at their repository paths', () => {

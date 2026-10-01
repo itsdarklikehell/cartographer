@@ -64,11 +64,15 @@ describes how the site is built.
 
 ## Browser pages
 
-The two HTML pages in `docs/` sit outside the four kinds. `pnpm run guide`
-generates `dev-guide.html`, so do not edit it by hand. `gallery.html` and
-the scripts in `docs/gallery/` are written by hand.
+The two HTML pages in `docs/` and the tile preview in `tests/` sit outside
+the four kinds. `pnpm run guide` generates `dev-guide.html`, so do not edit
+it by hand. `gallery.html` and the scripts in `docs/gallery/` are written by
+hand. The docs site also publishes all three, under
+<https://cartographer.tbmh.org/docs/>, with the tile preview at
+`tile-gallery.html`.
 
 | Page | What it shows | How to open it |
 | --- | --- | --- |
 | `dev-guide.html` | A tour of the codebase: the import map, the mount order, the packing layers of a save, and a checklist for a pull request | Open the file in a browser. Rebuild it with `pnpm run guide` (see [Contributing](../CONTRIBUTING.md#the-developer-guide)) |
 | `gallery.html` | Every shared builder in `src/ui/`, drawn from the real modules, with the call that built it and the classes that the call adds | Start `pnpm run dev`, and open `http://127.0.0.1:8080/docs/gallery.html`. The page loads ES modules, so it does not work from a `file://` address |
+| `tests/tile-preview.html` | The tile art of each family, side by side, so every join is visible | Start `pnpm run dev`, and open `http://127.0.0.1:8080/tests/tile-preview.html`. [Testing a change](testing.md) lists the other preview pages |

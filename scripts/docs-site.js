@@ -17,10 +17,23 @@ import { dirname, join } from 'node:path';
 export const EXTRA_PAGES = ['CONTRIBUTING.md', 'bench/README.md', 'fonts/README.md'];
 
 /**
- * docs/gallery.html is left out. It imports the source modules unbundled,
- * and the production build ships only the bundle.
+ * The UI gallery, docs/gallery.html, imports the source modules unbundled and
+ * reads each snippet from the function source, which a bundle rewrites. The
+ * site ships these trees at their repository paths, so the imports in
+ * docs/gallery/ resolve. src/types/ holds only declarations and stays out.
  */
-const SKIP = new Set(['docs/gallery.html', 'docs/gallery']);
+export const SOURCE_TREES = ['src', 'styles'];
+const SKIP = new Set(['src/types']);
+
+/**
+ * Single files of the site. The UI gallery loads style.css from the root. The
+ * tile gallery moves from tests/ to docs/, and it links its art as
+ * ../assets/tiles/, so it keeps a depth of one directory.
+ */
+export const SINGLE_FILES = [
+  { from: 'style.css', to: 'style.css' },
+  { from: 'tests/tile-preview.html', to: 'docs/tile-gallery.html' },
+];
 
 /**
  * Jekyll skips a README.md or CONTRIBUTING.md that has no front matter, and
@@ -51,6 +64,8 @@ export function siteFiles(root) {
     ...walk('docs').map((path) => ({ from: path, to: path })),
     ...EXTRA_PAGES.map((path) => ({ from: path, to: path })),
     ...fonts.map((name) => ({ from: `fonts/${name}`, to: `fonts/${name}` })),
+    ...SOURCE_TREES.flatMap(walk).map((path) => ({ from: path, to: path })),
+    ...SINGLE_FILES,
   ];
 }
 

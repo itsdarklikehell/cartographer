@@ -55,5 +55,11 @@
       url: /bench/README.html
     - title: Bundled fonts
       url: /fonts/README.html
+- section: Browser pages
+  pages:
     - title: Developer guide
       url: /docs/dev-guide.html
+    - title: UI gallery
+      url: /docs/gallery.html
+    - title: Tile gallery
+      url: /docs/tile-gallery.html

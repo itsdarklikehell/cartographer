@@ -125,7 +125,7 @@ The files that only the site uses are in `site/`, which has the same layout as t
 | `site/docs/assets/` | The stylesheet and the script of the site |
 | `site/robots.txt` | Allows every crawler, and gives the address of `sitemap.xml`, which `jekyll-sitemap` writes |
 
-`scripts/docs-site.js` lists the files to copy. It adds an empty front matter block to each Markdown file, because Jekyll skips a `README.md` or `CONTRIBUTING.md` that has none. `docs/gallery.html` is not copied, because it loads the source modules and the production build ships only the bundle.
+`scripts/docs-site.js` lists the files to copy. It adds an empty front matter block to each Markdown file, because Jekyll skips a `README.md` or `CONTRIBUTING.md` that has none. The UI gallery, `docs/gallery.html`, imports the source modules unbundled, so the site also ships `src/`, `styles/`, and `style.css` at their repository paths. The tile preview, `tests/tile-preview.html`, ships as `docs/tile-gallery.html`, which keeps its links to `../assets/tiles/` working.
 
 When you add a document, add it to `site/_data/docs_nav.yml`. `tests/DocsSite.test.js` fails when a page is missing from the sidebar, when a sidebar entry has no page, or when a relative link or a heading anchor has no target.
 
