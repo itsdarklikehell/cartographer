@@ -39,7 +39,12 @@ export function wireShortcuts(app) {
     else if (action === 'redo') mustGetElement('redo-btn').click();
     else if (action === 'build') app.actions.setMode('build');
     else if (action === 'play') app.actions.setMode('play');
-    else if (action === 'help') {
+    else if (action === 'sheet') {
+      // The same buttons a click uses, so the shortcut opens and closes the
+      // full sheet through one code path.
+      const open = document.body.classList.contains('sheet-full');
+      mustGetElement(open ? 'full-sheet-back' : 'open-full-sheet').click();
+    } else if (action === 'help') {
       alertModal(SHORTCUT_HELP.join('\n'), { title: 'Keyboard shortcuts', label: 'Close' });
     }
   });

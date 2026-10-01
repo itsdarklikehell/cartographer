@@ -2265,6 +2265,7 @@ The parts of the sheet have their own modules:
 | --- | --- |
 | `ui/CharacterStatBadge.js` | The ability badges and their breakdown popover |
 | `ui/CharacterBars.js` | The HP bar and the slot pips (the elements and the update loop) |
+| `ui/FullSheet.js` | The full-page view of the sheet: the party switcher and Back to the map. It moves the sheet card into its body while open, and `view/SheetSwitcher.js` decides the arrow-key moves of the switcher |
 | `ui/CharacterLevelBanner.js` | The level-up banner at the top of the sheet, and the level-up text that the party roster also shows |
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |

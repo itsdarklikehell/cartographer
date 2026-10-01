@@ -5,7 +5,7 @@
  * does, and the two places where it depends on mode and role.
  */
 
-/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'build' | 'play' | 'help'} ShortcutAction */
+/** @typedef {'save' | 'undo' | 'undo-stroke' | 'redo' | 'build' | 'play' | 'help' | 'sheet'} ShortcutAction */
 
 /**
  * The shortcut list that the '?' dialog shows. This list stays beside the
@@ -20,7 +20,8 @@ export const SHORTCUT_HELP = [
   'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
   'Ctrl/Cmd+Shift+Z: redo the last undone save',
   'B / P: switch to Build / Play mode',
-  'Escape: close a dialog, or put down the fog brush',
+  'C: open or close the full character sheet (Play)',
+  'Escape: close a dialog or the full sheet, or put down the fog brush',
   'On the map (click it first):',
   'Arrows: move the cursor. Enter / Space: act on the cursor cell',
   '+ / -: zoom',
@@ -66,5 +67,6 @@ export function shortcutFor(event, context) {
   if (event.key === 'b' && context.gm) return 'build';
   if (event.key === 'p' && context.gm) return 'play';
   if (event.key === '?') return 'help';
+  if (event.key === 'c' && context.mode === 'play') return 'sheet';
   return null;
 }

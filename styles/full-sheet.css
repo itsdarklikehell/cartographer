@@ -1,0 +1,82 @@
+/* ==========================================================================
+   The full character sheet.
+
+   It opens over Play mode and takes the full width of the main area, in the
+   way the combat screen does. The map, the dock, and the sidebar hide while
+   it is open. src/ui/FullSheet.js moves the sheet card into its body. The view
+   shows in Play mode only, so a switch to Build or to a fight shows that
+   mode, and a return to Play shows the full sheet again.
+   ========================================================================== */
+
+#full-sheet {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+body.sheet-full.mode-play #full-sheet {
+  display: flex;
+}
+
+body.sheet-full.mode-play .app-center,
+body.sheet-full.mode-play .app-sidebar,
+body.sheet-full.mode-play .app-buildrail {
+  display: none;
+}
+
+.full-sheet__layout {
+  width: 100%;
+  max-width: 96rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-4) var(--space-5);
+}
+
+/* The bar keeps "Back to the map" and the party switcher in view while the
+   sheet scrolls under it. */
+.full-sheet__bar {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  flex-wrap: wrap;
+  padding: var(--space-2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.full-sheet__switcher {
+  /* Below about 18rem beside the button, the switcher takes its own line. */
+  flex: 1 1 18rem;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+/* A party member in the switcher, styled like a tab of the sidebar strip. */
+.full-sheet__tab {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 2px solid transparent;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.full-sheet__tab:hover {
+  color: var(--text);
+}
+
+.full-sheet__tab[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: var(--accent);
+}
+
+/* The open button belongs to the sidebar card. In the full view it would
+   open what is already open. */
+body.sheet-full.mode-play #open-full-sheet {
+  display: none;
+}
+
+.sheet-card__open {
+  align-self: flex-start;
+  margin-bottom: var(--space-2);
+}

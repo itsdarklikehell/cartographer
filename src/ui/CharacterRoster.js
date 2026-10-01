@@ -66,6 +66,7 @@ function hpMeter(character) {
  *   onAwardXP?: () => void,
  *   onEditVitals?: (id: string) => void,
  *   onGrantXP?: (id: string) => void,
+ *   onOpenSheet?: (id: string) => void,
  *   onPlace?: (id: string) => void,
  *   playerTabHref?: (id: string | null) => string,
  *   canManage?: () => boolean,
@@ -105,14 +106,17 @@ export function mountCharacterRoster(container, options) {
   const placeShown = () => Boolean(options.onPlace) && (options.canPlace?.() ?? true);
 
   /**
-   * The row's "More" button, which opens a menu with Grant XP, when the
-   * caller offers it, and Delete.
+   * The row's "More" button, which opens a menu with Open full sheet and
+   * Grant XP, when the caller offers them, and Delete.
    * @param {Character} character
    * @returns {HTMLButtonElement}
    */
   function moreButton(character) {
-    const onGrantXP = options.onGrantXP;
+    const { onGrantXP, onOpenSheet } = options;
     const items = [
+      ...(onOpenSheet
+        ? [{ label: 'Open full sheet', onSelect: () => onOpenSheet(character.id) }]
+        : []),
       ...(onGrantXP ? [{ label: 'Grant XP', onSelect: () => onGrantXP(character.id) }] : []),
       { label: `Delete ${character.name}`, onSelect: () => options.onDelete(character.id) },
     ];

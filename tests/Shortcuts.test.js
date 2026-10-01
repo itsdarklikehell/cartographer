@@ -62,7 +62,8 @@ test('the help dialog documents every shortcut', () => {
     'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
     'Ctrl/Cmd+Shift+Z: redo the last undone save',
     'B / P: switch to Build / Play mode',
-    'Escape: close a dialog, or put down the fog brush',
+    'C: open or close the full character sheet (Play)',
+    'Escape: close a dialog or the full sheet, or put down the fog brush',
     'On the map (click it first):',
     'Arrows: move the cursor. Enter / Space: act on the cursor cell',
     '+ / -: zoom',
@@ -79,4 +80,10 @@ test('a player cannot save, undo, or redo from the keyboard', () => {
   assert.equal(shortcutFor({ key: 's', ctrlKey: true }, player), null);
   assert.equal(shortcutFor({ key: 'z', metaKey: true }, player), null);
   assert.equal(shortcutFor({ key: 'z', ctrlKey: true, shiftKey: true }, player), null);
+});
+
+test('C opens the full sheet in Play mode only, for either role', () => {
+  assert.equal(shortcutFor({ key: 'c' }, gmInPlay), 'sheet');
+  assert.equal(shortcutFor({ key: 'c' }, player), 'sheet');
+  assert.equal(shortcutFor({ key: 'c' }, gmInBuild), null);
 });

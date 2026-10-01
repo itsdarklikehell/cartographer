@@ -13,6 +13,7 @@ import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { createCharacterScope } from './characterScope.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
+import { mountFullSheet } from '../ui/FullSheet.js';
 import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { wireTabs } from '../ui/Tabs.js';
@@ -167,9 +168,29 @@ export function wireParty(app, reloadView = null) {
       selectCharacter(id);
       followCharacter(id);
       document.getElementById('tab-character')?.click();
+      fullSheet.update();
+    },
+    onOpenSheet: (id) => {
+      selectCharacter(id);
+      document.getElementById('tab-character')?.click();
+      fullSheet.open();
     },
     ...rosterActions(app, { scope, selectCharacter }),
   });
+
+  // The full sheet borrows the sidebar's sheet card. Its switcher selects a
+  // party member the same way a roster row does.
+  const fullSheet = mountFullSheet(mustGetElement('full-sheet'), {
+    card: mustGetElement('sheet-card'),
+    getCharacters: () => state.characters,
+    getSelectedId: scope.getSelectedId,
+    onSelect: (id) => {
+      selectCharacter(id);
+      followCharacter(id);
+      fullSheet.update();
+    },
+  });
+  mustGetElement('open-full-sheet').addEventListener('click', () => fullSheet.open());
 
   // Resolve a spellbook's stored ids through the memoized active-library index.
   const resolveSpells = resolveSpellIds;
@@ -402,6 +423,7 @@ export function wireParty(app, reloadView = null) {
       const stillThere = state.characters.some((c) => c.id === selectedId);
       if (stillThere) scope.reselect();
       else selectCharacter(state.characters[0]?.id ?? null);
+      fullSheet.update();
     },
   };
 }

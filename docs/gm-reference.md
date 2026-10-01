@@ -2237,6 +2237,20 @@ The character detail card in the Sheet tab of the sidebar has four tabs.
 | Inventory | The item list |
 | Spellbook | The spells that the character can learn, knows, and prepared. See [Spellbook tab](#spellbook-tab) |
 
+### Full sheet
+
+**Open full sheet** at the top of the sheet card opens the sheet the width
+of the page, in the way the combat screen takes the page. The party row
+menu (the three-dot button) has **Open full sheet** too, and the C key
+opens and closes it in Play mode. The map, the party dock, and the sidebar
+hide while it is open. The bar along the top has **Back to the map** and one
+tab per party member. Left and Right move between the tabs, and Home and End
+go to the first and last. The full sheet shows the same Character,
+Equipment, Inventory, and Spellbook tabs as the sidebar, with room for two
+columns. **Back to the map** or Escape closes it and puts focus back on the
+control that opened it. A switch to Build mode or a fight shows that mode,
+and the full sheet comes back on the return to Play.
+
 ### Sheet contents
 
 The top of the sheet shows the name, the race, and a tall HP bar the width
@@ -2990,7 +3004,8 @@ Press `?` anywhere for the shortcut reference.
 | Ctrl/Cmd+Z | In Build mode, undo the last stroke. In Play and Library mode, undo to the previous save |
 | Ctrl/Cmd+Shift+Z | Redo the last undone save |
 | B, P | Switch to Build or Play mode |
-| Escape | Close a dialog, or put down the fog brush |
+| C | In Play mode, open or close the full character sheet |
+| Escape | Close a dialog or the full sheet, or put down the fog brush |
 | Arrows on the map | Move the map cursor |
 | Enter, Space on the map | Act on the cursor cell |
 | +, - on the map | Zoom |

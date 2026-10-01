@@ -154,6 +154,7 @@
 
         <div class="tabs__panel" role="tabpanel" id="panel-character" aria-labelledby="tab-character" hidden>
           <section id="sheet-card" class="card sheet-card" aria-label="Character detail">
+            <button id="open-full-sheet" class="btn sheet-card__open" type="button">Open full sheet</button>
             <div id="sheet-tabs" class="tabs" role="tablist" aria-label="Character detail">
               <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-sheet" aria-controls="panel-sheet" aria-selected="true">Character</button>
               <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-equipment" aria-controls="panel-equipment" aria-selected="false" tabindex="-1">Equipment</button>
@@ -277,6 +278,9 @@
          switch; the app enters it when combat starts and leaves when it ends.
          src/app/combatWiring.js fills the section in. -->
     <section id="combat-screen" class="combat-screen" aria-label="Combat"></section>
+    <!-- The full character sheet. src/ui/FullSheet.js fills it in and moves
+         the sheet card into it while it is open. -->
+    <section id="full-sheet" class="full-sheet" aria-label="Character sheet"></section>
   </main>
 
   <script type="module" src="src/main.js"></script>
