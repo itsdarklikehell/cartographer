@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -80,6 +80,13 @@ const PATHS = {
   down: ['M12 5v14', 'M6 13l6 6 6-6'],
   // An empty ring marks an open item, such as an active quest.
   circle: ['M12 4a8 8 0 100 16 8 8 0 000-16z'],
+  // A square box marks one objective of a quest. A quest can have several
+  // done at once, so the box reads as a checkbox and not a radio ring.
+  box: ['M7 4h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3z'],
+  boxChecked: [
+    'M7 4h10a3 3 0 013 3v10a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3z',
+    'M8 12l3 3 5-6',
+  ],
   // This is a triangle with an exclamation mark. It marks something
   // authored that needs attention.
   warning: ['M12 4L2.5 20h19z', 'M12 10v4', 'M12 17h.01'],

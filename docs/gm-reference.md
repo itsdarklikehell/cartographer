@@ -2642,8 +2642,8 @@ The Quests panel in the Story tab lists active and completed quests.
 | Link creature | Links the quest to a creature |
 | Edit, Delete | Edits or deletes the quest |
 
-A collapsed active quest lists its objectives, each with the ring that
-marks it done. In the details, each objective also has controls to hide it
+A collapsed active quest lists its objectives, each with a checkbox that
+marks it done. Several objectives can be done at once. In the details, each objective also has controls to hide it
 from players or reveal it, to move it up or down, and to remove it. A
 completed quest shows how many of its objectives are done. A click on a
 link chip shows the linked place on the map.

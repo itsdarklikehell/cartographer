@@ -36,6 +36,21 @@
   padding: 0.2rem;
 }
 
+/* The done toggle draws its own box, so the button frame around it would read
+   as a second box. The frame stays off until hover, and focus keeps its ring. */
+.quest-objective > .btn--icon[aria-pressed] {
+  border-color: transparent;
+  background: none;
+}
+
+.quest-objective > .btn--icon[aria-pressed]:hover {
+  background: var(--surface-sunken);
+}
+
+.quest-objective > .btn--icon[aria-pressed='true'] {
+  color: var(--accent);
+}
+
 .quest-objective__text {
   display: inline-flex;
   flex-wrap: wrap;
@@ -53,7 +68,7 @@
   color: var(--text-muted);
 }
 
-/* A player's objective has a check or a ring in place of the toggle. */
+/* A player's objective has a checked or an empty box in place of the toggle. */
 .quest-objective__status {
   display: inline-flex;
   flex: 0 0 auto;

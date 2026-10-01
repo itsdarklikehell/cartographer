@@ -51,7 +51,7 @@ function addButton(label, ariaLabel, run, ctx, { icon: glyph = 'add', variant } 
 }
 
 /**
- * The objectives as a player reads them: a check or an empty ring, then the
+ * The objectives as a player reads them: a checked or an empty box, then the
  * text. The quest here is already the player copy, so no hidden objective
  * is in it.
  * @param {Quest} quest
@@ -66,7 +66,7 @@ export function playerObjectives(quest) {
       el(
         'li',
         o.done ? 'quest-objective quest-objective--done' : 'quest-objective',
-        el('span', 'quest-objective__status', icon(o.done ? 'check' : 'circle', { size: 14 })),
+        el('span', 'quest-objective__status', icon(o.done ? 'boxChecked' : 'box', { size: 14 })),
         el('span', 'quest-objective__text', o.text),
       ),
     ),
@@ -83,7 +83,7 @@ export function playerObjectives(quest) {
 function doneToggle(quest, { id, text, done }, ctx, callbacks) {
   return ctx.action(
     {
-      icon: done ? 'check' : 'circle',
+      icon: done ? 'boxChecked' : 'box',
       label: done ? `Mark ${text} not done` : `Mark ${text} done`,
       pressed: done,
       onClick: () => callbacks.onToggleObjective(quest, id),
