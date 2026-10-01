@@ -134,3 +134,28 @@ export function readLocation(app, values) {
     ),
   };
 }
+
+/**
+ * The tile a new creature lands on when the GM gives none: the selected
+ * tile, or else the middle tile of the map. The corner tile (column 1,
+ * row 1) is often open sea or rock on a generated map.
+ * @param {Pick<MapNode, 'width' | 'height'>} node
+ * @param {string | null} selected the selected tile id, if any
+ * @returns {string}
+ */
+export function defaultTileId(node, selected) {
+  if (selected) return selected;
+  const half = (/** @type {number} */ size) => Math.max(0, Math.floor((size - 1) / 2));
+  return `${half(node.width)},${half(node.height)}`;
+}
+
+/**
+ * The placement preset of a new creature on the map in view, at
+ * `defaultTileId`.
+ * @param {AppContext} app
+ * @returns {EncounterLocation}
+ */
+export function viewedPlacement(app) {
+  const node = app.navigator.getCurrentNode();
+  return { nodeId: node.id, tileId: defaultTileId(node, app.actions.getSelectedTileId()) };
+}

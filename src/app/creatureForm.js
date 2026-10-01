@@ -3,7 +3,12 @@ import { createCreature, editCreature } from '../entities/Creature.js';
 import { spawnCopies } from '../entities/CreatureTemplate.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
-import { locationFields, moveToPartyChange, readLocation } from './locationFields.js';
+import {
+  locationFields,
+  moveToPartyChange,
+  readLocation,
+  viewedPlacement,
+} from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
 import { clearableDefeated, moveCreature, nameTally } from '../entities/CreatureMap.js';
@@ -210,10 +215,7 @@ export async function addFromLibrary(app) {
       // This uses the same node picker and tile X/Y group as the creature
       // dialog. It defaults to the tile that the GM selected in the node
       // being viewed.
-      ...locationFields(app, {
-        nodeId: app.navigator.getCurrentNode().id,
-        tileId: app.actions.getSelectedTileId() ?? '0,0',
-      }),
+      ...locationFields(app, viewedPlacement(app)),
     ],
     { submitLabel: 'Add' },
   );

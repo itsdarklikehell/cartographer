@@ -1,3 +1,4 @@
+import { viewedPlacement } from './locationFields.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
@@ -213,16 +214,7 @@ export function wireStory(app) {
     getNPCs: () => folkAt({ nodeId: app.navigator.getCurrentNode().id }),
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
     onDelete: deleteNPC,
-    onAdd: () =>
-      creatureForm(
-        app,
-        null,
-        {
-          nodeId: app.navigator.getCurrentNode().id,
-          tileId: app.actions.getSelectedTileId() ?? '0,0',
-        },
-        { disposition: 'neutral' },
-      ),
+    onAdd: () => creatureForm(app, null, viewedPlacement(app), { disposition: 'neutral' }),
     onEdit: (npc) => creatureForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,

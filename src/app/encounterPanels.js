@@ -1,3 +1,4 @@
+import { viewedPlacement } from './locationFields.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
@@ -245,15 +246,7 @@ export function wireEncounterPanels(app, { onStartCombat }) {
         nodeId: app.navigator.getCurrentNode().id,
       }).filter((c) => c.disposition === 'hostile'),
     onAdd: () =>
-      creatureForm(
-        app,
-        null,
-        {
-          nodeId: app.navigator.getCurrentNode().id,
-          tileId: app.actions.getSelectedTileId() ?? '0,0',
-        },
-        { disposition: 'hostile', level: 1 },
-      ),
+      creatureForm(app, null, viewedPlacement(app), { disposition: 'hostile', level: 1 }),
     onAddFromTemplate: () => addFromLibrary(app),
     onRemoveTemplate: async () => {
       if (await removeTemplate(app)) app.views.buildFoes.update();

@@ -753,7 +753,8 @@ people.
 The Bestiary lists the campaign templates under "This campaign" and the
 hostile templates of the library under "Library", each sorted by name. The
 count adds up to 20 copies, and each copy gets its own number. The location
-defaults to the selected cell of the map in view.
+defaults to the selected cell of the map in view, or to the middle of the
+map when no cell is selected.
 
 A defeated foe stays in the campaign until you remove it. **Clear
 defeated** counts the hostile creatures at 0 HP that stand on the map in
@@ -1130,7 +1131,7 @@ needs a caster class.
 | Caster class | None (non-caster) | The class whose spell list and ability the creature casts with |
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
-| Location (map), Column, Row | The selected cell | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
+| Location (map), Column, Row | The selected cell, or the middle of the map when no cell is selected | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
 | Move to the party | | Sets the map, column, and row to the party's tile |
 
 The caster class list also offers "Fighter (Eldritch Knight)" and "Rogue
