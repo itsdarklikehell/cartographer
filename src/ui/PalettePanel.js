@@ -173,7 +173,7 @@ export function mountPalettePanel(
   }
 
   // Inspect is the starting brush. It carries the active styling from mount.
-  const inspectBtn = toolButton('Inspect', 'edit', null);
+  const inspectBtn = toolButton('Inspect', 'pointer', null);
   inspectBtn.classList.add('palette__item--active');
   inspectBtn.setAttribute('aria-pressed', 'true');
 

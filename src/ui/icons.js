@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'|'pointer'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -55,6 +55,8 @@ const PATHS = {
   ],
   heal: ['M12 6v12', 'M6 12h12'],
   edit: ['M4 20h4l10-10-4-4L4 16z', 'M13.5 6.5l4 4'],
+  // The Inspect tool of the palette: a click selects, it does not draw.
+  pointer: ['M4 4l7 16 2.5-6.5L20 11z', 'M13.5 13.5l6 6'],
   save: ['M5 3h11l3 3v15H5z', 'M8 3v6h7V3', 'M8 21v-7h8v7'],
   export: ['M12 3v12', 'M8 11l4 4 4-4', 'M5 21h14'],
   import: ['M12 15V3', 'M8 7l4-4 4 4', 'M5 21h14'],
