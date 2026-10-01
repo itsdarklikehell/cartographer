@@ -461,3 +461,14 @@ body:not(.mode-build) .map-empty {
 .world-tree__parent {
   color: var(--text-muted);
 }
+
+/* The head of the Tile inspector: the art of the tile beside its name. */
+.tile-inspector__art {
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.tile-inspector__name {
+  font-weight: 600;
+}

@@ -346,6 +346,7 @@ export function createMapAuthoring(app, env) {
    */
   function mountInspector(container) {
     return mountTileInspector(container, {
+      artName: (imageRef) => palette.artName(imageRef),
       onChange: (patch) => {
         if (!env.selectedTileId) return;
         const updated = updateTileMetadata(navigator.getCurrentNode(), env.selectedTileId, patch);

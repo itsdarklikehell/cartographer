@@ -443,7 +443,7 @@ export.
 
 ### Tile inspector fields
 
-The inspector heading names the selected cell, for example "Column 11, row 11". Columns and rows count from 1, the same as the numbers along the map edges.
+The inspector heading shows the art of the selected tile and its name, for example "Forest", or "Grass, Road (h)" for a tile with an overlay. Under the name, it names the cell, for example "Column 11, row 11". Columns and rows count from 1, the same as the numbers along the map edges.
 
 | Field | Meaning |
 | --- | --- |

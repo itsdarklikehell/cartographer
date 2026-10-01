@@ -143,6 +143,23 @@ export class TilePalette {
   }
 
   /**
+   * The name that the Tile inspector shows for a tile image. A terrain with
+   * variants gets the name of its type ("Grass"), the same name as its
+   * palette swatch, because the variant number means nothing to the GM. Any
+   * other image gets the label of its entry. An image with no entry, such as
+   * a custom image that the GM removed, gets null.
+   * @param {string} imageRef
+   * @returns {string | null}
+   */
+  artName(imageRef) {
+    for (const entry of this.entries.values()) {
+      if (entry.imageRef !== imageRef) continue;
+      return isVariantType(entry.type) ? titleCase(entry.type) : entry.label;
+    }
+    return null;
+  }
+
+  /**
    * The image that the cell at (x, y) gets from a brush. A random-variant
    * brush paints the variant that `variantAt` picks for the position, so a
    * stroke across several cells mixes the variants, and a painted field

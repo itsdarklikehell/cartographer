@@ -31,6 +31,7 @@ let hintCount = 0;
  *   },
  *   onSetSpawn?: (tileId: string) => void,
  *   onAddHandout?: (tileId: string) => void,
+ *   artName?: (imageRef: string) => string | null,
  * }} opts
  * @returns {{ setTile: (tile: Tile | null, editable?: boolean) => void }}
  */
@@ -47,6 +48,20 @@ export function mountTileInspector(container, opts) {
   const form = el('div', 'u-col u-g3');
 
   const coordLabel = el('div', 'tile-inspector__coord u-muted');
+  // The head shows the art of the tile and its name, so the GM sees which
+  // tile the fields below belong to. The image is decoration, since the name
+  // beside it says the same thing.
+  const artImage = el('img', 'tile-inspector__art');
+  artImage.alt = '';
+  artImage.width = 40;
+  artImage.height = 40;
+  const artLabel = el('div', 'tile-inspector__name');
+  const head = el(
+    'div',
+    'tile-inspector__head u-row u-g2',
+    artImage,
+    el('div', 'u-col', artLabel, coordLabel),
+  );
 
   // Point-of-interest marker
   const typeSelect = select(
@@ -80,7 +95,7 @@ export function mountTileInspector(container, opts) {
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
   const notesField = labeled('Notes', notesInput, { className: 'tile-inspector__field' });
 
-  form.append(coordLabel, typeField, el('div', 'u-col', discField, discHint), notesField);
+  form.append(head, typeField, el('div', 'u-col', discField, discHint), notesField);
 
   // The region link is optional. It names which child node this tile
   // zooms into. It shows only when the caller supplies linking, for
@@ -144,6 +159,9 @@ export function mountTileInspector(container, opts) {
       return;
     }
     coordLabel.textContent = capitalize(describeTile(tile.id));
+    artImage.hidden = !tile.imageRef;
+    if (tile.imageRef) artImage.src = tile.imageRef;
+    artLabel.textContent = artNameOf(tile);
     typeSelect.value = tile.metadata.poiType ?? '';
     discInput.checked = tile.metadata.discoverable;
     notesInput.value = tile.metadata.notes;
@@ -156,6 +174,19 @@ export function mountTileInspector(container, opts) {
 
     renderLinkOptions();
     root.appendChild(form);
+  }
+
+  /**
+   * The names of the base art and each overlay, as in "Grass, Road (h)".
+   * @param {Tile} shown
+   * @returns {string}
+   */
+  function artNameOf(shown) {
+    const overlays = shown.overlayRef === null ? [] : [shown.overlayRef].flat();
+    const names = [shown.imageRef, ...overlays]
+      .filter((ref) => !!ref)
+      .map((ref) => opts.artName?.(ref) ?? 'Custom art');
+    return names.length ? names.join(', ') : 'No tile art';
   }
 
   /**

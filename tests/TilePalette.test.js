@@ -411,3 +411,18 @@ test('a custom tile of a variant type joins the position pick', () => {
   assert.equal(painted.has('data:image/png;base64,AA'), true);
   assert.equal(painted.size, 4);
 });
+
+test('artName names a variant by its type and any other image by its label', () => {
+  const palette = new TilePalette();
+  const grass = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
+    palette.get('grass-2')
+  );
+  assert.equal(palette.artName(grass.imageRef), 'Grass');
+  const road = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (
+    palette.get('road-h')
+  );
+  assert.equal(palette.artName(road.imageRef), road.label);
+  palette.addCustom('my-tower', 'My tower', 'data:image/png;base64,AAAA');
+  assert.equal(palette.artName('data:image/png;base64,AAAA'), 'My tower');
+  assert.equal(palette.artName('assets/tiles/none.svg'), null);
+});
