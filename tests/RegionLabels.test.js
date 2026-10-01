@@ -104,3 +104,24 @@ test('placeLabels keeps the gap between two labels', () => {
   assert.notEqual(placeLabels(spots, boxAt)[1], null);
   assert.equal(placeLabels(spots, boxAt, 2)[1], null);
 });
+
+test('placeLabels skips a spot that overlaps a blocked box', () => {
+  const spots = [
+    [
+      { x: 0, y: 1, above: false },
+      { x: 0, y: 1, above: true },
+    ],
+  ];
+  const at = (
+    /** @type {number} */ _i,
+    /** @type {{ x: number, y: number, above: boolean }} */ s,
+  ) => ({
+    x: s.x * 10,
+    y: s.above ? s.y * 10 - 5 : s.y * 10,
+    w: 10,
+    h: 5,
+  });
+  const blocked = [{ x: 0, y: 10, w: 10, h: 10 }];
+  assert.deepEqual(placeLabels(spots, at, 0, blocked), [{ x: 0, y: 5, w: 10, h: 5 }]);
+  assert.deepEqual(placeLabels([[spots[0][0]]], at, 0, blocked), [null]);
+});

@@ -532,6 +532,30 @@ export class MapRenderer {
   /** @param {MapView} view
    * @param {{ revealedIds: RevealedIds | null }} frame */
   _renderRegionGroups(view, frame) {
-    renderRegionOverlays(this.ctx, view, frame.revealedIds, this.tileSize, this.getNodeName);
+    renderRegionOverlays(
+      this.ctx,
+      view,
+      frame.revealedIds,
+      this.tileSize,
+      this.getNodeName,
+      this._labelBlockers(view),
+    );
+  }
+
+  /**
+   * The tiles that a region name keeps clear of: the party tile, each
+   * character token, and each creature marker that draws this frame. A
+   * marker hidden by range or fog does not count, so a name never moves
+   * away from a creature that the map does not show.
+   * @param {MapView} view
+   * @returns {string[]}
+   */
+  _labelBlockers(view) {
+    const ids = view.partyTileId ? [view.partyTileId] : [];
+    for (const t of view.characterTokens ?? []) ids.push(t.tileId);
+    for (const list of [view.encounterTileIds, view.npcTileIds]) {
+      for (const id of list ?? []) if (this._markers.markerVisible(view, id)) ids.push(id);
+    }
+    return ids;
   }
 }

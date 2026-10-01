@@ -123,6 +123,13 @@ draws the box. `groupOutline` in `src/map/RegionOutline.js` lists the cell
 edges that the border follows, which are the sides of member cells whose
 neighbor on that side is outside the group.
 
+A region name tries a list of spots from `labelSpots` in
+`src/map/RegionLabels.js`, and `placeLabels` keeps the first spot that is
+clear of the names already placed. The renderer also passes the tiles of the
+party token, each character token, and each visible creature marker. A name
+skips a spot that covers one of those tiles, and often moves to the spot
+above the region instead.
+
 The view field `highlightRegionId` names one child node. Its groups draw the
 tint three times over and a border twice as wide. Build mode sets it to the
 target of the Region brush while that brush paints on the Paint tab, so the

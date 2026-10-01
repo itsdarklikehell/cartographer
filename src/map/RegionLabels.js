@@ -69,15 +69,20 @@ export function boxesOverlap(a, b, gap = 0) {
  * per cell and most labels fit at their first spot.
  * @param {LabelSpot[][]} spots the spots to try for each label, in order
  * @param {(index: number, spot: LabelSpot) => LabelBox} boxAt the box of label `index` at a spot
+ * A label also skips a spot whose box overlaps one of the `blocked` boxes,
+ * such as the tile of the party token or of a creature marker, so a name
+ * plate never hides a marker.
  * @param {number} [gap] the least space, in pixels, kept between two labels
+ * @param {LabelBox[]} [blocked] boxes that no label may overlap
  * @returns {(LabelBox | null)[]}
  */
-export function placeLabels(spots, boxAt, gap = 0) {
+export function placeLabels(spots, boxAt, gap = 0, blocked = []) {
   /** @type {LabelBox[]} */
   const placed = [];
   return spots.map((list, index) => {
     for (const spot of list) {
       const box = boxAt(index, spot);
+      if (blocked.some((b) => boxesOverlap(box, b))) continue;
       if (placed.some((p) => boxesOverlap(box, p, gap))) continue;
       placed.push(box);
       return box;

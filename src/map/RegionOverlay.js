@@ -1,4 +1,4 @@
-import { blockRect, cellEdge, newBlockRect } from './MapGeometry.js';
+import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js';
 import { groupOutline, regionSlots } from './RegionOutline.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel, labelFont } from './CanvasText.js';
@@ -27,8 +27,16 @@ const REGION_LABEL_PX = 12;
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds the revealed tile ids, or null in Build mode
  * @param {number} tileSize base tile size in buffer px at scale 1
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
+ * @param {string[]} [blockedIds] tiles with a token or marker, which no name plate covers
  */
-export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeName) {
+export function renderRegionOverlays(
+  ctx,
+  view,
+  revealedIds,
+  tileSize,
+  getNodeName,
+  blockedIds = [],
+) {
   if (!view.node || view.regionGroups.length === 0) return;
   const size = tileSize * view.scale;
   // The view's groups, not the groups of view.node. During a stroke the
@@ -80,7 +88,7 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
     ctx.stroke(outline);
     ctx.restore();
   }
-  renderRegionNames(ctx, view, revealedIds, size, getNodeName);
+  renderRegionNames(ctx, view, revealedIds, size, getNodeName, blockedIds);
 }
 
 /**
@@ -90,15 +98,18 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
  * the region's first cell in reading order. In Play mode that is the first
  * revealed cell, so the plate never sits in fog. `placeLabels` moves a name
  * that would overlap an earlier one to a later spot, or leaves it out until
- * a zoom makes room. The layout covers the regions out of view too, so a
+ * a zoom makes room. A name also moves off a tile with the party token, a
+ * character token, or a visible creature marker, often to the spot above
+ * the region. The layout covers the regions out of view too, so a
  * name does not change spot when a pan moves another region off the canvas.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds
  * @param {number} size the on-screen tile size in buffer px
  * @param {((nodeId: string) => string | undefined) | undefined} getNodeName
+ * @param {string[]} blockedIds
  */
-function renderRegionNames(ctx, view, revealedIds, size, getNodeName) {
+function renderRegionNames(ctx, view, revealedIds, size, getNodeName, blockedIds) {
   const node = view.node;
   if (!node || !getNodeName) return;
   const px = view.pixelRatio ?? 1;
@@ -138,6 +149,7 @@ function renderRegionNames(ctx, view, revealedIds, size, getNodeName) {
       };
     },
     px,
+    cellBoxes(blockedIds, view, size),
   );
   boxes.forEach((box, i) => {
     if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;
@@ -154,4 +166,25 @@ function renderRegionNames(ctx, view, revealedIds, size, getNodeName) {
       padY,
     });
   });
+}
+
+/**
+ * The screen boxes of the listed tiles, for the label layout to keep clear.
+ * @param {string[]} ids tile ids in "x,y" form
+ * @param {MapView} view
+ * @param {number} size the on-screen tile size in buffer px
+ * @returns {import('./RegionLabels.js').LabelBox[]}
+ */
+export function cellBoxes(ids, view, size) {
+  /** @type {import('./RegionLabels.js').LabelBox[]} */
+  const boxes = [];
+  for (const id of ids) {
+    const c = parseCoords(id);
+    if (!c) continue;
+    const x = cellEdge(c.x, size, view.offsetX);
+    const y = cellEdge(c.y, size, view.offsetY);
+    const w = cellEdge(c.x + 1, size, view.offsetX) - x;
+    boxes.push({ x, y, w, h: cellEdge(c.y + 1, size, view.offsetY) - y });
+  }
+  return boxes;
 }
