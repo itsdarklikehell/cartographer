@@ -33,6 +33,9 @@ import { setTip } from './Tooltip.js';
  * host decides when the swing is available, so the group is absent unless the
  * turn can take it.
  *
+ * `held` lists the ids of the spells whose repeat the caster keeps open. A
+ * held spell button dims on the cost of its repeat (see `spellNote`).
+ *
  * `turn` lists the turn actions that are not a swing or a cast, such as Dash
  * and Hide (see `combat/TurnActions.js`). Each entry names its group, and the
  * bar draws one row per group in list order, so a class feature adds its
@@ -44,6 +47,7 @@ import { setTip } from './Tooltip.js';
  *   spells: Spell[],
  *   offhand?: (InventoryItem | EnemyWeapon)[],
  *   turn?: TurnAction[],
+ *   held?: string[],
  * }} actions
  * @param {{
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
@@ -56,6 +60,7 @@ import { setTip } from './Tooltip.js';
  * @returns {HTMLElement | null}
  */
 export function combatActionBar(actions, callbacks, budget = null) {
+  const held = new Set(actions.held ?? []);
   const turn = callbacks.onTurnAction ? (actions.turn ?? []) : [];
   if (actions.weapons.length === 0 && actions.spells.length === 0 && turn.length === 0) {
     return null;
@@ -138,7 +143,7 @@ export function combatActionBar(actions, callbacks, budget = null) {
               ariaLabel: `Cast ${spell.name}`,
               title: `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
             }),
-            (b) => spellNote(b.used, spell),
+            (b) => spellNote(b.used, spell, held.has(spell.id)),
           ),
         ),
       ),

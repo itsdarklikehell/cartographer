@@ -23,3 +23,16 @@ test('spellNote reads the cost from the casting time', () => {
   assert.equal(spellNote(spent, { castingTime: { kind: 'minute', amount: 10 } }), null);
   assert.equal(spellNote(spent, {}), null);
 });
+
+test('spellNote reads the repeat cost of a held spell', () => {
+  const sword = {
+    castingTime: { kind: 'action' },
+    repeat: { cost: /** @type {const} */ ('bonus') },
+  };
+  assert.equal(spellNote(spent, sword, true), null);
+  assert.equal(spellNote({ ...freshBudget(), bonus: true }, sword, true), 'Bonus action spent');
+  assert.equal(spellNote(spent, sword), 'Action spent');
+  // A held repeat that names no cost costs what the casting time costs.
+  const bolt = { castingTime: { kind: 'action' }, repeat: {} };
+  assert.equal(spellNote(spent, bolt, true), 'Action spent');
+});

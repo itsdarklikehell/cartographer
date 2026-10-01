@@ -35,12 +35,18 @@ export function attackNote(attacksLeft) {
 
 /**
  * The note for a spell button, from the part of the turn that its casting
- * time spends. A casting time longer than a turn spends nothing here.
+ * time spends. A casting time longer than a turn spends nothing here. A spell
+ * whose repeat the caster keeps open (`held`) costs what its repeat costs,
+ * the same cost that the cast path charges. Mordenkainen's Sword is cast with
+ * an action and repeats with a bonus action.
  * @param {ActionBudget} used
- * @param {{ castingTime?: unknown }} spell
+ * @param {{ castingTime?: unknown, repeat?: { cost?: ActionCost } }} spell
+ * @param {boolean} [held] whether the caster keeps a repeat of the spell open
  * @returns {string | null}
  */
-export function spellNote(used, spell) {
+export function spellNote(used, spell, held = false) {
+  const repeatCost = held ? spell.repeat?.cost : undefined;
+  if (repeatCost) return costNote(used, repeatCost);
   if (!spell.castingTime) return null;
   return costNote(used, castingCost(parseCastingTime(spell.castingTime)));
 }

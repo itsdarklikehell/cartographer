@@ -5,6 +5,7 @@ import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
+import { heldRepeat } from '../entities/SpellRepeat.js';
 import { isGM } from '../view/ViewRole.js';
 import { heldTarget, turnKey } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
@@ -140,9 +141,16 @@ export function wireCombatScreen(app) {
       const active = state.combat ? state.combat.order[state.combat.index] : null;
       if (!active) return { weapons: [], spells: [], offhand: [] };
       const weapons = weaponsOf(app, active.id);
+      const spells = spellsOf(app, active.id);
+      const caster = findCombatant(app, active.id)?.entity;
       return {
         weapons,
-        spells: spellsOf(app, active.id),
+        spells,
+        // A spell whose repeat the caster keeps open costs what its repeat
+        // costs, so the bar dims it on that cost.
+        held: caster
+          ? spells.filter((s) => s.repeat && heldRepeat(caster, s.id)).map((s) => s.id)
+          : [],
         // The off-hand group appears only on a turn that can take the swing:
         // two light melee weapons in hand, the Attack action already spent, and
         // the bonus action still free.

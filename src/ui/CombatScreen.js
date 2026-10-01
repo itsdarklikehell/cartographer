@@ -35,6 +35,7 @@ import { buildTabs } from './Tabs.js';
  *     spells: Spell[],
  *     offhand?: (InventoryItem | EnemyWeapon)[],
  *     turn?: import('../combat/TurnActions.js').TurnAction[],
+ *     held?: string[],
  *   },
  *   onTurnAction?: (action: import('../combat/TurnActions.js').TurnAction) => void,
  *   onToggleBudget?: (cost: import('../types/combat.js').ActionCost) => void,

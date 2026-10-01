@@ -1444,7 +1444,7 @@ muted label and a dashed edge, and its tooltip names the cost, as in
 | What | Cost |
 | --- | --- |
 | A weapon swing | The Attack action. Extra Attack banks the extra swings, so a Fighter of 5th level swings twice for one action. A creature with Multiattack banks its swings the same way |
-| A cast | What the casting time of the spell names: an action, a bonus action, or a reaction |
+| A cast | What the casting time of the spell names: an action, a bonus action, or a reaction. The repeat of a spell that the caster keeps open costs what the spell names for its repeat. Mordenkainen's Sword repeats for a bonus action |
 | An off-hand swing | The bonus action |
 | An opportunity attack | The reaction |
 | A legendary action | One legendary action of the creature. The creature gets them all back when its own turn starts |
