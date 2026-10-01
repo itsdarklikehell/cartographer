@@ -369,7 +369,7 @@ gives the Build rail more width, so the palette shows more swatches in a row.
 | Chevron | Opens or closes the nodes under a row |
 | Find a place | Shows only the nodes whose names contain the text, and the rows above them. Each match shows the name of its parent after a comma, as in "Temple, Ashogate". It shows when the world has 12 or more nodes. Escape clears it |
 | Row name | In Build mode, opens that map. In Play mode, see [Play layout](#play-layout) |
-| Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu. Delete shows in red below a rule. Its confirm counts the maps it removes, the creatures that become unplaced, the handouts that become campaign-wide, and the quest links that go with the maps |
+| Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu. Delete shows in red below a rule. Its confirm counts the maps it removes, the creatures that become unplaced, the handouts that become campaign-wide, and the quest links that go with the maps. It also says whether Undo in the header can bring the map back. Undo can do that only when the last save has the map |
 
 A branch is closed when the tree first shows it. The exceptions are the top
 node and the rows above the current map. When the map in view changes, the

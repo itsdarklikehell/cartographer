@@ -12,11 +12,26 @@ import { resyncMapViews } from './mapResync.js';
 import { shrinkNodeLinks, unlinkRemovedNodes } from './questCleanup.js';
 import { lockFields, readLockFields } from '../map/NodeLock.js';
 import { linksIn } from '../quest/QuestLinks.js';
+import { loadPersistedCampaign } from '../storage/HistoryLog.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
+
+/**
+ * Whether the stored save has a node. The header Undo steps back to that
+ * save, so it can restore a deleted node only when this is true. An
+ * unreadable save counts as one without the node.
+ * @param {string} nodeId
+ */
+function inLastSave(nodeId) {
+  try {
+    return Boolean(loadPersistedCampaign()?.nodes.some((n) => n.id === nodeId));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * These are the modal fields (kind and environment) shared by the new-node
@@ -185,6 +200,7 @@ export function createNodeActions(app, env) {
       creatures: state.creatures.filter((c) => c.location && doomed.has(c.location.nodeId)).length,
       handouts: state.handouts.filter((h) => h.nodeId && doomed.has(h.nodeId)).length,
       questLinks: linksIn(state.quests, doomed).length,
+      inLastSave: inLastSave(nodeId),
     });
     const ok = await confirmModal(question, { variant: 'danger', confirmLabel: 'Delete' });
     if (!ok) return;
