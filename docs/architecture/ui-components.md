@@ -706,8 +706,11 @@ here implements an overlay, a scrim, or a focus trap again.
 
 Every dialog has a name. The title gets a unique id, and the dialog points
 at it with `aria-labelledby`, so a screen reader announces the title and
-not only "dialog". `confirmModal` and `alertModal` default their titles to
-"Confirm" and "Notice", and point `aria-describedby` at the message.
+not only "dialog". `confirmModal` defaults its title to the confirm label as a
+question, such as "End combat?", or to "Confirm" when it has no label.
+`confirmDelete` titles its dialog with the name, as in "Delete Wren Tallowby?".
+`alertModal` defaults its title to "Notice". Both point `aria-describedby` at
+the message.
 
 A danger confirm opens with focus on Cancel, so a stray Enter cannot delete
 or replace anything. `confirmModal` takes `confirmLabel` for the confirm

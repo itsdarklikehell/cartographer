@@ -503,8 +503,9 @@ export function alertModal(message, options = {}) {
  * styles the confirm button, and names the same variants a button does, so a
  * destructive confirm reads as `variant: 'danger'` here and everywhere else.
  * A danger confirm opens with focus on Cancel, so a stray Enter does not
- * delete or replace anything. The heading defaults to "Confirm", and the
- * dismiss button reads "Cancel" unless `cancelLabel` names what declining does.
+ * delete or replace anything. The heading defaults to the confirm label as a
+ * question ("End combat?"), so the dialog names the action it asks about,
+ * or to "Confirm" with no label. The dismiss button reads "Cancel" unless `cancelLabel` names what declining does.
  * @param {string} message
  * @param {{
  *   confirmLabel?: string,
@@ -518,7 +519,7 @@ export function alertModal(message, options = {}) {
 export function confirmModal(message, options = {}) {
   const variant = options.variant ?? 'primary';
   return openDialog({
-    title: options.title ?? 'Confirm',
+    title: options.title ?? (options.confirmLabel ? `${options.confirmLabel}?` : 'Confirm'),
     returnFocus: options.returnFocus,
     build: (close) => {
       const text = el('p', 'modal__message', message);
@@ -538,15 +539,19 @@ export function confirmModal(message, options = {}) {
 }
 
 /**
- * The standard delete confirmation: `Delete "<name>"?` with the danger-styled
- * Delete button. This makes every delete across the app read and look the
- * same. `detail` appends a consequence sentence, for example what else is
+ * The standard delete confirmation: the title `Delete <name>?`, the message
+ * `This deletes "<name>".`, and the danger-styled Delete button. This makes
+ * every delete across the app read and look the same. `detail` appends a consequence sentence, for example what else is
  * lost.
  * @param {string} name what's being deleted, shown quoted in the message
  * @param {string} [detail]
  * @returns {Promise<boolean>}
  */
 export function confirmDelete(name, detail = '') {
-  const message = `Delete "${name}"?${detail ? ` ${detail}` : ''}`;
-  return confirmModal(message, { variant: 'danger', confirmLabel: 'Delete' });
+  const message = `This deletes "${name}".${detail ? ` ${detail}` : ''}`;
+  return confirmModal(message, {
+    variant: 'danger',
+    confirmLabel: 'Delete',
+    title: `Delete ${name}?`,
+  });
 }
