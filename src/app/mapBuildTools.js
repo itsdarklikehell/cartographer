@@ -19,6 +19,7 @@ import { mustGetElement } from '../ui/dom.js';
 export function wireMapBuildTools(app, env, undoStroke) {
   const { grid, navigator, toasts } = app;
   mustGetElement('stroke-undo-btn').addEventListener('click', undoStroke);
+  mustGetElement('header-stroke-undo-btn').addEventListener('click', undoStroke);
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
     // Browsers cap the area and the sides of a canvas. The render scales the

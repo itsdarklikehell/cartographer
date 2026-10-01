@@ -208,3 +208,19 @@ body.role-locked #role-switch-container {
 body.role-player .save-status {
   display: none;
 }
+
+/* The stroke-level undo shows in the header in Build mode only. Outside it,
+   Undo is the first visible button of the History cluster and takes the
+   rounded left corners. */
+.header-stroke-undo {
+  display: none;
+}
+
+body.mode-build .header-stroke-undo {
+  display: inline-flex;
+}
+
+body:not(.mode-build) #undo-btn {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}

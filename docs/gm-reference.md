@@ -156,7 +156,7 @@ header.
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The line under the title reads "No unsaved changes" after the page loads, "Unsaved changes" while changes wait for a write, and "Saved just now", "Saved 5 min ago", or "Saved 2 h ago" after a manual save or an autosave from this tab. The button keeps an outline while changes are unsaved |
-| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, and the open tabs |
+| Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. Their tooltips say "previous save" and "next save", because they step between saves, not between single edits. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, and the open tabs |
 | Export | Its accessible name is "Export campaign". Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
 | Import | Its accessible name is "Import campaign". Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
 
@@ -401,7 +401,7 @@ road, the road stays on top.
 
 | Control | What it does |
 | --- | --- |
-| Undo stroke | Reverts the last edit. A whole drag, a region link, and a generation each count as one edit |
+| Undo stroke | Reverts the last edit. A whole drag, a region link, and a generation each count as one edit. The header shows a second Undo stroke button in Build mode, left of Undo, and Ctrl/Cmd+Z presses it |
 | Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored |
 
 Undo stroke reverts only the cells and fields that the edit changed. Fog

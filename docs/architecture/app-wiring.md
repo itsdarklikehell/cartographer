@@ -297,7 +297,7 @@ argument.
   or "an inn", and "the world map" at the root. It also defines `createBuildWarning`, the Build-rail
   warning for a node that has no way in or out.
 - `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
-  Build rail.
+  Build rail, and the Undo stroke button that the header shows in Build mode.
 
 #### Map resync
 
