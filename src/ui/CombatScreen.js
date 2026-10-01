@@ -161,7 +161,6 @@ export function mountCombatScreen(container, callbacks) {
         },
       })
     : null;
-  if (map) map.element.hidden = true;
   const side = el(
     'aside',
     'combat-screen__log',

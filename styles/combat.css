@@ -81,7 +81,7 @@ body.mode-combat .app-buildrail {
   border-color: var(--danger);
 }
 
-/* The left rail: the active combatant's card over the docked dice tray. */
+/* The left rail: the card of the active combatant. */
 .combat-screen__left {
   flex: 0 0 17rem;
   min-width: 0;
@@ -382,11 +382,14 @@ body.mode-combat .app-buildrail {
 }
 
 /* The dice tray keeps its own .card styling; the column only sizes it. A
-   tall open tray scrolls inside the dock, so the log keeps some room. */
+   tall open tray scrolls inside the dock, so the log keeps some room. The
+   column has only a max-height, so a percentage cap here resolves against
+   an indefinite height and caps nothing. The cap is 60% of the column's
+   max-height instead. */
 .combat-screen__dice-dock {
   flex: 0 1 auto;
   min-height: 0;
-  max-height: 60%;
+  max-height: calc(0.6 * (100dvh - 2 * var(--space-3)));
   overflow-y: auto;
 }
 
