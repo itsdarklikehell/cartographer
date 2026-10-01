@@ -322,8 +322,12 @@
   min-height: calc(var(--text-label) * 1.5 + 0.1rem + 24px);
 }
 
-/* The reserved line for a character with no slot pools at all. */
+/* The reserved line for a character with no slot pools at all. In the
+   stacked sheet it takes no room, because an empty band of one pip row sits
+   between the level line and the ability scores. The two-column sheet keeps
+   the room (character.css), where the line shares a row with the HP bar. */
 .slot-line--empty {
+  display: none;
   visibility: hidden;
 }
 

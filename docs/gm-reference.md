@@ -2186,6 +2186,8 @@ A dot in front of each save or skill shows how trained the character is.
 | Solid | Proficient |
 | Ringed | Expertise, which doubles the proficiency bonus |
 
+A key under passive Perception shows the solid and the ringed dot.
+
 Passive Perception is 10 plus the Perception bonus. Compare it against a
 hidden thing when nobody says they are looking.
 

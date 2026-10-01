@@ -302,9 +302,10 @@ export function mountCharacterSheet(
         line.update([...getSlotPools(next), ...(nextPact ? [nextPact] : [])]);
       });
     } else {
-      // A non-caster keeps the space the pips would take. Without this, the
-      // whole sheet below the header rises when the GM selects a non-caster
-      // after a caster.
+      // In the two-column sheet, a non-caster keeps the space the pips would
+      // take. Without this, the whole sheet below the header rises when the
+      // GM selects a non-caster after a caster. The stacked sheet hides the
+      // spacer (widgets.css).
       const spacer = el('span', 'slot-line slot-line--empty');
       spacer.setAttribute('aria-hidden', 'true');
       headSide.appendChild(spacer);

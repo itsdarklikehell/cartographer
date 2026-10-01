@@ -202,5 +202,16 @@ export function buildSkillsBlock(character, opts = {}) {
     'check-block__passive u-muted',
     `Passive Perception ${passivePerception(character)}`,
   );
-  return buildBlock('Skills', skillRows(character), opts, passive);
+  // The key to the training dots of the saves above and the skills here.
+  /** @param {string} modifier @param {string} text */
+  const key = (modifier, text) =>
+    el('span', 'u-row u-g1', el('span', `check-row__dot ${modifier}`), text);
+  const legend = el(
+    'div',
+    'check-block__legend u-row u-g3 u-muted',
+    key('check-row__dot--proficient', 'Proficient'),
+    key('check-row__dot--expert', 'Expertise'),
+  );
+  const footer = el('div', 'u-col u-g1 check-block__footer', passive, legend);
+  return buildBlock('Skills', skillRows(character), opts, footer);
 }

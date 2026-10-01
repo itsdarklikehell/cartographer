@@ -76,6 +76,10 @@
    measure. The query measures the card, not the viewport, so the same sheet
    mounted in a narrow rail stays stacked on a wide screen. */
 @container character-sheet (min-width: 50rem) {
+  .slot-line--empty {
+    display: flex;
+  }
+
   /* Both columns take a share of whatever the card gives them, so neither leaves
      a strip of empty card beside it, and the body as a whole stops at the two
      measures so they cannot grow past what reads well. The left share is the
@@ -449,6 +453,14 @@
   box-shadow:
     0 0 0 1.5px var(--surface),
     0 0 0 2.5px var(--text);
+}
+
+/* The footer of the skill block: passive Perception, then the key to the
+   training dots. */
+.check-block__legend {
+  align-items: center;
+  padding-left: 0.3rem;
+  font-size: var(--text-label);
 }
 
 /* Passive Perception closes the skill block, set apart from the rows above it
