@@ -1,7 +1,8 @@
 import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
-import { textField } from './formFields.js';
+import { labeled, select, setOptions, textField } from './formFields.js';
+import { facetOptions, matchesFacets } from '../library/LibraryFacets.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
 
@@ -14,6 +15,7 @@ import { buildTabs } from './Tabs.js';
  *   summary: string,
  *   source: LibrarySource,
  *   group?: string,
+ *   tags?: string[],
  * }} LibraryRow
  */
 
@@ -45,6 +47,7 @@ import { buildTabs } from './Tabs.js';
  *   onRemove: (key: string, source: LibrarySource) => Promise<unknown>,
  *   onSpawn?: (key: string) => void,
  *   spawnLabel?: string,
+ *   facets?: { id: string, label: string, all: string }[],
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -65,6 +68,15 @@ export function mountLibraryPanel(container, callbacks) {
    * returns to the row they edited instead of the top of a long list. */
   /** @type {{ focus: import('./focusMemory.js').FocusMemo | null, scroll: [Element, number][] }} */
   let memo = { focus: null, scroll: [] };
+
+  /** The facet selects, such as class and level for spells, with their
+   * chosen tag. They sit beside the name filter and stay across rerenders. */
+  const facets = (callbacks.facets ?? []).map((facet) => ({
+    ...facet,
+    picker: select([{ value: '', label: facet.all }], ''),
+    wrap: /** @type {HTMLElement | null} */ (null),
+  }));
+  const chosen = () => facets.map((f) => f.picker.value);
 
   // The chrome hides while an inline editor is open, instead of being
   // torn down. The filter text and the selected subtab come back
@@ -122,6 +134,7 @@ export function mountLibraryPanel(container, callbacks) {
       tabs: panels,
       onSelect: (id) => {
         activeSubtab = id;
+        syncFacets();
         lists.get(id)?.update();
       },
     });
@@ -138,7 +151,20 @@ export function mountLibraryPanel(container, callbacks) {
     lists.set('', mountList(panel, null));
   }
 
-  /** @returns {HTMLInputElement} */
+  /** Offer each facet the values that the rows of the shown subtab carry.
+   * A facet with no values hides, and a choice that is gone resets to all. */
+  function syncFacets() {
+    const rows = callbacks.getEntries(activeSubtab ?? undefined);
+    for (const facet of facets) {
+      const { id, all, picker } = facet;
+      const options = facetOptions(rows, id, all);
+      const kept = options.some((o) => o.value === picker.value) ? picker.value : '';
+      setOptions(picker, options, kept);
+      if (facet.wrap) facet.wrap.hidden = options.length < 2;
+    }
+  }
+
+  /** @returns {HTMLElement} */
   function buildFilter() {
     const filterInput = textField(filter, {
       placeholder: 'Filter by name...',
@@ -150,7 +176,15 @@ export function mountLibraryPanel(container, callbacks) {
       filter = filterInput.value;
       lists.get(activeSubtab ?? '')?.update();
     });
-    return filterInput;
+    if (facets.length === 0) return filterInput;
+    const row = el('div', 'library-panel__filters', filterInput);
+    for (const facet of facets) {
+      facet.picker.addEventListener('change', () => lists.get(activeSubtab ?? '')?.update());
+      facet.wrap = labeled(facet.label, facet.picker);
+      row.appendChild(facet.wrap);
+    }
+    queueMicrotask(syncFacets);
+    return row;
   }
 
   /**
@@ -171,9 +205,11 @@ export function mountLibraryPanel(container, callbacks) {
         const query = filter.trim().toLowerCase();
         return callbacks
           .getEntries(subtabId ?? undefined)
-          .filter((entry) => !query || entry.name.toLowerCase().includes(query));
+          .filter((entry) => !query || entry.name.toLowerCase().includes(query))
+          .filter((entry) => matchesFacets(entry.tags, chosen()));
       },
-      emptyMessage: () => (filter.trim() ? 'No entries match.' : 'No entries.'),
+      emptyMessage: () =>
+        filter.trim() || chosen().some(Boolean) ? 'No entries match.' : 'No entries.',
       groupOf: /** @param {LibraryRow} entry */ (entry) => entry.group ?? null,
       buildBody,
       actions: rowActions,
@@ -186,7 +222,7 @@ export function mountLibraryPanel(container, callbacks) {
       // filter text, put the text itself here: two filters that both match
       // nothing produce equal empty row lists, and the boolean would then
       // leave a stale name on screen.
-      dependsOn: () => filter.trim() !== '',
+      dependsOn: () => filter.trim() !== '' || chosen().some(Boolean),
     });
   }
 
@@ -259,6 +295,7 @@ export function mountLibraryPanel(container, callbacks) {
 
   /** Redraw every list, whether or not its tab is the visible one. */
   function refresh() {
+    syncFacets();
     for (const list of lists.values()) list.update();
   }
 

@@ -102,3 +102,19 @@ body.mode-library .app-buildrail:not(#library-tools) {
   grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
   gap: var(--space-1) var(--space-2);
 }
+
+/* The name filter with its facet selects, such as class and level, on one
+   row that wraps on a narrow screen. The name filter takes the spare width. */
+.library-panel__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: flex-end;
+  margin-bottom: var(--space-2);
+}
+
+.library-panel__filters .library-panel__filter {
+  flex: 1 1 14rem;
+  width: auto;
+  margin-bottom: 0;
+}

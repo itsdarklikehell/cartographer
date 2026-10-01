@@ -36,6 +36,7 @@ import { DEFAULT_SPELLS } from '../data/spells.js';
 import { itemSummary } from '../entities/Equipment.js';
 import { creatureForm } from './creatureForm.js';
 import { creatureSummary, featSummary, spellSummary } from './librarySummaries.js';
+import { creatureTags, spellTags } from '../library/LibraryFacets.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -317,6 +318,7 @@ export function wireLibrary(app) {
 
   const creaturePanel = mountLibraryPanel(mustGetElement('library-creatures-container'), {
     addLabel: 'New creature',
+    facets: [{ id: 'cr', label: 'Challenge rating', all: 'Any CR' }],
     subtabs: CREATURE_SUBTABS,
     getEntries: (subtab) =>
       activeCreatureEntries()
@@ -326,6 +328,7 @@ export function wireLibrary(app) {
           name: entry.name,
           summary: creatureSummary(entry),
           source,
+          tags: creatureTags(entry),
         })),
     // The full creature form appears inline in the rail. The subtab picks
     // the field spec for a new entry, and an existing entry's disposition
@@ -366,6 +369,10 @@ export function wireLibrary(app) {
 
   const spellPanel = mountLibraryPanel(mustGetElement('library-spells-container'), {
     addLabel: 'New spell',
+    facets: [
+      { id: 'class', label: 'Class', all: 'All classes' },
+      { id: 'level', label: 'Level', all: 'All levels' },
+    ],
     getEntries: () =>
       activeSpellEntries()
         .slice()
@@ -375,6 +382,7 @@ export function wireLibrary(app) {
           name: entry.name,
           summary: spellSummary(entry),
           source,
+          tags: spellTags(entry),
           group: entry.level === 0 ? 'Cantrips' : `Level ${entry.level}`,
         })),
     buildEditor: (key, close) => {

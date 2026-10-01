@@ -361,7 +361,10 @@ export function buildItemForm({
     focusRow.hidden = focusField.hidden = !FOCUS_TYPES.includes(type);
     syncWeaponFields();
     const presets = presetsFor(type);
-    presetField.hidden = presets.length === 0;
+    // An existing library entry is the thing a preset would come from, so
+    // its editor shows no picker. A pick would overwrite the entry's own
+    // stats, and the picker would read "Custom" on a built-in dagger.
+    presetField.hidden = presets.length === 0 || (template && !!item);
     if (presets.length > 0) {
       setOptions(
         presetSelect,
