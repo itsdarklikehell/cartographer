@@ -53,33 +53,50 @@ export function mountDiceTray(container, opts = {}) {
   });
   container.appendChild(disclosure.head);
 
-  /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
-  const stepper = (label, delta, read, apply) => {
-    const name = el('span', 'dice-tray__label u-muted', label);
-
-    const minus = iconButton('minus', `Decrease ${label}`, () => {
-      apply(read() - delta);
-      count.textContent = String(read());
-    });
-
+  /**
+   * One compact die cell: the die name, a minus button, the count, and a plus
+   * button. The cells sit in a grid of two columns.
+   * @param {string} label the short name shown in the cell
+   * @param {string} name the name that the button labels read
+   * @param {() => number} read
+   * @param {(n: number) => void} apply
+   */
+  const stepper = (label, name, read, apply) => {
     const count = el('span', 'dice-tray__count', String(read()));
-
-    const plus = iconButton('plus', `Increase ${label}`, () => {
+    const cell = el('div', 'dice-tray__die');
+    const sync = () => {
+      count.textContent = String(read());
+      cell.classList.toggle('dice-tray__die--set', read() !== 0);
+    };
+    const step = (/** @type {number} */ delta) => () => {
       apply(read() + delta);
-      count.textContent = String(read());
-    });
-
-    refreshers.push(() => {
-      count.textContent = String(read());
-    });
-    return el('div', 'dice-tray__row u-row u-g2', name, minus, count, plus);
+      sync();
+    };
+    cell.append(
+      el('span', 'dice-tray__label', label),
+      iconButton('minus', `Decrease ${name}`, step(-1), { className: 'dice-tray__step' }),
+      count,
+      iconButton('plus', `Increase ${name}`, step(1), { className: 'dice-tray__step' }),
+    );
+    refreshers.push(sync);
+    return cell;
   };
 
+  // The result line sits on top, so the latest total is the first thing the
+  // GM reads in the open tray. It stays out of the layout until there is a
+  // result to show, because an empty sunken box reads as a broken readout.
+  const resultEl = el('div', 'dice-tray__result');
+  // A screen reader hears each new result without taking focus off the tray.
+  resultEl.setAttribute('role', 'status');
+  resultEl.hidden = true;
+  const dice = el('div', 'dice-tray__dice');
+  root.append(resultEl, dice);
+
   for (const die of DIE_TYPES) {
-    root.appendChild(
+    dice.appendChild(
       stepper(
         die,
-        1,
+        die,
         () => selection.counts[die] ?? 0,
         (next) => {
           selection.counts[die] = Math.max(0, next);
@@ -88,10 +105,10 @@ export function mountDiceTray(container, opts = {}) {
     );
   }
 
-  root.appendChild(
+  dice.appendChild(
     stepper(
+      'mod',
       'modifier',
-      1,
       () => selection.modifier,
       (next) => {
         selection.modifier = next;
@@ -106,7 +123,6 @@ export function mountDiceTray(container, opts = {}) {
   // its own mode applies that mode to one roll and leaves the toggle alone.
   /** @type {import('../types/dice.js').RollMode} */
   let standingMode = 'normal';
-  const modeName = el('span', 'dice-tray__label u-muted', 'd20 mode');
   const modeSwitch = segSwitch({
     ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
     options: MODES.map((mode) => ({ value: mode, label: capitalize(mode) })),
@@ -120,13 +136,10 @@ export function mountDiceTray(container, opts = {}) {
   // straight to it, so the buttons re-read the selection rather than holding
   // their own copy.
   refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
-  // This row wraps, unlike the stepper rows above it. The three mode words do
-  // not fit beside their label in the narrow left column of the combat screen,
-  // where the tray is docked, so the switch takes a line of its own and
-  // divides it between the three.
-  root.appendChild(
-    el('div', 'dice-tray__row dice-tray__mode-row u-row u-g2', modeName, modeSwitch.element),
-  );
+  // The switch fills its own line and divides it between the three words,
+  // which keeps "Disadvantage" whole in the narrow combat column. Its
+  // aria-label names what it controls, so it needs no visible label.
+  root.appendChild(el('div', 'dice-tray__mode-row', modeSwitch.element));
 
   // The difficulty target is optional. When set, each roll also reports
   // success or failure against it, using a meets-it-or-beats-it rule, in the
@@ -136,14 +149,6 @@ export function mountDiceTray(container, opts = {}) {
     className: 'dice-tray__target',
     ariaLabel: 'Target number or DC to meet (optional)',
   });
-  root.appendChild(
-    el(
-      'div',
-      'dice-tray__row u-row u-g2',
-      el('span', 'dice-tray__label u-muted', 'target / DC'),
-      targetInput,
-    ),
-  );
 
   const rollButton = textButton(
     'Roll',
@@ -154,13 +159,6 @@ export function mountDiceTray(container, opts = {}) {
       className: 'dice-tray__roll',
     },
   );
-
-  // The result box stays out of the layout until there is a result to show.
-  // An empty sunken box under the roll button reads as a broken readout.
-  const resultEl = el('div', 'dice-tray__result');
-  // A screen reader hears each new result without taking focus off the tray.
-  resultEl.setAttribute('role', 'status');
-  resultEl.hidden = true;
 
   /**
    * Roll the loaded selection and show the result against `target`.
@@ -190,7 +188,14 @@ export function mountDiceTray(container, opts = {}) {
     return { result, text };
   }
 
-  root.append(rollButton, resultEl);
+  // The target field and the Roll button share the last line.
+  const targetField = el(
+    'label',
+    'dice-tray__target-field',
+    el('span', 'dice-tray__target-label', 'DC'),
+    targetInput,
+  );
+  root.appendChild(el('div', 'dice-tray__footer', targetField, rollButton));
   container.appendChild(root);
 
   return {

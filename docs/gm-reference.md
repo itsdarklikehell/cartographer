@@ -816,7 +816,7 @@ Play mode is where you run a session.
 | --- | --- |
 | Above the map | The breadcrumb trail. A click on a crumb, except the last, opens that map without moving the party. The party marker shows on the tile that leads down to the party |
 | Map | The current map, the map controls, the mini-map, and the ways out |
-| Dock | The Party card, with the Dice Tray pinned to its bottom edge. A wide window shows the dock left of the map, and a narrow window shows it below the map |
+| Dock | The Party card over the Dice Tray. When the open tray needs more room, the Party card gets shorter and its rows scroll inside the card, so the tray never covers a party row. A wide window shows the dock left of the map, and a narrow window shows it below the map |
 | Sidebar | Three tabs of session panels and the Sheet tab |
 
 | Sidebar tab | Panels |
@@ -2282,7 +2282,7 @@ Guidance and Resistance add to one roll only. The first check or save that
 they change removes their chip. In the Library, the spell form marks this
 kind of spell with **One roll only**.
 
-The DC is the **Target / DC** field of the dice tray. Type a DC there once,
+The DC is the **DC** field of the dice tray. Type a DC there once,
 and each save or skill that you roll from the sheet reports success or
 failure against it, in the toast and in the log, as in "against DC 13 from
 the dice tray". The field keeps what you typed until you clear it. An attack
@@ -2897,13 +2897,13 @@ steppers, and it does not read typed dice expressions.
 
 | Control | Values |
 | --- | --- |
-| Die counts | A plus and minus counter for each of d4, d6, d8, d10, d12, d20, and d100 |
-| Modifier | A flat number, set with plus and minus steppers |
-| d20 mode | Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
-| Target / DC | An optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
+| Die counts | A small cell for each of d4, d6, d8, d10, d12, d20, and d100, with a minus button, the count, and a plus button. The cells sit in two columns, and a die with a count other than zero shows in the accent color |
+| Modifier | The **mod** cell after the dice: a flat number, set with plus and minus buttons |
+| d20 mode | A switch under the dice: Normal, Advantage, or Disadvantage. Advantage rolls every d20 twice and keeps the higher die, and Disadvantage keeps the lower. The choice stays until you change it |
+| DC | The field beside the Roll button: an optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
 | Roll | Rolls the selection |
 
-The tray shows the latest result. The total is large, and the dice faces and
+The tray shows the latest result at its top. The total is large, and the dice faces and
 the modifier sit beside it in small type, as in "d20 (5) + 3". A roll with a
 target ends with a line such as "vs 15: fail". Every roll
 also goes into the Travelogue under the name of the roller. The name is
@@ -2913,7 +2913,7 @@ for a spectator tab.
 An attack or a death save from the app opens the tray and shows its roll
 there. The dice counts and the modifier keep what you set, so your next
 **Roll** is your own roll and not a repeat of the attack. An attack judges
-against the AC of its target for that roll only, and the Target / DC field
+against the AC of its target for that roll only, and the DC field
 keeps the value that you typed. A save or a skill from the character sheet
 rolls in the tray without opening it. A roll that names its own
 mode uses that mode for one roll only, and it leaves the d20 mode as it was.

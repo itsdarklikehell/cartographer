@@ -54,12 +54,16 @@
     height: 100%;
   }
 
-  /* The dock scrolls as one column, and the dice tray sticks to its bottom
-     edge, so the tray stays on screen under a long roster. The cards do not
-     scroll on their own, because a scroll box clips the card title that
+  /* The dock splits its height between two regions. The dice tray takes the
+     height it needs at the bottom, and the party card takes the rest. When the
+     tray opens, the party card gives up height and its roster scrolls inside
+     the card, so the tray never covers a party row. The scroll box is the
+     roster, not the card, because a scroll box clips the card title that
      straddles the frame. */
   body.mode-play .app-dock {
     grid-area: dock;
+    display: flex;
+    flex-direction: column;
     max-width: none;
     min-height: 0;
     padding: 0 var(--space-1) var(--space-4) 0;
@@ -67,10 +71,22 @@
     overscroll-behavior: contain;
   }
 
+  body.mode-play #party-container {
+    display: flex;
+    flex-direction: column;
+    flex: 0 1 auto;
+    min-height: 9rem;
+  }
+
+  body.mode-play #party-container > .character-roster {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
   body.mode-play #dice-tray-container {
-    position: sticky;
-    bottom: 0;
-    z-index: 1;
+    flex: none;
     margin-top: auto;
   }
 
@@ -177,4 +193,73 @@
   body.mode-play[data-phone-view='log'] .app-center {
     display: none;
   }
+}
+
+/* ==========================================================================
+   Scrollbars in the dock and the sidebar: thin bars in the border colors, so
+   a scroll box reads as part of the card instead of a grey slab beside it.
+   The colors come from tokens that switch with the theme. Chrome and Firefox
+   read scrollbar-width and scrollbar-color. Safari reads only the
+   ::-webkit-scrollbar rules.
+   ========================================================================== */
+
+.app-dock,
+.app-dock *,
+.app-sidebar,
+.app-sidebar * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.app-dock ::-webkit-scrollbar,
+.app-sidebar ::-webkit-scrollbar,
+.app-dock::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.app-dock ::-webkit-scrollbar-track,
+.app-sidebar ::-webkit-scrollbar-track,
+.app-dock::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.app-dock ::-webkit-scrollbar-thumb,
+.app-sidebar ::-webkit-scrollbar-thumb,
+.app-dock::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: 999px;
+  background: var(--border-strong) padding-box;
+}
+
+/* A tab strip that is wider than its column scrolls sideways with no bar.
+   Each tab keeps its word whole. */
+.app-sidebar .tabs {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.app-sidebar .tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.app-sidebar .tabs__tab {
+  flex: 1 0 auto;
+  padding-inline: var(--space-2);
+  white-space: nowrap;
+}
+
+/* Flex and grid children default to min-width: auto, so one long word or a
+   wide control pushes the whole column past the sidebar edge and the panel
+   gains a sideways scrollbar. Letting each card shrink, and long words
+   break, keeps the content inside the panel. */
+.app-sidebar .tabs__panel,
+.app-sidebar .tabs__panel > *,
+.app-dock > * {
+  min-width: 0;
+}
+
+.app-sidebar .card,
+.app-dock .card {
+  overflow-wrap: break-word;
 }

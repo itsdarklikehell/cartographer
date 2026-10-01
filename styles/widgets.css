@@ -51,54 +51,105 @@
 }
 
 .dice-tray {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
   padding-top: var(--space-2);
 }
 
-.dice-tray__row {
-  margin-bottom: var(--space-1);
+/* The dice sit in a grid of two columns. Each cell is a small plate with the
+   die name, a minus button, the count, and a plus button. A die with a count
+   other than zero takes the accent color, so the loaded dice read at a
+   glance. */
+.dice-tray__dice {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.25rem, 1fr));
+  gap: var(--space-1);
+}
+
+.dice-tray__die {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 2px var(--space-1) 2px var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+}
+
+.dice-tray__die--set {
+  border-color: var(--accent);
 }
 
 .dice-tray__label {
-  width: 4.5rem;
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dice-tray__die--set .dice-tray__label {
+  color: var(--accent);
+}
+
+.dice-tray__step.btn--icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  min-height: 1.75rem;
+  padding: 0;
+  border-color: transparent;
+  background: transparent;
+}
+
+.dice-tray__step.btn--icon:hover {
+  border-color: var(--border-strong);
 }
 
 .dice-tray__count {
-  width: 2rem;
+  min-width: 1.25rem;
   text-align: center;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-.dice-tray__target {
-  width: 4.5rem;
-  text-align: center;
-}
-
-/* The advantage/disadvantage toggle is a .seg-switch (base.css). "Normal",
-   "Advantage", and "Disadvantage" need more width than the stepper rows above
-   them, and the combat screen docks the tray in a column about 240px wide.
-   The switch therefore takes a line below its label and divides that line
-   between the three segments, which keeps every word whole at any tray width.
-   Without this the segments kept their natural widths and .seg-switch clipped
-   "Disadvantage" off the end. */
-.dice-tray__mode-row {
-  flex-wrap: wrap;
-}
-
-.dice-tray__mode-row > .seg-switch {
-  flex: 1 1 100%;
+.dice-tray__mode-row .seg-switch {
+  display: flex;
+  width: 100%;
 }
 
 .dice-tray__mode-row .seg-switch__btn {
   flex: 1;
+  justify-content: center;
   padding-left: var(--space-1);
   padding-right: var(--space-1);
   text-align: center;
 }
 
+/* The DC field and the Roll button share the last line of the tray. */
+.dice-tray__footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dice-tray__target-field {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.dice-tray__target {
+  width: 4rem;
+  text-align: center;
+}
+
 .dice-tray__roll {
-  margin-top: var(--space-3);
-  width: 100%;
+  flex: 1;
 }
 
 .dice-tray__result {
@@ -106,11 +157,16 @@
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-1) var(--space-2);
-  margin-top: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   min-height: 1.5rem;
+}
+
+/* The display rule above beats the hidden attribute, so the empty box needs
+   its own rule to stay out of the layout before the first roll. */
+.dice-tray__result[hidden] {
+  display: none;
 }
 
 /* The total reads first and large, so the GM can call it out from across the
