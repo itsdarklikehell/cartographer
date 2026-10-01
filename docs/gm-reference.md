@@ -752,9 +752,10 @@ people.
 
 The Bestiary lists the campaign templates under "This campaign" and the
 hostile templates of the library under "Library", each sorted by name. The
-count adds up to 20 copies, and each copy gets its own number. The location
-defaults to the selected cell of the map in view, or to the middle of the
-map when no cell is selected.
+count adds up to 20 copies. The combat log and the setup dialog number copies
+that share a name, such as "Gray Wolf 2". The location defaults to the
+selected cell of the map in view, or to the middle of the map when no cell
+is selected.
 
 A defeated foe stays in the campaign until you remove it. **Clear
 defeated** counts the hostile creatures at 0 HP that stand on the map in
