@@ -58,6 +58,8 @@ export function mountToasts(container, options = {}) {
       place = toastPlace(box, trailRight, root.offsetWidth, window.innerWidth, window.innerHeight);
     }
     root.style.top = place ? `${place.top}px` : '';
+    // The CSS place is at the bottom. A place from the anchor is at the top.
+    root.style.bottom = place ? 'auto' : '';
     root.style.right = place ? `${place.right}px` : '';
   }
 

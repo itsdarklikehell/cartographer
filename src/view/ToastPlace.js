@@ -13,7 +13,7 @@
  * The row moves with the header, which wraps onto more lines on a narrow
  * screen, and it scrolls away with the page. The stack therefore reads the
  * row's box when a toast appears. A row that is hidden or scrolled out of
- * view gives null, and the stack then uses its CSS place in the top-right
+ * view gives null, and the stack then uses its CSS place in the bottom-right
  * corner of the window.
  */
 

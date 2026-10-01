@@ -60,7 +60,7 @@ body.mode-combat .app-buildrail {
   position: fixed;
   left: 50%;
   bottom: var(--space-4);
-  z-index: 20;
+  z-index: 15; /* under the toast stack, which can share the bottom edge */
   transform: translateX(-50%);
   width: max-content;
   max-width: calc(100vw - 2 * var(--space-4));

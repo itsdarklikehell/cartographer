@@ -268,12 +268,14 @@ body.mode-build .map-controls__fog {
 /* Transient action-feedback toasts, above everything. ui/Toast.js lines the
    stack up with the right end of the breadcrumb row, where nothing else
    sits, or just below the row when a long trail leaves no room (see
-   view/ToastPlace.js). The top-right corner of the window is the place
-   while that row is out of view. The toasts often land over the map, so they use the pinned-dark overlay palette in
+   view/ToastPlace.js). The bottom-right corner of the window is the place
+   while that row is out of view, as on the combat screen and in Library
+   mode. A toast in the top-right corner there covers the theme and role
+   switches of the header, or the End combat button of the turn ribbon. The toasts often land over the map, so they use the pinned-dark overlay palette in
    both themes rather than following the page surface. */
 .toast-stack {
   position: fixed;
-  top: var(--space-4);
+  bottom: var(--space-4);
   right: var(--space-4);
   z-index: 20;
   max-width: calc(100vw - 2 * var(--space-4));
