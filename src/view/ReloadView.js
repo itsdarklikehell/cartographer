@@ -4,8 +4,9 @@
  * opens on the first character and the first tab of each strip. A GM who
  * undoes a spell slot on the third character's sheet, with the Log tab open,
  * then lands on another character and another tab, and a step in Build mode
- * lands in Play mode. The step writes the mode, the selected character, and
- * the open tabs here, and the next start reads them back once.
+ * lands in Play mode. The step writes the mode, the selected character, the
+ * open tabs, and whether the full sheet is open here, and the next start
+ * reads them back once.
  *
  * The record goes into sessionStorage, which belongs to this tab alone, so
  * a second tab of the same browser keeps its own view. The storage is
@@ -18,6 +19,7 @@ const RELOAD_VIEW_KEY = 'campaign-builder:reload-view';
  * @typedef {object} ReloadView
  * @property {string | null} characterId the character the sheet showed
  * @property {string[]} tabs the ids of the selected tab of each strip
+ * @property {boolean} fullSheet true when the full character sheet was open
  * @property {EditMode | null} mode the mode of the page, or null in combat mode,
  *   which a running fight restores by itself
  */
@@ -62,6 +64,7 @@ export function takeReloadView(storage) {
         ? parsed.tabs.filter((/** @type {unknown} */ id) => typeof id === 'string')
         : [],
       mode: MODES.includes(parsed?.mode) ? parsed.mode : null,
+      fullSheet: parsed?.fullSheet === true,
     };
   } catch {
     return null;

@@ -61,7 +61,8 @@ const SHORT_REST_MINUTES = 60;
  * @param {AppContext} app
  * @param {import('../view/ReloadView.js').ReloadView | null} [reloadView] the
  *   view an Undo or Redo kept across its reload. Its character is selected
- *   at start while it is still in the roster.
+ *   at start while it is still in the roster, and the full sheet opens
+ *   again when it was open.
  */
 export function wireParty(app, reloadView = null) {
   const { state } = app;
@@ -437,4 +438,8 @@ export function wireParty(app, reloadView = null) {
       fullSheet.update();
     },
   };
+
+  // An Undo or Redo reloads the page, and the full sheet opens again when it
+  // was open before the step.
+  if (reloadView?.fullSheet && state.characters.length > 0) fullSheet.open();
 }

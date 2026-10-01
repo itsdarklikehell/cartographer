@@ -19,11 +19,13 @@ test('a kept view comes back once, then the record is gone', () => {
     characterId: 'wren',
     tabs: ['tab-log', 'tab-inventory'],
     mode: 'build',
+    fullSheet: true,
   });
   assert.deepEqual(takeReloadView(storage), {
     characterId: 'wren',
     tabs: ['tab-log', 'tab-inventory'],
     mode: 'build',
+    fullSheet: true,
   });
   assert.equal(takeReloadView(storage), null);
 });
@@ -32,13 +34,28 @@ test('takeReloadView drops fields of the wrong type', () => {
   const storage = memoryStorage();
   storage.setItem(
     'campaign-builder:reload-view',
-    JSON.stringify({ characterId: 3, tabs: [1, 'a'], mode: 'combat' }),
+    JSON.stringify({ characterId: 3, tabs: [1, 'a'], mode: 'combat', fullSheet: 'yes' }),
   );
-  assert.deepEqual(takeReloadView(storage), { characterId: null, tabs: ['a'], mode: null });
+  assert.deepEqual(takeReloadView(storage), {
+    characterId: null,
+    tabs: ['a'],
+    mode: null,
+    fullSheet: false,
+  });
   storage.setItem('campaign-builder:reload-view', JSON.stringify({ tabs: 'x' }));
-  assert.deepEqual(takeReloadView(storage), { characterId: null, tabs: [], mode: null });
+  assert.deepEqual(takeReloadView(storage), {
+    characterId: null,
+    tabs: [],
+    mode: null,
+    fullSheet: false,
+  });
   storage.setItem('campaign-builder:reload-view', 'null');
-  assert.deepEqual(takeReloadView(storage), { characterId: null, tabs: [], mode: null });
+  assert.deepEqual(takeReloadView(storage), {
+    characterId: null,
+    tabs: [],
+    mode: null,
+    fullSheet: false,
+  });
 });
 
 test('takeReloadView gives null for unreadable text and clears it', () => {
@@ -58,7 +75,9 @@ test('a storage that throws gives no view and does not throw', () => {
     },
     removeItem: () => {},
   };
-  assert.doesNotThrow(() => keepViewForReload(broken, { characterId: null, tabs: [], mode: null }));
+  assert.doesNotThrow(() =>
+    keepViewForReload(broken, { characterId: null, tabs: [], mode: null, fullSheet: false }),
+  );
   assert.equal(takeReloadView(broken), null);
 });
 
