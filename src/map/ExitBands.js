@@ -35,6 +35,8 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  *   HTML over the canvas, the coordinate label strips, and the party's tile
  * @property {Rect[]} [chrome] the HTML over the canvas alone, which the
  *   coordinate labels move off
+ * @property {Rect[]} [required] the rects a band keeps off when no place
+ *   clears every occluder: the HTML over the canvas and the party's tile
  * @property {number} [pixelRatio] buffer px per CSS px
  */
 
@@ -99,6 +101,7 @@ export function exitBandGeometry(node, view, tileSize, exit) {
     alongCell,
     occluders: [...(view.occluders ?? []), ...viewKeepOuts(node, view, tileSize, party)],
     chrome: view.occluders ?? [],
+    required: [...(view.occluders ?? []), ...partyKeepOut(view, tileSize, party)],
     pixelRatio: view.pixelRatio ?? 1,
   };
 }
@@ -116,15 +119,20 @@ export function exitBandGeometry(node, view, tileSize, exit) {
  */
 function viewKeepOuts(node, view, tileSize, party) {
   const strips = coordLabelLayout({ ...view, node }, tileSize)?.strips ?? [];
-  if (!party) return strips;
+  return [...strips, ...partyKeepOut(view, tileSize, party)];
+}
+
+/**
+ * The party's tile as a keep-out rect, or none when no one stands in the node.
+ * @param {ExitBandView} view
+ * @param {number} tileSize
+ * @param {{ x: number, y: number } | null} party
+ * @returns {Rect[]}
+ */
+function partyKeepOut(view, tileSize, party) {
+  if (!party) return [];
   const size = tileSize * view.scale;
-  const tile = {
-    x: view.offsetX + party.x * size,
-    y: view.offsetY + party.y * size,
-    w: size,
-    h: size,
-  };
-  return [...strips, tile];
+  return [{ x: view.offsetX + party.x * size, y: view.offsetY + party.y * size, w: size, h: size }];
 }
 
 /**
@@ -249,9 +257,12 @@ function overlaps(a, b) {
  * A coordinate strip runs the whole length of a side, so no slide clears it.
  * When no slide is clear, the band tries the places just before and just
  * past each occluder on the other axis. A north band then drops below the
- * column digits when the canvas has no room above them. When no place is
- * clear at all, as on a canvas too small for the band, the band stays where
- * it is. This is a pure function.
+ * column digits when the canvas has no room above them. A band nearly as
+ * wide as a phone canvas crosses the row digits wherever it goes, so when no
+ * place is clear, the band tries again with only the `required` rects: the
+ * HTML over the canvas and the party's tile. That keeps it off the token at
+ * the cost of some digits. When no place is clear even then, the band stays
+ * where it is. This is a pure function.
  * @param {Rect} band
  * @param {ExitSide} side
  * @param {ExitBandGeometry} geom
@@ -261,7 +272,11 @@ export function avoidOccluders(band, side, geom) {
   const occluders = geom.occluders ?? [];
   if (!occluders.some((o) => overlaps(band, o))) return band;
   const horizontal = sideAxis(side) === 'x';
-  return nearestClear(band, horizontal, geom) ?? nearestClear(band, !horizontal, geom) ?? band;
+  const clear = (/** @type {ExitBandGeometry} */ g) =>
+    nearestClear(band, horizontal, g) ?? nearestClear(band, !horizontal, g);
+  const required = geom.required ?? [];
+  if (!required.some((o) => overlaps(band, o))) return clear(geom) ?? band;
+  return clear(geom) ?? clear({ ...geom, occluders: required }) ?? band;
 }
 
 /**

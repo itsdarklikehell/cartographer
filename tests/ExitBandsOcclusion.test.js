@@ -103,3 +103,56 @@ test('a band with no place along its side moves across it', () => {
   assert.equal(moved.x, free.x);
   assert.equal(overlap(moved, strip), false);
 });
+
+test('a band that clears no place still keeps off the party tile', () => {
+  const narrow = { ...geom, canvasWidth: 220, offsetX: 40 };
+  const strip = { x: 0, y: 0, w: 30, h: 800 }; // row digits, the whole height
+  const free = edgeExitBand(
+    { kind: 'edge', side: 'east', targetNodeId: 'region', targetName: 'Graypeak Highlands' },
+    { ...narrow, occluders: [strip] },
+  );
+  assert.ok(overlap(free, strip), 'the band is too wide to miss the digits');
+  const party = { x: free.x + 20, y: free.y, w: 48, h: 48 };
+  const placed = avoidOccluders(free, 'east', {
+    ...narrow,
+    occluders: [strip, party],
+    required: [party],
+  });
+  assert.ok(!overlap(placed, party));
+  assert.ok(overlap(placed, strip), 'the band gives up the digits, not the token');
+});
+
+test('a band off the required rects stays put when no place clears every occluder', () => {
+  const narrow = { ...geom, canvasWidth: 220, offsetX: 40 };
+  const strip = { x: 0, y: 0, w: 30, h: 800 };
+  const free = edgeExitBand(
+    { kind: 'edge', side: 'east', targetNodeId: 'region', targetName: 'Graypeak Highlands' },
+    { ...narrow, occluders: [strip] },
+  );
+  assert.ok(overlap(free, strip));
+  const far = { x: 0, y: 0, w: 10, h: 10 };
+  assert.deepEqual(
+    avoidOccluders(free, 'east', { ...narrow, occluders: [strip], required: [far] }),
+    free,
+  );
+});
+
+test('the geometry lists the HTML and the party tile as required', () => {
+  const node = createMapNode({ id: 'n', name: 'N', width: 6, height: 6 });
+  const view = { offsetX: 100, offsetY: 100, scale: 1, canvasWidth: 800, canvasHeight: 600 };
+  const html = { x: 0, y: 0, w: 50, h: 50 };
+  const exit = /** @type {any} */ ({
+    kind: 'edge',
+    side: 'east',
+    targetNodeId: 'x',
+    targetName: 'X',
+  });
+  const geomOut = exitBandGeometry(
+    node,
+    { ...view, occluders: [html], partyTileId: '2,1' },
+    48,
+    exit,
+  );
+  assert.deepEqual(geomOut.required, [html, { x: 196, y: 148, w: 48, h: 48 }]);
+  assert.deepEqual(exitBandGeometry(node, view, 48, exit).required, []);
+});
