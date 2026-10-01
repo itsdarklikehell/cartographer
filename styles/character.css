@@ -701,3 +701,10 @@
 .character-sheet__hp-amount {
   width: 3.5rem;
 }
+
+/* The sheet tabs keep their natural width and sit together at the start of
+   the strip. With flex: 1 on a wide sheet, the four tabs spread out far
+   enough apart to read as four separate labels. */
+#sheet-tabs .tabs__tab {
+  flex: 0 0 auto;
+}
