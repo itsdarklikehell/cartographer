@@ -335,7 +335,12 @@ export function wireMapView(app) {
     getNodes: () => (isGM(state.role) ? [...grid.nodes.values()] : []),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: goToNode,
-    onAddChild: (id) => nodeActions.addChildNode(id),
+    // The new map opens at once, and the tree opens the rows above it and
+    // selects its row, so the GM sees where it went.
+    onAddChild: async (id) => {
+      const child = await nodeActions.addChildNode(id);
+      if (child) goToNode(child);
+    },
     onEdit: (id) => nodeActions.editNode(id),
     onDelete: (id) => nodeActions.deleteNode(id),
     // Badge every unreachable or sealed node. Unlinking a tile flags the

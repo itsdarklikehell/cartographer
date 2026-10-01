@@ -152,7 +152,8 @@ interior, such as a building or a dungeon level.
 5. Set **Environment**, for example **Grassland**, **Cave**, or **Inn**.
 6. Click **Create**.
 
-The new node shows in the tree under its parent. Nothing leads into it yet,
+The new node opens on the map, and the tree opens its parent and selects
+its row. Nothing leads into it yet,
 so link a tile to it (see
 [Paint a region so the party can zoom in](#paint-a-region-so-the-party-can-zoom-in)).
 
