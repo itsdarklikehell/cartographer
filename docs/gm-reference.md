@@ -757,10 +757,17 @@ So a generated staircase or trapdoor always leads to a real map.
 
 A world generated on the top map moves the party start next to the first
 town, inside the region that contains that town. The party then starts on
-land. Undo puts the party back where it stood. After **Generate a world** on
-the Welcome card, a second card offers **Create a character** and **Check the
-party start**. Both switch to Play mode, and the first also opens the New
-character form.
+land, on a tile with no marker and no link. A character split off on the
+world map rejoins the party there, and a character on any other map keeps
+its place. Undo puts the party and those characters back where they stood.
+If the new world has no town with open land beside it, the party does not
+move.
+
+**Generate a world** on the Welcome card goes to the top map first, so it
+always replaces the world, even when a sub-region is in view. After it, a
+second card offers **Create a character** and **Check the party start**.
+Both switch to Play mode, and the first also opens the New character form.
+The card says whether the party moved to a start beside a town.
 
 ### Link warnings
 

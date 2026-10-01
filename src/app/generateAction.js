@@ -82,7 +82,8 @@ export function wireGenerateAction(app, env) {
    * `presets` starts the Archetype and Sub-maps fields on given values when
    * the node offers that archetype.
    * @param {{ archetype?: string, depth?: string }} [presets]
-   * @returns {Promise<boolean>} whether a map was generated
+   * @returns {Promise<{ partyStart: boolean } | null>} null when the GM cancels.
+   *   `partyStart` tells whether the party moved to the start of a new world.
    */
   async function openGenerate(presets = {}) {
     const node = navigator.getCurrentNode();
@@ -180,7 +181,7 @@ export function wireGenerateAction(app, env) {
         levels: last?.levels,
         seed: last?.seed,
       });
-      if (!values) return false;
+      if (!values) return null;
       if (
         node.tiles.length === 0 ||
         (await confirmModal(replaceQuestion(node, removed), {
@@ -331,6 +332,11 @@ export function wireGenerateAction(app, env) {
     const startNode = start ? grid.getNode(start.nodeId) : undefined;
     if (start && startNode) {
       partyTracker.moveTo(start.nodeId, start.tileId);
+      // A character split off on the old world map rejoins the party, so it
+      // does not stay behind while the party token stands in a region. A
+      // character in any other node keeps its place. The snapshot above
+      // records the old places, so undo puts them back.
+      state.characters = recallFrom(state.characters, new Set([node.id]));
       grid.updateNode(partyTracker.reveal(startNode, [start.tileId]));
     }
     env.finishEdit();
@@ -346,10 +352,16 @@ export function wireGenerateAction(app, env) {
     app.toasts.show(
       `Generated ${values.archetype} map in "${gen.name}"${extra} (seed ${values.seed}).${unbuilt}`,
     );
-    return true;
+    return { partyStart: Boolean(start && startNode) };
   }
 
   generateBtn.addEventListener('click', () => void openGenerate());
-  // The Welcome card starts a world with its regions and towns.
-  app.actions.generateWorld = () => openGenerate({ archetype: 'world', depth: '9' });
+  // The Welcome card starts a world with its regions and towns. A world is
+  // the top map, so the dialog opens on the root node. On a sub-region it
+  // would put a second world inside that region, and the party would not move.
+  app.actions.generateWorld = () => {
+    const [root] = grid.getBreadcrumb(navigator.currentNodeId);
+    if (root && root.id !== navigator.currentNodeId) env.goToNode(root.id);
+    return openGenerate({ archetype: 'world', depth: '9' });
+  };
 }

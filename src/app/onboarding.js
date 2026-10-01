@@ -53,8 +53,12 @@ function showOnboarding(app) {
   );
   const overlay = el('div', 'onboarding', card);
 
+  // The overlay contains the focus, so focus moves to the map before the
+  // overlay goes, where it would otherwise drop to the page body. An option
+  // that opens a dialog then moves focus on from the map.
   const dismiss = () => {
     writeStored(ONBOARDED_KEY, '1');
+    mustGetElement('map-canvas').focus();
     overlay.remove();
   };
 
@@ -79,7 +83,8 @@ function showOnboarding(app) {
     'Switch to Build mode and generate a world with its regions and towns.',
     async () => {
       app.actions.setMode('build');
-      if (await app.actions.generateWorld()) showNextSteps(app);
+      const result = await app.actions.generateWorld();
+      if (result) showNextSteps(app, result.partyStart);
     },
   );
   // The example is the quickest way for a new GM to see every panel in use,

@@ -300,6 +300,9 @@ argument.
   warning for a node that has no way in or out.
 - `mapBuildTools.js` wires the Undo stroke and Export PNG buttons of the
   Build rail, and the Undo stroke button that the header shows in Build mode.
+  It also mounts the empty-map card of `ui/BuildEmptyMap.js` over the canvas,
+  and it returns `syncEmptyMap`, which `wireMapView` calls after each draw so
+  the card shows only while the map in view has no tiles.
 
 The palette brush paints only while the Build rail shows the Paint tab.
 `MapEnv.buildTab` names the open tab, and `effectiveBrush` in
@@ -1020,4 +1023,11 @@ the last stroke, and in every other mode it undoes the last save.
 
 `onboarding.js` shows the overlay over a blank campaign until the GM picks
 one of its three ways forward or dismisses it. After that, the overlay does
-not show again in this browser.
+not open by itself again in this browser, and the header **Welcome** button
+opens it at any time. Its **Generate a world** choice calls
+`app.actions.generateWorld`, which `generateAction.js` registers. That
+action goes to the root node and opens the Generate dialog on the world
+archetype, and it resolves to null on Cancel or to `{ partyStart }`.
+`onboardingNext.js` then shows the second card, "Your world is ready". The
+card says whether the party moved to a start beside a town, and it offers
+Create a character and Check the party start.
