@@ -93,36 +93,6 @@ function doneToggle(quest, { id, text, done }, ctx, callbacks) {
 }
 
 /**
- * The objectives of a collapsed GM row: each one with its check-off toggle
- * and its text, so the GM ticks a step off without opening the details.
- * The other objective controls stay in the details.
- * @param {Quest} quest
- * @param {RowContext} ctx
- * @param {QuestDetailCallbacks} callbacks
- * @returns {HTMLElement | null}
- */
-export function gmObjectiveChecks(quest, ctx, callbacks) {
-  if (quest.objectives.length === 0) return null;
-  return el(
-    'ul',
-    'quest-detail__objectives quest-detail__objectives--compact',
-    ...quest.objectives.map((o) =>
-      el(
-        'li',
-        o.done ? 'quest-objective quest-objective--done' : 'quest-objective',
-        doneToggle(quest, o, ctx, callbacks),
-        el(
-          'span',
-          'quest-objective__text',
-          el('span', '', o.text || '(no text)'),
-          o.hidden && badge('GM only', { variant: 'neutral' }),
-        ),
-      ),
-    ),
-  );
-}
-
-/**
  * One objective row with the GM's controls: check off, edit (the text is
  * the edit button), hide from players, move up or down, and remove.
  * @param {Quest} quest

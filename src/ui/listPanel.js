@@ -296,15 +296,19 @@ export function mountListPanel(container, options) {
       root.appendChild(emptyState(message));
     }
 
+    // The root states how many rows the panel lists, folded groups included,
+    // so a jump button can show the count without counting rendered rows.
+    root.dataset.rowCount = String(rows.length);
+
     /** @type {string | null} */
     let lastGroup = null;
-    /** @type {HTMLElement} */
     /** @type {Map<string, number>} */
     const counts = new Map();
     for (const entry of rows) {
       const group = options.groupOf?.(entry, gm);
       if (group) counts.set(group, (counts.get(group) ?? 0) + 1);
     }
+    /** @type {HTMLElement} */
     let host = root;
     for (const entry of rows) {
       const group = options.groupOf?.(entry, gm) ?? null;

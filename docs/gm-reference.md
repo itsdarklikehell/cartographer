@@ -2783,7 +2783,7 @@ tracker. A character that is already dead keeps its exhaustion level.
 
 ### Quests
 
-A row of buttons at the top of the Story tab names the Quests, NPCs, and Handouts cards with the number of rows in each. A click on one opens that card and scrolls to it. Each card also has a chevron button in its top-right corner that folds the card to its title, and the browser remembers which cards you folded.
+A row of buttons at the top of the Story tab names the Quests, NPCs, and Handouts cards with the number of entries in each. The Quests count includes the quests in a folded group. A click on one opens that card and scrolls to it. Each card also has a chevron button in its top-right corner that folds the card to its title, and the browser remembers which cards you folded.
 
 The Quests panel in the Story tab lists active and completed quests.
 
