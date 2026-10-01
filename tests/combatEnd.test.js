@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyFightXP, askFightXP } from '../src/app/combatEnd.js';
+import { applyFightXP, askFightXP, opensXPDialog } from '../src/app/combatEnd.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';
@@ -110,4 +110,33 @@ test('a defeat, or a fight with nothing to award, opens no dialog', async () => 
   assert.equal(await askFightXP({ ...end, outcome: 'defeat' }, { prompt }), 'none');
   assert.equal(await askFightXP({ ...end, standingFoes: [] }, { prompt }), 'none');
   assert.equal(await askFightXP({ ...end, earners: [] }, { prompt }), 'none');
+});
+
+test('the XP dialog names the standing foes above the fate selects', async () => {
+  const { end } = ended();
+  /** @type {string[]} */
+  const messages = [];
+  const prompt = /** @type {any} */ (
+    async (/** @type {string} */ _t, /** @type {any} */ _f, /** @type {any} */ o) => {
+      messages.push(o.message);
+      return null;
+    }
+  );
+  await askFightXP(end, { prompt });
+  await askFightXP({ ...end, standingFoes: end.standingFoes.slice(0, 1) }, { prompt });
+  await askFightXP({ ...end, standingFoes: [], xp: 50 }, { prompt });
+  assert.deepEqual(messages, [
+    '2 foes are still standing. Pick what became of each one.',
+    '1 foe is still standing. Pick what became of it.',
+    undefined,
+  ]);
+});
+
+test('opensXPDialog is true only when the dialog has something to ask', () => {
+  const { end } = ended();
+  assert.equal(opensXPDialog(end), true);
+  assert.equal(opensXPDialog({ ...end, standingFoes: [], xp: 50 }), true);
+  assert.equal(opensXPDialog({ ...end, standingFoes: [] }), false);
+  assert.equal(opensXPDialog({ ...end, earners: [] }), false);
+  assert.equal(opensXPDialog({ ...end, outcome: 'defeat' }), false);
 });

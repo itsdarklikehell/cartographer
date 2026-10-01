@@ -988,10 +988,13 @@ would take the log and the board away before the party could heal.
 
 ### The End combat control
 
-`endCombat` calls `confirmFightEnd` in `app/combatEnd.js` first. If hostile
-creatures still stand and the party has not lost, the GM confirms in a dialog.
-The button sits next to Next turn, so one stray click would otherwise drop a
-live fight. A won or lost fight closes with no question.
+`endCombat` calls `confirmFightEnd` in `app/combatEnd.js` first. The
+button sits next to Next turn, so one stray click would otherwise drop a
+live fight. When hostile creatures still stand, the XP dialog opens with a
+line that counts them and a **Back to the fight** button, so it serves as the
+question. `opensXPDialog` tells `confirmFightEnd` when that dialog opens.
+Only a fight with standing foes and no living character to earn XP gets a
+separate confirm. A lost fight closes with no question.
 
 After a victory, `askFightXP` offers the experience points of the defeated
 foes while the fight still runs. `FightEnd.fightEnd` adds up the `crXP`

@@ -1199,7 +1199,7 @@ several targets, and a new turn sets it back to 1.
 | Control | Who | What it does |
 | --- | --- | --- |
 | Back to map | Everyone | Leaves the screen without an end to the fight. The Initiative card in the sidebar shows the round and has **Open combat** |
-| End combat | GM only | Ends the fight. While a hostile creature still stands, the app asks first |
+| End combat | GM only | Opens the XP dialog, which ends the fight. While a hostile creature still stands, the dialog says so first |
 
 Unless the party lost, End combat offers the XP of the defeated foes. The
 XP is split evenly among the living characters and rounded down, and the

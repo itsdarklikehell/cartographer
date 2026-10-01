@@ -12,7 +12,9 @@ import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
 /**
  * Ask before End combat drops a fight that hostile creatures still stand
  * in. The button sits next to Next turn, so one stray click would otherwise
- * throw away a live fight. A won or lost fight closes with no question.
+ * throw away a live fight. A won or lost fight closes with no question. When
+ * the XP dialog opens anyway, it names the standing foes and offers "Back to
+ * the fight", so this confirm stays closed and the GM sees one dialog.
  * @param {AppContext} app
  * @returns {Promise<FightEnd | null>} the fight's summary, or null when the
  *   GM keeps the fight or no fight is running
@@ -25,7 +27,7 @@ export async function confirmFightEnd(app) {
     combat.order.map((p) => p.id),
   );
   const end = fightEnd(combat, (id) => findCombatant(app, id), labels);
-  if (end.standing === 0 || end.outcome === 'defeat') return end;
+  if (end.standing === 0 || end.outcome === 'defeat' || opensXPDialog(end)) return end;
   const n = end.standing;
   const ok = await confirmModal(
     `${n} ${n === 1 ? 'foe is' : 'foes are'} still standing. End the fight anyway?`,
@@ -50,6 +52,19 @@ export function standDownFoes(app, ids) {
   commitCreatures(app);
 }
 
+/**
+ * Whether askFightXP opens its dialog for this fight. It does when the party
+ * did not lose, a character is alive to earn, and there is XP to share or a
+ * standing foe whose fate the GM picks.
+ * @param {FightEnd} end
+ */
+export const opensXPDialog = (end) =>
+  end.outcome !== 'defeat' && end.earners.length > 0 && (end.xp > 0 || end.standingFoes.length > 0);
+
+/** The line above the fate selects. @param {number} n */
+const standingMessage = (n) =>
+  `${n} ${n === 1 ? 'foe is' : 'foes are'} still standing. Pick what became of ${n === 1 ? 'it' : 'each one'}.`;
+
 /** The field name of the fate select for one standing foe. */
 const fateField = (/** @type {string} */ id) => `fate:${id}`;
 
@@ -68,10 +83,9 @@ const fateField = (/** @type {string} */ id) => `fate:${id}`;
  *   opens, or null when the GM goes back to the fight
  */
 export async function askFightXP(end, { prompt = promptModal } = {}) {
+  if (!opensXPDialog(end)) return 'none';
   const count = end.earners.length;
-  if (end.outcome === 'defeat' || count === 0) return 'none';
   const foes = end.standingFoes;
-  if (end.xp <= 0 && foes.length === 0) return 'none';
   /** @param {(name: string) => string} get */
   const totalOf = (get) => end.xp + sortFates(foes, (id) => get(fateField(id))).xp;
   const caption = (/** @type {number} */ total) =>
@@ -95,6 +109,7 @@ export async function askFightXP(end, { prompt = promptModal } = {}) {
       },
     ],
     {
+      message: foes.length ? standingMessage(foes.length) : undefined,
       submitLabel: 'End and award',
       cancelLabel: 'Back to the fight',
       onChange: (name, form) => {
