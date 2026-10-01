@@ -2880,8 +2880,8 @@ four tabs.
 
 | Row badge | Meaning | Row control |
 | --- | --- | --- |
-| customized | You edited a built-in default, and the app stores an override | Revert |
-| custom | You added a new entry | Delete |
+| customized | You edited a built-in default, and the app stores an override | Revert (the counter-clockwise arrow) |
+| custom | You added a new entry | Delete (the red trash icon) |
 
 A custom entry overrides a default with the same name. For equipment, the
 name and the type must both match. An edit that changes the disposition of
@@ -2896,7 +2896,9 @@ customizations, and a campaign import offers to restore them. See
 | --- | --- |
 | Export library | Downloads `campaign-library.json` |
 | Import library | Loads an exported file into this browser, and replaces the customizations after a confirmation |
-| Reset library | Removes all customizations and restores the built-in defaults |
+| Reset library | Removes all customizations and restores the built-in defaults. It is disabled while the library has no customizations |
+
+The Library file card sits at the top of Library mode, above the tabs.
 
 At startup, if the browser has no customizations, the app loads
 `library/campaign-library.json` from the project directory. The merged

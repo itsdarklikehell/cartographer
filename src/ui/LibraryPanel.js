@@ -224,16 +224,22 @@ export function mountLibraryPanel(container, callbacks) {
       },
       entry.source === 'default'
         ? null
-        : {
-            icon: 'remove',
-            label:
-              entry.source === 'override'
-                ? `Revert ${entry.name} to default`
-                : `Delete ${entry.name}`,
-            variant: 'danger',
-            title: entry.source === 'override' ? 'Revert to default' : 'Delete',
-            onClick: () => callbacks.onRemove(entry.key, entry.source),
-          },
+        : entry.source === 'override'
+          ? // A revert keeps the entry and gets a neutral arrow, so it does
+            // not read as the red trash of a delete.
+            {
+              icon: 'revert',
+              label: `Revert ${entry.name} to default`,
+              title: 'Revert to default',
+              onClick: () => callbacks.onRemove(entry.key, entry.source),
+            }
+          : {
+              icon: 'remove',
+              label: `Delete ${entry.name}`,
+              variant: 'danger',
+              title: 'Delete',
+              onClick: () => callbacks.onRemove(entry.key, entry.source),
+            },
     ];
   }
 

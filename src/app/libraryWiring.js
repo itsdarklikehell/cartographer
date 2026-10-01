@@ -106,7 +106,11 @@ export function wireLibrary(app) {
    * this function is defined, so an early call throws an error instead of
    * skipping a refresh.
    */
+  // Reset stays disabled while the library has no customizations, because
+  // it would remove nothing.
+  const resetButton = /** @type {HTMLButtonElement} */ (mustGetElement('library-reset-btn'));
   const refresh = () => {
+    resetButton.disabled = isLibraryEmpty(custom);
     equipmentPanel.update();
     creaturePanel.update();
     spellPanel.update();
@@ -455,11 +459,8 @@ export function wireLibrary(app) {
     );
   });
 
-  mustGetElement('library-reset-btn').addEventListener('click', async () => {
-    if (isLibraryEmpty(custom)) {
-      app.toasts.show('No library customizations to remove.');
-      return;
-    }
+  resetButton.disabled = isLibraryEmpty(custom);
+  resetButton.addEventListener('click', async () => {
     const ok = await confirmModal(
       'Remove all library customizations? Built-in defaults are unaffected. Export first to keep a copy.',
       { variant: 'danger', confirmLabel: 'Reset' },

@@ -918,12 +918,13 @@ can write it this way:
 
 ### Move your library between browsers
 
-1. In the **Library file** card, click **Export library**. The browser downloads
+1. In the **Library file** card at the top of Library mode, click
+   **Export library**. The browser downloads
    `campaign-library.json`.
 2. Save that file over `library/campaign-library.json` in the project
    folder. A new browser or a new clone loads it at startup.
-3. To load a library file into this browser instead, click **Import library**
-   and click **Replace** in the confirmation.
+3. To load a library file into this browser instead, click **Import
+   library** and click **Replace** in the confirmation.
 4. To remove every customization, click **Reset library** and confirm. Export a copy
    first if you want to keep one.
 

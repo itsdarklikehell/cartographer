@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'box'|'boxChecked'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'|'external'|'up'|'down'|'more'|'minimap'|'revert'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -103,6 +103,8 @@ const PATHS = {
   ],
   // A ring with four ticks marks centering the map on the party.
   target: ['M12 6a6 6 0 100 12 6 6 0 000-12z', 'M12 2v4', 'M12 18v4', 'M2 12h4', 'M18 12h4'],
+  // A counter-clockwise arrow marks a revert to the built-in default.
+  revert: ['M4 4v6h6', 'M5.5 15a7 7 0 1 0 1.6-7.3L4 10'],
   fit: ['M9 4H4v5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
   // A small inset in the top-left corner of a frame marks the mini-map.
   minimap: ['M3 5h18v14H3z', 'M3 12h8V5'],

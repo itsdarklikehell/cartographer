@@ -223,6 +223,17 @@
     </aside>
 
     <aside id="library-tools" class="app-buildrail app-buildrail--stack" aria-label="Library">
+      <section id="library-io" class="card" aria-label="Library file">
+        <h2 class="card__title">Library file</h2>
+        <p class="library-io__hint">Your changes stay in this browser. Export them to a file to keep a copy or to use them in another browser.</p>
+        <div class="library-io__actions">
+          <button id="library-export-btn" class="btn" type="button">Export library</button>
+          <button id="library-import-btn" class="btn" type="button">Import library</button>
+          <button id="library-reset-btn" class="btn" type="button">Reset library</button>
+          <input id="library-import-input" type="file" accept="application/json" hidden />
+        </div>
+      </section>
+
       <div id="library-tabs" class="tabs" role="tablist" aria-label="Library panels">
         <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-equipment" aria-controls="library-panel-equipment" aria-selected="true">Equipment</button>
         <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-creatures" aria-controls="library-panel-creatures" aria-selected="false" tabindex="-1">Creatures</button>
@@ -254,16 +265,6 @@
         </section>
       </div>
 
-      <section id="library-io" class="card" aria-label="Library file">
-        <h2 class="card__title">Library file</h2>
-        <p class="library-io__hint">Customizations save in this browser. Export them as a JSON file — kept as <code>library/campaign-library.json</code> it stays out of version control and auto-loads in a fresh browser — and import one to hot-load it here.</p>
-        <div class="library-io__actions">
-          <button id="library-export-btn" class="btn" type="button">Export library</button>
-          <button id="library-import-btn" class="btn" type="button">Import library</button>
-          <button id="library-reset-btn" class="btn" type="button">Reset library</button>
-          <input id="library-import-input" type="file" accept="application/json" hidden />
-        </div>
-      </section>
     </aside>
 
     <!-- The combat screen: a full-width fight view that replaces the map
