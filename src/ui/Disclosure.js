@@ -8,9 +8,11 @@ import { icon } from './icons.js';
  *
  * A header with a `label` takes the shared section-label treatment, since that
  * is what a collapsible group heading looks like everywhere here. A header
- * built out of icons instead, the dice tray's d20 summary, leaves `label` out
- * and names itself through `ariaLabel`. Anything that belongs between the
- * label and the chevron, a count for example, goes in `headChildren`.
+ * with its own look leaves `label` out and builds its content in
+ * `headChildren`. The dice tray's summary does this with a d20 icon and the
+ * text "Roll dice". A header with no visible text names itself through
+ * `ariaLabel`. Anything that belongs between the label and the chevron, a
+ * count for example, goes in `headChildren`.
  *
  * The header and the body come back as siblings rather than inside a wrapper,
  * so a panel can put them in whatever box its own layout needs.

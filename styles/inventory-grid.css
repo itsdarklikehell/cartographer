@@ -6,8 +6,8 @@
    the full row of the chosen item with its actions.
    ========================================================================== */
 
-/* The query measures the tab, so the pane sits under the tiles in the
-   sidebar and beside them in the full sheet. */
+/* The query measures the tab, so the pane sits under the tiles in a narrow
+   full sheet and beside them in a wide one. */
 .inventory-panel__list {
   container-type: inline-size;
 }

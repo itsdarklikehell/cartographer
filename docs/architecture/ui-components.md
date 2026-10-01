@@ -995,12 +995,14 @@ so pass the last known state as `expanded`, and record changes from
 
 `buildDisclosure` also builds the header. The header is a `bareButton` with
 the `disclosure` class and the chevron. With a `label`, it also gets
-`section-label`, the shared group-heading treatment. A header made of icons,
-such as the dice tray's d20 summary, leaves out `label` and names itself
-through `ariaLabel`. Anything between the label and the chevron, such as an
-item count, goes in `headChildren`. The header and the body come back as
-siblings, so a panel can put them in whatever box its layout needs. Use
-`wireDisclosure` directly only for a header that the caller builds itself.
+`section-label`, the shared group-heading treatment. A header with its own
+look leaves out `label` and builds its content in `headChildren`, as the dice
+tray does with a d20 icon and the text "Roll dice". A header with no visible
+text names itself through `ariaLabel`. Anything between the label and the
+chevron, such as an item count, goes in `headChildren`. The header and the
+body come back as siblings, so a panel can put them in whatever box its
+layout needs. Use `wireDisclosure` directly only for a header that the
+caller builds itself.
 
 ## Keyboard grids
 
@@ -1187,9 +1189,11 @@ an earlier one, so the order is part of the contract:
 5. `widgets.css`: breadcrumb, dice tray, disclosure, stat bars, fact lines
 6. `forms.css`: the inline authoring form's frame, rows, captions, and
    control sizes
-7. `character.css`, `session.css`, `party.css`, `story.css`, `quest.css`,
-   `library.css`, `spells.css`, `combat.css`, `play-shell.css`,
-   `build-shell.css`: one sheet for each feature area
+7. `character.css`, `paperdoll.css`, `sheet-features.css`,
+   `inventory-grid.css`, `session.css`, `party.css`, `story.css`,
+   `quest.css`, `library.css`, `spells.css`, `combat.css`, `play-shell.css`,
+   `build-shell.css`, `full-sheet.css`, `sheet-summary.css`: one sheet for
+   each feature area
 8. `responsive.css`: narrow-viewport stacking. **Keep this sheet last.**
 
 Add a new feature sheet in the feature block, with an `@import` and a

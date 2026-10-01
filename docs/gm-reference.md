@@ -2714,8 +2714,8 @@ filter, and one collapsible heading per item type. Under each heading, every
 item is a tile with its name, one short stat line, a badge such as "x41" for
 a stack, and an "Equipped" mark for an item in a slot. Click a tile to show
 the item in the detail pane, which has its full effects, its description,
-and the edit, give, count, use, and discard controls. The pane sits under
-the tiles in the sidebar and beside them in the full sheet.
+and the edit, give, count, use, and discard controls. On a wide screen the
+pane sits beside the tiles, and on a narrow one it sits under them.
 
 | Item field | Values |
 | --- | --- |

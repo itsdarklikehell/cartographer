@@ -496,6 +496,16 @@ spellbook, and the Time panel. It registers `refreshSelectedCharacter`,
 `getBoundCharacterId`, `getSelectedCharacterId`, and the `partyPanels` view,
 which re-reads everything those panels show.
 
+It also mounts the full sheet (`ui/FullSheet.js`). The full sheet borrows the
+sheet card of the sidebar and moves it into a view the width of the page.
+The **Open full sheet** button of the card, the `onOpenSheet` action of a
+roster row menu, and the `openFull` handle that partyWiring passes to the
+sheet for its level-up banner all open it. The C shortcut in `shortcuts.js`
+clicks the open or the back button. The party switcher of the full sheet
+selects a character through the same `selectCharacter` path as a roster row,
+and the `partyPanels` view calls `fullSheet.update()` so the switcher
+follows the roster.
+
 The character panels do not talk to each other. `characterScope.js` records
 which character the panels point at, writes an edited character back into
 the roster, and gives the new value to every panel that registered with it.

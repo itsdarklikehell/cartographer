@@ -6,8 +6,8 @@
    picker, where long text wraps onto its own lines.
    ========================================================================== */
 
-/* The query measures the tab, so the same paperdoll gets two columns in the
-   sidebar and the three-column doll in the full sheet. */
+/* The query measures the tab, so the paperdoll gets two columns in a narrow
+   full sheet and the three-column doll in a wide one. */
 .paperdoll {
   container: paperdoll / inline-size;
   padding-bottom: var(--space-2);
