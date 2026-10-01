@@ -782,6 +782,7 @@ the widget:
 | `'pillgrid'` | An assignment grid of `rows` by `options`, one option for each row | `row:value` pairs, joined by commas |
 | `'allocation'` | A distribution grid with a number input for each row, whose values add up to `total`. `unit` names what the rows count, such as "rays" | `row:count` pairs, joined by commas. A row given 0 is left out |
 | `'button'` | An action button inside the form | `''`. It acts through `onChange` |
+| `'note'` | A line of warning text with no input, a polite live region. `onChange` rewrites it with `setLabel` | `''` |
 
 Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
 `disabled`, `advanced`, and `section`. The text, number, and textarea fields take

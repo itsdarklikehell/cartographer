@@ -6,6 +6,7 @@ import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import {
   locationFields,
   moveToPartyChange,
+  placementChange,
   readLocation,
   viewedPlacement,
 } from './locationFields.js';
@@ -61,6 +62,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   // keep re-stamping until a stat is hand-edited.
   const statsChange = creatureFieldsChange({ restampStats: !existing && !seed?.stats });
   const partyChange = moveToPartyChange(app);
+  const placeChange = placementChange(app);
   // The layout uses two columns under section headings: Basics, Combat,
   // Proficiencies, the collapsed damage and condition defenses,
   // Spellcasting, then Placement. The map picker's breadcrumb labels run
@@ -73,6 +75,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       ),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
         partyButton: true,
+        warn: true,
       }).map((field, i) => ({
         ...field,
         ...(field.name === 'nodeId' ? { full: true } : {}),
@@ -86,7 +89,10 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       // A blank name keeps Add disabled, so the dialog never closes on a
       // form that the code below then throws away.
       submitRequires: ['name'],
-      onChange: (name, form) => partyChange(name, form) || statsChange(name, form),
+      onChange: (name, form) => {
+        if (!partyChange(name, form)) statsChange(name, form);
+        placeChange(name, form);
+      },
     },
   );
   if (!values) return null;
@@ -194,6 +200,7 @@ export async function addFromLibrary(app) {
     );
     return null;
   }
+  const placeChange = placementChange(app);
   const values = await promptModal(
     'Add from bestiary',
     [
@@ -208,11 +215,12 @@ export async function addFromLibrary(app) {
       // This uses the same node picker and tile X/Y group as the creature
       // dialog. It defaults to the tile that the GM selected in the node
       // being viewed.
-      ...locationFields(app, viewedPlacement(app)),
+      ...locationFields(app, viewedPlacement(app), { warn: true }),
     ],
     {
       submitLabel: 'Add',
       onChange: (name, form) => {
+        placeChange(name, form);
         if (name === 'filter')
           form.setOptions('template', templateOptions(state.bestiary, library, form.get('filter')));
       },

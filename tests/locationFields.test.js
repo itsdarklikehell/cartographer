@@ -5,9 +5,12 @@ import {
   locationFields,
   locationOptions,
   moveToPartyChange,
+  placementChange,
+  placementWarning,
   readLocation,
 } from '../src/app/locationFields.js';
-import { createMapNode } from '../src/map/TileGrid.js';
+import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+import { interiorArt } from '../src/map/TileKinds.js';
 import { stubApp, stubGrid } from './helpers/app.js';
 
 const world = createMapNode('world', 'Aldenmoor', null, 8, 8);
@@ -158,4 +161,59 @@ test('unreadable coordinates land on the top-left tile rather than on NaN', () =
 test('the unplaced option and a map that is gone both read as no location', () => {
   assert.equal(readLocation(app, { nodeId: '', tileX: '2', tileY: '3' }), null);
   assert.equal(readLocation(app, { nodeId: 'deleted', tileX: '2', tileY: '3' }), null);
+});
+
+const painted = [
+  createTile('0,0', 'assets/tiles/grass/grass-1.png'),
+  createTile('1,0', 'assets/tiles/deep-water/deep-water-1.png'),
+  createTile('2,0', interiorArt('wall-h')),
+].reduce(setTile, createMapNode('cove', 'Cove', null, 3, 2));
+
+test('placementWarning names a tile outside the map, an empty cell, water, and a wall', () => {
+  assert.equal(placementWarning(painted, 1, 1), '');
+  assert.equal(placementWarning(undefined, 9, 9), '');
+  assert.match(placementWarning(painted, 4, 1), /outside this map, which is 3 by 2 tiles/);
+  assert.match(placementWarning(painted, '', 1), /outside/);
+  assert.equal(placementWarning(painted, 1, 2), 'That tile has no terrain.');
+  assert.equal(placementWarning(painted, 2, 1), 'That tile is deep water.');
+  assert.equal(placementWarning(painted, 3, 1), 'That tile is a wall or an obstacle.');
+});
+
+test('locationFields adds the warning line only when asked, hidden while empty', () => {
+  const coveApp = stubApp({ grid: stubGrid([painted]) });
+  assert.ok(!locationFields(coveApp, null).some((f) => f.name === 'placementNote'));
+  const note = (/** @type {string} */ tileId) =>
+    locationFields(coveApp, { nodeId: 'cove', tileId }, { warn: true }).find(
+      (f) => f.name === 'placementNote',
+    );
+  assert.deepEqual([note('1,0')?.label, note('1,0')?.hidden], ['That tile is deep water.', false]);
+  assert.deepEqual([note('0,0')?.label, note('0,0')?.hidden], ['', true]);
+  assert.equal(locationFields(coveApp, null, { warn: true }).at(-1)?.label, '');
+});
+
+test('placementChange rewrites the warning after a placement edit only', () => {
+  const coveApp = stubApp({ grid: stubGrid([painted]) });
+  /** @type {Record<string, string>} */
+  const values = { nodeId: 'cove', tileX: '2', tileY: '1' };
+  /** @type {any[]} */
+  const calls = [];
+  const form = /** @type {any} */ ({
+    get: (/** @type {string} */ n) => values[n],
+    setLabel: (/** @type {string} */ n, /** @type {string} */ t) => calls.push(['label', n, t]),
+    setHidden: (/** @type {string} */ n, /** @type {boolean} */ h) => calls.push(['hidden', n, h]),
+  });
+  const change = placementChange(coveApp);
+  assert.equal(change('name', form), false);
+  assert.deepEqual(calls, []);
+  assert.equal(change('tileX', form), false);
+  assert.deepEqual(calls, [
+    ['label', 'placementNote', 'That tile is deep water.'],
+    ['hidden', 'placementNote', false],
+  ]);
+  values.nodeId = '';
+  change('nodeId', form);
+  assert.deepEqual(calls.slice(2), [
+    ['label', 'placementNote', ''],
+    ['hidden', 'placementNote', true],
+  ]);
 });

@@ -840,6 +840,17 @@ select.field option::checkmark {
   font-size: var(--text-label);
 }
 
+/* A live line inside a form, such as a placement warning. It takes no space
+   while it is empty. */
+.modal__note {
+  color: var(--warning);
+  font-size: var(--text-label);
+}
+
+.modal__note:empty {
+  display: none;
+}
+
 .modal__actions {
   display: flex;
   flex-wrap: wrap;

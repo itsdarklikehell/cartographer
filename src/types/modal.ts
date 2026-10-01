@@ -139,6 +139,14 @@ export interface ButtonModalField extends FieldBase {
   type: 'button';
 }
 
+/**
+ * A line of text with no input, for example a warning that `onChange`
+ * rewrites through `setLabel`. It contributes an empty value to the record.
+ */
+export interface NoteModalField extends FieldBase {
+  type: 'note';
+}
+
 export type ModalField =
   | TextModalField
   | TextareaModalField
@@ -149,7 +157,8 @@ export type ModalField =
   | TagsModalField
   | PillGridModalField
   | AllocationModalField
-  | ButtonModalField;
+  | ButtonModalField
+  | NoteModalField;
 
 /**
  * The live form handle that `onChange` reads and writes through, so one

@@ -331,6 +331,14 @@ export function promptModal(title, fields, options = {}) {
           labelText.nodeValue = '';
           input = asInput(button);
           getters[field.name] = () => '';
+        } else if (field.type === 'note') {
+          // A line of text that onChange rewrites through setLabel, for
+          // example a placement warning. The caption is a polite live region,
+          // so a screen reader hears the new text. It adds no input.
+          caption.setAttribute('role', 'status');
+          caption.className = 'modal__note';
+          input = asInput(el('span', ''));
+          getters[field.name] = () => '';
         } else if (field.type === 'textarea') {
           // A prose field gets the same box the rail forms give it, rather
           // than a one-line input that hides most of what the GM typed.

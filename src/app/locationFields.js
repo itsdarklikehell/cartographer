@@ -1,5 +1,7 @@
 import { displayCoords, tileIdFromDisplay } from '../map/TileCoords.js';
 import { clampInt } from '../util/num.js';
+import { getTile } from '../map/TileGrid.js';
+import { isBlocked, isDeepWater } from '../map/TileKinds.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -53,16 +55,21 @@ export function locationOptions(nodes, pathOf) {
  * the map into the dialog.
  * @param {AppContext} app
  * @param {EncounterLocation | null} location
- * @param {{ unplacedLabel?: string, partyButton?: boolean }} [options]
+ * @param {{ unplacedLabel?: string, partyButton?: boolean, warn?: boolean }} [options]
  *   `unplacedLabel` is the label for the null-location option. For example,
  *   "with the party" reads better than "unplaced" for a character.
  *   `partyButton` adds a "Move to the party" button, which
  *   `moveToPartyChange` handles.
+ *   `warn` adds a live line under the row that names a doubtful tile (see
+ *   `placementWarning`), which `placementChange` keeps current.
  */
 export function locationFields(app, location, options = {}) {
   // A location whose tile id is not a grid coordinate (for example, a
   // hand-edited save) opens the dialog at the top-left tile, not at NaN, NaN.
   const { column, row } = (location && displayCoords(location.tileId)) || { column: 1, row: 1 };
+  const warning = options.warn
+    ? placementWarning(location ? app.grid.getNode(location.nodeId) : undefined, column, row)
+    : '';
   return [
     {
       name: 'nodeId',
@@ -87,6 +94,17 @@ export function locationFields(app, location, options = {}) {
       min: 1,
     },
     { name: 'tileY', label: 'Row', type: /** @type {'number'} */ ('number'), value: row, min: 1 },
+    ...(options.warn
+      ? [
+          {
+            name: 'placementNote',
+            label: warning,
+            hidden: !warning,
+            type: /** @type {'note'} */ ('note'),
+            full: true,
+          },
+        ]
+      : []),
     ...(options.partyButton
       ? [{ name: 'toParty', label: 'Move to the party', type: /** @type {'button'} */ ('button') }]
       : []),
@@ -158,4 +176,48 @@ export function defaultTileId(node, selected) {
 export function viewedPlacement(app) {
   const node = app.navigator.getCurrentNode();
   return { nodeId: node.id, tileId: defaultTileId(node, app.actions.getSelectedTileId()) };
+}
+
+/**
+ * A warning for a placement that is likely a slip: a tile outside the map,
+ * a cell with no tile, deep water, or a wall or obstacle. A sea creature or a
+ * foe in a wall niche is still allowed, so the dialog warns and does not
+ * refuse. An empty string means the tile looks fine, or no map is chosen.
+ * @param {MapNode | undefined} node
+ * @param {string | number} column counted from 1
+ * @param {string | number} row counted from 1
+ * @returns {string}
+ */
+export function placementWarning(node, column, row) {
+  if (!node) return '';
+  const [x, y] = [Number(column), Number(row)];
+  if (!(x >= 1 && x <= node.width && y >= 1 && y <= node.height))
+    return `That tile is outside this map, which is ${node.width} by ${node.height} tiles. The creature goes to the nearest tile inside it.`;
+  const tile = getTile(node, tileIdFromDisplay(x, y));
+  if (!tile) return 'That tile has no terrain.';
+  if (isDeepWater(tile)) return 'That tile is deep water.';
+  if (isBlocked(tile)) return 'That tile is a wall or an obstacle.';
+  return '';
+}
+
+/**
+ * The `onChange` part of the placement warning. It rewrites the warning line
+ * after an edit of the map, column, or row, and hides the line when it is
+ * empty. It answers false, so a caller's other handlers still run.
+ * @param {AppContext} app
+ * @returns {(name: string, form: ModalFormHandle) => boolean}
+ */
+export function placementChange(app) {
+  return (name, form) => {
+    if (!['nodeId', 'tileX', 'tileY', 'toParty'].includes(name)) return false;
+    const nodeId = form.get('nodeId');
+    const text = placementWarning(
+      nodeId ? app.grid.getNode(nodeId) : undefined,
+      form.get('tileX'),
+      form.get('tileY'),
+    );
+    form.setLabel('placementNote', text);
+    form.setHidden('placementNote', !text);
+    return false;
+  };
 }

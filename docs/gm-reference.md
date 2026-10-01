@@ -1135,6 +1135,11 @@ needs a caster class.
 | Location (map), Column, Row | The selected cell, or the middle of the map when no cell is selected | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
 | Move to the party | | Sets the map, column, and row to the party's tile |
 
+A line under **Row** warns when the tile is outside the map, has no
+terrain, is deep water, or is a wall or an obstacle. The warning does not
+stop the save, so a sea creature can still go on a water tile. The **Add
+from bestiary** dialog shows the same warning.
+
 The caster class list also offers "Fighter (Eldritch Knight)" and "Rogue
 (Arcane Trickster)". For these two, a caster level below 3 saves as 3,
 because these subclasses cast from level 3.
