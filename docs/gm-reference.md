@@ -2053,7 +2053,7 @@ sheet.
 | Element | Meaning |
 | --- | --- |
 | Heading | The caster classes, the prepared count against the limit (for a class that prepares), and the cantrip count against the limit |
-| Level heading | The spell level, and the free slots of that level, as "3 of 4 slots" |
+| Level heading | The spell level, and the free slots of that level, as "3 of 4 slots". A pact slot casts every spell up to its level, so free pact slots show under that level and each lower one, as "1 of 2 pact slots" |
 | Known badge | The character knows the spell |
 | Prepared badge | The character prepared the spell |
 | Spell card | Opens the spell detail, with Learn, Prepare, Unprepare, and Forget |

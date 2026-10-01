@@ -20,7 +20,7 @@ import { casterName, spellListOf } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { sameDeps, spellListDeps } from '../view/SheetStructure.js';
 import { levelSlotText, spellCardLine } from '../view/SpellCards.js';
-import { getSlotPools } from '../entities/SpellSlots.js';
+import { isCasterPool } from '../entities/SpellSlots.js';
 import { badge, bareButton, emptyState, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
 import { promptModal } from './Modal.js';
@@ -257,7 +257,8 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       // rewrites the count in place.
       const slots = el('span', 'spellbook__slots u-muted');
       const writeSlots = () => {
-        if (current) slots.textContent = levelSlotText(getSlotPools(current), group.level);
+        if (current)
+          slots.textContent = levelSlotText(current.resources.filter(isCasterPool), group.level);
       };
       writeSlots();
       writers.push(writeSlots);
