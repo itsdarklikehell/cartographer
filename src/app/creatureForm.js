@@ -1,6 +1,6 @@
 import { promptModal, confirmDelete, confirmModal, alertModal } from '../ui/Modal.js';
 import { createCreature, editCreature } from '../entities/Creature.js';
-import { spawnCopies } from '../entities/CreatureTemplate.js';
+import { spawnCopies, templateOptions } from '../entities/CreatureTemplate.js';
 import { activeCreatures } from '../library/Library.js';
 import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import {
@@ -194,22 +194,15 @@ export async function addFromLibrary(app) {
     );
     return null;
   }
-  /** @param {CreatureTemplate[]} list @param {string} source @param {string} group */
-  const options = (list, source, group) =>
-    [...list]
-      .sort((a, b) => a.name.localeCompare(b.name))
-      .map((t) => ({ value: `${source}:${t.id}`, label: `${t.name} (${t.maxHP} HP)`, group }));
   const values = await promptModal(
     'Add from bestiary',
     [
+      { name: 'filter', label: 'Filter by name', placeholder: 'Wolf' },
       {
         name: 'template',
         label: 'Template',
         type: 'select',
-        options: [
-          ...options(state.bestiary, 'campaign', 'This campaign'),
-          ...options(library, 'library', 'Library'),
-        ],
+        options: templateOptions(state.bestiary, library),
       },
       { name: 'count', label: 'Count', type: 'number', value: 1, min: 1, max: MAX_SPAWN },
       // This uses the same node picker and tile X/Y group as the creature
@@ -217,7 +210,14 @@ export async function addFromLibrary(app) {
       // being viewed.
       ...locationFields(app, viewedPlacement(app)),
     ],
-    { submitLabel: 'Add' },
+    {
+      submitLabel: 'Add',
+      onChange: (name, form) => {
+        if (name === 'filter')
+          form.setOptions('template', templateOptions(state.bestiary, library, form.get('filter')));
+      },
+      validate: (get) => (get('template') ? '' : 'No template matches the filter.'),
+    },
   );
   if (!values) return null;
   const at = values.template.indexOf(':');

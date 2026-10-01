@@ -160,6 +160,7 @@ export type ModalField =
 export interface ModalFormHandle {
   get(name: string): string;
   set(name: string, value: string | number): void;
+  /** Rebuild the options of a multiselect or a plain select. */
   setOptions(name: string, options: FieldOption[], max?: number): void;
   setDisabled(name: string, disabled: boolean): void;
   setLabel(name: string, text: string): void;

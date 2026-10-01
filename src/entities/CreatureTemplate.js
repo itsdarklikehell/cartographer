@@ -125,3 +125,28 @@ export function spawnCopies(template, count, location, takenIds) {
     return fromTemplate(template, id, location);
   });
 }
+
+/**
+ * The options of the "Add from bestiary" picker: campaign templates, then
+ * library entries, each group sorted by name. A non-empty `query` keeps only
+ * the templates whose name contains it, ignoring case. Each value is
+ * `source:id`, so a campaign template and a library entry with one id stay
+ * apart.
+ * @param {CreatureTemplate[]} campaign
+ * @param {CreatureTemplate[]} library
+ * @param {string} [query]
+ * @returns {{ value: string, label: string, group: string }[]}
+ */
+export function templateOptions(campaign, library, query = '') {
+  const needle = query.trim().toLowerCase();
+  /** @param {CreatureTemplate[]} list @param {string} source @param {string} group */
+  const options = (list, source, group) =>
+    list
+      .filter((t) => t.name.toLowerCase().includes(needle))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((t) => ({ value: `${source}:${t.id}`, label: `${t.name} (${t.maxHP} HP)`, group }));
+  return [
+    ...options(campaign, 'campaign', 'This campaign'),
+    ...options(library, 'library', 'Library'),
+  ];
+}

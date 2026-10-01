@@ -745,7 +745,7 @@ people.
 | Control | What it does |
 | --- | --- |
 | New creature | Opens the creature dialog for a new foe |
-| From bestiary | Opens the Bestiary dialog. Pick a template and a count, then add that many full-health copies at a map and tile |
+| From bestiary | Opens the Bestiary dialog. Type part of a name in **Filter by name** to narrow the list, pick a template and a count, then add that many full-health copies at a map and tile |
 | Remove template | Removes one campaign template from the bestiary. It shows while the campaign bestiary has a template |
 | Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
 | Edit, Delete on a row | Edits or deletes that creature |

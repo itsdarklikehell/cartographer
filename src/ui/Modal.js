@@ -18,6 +18,7 @@ import {
   checkboxInput,
   numberField,
   select,
+  setOptions,
   textareaField,
   textField,
 } from './formFields.js';
@@ -401,7 +402,16 @@ export function promptModal(title, fields, options = {}) {
             if (setters[name]) setters[name](String(value));
             else inputs[name].value = String(value);
           },
-          setOptions: (name, opts, max = Infinity) => rebuilders[name]?.(opts, max),
+          setOptions: (name, opts, max = Infinity) => {
+            const input = inputs[name];
+            if (rebuilders[name]) rebuilders[name](opts, max);
+            else if (input instanceof HTMLSelectElement) {
+              // A plain select keeps its choice while that choice is still
+              // offered, and falls back to the first option otherwise.
+              const kept = opts.some((o) => o.value === input.value);
+              setOptions(input, opts, kept ? input.value : (opts[0]?.value ?? ''));
+            }
+          },
           setDisabled: (name, disabled) => {
             inputs[name].disabled = disabled;
           },

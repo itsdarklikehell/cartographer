@@ -427,7 +427,8 @@ A bestiary template is a saved copy of a foe that you can place again.
    the foe as a campaign template.
 3. To place a copy, switch to **Build** mode. In the **Foes** list of the
    **Encounters** tab, click **From bestiary**.
-4. Pick the template, or an entry from the library.
+4. Pick the template, or an entry from the library. To find one in a long
+   list, type part of its name in **Filter by name**.
 5. Set **Count** to the number of copies, set the map and the tile, and
    click **Add**.
 
