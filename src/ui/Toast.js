@@ -25,9 +25,12 @@ import { toastPlace } from '../view/ToastPlace.js';
  * first toast of a batch appears. The stack keeps clear of the row's
  * contents: when they leave no room at the right end, the stack goes below
  * the row (see view/ToastPlace.js). Without an anchor, or while it is out of
- * view, the stack stays in its CSS place.
+ * view, the stack stays in its CSS place. `follow` names an element whose
+ * change of size moves the anchor, such as the header when its phone menu
+ * opens. While a toast shows, the stack places itself again after each such
+ * change, so it does not stay over the buttons of the open menu.
  * @param {HTMLElement} container
- * @param {{ duration?: number, anchor?: () => Element | null }} [options]
+ * @param {{ duration?: number, anchor?: () => Element | null, follow?: Element | null }} [options]
  * @returns {{ show: (message: string, options?: ToastOptions) => void }}
  */
 export function mountToasts(container, options = {}) {
@@ -61,6 +64,12 @@ export function mountToasts(container, options = {}) {
     // The CSS place is at the bottom. A place from the anchor is at the top.
     root.style.bottom = place ? 'auto' : '';
     root.style.right = place ? `${place.right}px` : '';
+  }
+
+  if (options.follow && typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(() => {
+      if (root.querySelector('.toast')) placeStack();
+    }).observe(options.follow);
   }
 
   /**

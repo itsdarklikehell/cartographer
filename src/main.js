@@ -52,6 +52,7 @@ function start() {
   } = loadInitialCampaignSafe();
   const toasts = mountToasts(document.body, {
     anchor: () => document.querySelector('#breadcrumb-container .breadcrumb'),
+    follow: document.querySelector('header'),
   });
   // One tooltip for the whole page. Its listeners are delegated, so a widget
   // built later gains a tooltip just by carrying the attribute `setTip` writes.
