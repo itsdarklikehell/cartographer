@@ -446,3 +446,8 @@ body:not(.mode-build) .map-empty {
   color: var(--text-muted);
   font-size: var(--text-label);
 }
+
+/* The parent name after a search result, as in "Temple, Ashogate". */
+.world-tree__parent {
+  color: var(--text-muted);
+}

@@ -5,6 +5,7 @@ import {
   buildWorldTree,
   collectSubtreeIds,
   filterWorldTree,
+  matchesQuery,
 } from '../src/map/WorldTree.js';
 import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 
@@ -135,4 +136,11 @@ test('filterWorldTree keeps each match with the path that leads to it', () => {
 test('filterWorldTree returns the same tree for a blank query', () => {
   const tree = buildWorldTree([node('world', null)]);
   assert.equal(filterWorldTree(tree, '   '), tree);
+});
+
+test('matchesQuery ignores case and spaces, and an empty query matches nothing', () => {
+  const temple = createMapNode('t', 'Temple', null, 1, 1);
+  assert.equal(matchesQuery(temple, '  tEMp '), true);
+  assert.equal(matchesQuery(temple, 'inn'), false);
+  assert.equal(matchesQuery(temple, '   '), false);
 });

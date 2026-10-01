@@ -1589,7 +1589,11 @@ node opens every row that `ancestorIds` returns for it.
 
 A search uses `filterWorldTree`, which keeps each matching node and the path
 to it. Both functions are in `map/WorldTree.js` beside `buildWorldTree`, and
-both have unit tests.
+both have unit tests. A matching row also shows the name of its parent, and
+`matchesQuery` decides which rows match. A generated world has many places
+with one name, such as five Temples. `map/PlaceLabel.js` builds the label
+"Temple, Ashogate" for any other list of places that needs to tell them
+apart.
 
 ## The mini-map
 

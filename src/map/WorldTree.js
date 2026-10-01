@@ -109,13 +109,12 @@ export function ancestorIds(nodes, nodeId) {
  * @returns {WorldTreeNode[]}
  */
 export function filterWorldTree(roots, query) {
-  const needle = query.trim().toLowerCase();
-  if (!needle) return roots;
+  if (!query.trim()) return roots;
 
   /** @param {WorldTreeNode} treeNode @returns {WorldTreeNode | null} */
   function prune(treeNode) {
     const children = treeNode.children.map(prune).filter((c) => c !== null);
-    const matches = treeNode.node.name.toLowerCase().includes(needle);
+    const matches = matchesQuery(treeNode.node, query);
     return matches || children.length ? { ...treeNode, children } : null;
   }
 
@@ -145,4 +144,16 @@ export function collectSubtreeIds(nodes, rootId) {
     for (const child of childrenOf.get(id) ?? []) stack.push(child.id);
   }
   return ids;
+}
+
+/**
+ * True when the name of the node contains the query, ignoring case and
+ * surrounding spaces. An empty query matches nothing.
+ * @param {MapNode} node
+ * @param {string} query
+ * @returns {boolean}
+ */
+export function matchesQuery(node, query) {
+  const needle = query.trim().toLowerCase();
+  return needle !== '' && node.name.toLowerCase().includes(needle);
 }

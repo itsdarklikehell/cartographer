@@ -359,7 +359,7 @@ view when the page scrolls.
 | Control | What it does |
 | --- | --- |
 | Chevron | Opens or closes the nodes under a row |
-| Find a place | Shows only the nodes whose names contain the text, and the rows above them. It shows when the world has 12 or more nodes. Escape clears it |
+| Find a place | Shows only the nodes whose names contain the text, and the rows above them. Each match shows the name of its parent after a comma, as in "Temple, Ashogate". It shows when the world has 12 or more nodes. Escape clears it |
 | Row name | In Build mode, opens that map. In Play mode, see [Play layout](#play-layout) |
 | Actions button (three dots) | Build mode only. Opens a menu with Add a child, Edit settings, and Delete. A right-click on the row opens the same menu. Delete shows in red below a rule. Its confirm counts the maps it removes, the creatures that become unplaced, and the handouts that become campaign-wide |
 

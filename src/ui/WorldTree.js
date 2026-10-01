@@ -4,7 +4,7 @@ import { bareButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { textField } from './formFields.js';
 import { openContextMenu } from './ContextMenu.js';
-import { ancestorIds, buildWorldTree, filterWorldTree } from '../map/WorldTree.js';
+import { ancestorIds, buildWorldTree, filterWorldTree, matchesQuery } from '../map/WorldTree.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 import { treeKeyAction } from '../view/TreeKeys.js';
 
@@ -76,6 +76,8 @@ export function mountWorldTree(container, opts) {
 
   /** @type {string} the trimmed search text the tree on screen was built from */
   let query = '';
+  /** @type {Map<string, string>} node id to name, for the parent names in search results */
+  let names = new Map();
   /** Numbers the warning badges for their element ids. */
   let warningCount = 0;
   /** @type {string | null} the tree item in the tab order */
@@ -170,7 +172,14 @@ export function mountWorldTree(container, opts) {
 
     // The tree item is the select button. The arrow keys move focus between
     // these buttons, and only one of them is in the tab order at a time.
-    const select = bareButton([node.name], () => opts.onSelect(node.id), {
+    // A search result names its parent too, since a generated world has many
+    // places with one name ("Temple, Ashogate").
+    const parentName =
+      parentId && query && matchesQuery(node, query) ? names.get(parentId) : undefined;
+    const label = parentName
+      ? [node.name, el('span', 'world-tree__parent', `, ${parentName}`)]
+      : [node.name];
+    const select = bareButton(label, () => opts.onSelect(node.id), {
       className: 'row-select',
     });
     select.setAttribute('role', 'treeitem');
@@ -331,6 +340,7 @@ export function mountWorldTree(container, opts) {
     menuOpeners.clear();
     currentRow = null;
 
+    names = new Map(nodes.map((n) => [n.id, n.name]));
     const openPath = new Set(ancestorIds(nodes, opts.getCurrentId()));
     const tree = filterWorldTree(buildWorldTree(nodes), query);
     // With no search, an empty tree has no nodes at all. That is the tree of a
