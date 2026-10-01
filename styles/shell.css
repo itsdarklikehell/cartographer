@@ -224,3 +224,10 @@ body:not(.mode-build) #undo-btn {
   border-top-left-radius: var(--radius-sm);
   border-bottom-left-radius: var(--radius-sm);
 }
+
+/* Outside a fight, the Encounters card tells a player only whether foes are
+   near, which gives away that an area is safe. A player tab hides it until a
+   fight runs. The body class comes from encounterWiring.js. */
+body.role-player:not(.fight-running) #encounter-container {
+  display: none;
+}

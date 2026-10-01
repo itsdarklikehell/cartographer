@@ -411,10 +411,13 @@ export function wireEncounters(app) {
   // existing `initiativePanel.update()` call site, including party moves,
   // role switches, and the rehydrate loop, the visibility sync for free.
   // The combat screen shows the same fight, so it refreshes here too,
-  // instead of duplicating every call site.
+  // instead of duplicating every call site. The body class `fight-running`
+  // follows the same check, so the stylesheet can hide the Encounters card
+  // from a player while no fight runs.
   app.views.initiativePanel = {
     update: () => {
       initiativeContainer.hidden = current() === null;
+      document.body.classList.toggle('fight-running', current() !== null);
       initiativePanel.update();
       app.views.combatScreen.update();
     },
