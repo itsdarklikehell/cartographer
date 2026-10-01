@@ -6,6 +6,7 @@ import {
   fightInReach,
   initiativeLine,
   nearbyFoes,
+  nearbyGroups,
   nearbyRadius,
 } from '../src/combat/CombatRoster.js';
 import { createCharacter } from '../src/entities/Character.js';
@@ -68,12 +69,13 @@ test('nearbyFoes lists undefeated hostiles past the encounter group, nearest fir
   assert.deepEqual(
     nearbyFoes(creatures, HERE, nearbyRadius(2)).map((n) => [
       n.participant.id,
+      n.tileId,
       n.distance,
       n.participant.modifier,
     ]),
     [
-      ['near', 3, 2],
-      ['far', 6, 0],
+      ['near', '3,0', 3, 2],
+      ['far', '6,0', 6, 0],
     ],
   );
   assert.deepEqual(nearbyFoes(creatures, /** @type {any} */ (null), 8), []);
@@ -93,4 +95,18 @@ test('fightInReach keeps a fight open while a hostile in it stands within the ra
   assert.equal(fightInReach(order, [{ ...cat, location: at('3,0') }], HERE, 8), false);
   assert.equal(fightInReach(order, [{ ...wolf, location: null }], HERE, 8), false);
   assert.equal(fightInReach(order, [foe('other', '1,0')], HERE, 8), false);
+});
+
+test('nearbyGroups splits the nearby foes by tile, in the order of their first foe', () => {
+  const near = (
+    /** @type {string} */ id,
+    /** @type {string} */ tileId,
+    /** @type {number} */ distance,
+  ) => /** @type {any} */ ({ participant: { id }, tileId, distance });
+  const nearby = [near('a', '2,2', 1), near('b', '4,4', 2), near('c', '2,2', 1)];
+  assert.deepEqual(
+    nearbyGroups(nearby).map((g) => g.map((n) => n.participant.id)),
+    [['a', 'c'], ['b']],
+  );
+  assert.deepEqual(nearbyGroups([]), []);
 });

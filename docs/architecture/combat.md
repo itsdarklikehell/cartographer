@@ -941,9 +941,11 @@ one sets its disposition to hostile first.
 
 `nearbyFoes` in `combat/CombatRoster.js` lists the undefeated hostiles
 within `nearbyRadius` that stand outside the encounter group, each with its
-straight-line distance in tiles. The setup dialog shows them under "Add
-nearby foes" with a Join box, and only the ticked ones join the roster for
-Roll initiative and Start. During a fight, the Nearby tab gives each hostile
+tile and its straight-line distance in tiles. The setup dialog shows them
+under "Add nearby foes" with a Join box, and only the ticked ones join the
+roster for Roll initiative and Start. `nearbyGroups` splits the list by
+tile, and a tile with two or more foes gets an "Add the whole group" box
+that ticks each Join box of the tile. During a fight, the Nearby tab gives each hostile
 row outside the order an "Add to fight" button. `encounterPanels.js` rolls
 initiative for it and calls `app.actions.addCombatant`. The Nearby list
 repaints on the set of joinable ids through its `dependsOn`, so the button

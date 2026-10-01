@@ -14,6 +14,7 @@ import { createParticipant } from './Initiative.js';
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
+/** @typedef {{ participant: Participant, tileId: string, distance: number }} NearbyFoe */
 
 /**
  * A participant with its DEX modifier, at the passive initiative of 10 plus
@@ -63,13 +64,14 @@ function tileDistance(a, b) {
 /**
  * The undefeated hostile creatures within `radius` of the party that the
  * roster leaves out, because they stand outside the encounter group. Each
- * comes as a participant with its distance in tiles, nearest first. The
+ * comes as a participant with its tile and its distance in tiles, nearest
+ * first. The
  * setup dialog offers them under "Add nearby foes". An unplaced creature has
  * no distance, so it is never offered.
  * @param {Creature[]} creatures
  * @param {PartyPosition} position
  * @param {number} radius
- * @returns {{ participant: Participant, distance: number }[]}
+ * @returns {NearbyFoe[]}
  */
 export function nearbyFoes(creatures, position, radius) {
   const grouped = new Set(encounterGroup(creatures, position).map((c) => c.id));
@@ -80,12 +82,31 @@ export function nearbyFoes(creatures, position, radius) {
         ? [
             {
               participant: creatureParticipant(c),
+              tileId: c.location.tileId,
               distance: tileDistance(c.location.tileId, position.tileId),
             },
           ]
         : [],
     )
     .sort((a, b) => a.distance - b.distance);
+}
+
+/**
+ * The nearby foes split into groups, one per tile, in the order of their
+ * first foe. The setup dialog offers "Add the whole group" for a group of
+ * two or more, so the GM adds four wolves with one tick.
+ * @param {NearbyFoe[]} nearby
+ * @returns {NearbyFoe[][]}
+ */
+export function nearbyGroups(nearby) {
+  /** @type {Map<string, NearbyFoe[]>} */
+  const groups = new Map();
+  for (const foe of nearby) {
+    const group = groups.get(foe.tileId);
+    if (group) group.push(foe);
+    else groups.set(foe.tileId, [foe]);
+  }
+  return [...groups.values()];
 }
 
 /**

@@ -315,6 +315,26 @@ body.role-player .npc-scope {
   font-size: var(--text-label);
 }
 
+/* The "Add the whole group" box sits above the foes of one tile. */
+.combat-setup__group-row {
+  align-items: baseline;
+  margin-top: var(--space-2);
+}
+
+.combat-setup__group-row .combat-setup__distance {
+  display: inline;
+}
+
+/* The dialog opens at its top, and the button row stays in view at the
+   bottom, so the focused Start combat button shows on a long roster. */
+.combat-setup .modal__actions {
+  position: sticky;
+  bottom: calc(-1 * var(--space-5));
+  margin-bottom: calc(-1 * var(--space-5));
+  padding-block: var(--space-3) var(--space-5);
+  background: var(--surface);
+}
+
 .combat-setup__row .initiative-panel__surprised {
   min-width: 6.5rem;
 }

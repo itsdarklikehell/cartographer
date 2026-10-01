@@ -6,6 +6,7 @@ import { checkbox, numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
 import { numberedNames } from '../combat/DisplayNames.js';
+import { nearbyGroups } from '../combat/CombatRoster.js';
 import { stealthStep } from './CombatSetupStealth.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -48,7 +49,7 @@ import { stealthStep } from './CombatSetupStealth.js';
  *   stealth?: import('./CombatSetupStealth.js').StealthHooks,
  *   onStealth?: (line: string) => void,
  *   onParley?: () => void,
- *   nearby?: { participant: Participant, distance: number }[],
+ *   nearby?: import('../combat/CombatRoster.js').NearbyFoe[],
  * }} [callbacks]
  * @returns {Promise<Participant[] | null>}
  */
@@ -93,7 +94,8 @@ export function combatSetupModal(roster, callbacks = {}) {
     return { ...view, name: labels.get(participant.id) ?? view.name };
   };
 
-  return openDialog({
+  const shown = openDialog({
+    className: 'combat-setup',
     title: 'Set up combat',
     form: true,
     build: (close) => {
@@ -160,13 +162,20 @@ export function combatSetupModal(roster, callbacks = {}) {
 
       if (nearby.length > 0) {
         body.push(el('h3', 'combat-setup__nearby-title', 'Add nearby foes'));
-        for (const { participant, distance } of nearby) {
-          const name = describe(participant).name;
-          const join = checkbox('Join', false, { className: 'initiative-panel__surprised' });
-          join.input.setAttribute('aria-label', `Add ${name} to the fight`);
-          joined.set(participant.id, join.input);
-          const away = `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`;
-          body.push(initiativeRow(participant, [join.label], away));
+        for (const group of nearbyGroups(nearby)) {
+          /** @type {HTMLInputElement[]} */
+          const boxes = [];
+          const all = group.length > 1 ? groupBox(group.length, group[0].distance, boxes) : null;
+          if (all) body.push(all.row);
+          for (const { participant, distance } of group) {
+            const name = describe(participant).name;
+            const join = checkbox('Join', false, { className: 'initiative-panel__surprised' });
+            join.input.setAttribute('aria-label', `Add ${name} to the fight`);
+            join.input.addEventListener('change', () => all?.sync());
+            joined.set(participant.id, join.input);
+            boxes.push(join.input);
+            body.push(initiativeRow(participant, [join.label], tilesAway(distance)));
+          }
         }
       }
 
@@ -252,4 +261,43 @@ export function combatSetupModal(roster, callbacks = {}) {
       });
     },
   });
+  // Focus on Start combat scrolls the dialog to its end. The GM reads the
+  // dialog from the top, and the sticky button row keeps Start in view.
+  const dialogs = document.querySelectorAll('dialog.combat-setup');
+  const dialog = dialogs[dialogs.length - 1];
+  if (dialog) dialog.scrollTop = 0;
+  return shown;
+}
+
+/** @param {number} distance */
+const tilesAway = (distance) => `${distance} ${distance === 1 ? 'tile' : 'tiles'} away`;
+
+/**
+ * The "Add the whole group" box above the foes of one tile. It ticks or
+ * clears every Join box of the group, and it shows as mixed while only some
+ * are ticked.
+ * @param {number} count
+ * @param {number} distance
+ * @param {HTMLInputElement[]} boxes the Join boxes, filled in after this call
+ */
+function groupBox(count, distance, boxes) {
+  const all = checkbox(`Add the whole group (${count})`, false, {
+    className: 'combat-setup__group',
+  });
+  all.input.addEventListener('change', () => {
+    for (const box of boxes) box.checked = all.input.checked;
+    all.input.indeterminate = false;
+  });
+  const sync = () => {
+    const ticked = boxes.filter((box) => box.checked).length;
+    all.input.checked = ticked === boxes.length;
+    all.input.indeterminate = ticked > 0 && ticked < boxes.length;
+  };
+  const row = el(
+    'div',
+    'combat-setup__group-row u-row u-g2',
+    all.label,
+    el('span', 'combat-setup__distance u-muted', tilesAway(distance)),
+  );
+  return { row, sync };
 }

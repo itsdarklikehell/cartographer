@@ -465,7 +465,8 @@ still open stays until you end the fight. To bring the foes back, click
    the foes. A friendly or neutral creature on the tile of the party joins
    the party.
    - To bring in a foe from farther away, such as a second wolf two tiles
-     off, tick **Join** on its row under **Add nearby foes**. In a running
+     off, tick **Join** on its row under **Add nearby foes**. For a pack on
+     one tile, tick **Add the whole group** above its rows. In a running
      fight, open its line in the **Nearby encounters** tab, and click
      **Add to fight** on its row instead.
    - If one side sneaks up on the other, set **Who sneaks** to that side,

@@ -1240,7 +1240,9 @@ creature, set its disposition to hostile first.
 
 Under **Add nearby foes**, the dialog lists the other live hostile creatures
 within the nearby range, nearest first, with the distance in tiles. Tick
-**Join** on a row to bring that foe into the fight. A joined foe rolls
+**Join** on a row to bring that foe into the fight. When two or more foes
+stand on one tile, an **Add the whole group** box above them ticks every
+**Join** box of that tile at once. A joined foe rolls
 initiative with the others. The Stealth contest covers only the rows above
 the list. During a fight, the **Nearby encounters** tab has an **Add to
 fight** button on each hostile row that is not in the fight. Open the line
@@ -1269,6 +1271,7 @@ running fight. The log and the stored name keep the plain name.
 | PP | The passive Perception of a row that watches the other side |
 | Surprised | Marks a combatant that the other side caught unaware. See [Surprise](#surprise) |
 | Join | A foe under **Add nearby foes**: tick it to add the foe to the fight |
+| Add the whole group | Ticks or clears the **Join** box of every nearby foe on one tile. It shows as mixed while only some are ticked |
 | Parley | Closes the dialog with no fight, and turns the foes neutral, and logs a line such as "The party settles the encounter without a fight. Goblin Scout 1 and Goblin Scout 2 stand down." See [Parley](#parley) |
 | Start combat | Rolls initiative for each row that you did not roll or type, and then starts the fight |
 
