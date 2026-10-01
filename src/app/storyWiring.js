@@ -14,6 +14,7 @@ import {
 } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
+import { mountStoryCards } from '../ui/StoryCards.js';
 import {
   createQuest,
   questRevealLine,
@@ -285,4 +286,9 @@ export function wireStory(app) {
   });
 
   wireHandouts(app);
+  mountStoryCards(mustGetElement('panel-story'), [
+    { id: 'quest-container', label: 'Quests', rows: '.quest-panel__row' },
+    { id: 'npc-container', label: 'NPCs', rows: '.npc-panel__row' },
+    { id: 'handout-container', label: 'Handouts', rows: '.handout-panel__row' },
+  ]);
 }

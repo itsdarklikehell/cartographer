@@ -4,7 +4,11 @@ import { objectiveProgress } from '../quest/Objectives.js';
 import { icon } from './icons.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
-import { gmObjectiveChecks, gmQuestDetail, playerObjectives } from './QuestDetail.js';
+import { buildDisclosure } from './Disclosure.js';
+import { gmQuestDetail, playerObjectives } from './QuestDetail.js';
+import { browserStorage, readFolds, toggleFold } from '../view/FoldMemory.js';
+
+const FOLD_KEY = 'campaign-builder.quest-groups';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -46,6 +50,10 @@ import { gmObjectiveChecks, gmQuestDetail, playerObjectives } from './QuestDetai
 export function mountQuestPanel(container, callbacks) {
   /** The ids of the quests showing their details. @type {Set<string>} */
   const expanded = new Set();
+  // The Completed group starts folded, so the open quests come first and the
+  // list stays short. The fold state of each group is per browser.
+  const storage = browserStorage();
+  const folds = readFolds(storage, FOLD_KEY, ['Completed']);
 
   return mountListPanel(container, {
     className: 'quest-panel',
@@ -60,6 +68,26 @@ export function mountQuestPanel(container, callbacks) {
       return [...active, ...completed];
     },
     groupOf: (quest) => (quest.status === 'completed' ? 'Completed' : 'Active'),
+    foldGroup: {
+      isFolded: (group) => folds.has(group),
+      heading: (group, count, repaint) => {
+        const { head } = buildDisclosure({
+          label: group,
+          headChildren: [el('span', 'quest-panel__count', String(count))],
+          body: el('div'),
+          expanded: !folds.has(group),
+          // wireDisclosure reports the first state too, which matches the
+          // stored fold and so changes nothing.
+          onToggle: (open) => {
+            if (open !== folds.has(group)) return;
+            toggleFold(storage, FOLD_KEY, folds, group);
+            repaint();
+          },
+        });
+        head.dataset.focusKey = `group:${group}`;
+        return head;
+      },
+    },
     emptyMessage: (gm) => (gm ? 'No quests yet.' : 'No quests shared yet.'),
     classes: {
       group: 'quest-panel__group',
@@ -94,18 +122,21 @@ export function mountQuestPanel(container, callbacks) {
         quest,
       );
 
-      // A collapsed active quest lists its objectives with their check-off
-      // toggles. The open details list them with every control, and a
-      // completed quest shows only the count.
+      // A folded quest is one line: the title and the objective count. The
+      // open details list the objectives with every control. A click on the
+      // title opens or folds the quest, the same as the chevron button.
       const open = expanded.has(quest.id);
       const { done: checked, total } = objectiveProgress(quest.objectives);
       const body = el(
         'div',
-        'quest-panel__body u-col u-g1',
+        'quest-panel__body quest-panel__line',
         title,
-        done && total > 0 ? el('span', 'u-muted', `${checked} of ${total} objectives done`) : null,
-        !done && !open ? gmObjectiveChecks(quest, ctx, callbacks) : null,
+        total > 0 ? el('span', 'quest-panel__progress', `${checked} of ${total}`) : null,
       );
+      if (total > 0) {
+        body.lastElementChild?.setAttribute('aria-label', `${checked} of ${total} objectives done`);
+      }
+      title.addEventListener('click', () => detailsToggle.click());
 
       // The details hold the add, edit, and delete controls, so every GM row
       // gets the toggle, even a quest with no notes or objectives yet.

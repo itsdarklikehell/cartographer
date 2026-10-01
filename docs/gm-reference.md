@@ -2727,6 +2727,8 @@ tracker. A character that is already dead keeps its exhaustion level.
 
 ### Quests
 
+A row of buttons at the top of the Story tab names the Quests, NPCs, and Handouts cards with the number of rows in each. A click on one opens that card and scrolls to it. Each card also has a chevron button in its top-right corner that folds the card to its title, and the browser remembers which cards you folded.
+
 The Quests panel in the Story tab lists active and completed quests.
 
 | Control | What it does |
@@ -2735,15 +2737,14 @@ The Quests panel in the Story tab lists active and completed quests.
 | Status mark | Completes or reopens the quest |
 | Eye | Reveals the quest to players, or hides it again |
 | Chevron | Shows or hides the details: the notes, the objectives with all their controls, the links, and the buttons below |
+| Group heading | Folds or opens the Active or Completed group. The heading shows the number of quests in the group. The Completed group starts folded, and the browser remembers each choice |
 | Objective | Adds an objective |
 | Link place | Links the quest to a map place |
 | Link creature | Links the quest to a creature |
 | Edit, Delete | Edits or deletes the quest |
 
-A collapsed active quest lists its objectives, each with a checkbox that
-marks it done. Several objectives can be done at once. In the details, each objective also has controls to hide it
-from players or reveal it, to move it up or down, and to remove it. A
-completed quest shows how many of its objectives are done. A click on a
+A folded quest is one line: the status mark, the title, the count of objectives done (such as "1 of 4"), the chevron, and the eye. A click on the title or the chevron opens the quest. The open details list the objectives, each with a checkbox that marks it done, and several objectives can be done at once. Each objective also has controls to hide it
+from players or reveal it, to move it up or down, and to remove it. A click on a
 link chip shows the linked place on the map.
 
 When you mark a GM-only objective of a revealed quest done, a dialog asks

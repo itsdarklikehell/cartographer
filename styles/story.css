@@ -176,3 +176,92 @@
   line-clamp: 3;
   overflow: hidden;
 }
+
+/* A folded quest is one line: the title, then the objective count at the
+   right. The title opens the quest on a click, like the chevron button. */
+.quest-panel__line {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.quest-panel__line .quest-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.quest-panel__progress {
+  flex: none;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* A group heading that folds its group. The count sits after the name. */
+.quest-panel__group-title .disclosure {
+  padding: 0;
+}
+
+.quest-panel__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Story tab: the jump row and the folding cards
+   ========================================================================== */
+
+.story-jump {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-bottom: var(--space-1);
+}
+
+.story-jump .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+  font-size: var(--text-label);
+}
+
+.story-jump__count {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+/* The fold button sits in the top-right corner of the card, on the frame
+   line opposite the title. */
+.card-fold.disclosure {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  top: -0.875rem;
+  right: var(--space-3);
+  z-index: 1;
+  background: var(--surface);
+}
+
+.card-fold .disclosure__chevron {
+  margin: 0;
+}
+
+.card--folded > :not(.card__title, .card-fold) {
+  display: none;
+}
+
+.card--folded {
+  padding-block: var(--space-3) var(--space-1);
+}
+
+/* A jump scrolls the card to the top of the panel. The margin keeps the title
+   that straddles the frame in view. */
+#panel-story > .card {
+  scroll-margin-top: var(--space-4);
+}

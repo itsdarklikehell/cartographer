@@ -122,6 +122,11 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  * @property {(entry: T, gm: boolean) => string | null} [groupOf] emits a
  *   section heading whenever consecutive rows change group. A null group
  *   ends the current group: its rows sit at the root with no heading.
+ * @property {{ isFolded: (group: string) => boolean,
+ *   heading: (group: string, count: number, repaint: () => void) => HTMLElement }} [foldGroup]
+ *   lets the caller build each group heading as a fold control. A folded
+ *   group shows its heading and no rows. `count` is the row count of the
+ *   group, and the heading calls `repaint` after it folds or opens a group.
  * @property {(gm: boolean) => (AddButton | null | false)[]} [addButtons]
  * @property {'inline' | 'leading' | 'trailing'} [addPlacement] where the
  *   add controls go: loose at the end of the list, the default, leading
@@ -181,6 +186,19 @@ export function mountListPanel(container, options) {
     if (spec.pressed !== undefined) button.setAttribute('aria-pressed', String(spec.pressed));
     if (spec.focusKey) button.dataset.focusKey = spec.focusKey;
     return button;
+  }
+
+  /**
+   * A group heading. With `foldGroup`, the caller builds the heading control,
+   * and the panel repaints when it calls back.
+   * @param {string} group
+   * @param {number} count
+   * @returns {HTMLElement}
+   */
+  function groupHeading(group, count) {
+    const fold = options.foldGroup;
+    if (!fold) return sectionLabel(group, { tag: 'h3', className: classes.groupHeading });
+    return el('h3', classes.groupHeading ?? '', fold.heading(group, count, render));
   }
 
   /**
@@ -281,6 +299,12 @@ export function mountListPanel(container, options) {
     /** @type {string | null} */
     let lastGroup = null;
     /** @type {HTMLElement} */
+    /** @type {Map<string, number>} */
+    const counts = new Map();
+    for (const entry of rows) {
+      const group = options.groupOf?.(entry, gm);
+      if (group) counts.set(group, (counts.get(group) ?? 0) + 1);
+    }
     let host = root;
     for (const entry of rows) {
       const group = options.groupOf?.(entry, gm) ?? null;
@@ -294,9 +318,10 @@ export function mountListPanel(container, options) {
             host = el('div', classes.group);
             root.appendChild(host);
           }
-          host.appendChild(sectionLabel(group, { tag: 'h3', className: classes.groupHeading }));
+          host.appendChild(groupHeading(group, counts.get(group) ?? 0));
         }
       }
+      if (group !== null && options.foldGroup?.isFolded(group)) continue;
       host.appendChild(buildRow(entry, ctx));
     }
 
