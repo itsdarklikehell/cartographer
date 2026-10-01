@@ -57,6 +57,12 @@
   padding-top: var(--space-2);
 }
 
+/* The flex display beats the hidden attribute, so the closed tray needs this
+   rule to stay closed. */
+.dice-tray[hidden] {
+  display: none;
+}
+
 /* The dice sit in a grid of two columns. Each cell is a small plate with the
    die name, a minus button, the count, and a plus button. A die with a count
    other than zero takes the accent color, so the loaded dice read at a
