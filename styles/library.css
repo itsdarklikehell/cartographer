@@ -9,7 +9,7 @@
    column, and the template lists take the full width (capped for reading). */
 #library-tools {
   display: none;
-  width: auto;
+  width: 100%;
   flex: 1;
   max-width: 64rem;
   margin: 0 auto;
