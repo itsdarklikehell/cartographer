@@ -98,6 +98,19 @@
   outline: none;
 }
 
+/* A destructive item draws in the danger colour, with a rule above it that
+   sets it apart from the items before it. */
+.context-menu__item--danger {
+  color: var(--danger);
+}
+
+.context-menu__item + .context-menu__item--danger {
+  margin-top: var(--space-1);
+  border-top: 1px solid var(--border);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 /* The Play/Build, theme, and GM/Player switches are all .seg-switch
    (base.css); only role-driven visibility rules live here. */
 

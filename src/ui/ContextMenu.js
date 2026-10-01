@@ -40,7 +40,8 @@ let closeCurrent = null;
  * Open the context menu at a screen position. This function returns nothing.
  * Selection and dismissal both resolve through each item's own callback, or
  * through no callback at all.
- * @param {{ label: string, onSelect: () => void }[]} items
+ * @param {{ label: string, onSelect: () => void, danger?: boolean }[]} items an item with
+ *   `danger` deletes or discards something, and draws in the danger colour
  * @param {{ clientX: number, clientY: number }} position
  */
 export function openContextMenu(items, position) {
@@ -61,7 +62,11 @@ export function openContextMenu(items, position) {
         close();
         item.onSelect();
       },
-      { className: 'context-menu__item' },
+      {
+        className: item.danger
+          ? 'context-menu__item context-menu__item--danger'
+          : 'context-menu__item',
+      },
     );
     button.setAttribute('role', 'menuitem');
     menu.appendChild(button);

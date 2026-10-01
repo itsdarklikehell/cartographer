@@ -1091,7 +1091,7 @@ anchor to. It shares the look and nothing else.
 ## Context menus
 
 ```js
-openContextMenu(items: { label, onSelect }[], { clientX, clientY })
+openContextMenu(items: { label, onSelect, danger? }[], { clientX, clientY })
 clampToViewport(x, y, width, height, viewportWidth, viewportHeight, margin?)
 ```
 
@@ -1108,6 +1108,9 @@ menu:
 
 `openContextMenu` has no return value, because the items' own callbacks are
 the result.
+
+An item with `danger: true` draws in the `--danger` colour, with a rule
+above it when other items come first. The World tree marks Delete this way.
 
 `clampToViewport` is the pure positioning helper, in its own function so
 that a unit test can reach it. It flips the menu away from a viewport edge,

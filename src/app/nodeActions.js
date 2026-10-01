@@ -5,6 +5,7 @@ import { freshNodeId } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
+import { deleteNodeQuestion } from '../view/DeleteNodeText.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
 import { resyncMapViews } from './mapResync.js';
@@ -177,10 +178,13 @@ export function createNodeActions(app, env) {
       });
       return;
     }
-    const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
-      variant: 'danger',
-      confirmLabel: 'Delete',
+    const question = deleteNodeQuestion({
+      name: node.name,
+      maps: doomed.size,
+      creatures: state.creatures.filter((c) => c.location && doomed.has(c.location.nodeId)).length,
+      handouts: state.handouts.filter((h) => h.nodeId && doomed.has(h.nodeId)).length,
     });
+    const ok = await confirmModal(question, { variant: 'danger', confirmLabel: 'Delete' });
     if (!ok) return;
     if (stranded()) {
       app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`, {

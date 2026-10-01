@@ -85,7 +85,7 @@ export function mountWorldTree(container, opts) {
     [
       opts.onAddChild && { label: 'Add a child', onSelect: () => opts.onAddChild?.(node.id) },
       opts.onEdit && { label: 'Edit settings', onSelect: () => opts.onEdit?.(node.id) },
-      opts.onDelete && { label: 'Delete', onSelect: () => opts.onDelete?.(node.id) },
+      opts.onDelete && { label: 'Delete', danger: true, onSelect: () => opts.onDelete?.(node.id) },
     ].filter((item) => !!item);
   const hasActions = Boolean(opts.onAddChild || opts.onEdit || opts.onDelete);
 
