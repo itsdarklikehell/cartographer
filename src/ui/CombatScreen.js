@@ -5,6 +5,8 @@ import { combatantCard } from './CombatantCard.js';
 import { mountActiveColumn } from './CombatActiveColumn.js';
 import { mountCombatLog } from './CombatLog.js';
 import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
+import { mountCombatMap } from './CombatMap.js';
+import { buildTabs } from './Tabs.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
@@ -53,6 +55,7 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  *   onRollDeathSave: (id: string) => void,
  *   onStabilize: (id: string) => void,
  *   getLogEntries: () => import('../types/log.js').LogEntry[],
+ *   getMapView?: () => import('./CombatMap.js').CombatMapView | null,
  * }} CombatScreenCallbacks
  */
 
@@ -91,6 +94,10 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  * A creature with legendary actions left gets a second row on those cards.
  * Its buttons attack with each weapon from `getWeapons`, and report through
  * `onLegendaryAttack` with the id.
+ *
+ * With `getMapView` set, the right column has two tabs, Log and Map. The
+ * Map tab draws a read-only map of the fight area (see CombatMap.js), and it
+ * redraws on each render while it shows.
  *
  * `diceDock` is an empty slot under the log. The host parks the
  * app's dice-tray card there while the mode is active. The right column
@@ -138,7 +145,29 @@ export function mountCombatScreen(container, callbacks) {
   // sticks to the top of the screen (see combat.css). A long active column
   // would otherwise push the tray below the bottom of the screen.
   const left = el('div', 'combat-screen__left', column.element);
-  const side = el('aside', 'combat-screen__log', log.element, diceDock);
+  const map = callbacks.getMapView ? mountCombatMap(callbacks.getMapView) : null;
+  const tabs = map
+    ? buildTabs({
+        ariaLabel: 'Combat log or map',
+        className: 'combat-screen__tabs',
+        tabs: [
+          { id: 'log', label: 'Log', panel: log.element },
+          { id: 'map', label: 'Map', panel: map.element },
+        ],
+        onSelect: (id) => {
+          if (id === 'map') map.update();
+        },
+      })
+    : null;
+  if (map) map.element.hidden = true;
+  const side = el(
+    'aside',
+    'combat-screen__log',
+    tabs?.tablist ?? null,
+    log.element,
+    map?.element ?? null,
+    diceDock,
+  );
   // A turn change is announced, not only shown with a highlight. The polite
   // setting lets a screen reader finish speaking first. This element stays
   // outside the cleared regions.
@@ -207,6 +236,7 @@ export function mountCombatScreen(container, callbacks) {
     );
     roveGroup(board, '.combatant-card--selectable', selectedId);
     log.update(callbacks.getLogEntries(), gm ? 'gm' : 'player');
+    if (map && !map.element.hidden) map.update();
     // A decided fight stays open until the GM ends it. The live region then
     // says so once, and no longer reads out turns.
     if (outcome === null) announceTurn(view);

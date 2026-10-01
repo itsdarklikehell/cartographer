@@ -92,6 +92,27 @@ export function wireCombatScreen(app) {
       });
     },
     isGM: () => isGM(state.role),
+    // The read-only fight map draws the party node around the party, with
+    // the fog that the Play map shows, and marks each foe tile of the order.
+    getMapView: () => {
+      if (!state.combat) return null;
+      const position = app.partyTracker.getPosition();
+      const node = position ? app.grid.getNode(position.nodeId) : null;
+      if (!position || !node) return null;
+      const foeTiles = new Set();
+      for (const p of state.combat.order) {
+        const found = findCombatant(app, p.id);
+        const at = found?.kind === 'creature' ? found.entity.location : null;
+        if (at && at.nodeId === node.id) foeTiles.add(at.tileId);
+      }
+      return {
+        node,
+        partyTileId: position.tileId,
+        encounterTileIds: [...foeTiles],
+        revealAll: false,
+        label: `Map of the fight area in ${node.name}, centered on the party`,
+      };
+    },
     onNext: () => app.actions.advanceCombatTurn(),
     onEnd: () => app.actions.endCombat(),
     // Leaving is a view change only. The fight keeps running, and the Play

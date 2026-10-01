@@ -901,6 +901,16 @@ GM scrolls the board or a long active column. The log list scrolls inside
 the height that the tray leaves. Below 1100px the columns stack, and the
 column scrolls with the page.
 
+Above the log, `buildTabs` adds a Log tab and a Map tab. The Map tab holds
+`ui/CombatMap.js`, a canvas that draws the party node with the same
+`MapRenderer` as the main map. `map/FightFrame.js` works out the tile size
+and the offsets that center a window of nine by nine tiles on the party
+tile. The canvas has no pan, zoom, or click handling. `combatWiring.js`
+passes `getMapView`, which reads the party position from `partyTracker`
+and marks the tile of each creature in the order. The map keeps the fog, so
+a Player tab shows nothing that the Play map hides. The screen redraws the
+map on each render while the Map tab shows, and when the GM opens the tab.
+
 ### The turn ribbon
 
 The turn ribbon runs under the columns. It shows one chip per participant, in

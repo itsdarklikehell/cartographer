@@ -642,3 +642,28 @@ body.mode-combat .app-buildrail {
     max-height: 20rem;
   }
 }
+
+/* The Log and Map tabs at the top of the right column, and the read-only
+   map of the fight area under them. The canvas keeps a square buffer and
+   scales to the column width. */
+.combat-map {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-map__canvas {
+  display: block;
+  width: 100%;
+  max-width: 20rem;
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: var(--radius-sm);
+}
+
+/* A card class sets display on the log and the map, so the hidden tab panel
+   needs this rule to leave the column. */
+.combat-screen__log > [role='tabpanel'][hidden] {
+  display: none;
+}
