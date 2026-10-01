@@ -330,6 +330,11 @@ fields.
 The environment tag is a description only. It has no effect on painting,
 generation, or rules.
 
+A smaller width or height that removes tiles asks first. **Cancel** on that
+confirm opens the settings again with the values you typed. In the same way,
+**Cancel** on the confirm that replaces every tile after **Generate map**
+opens the Generate dialog again with the same choices and seed.
+
 A locked node stops every move of the party or a character into it: a
 click on a tile that links to it, a walk across a border into it, and a
 teleport from the World panel. The GM view still zooms into a locked node

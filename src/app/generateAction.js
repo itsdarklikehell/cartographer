@@ -155,31 +155,42 @@ export function wireGenerateAction(app, env) {
       return preview.gen;
     };
 
-    const values = await generateDialog({
-      archetypes,
-      sizes: SIZE_OPTIONS,
-      size: parent ? blockSize(parent, node.id) : undefined,
-      stacked: STACKED_ARCHETYPES,
-      maxLevels: levelsLeft(stack?.level ?? 1),
-      nested: NESTED_ARCHETYPES,
-      makeCandidate,
-      imageCache: env.mapCanvas.renderer.imageCache,
-      returnFocus: generateBtn,
-      archetype: archetypes.some((a) => a.value === presets.archetype)
-        ? presets.archetype
-        : undefined,
-      depth: presets.depth,
-    });
-    if (!values) return false;
     const removed = linkedDescendants([...grid.nodes.values()], node);
-    if (
-      node.tiles.length > 0 &&
-      !(await confirmModal(replaceQuestion(node, removed), {
-        variant: 'danger',
-        confirmLabel: 'Replace',
-      }))
-    ) {
-      return false;
+    /** @type {GenerateChoice | null} the choice of the last dialog, kept when the GM cancels the replace confirm */
+    let last = null;
+    /** @type {GenerateChoice | null} */
+    let values = null;
+    // Cancel on the replace confirm returns to the dialog with the same
+    // choice, so the GM does not lose the archetype, size, and seed.
+    for (;;) {
+      values = await generateDialog({
+        archetypes,
+        sizes: SIZE_OPTIONS,
+        size: last?.size ?? (parent ? blockSize(parent, node.id) : undefined),
+        stacked: STACKED_ARCHETYPES,
+        maxLevels: levelsLeft(stack?.level ?? 1),
+        nested: NESTED_ARCHETYPES,
+        makeCandidate,
+        imageCache: env.mapCanvas.renderer.imageCache,
+        returnFocus: generateBtn,
+        archetype:
+          last?.archetype ??
+          (archetypes.some((a) => a.value === presets.archetype) ? presets.archetype : undefined),
+        depth: last ? String(last.depth) : presets.depth,
+        levels: last?.levels,
+        seed: last?.seed,
+      });
+      if (!values) return false;
+      if (
+        node.tiles.length === 0 ||
+        (await confirmModal(replaceQuestion(node, removed), {
+          variant: 'danger',
+          confirmLabel: 'Replace',
+        }))
+      ) {
+        break;
+      }
+      last = values;
     }
     const tree = expandTree(
       palette,

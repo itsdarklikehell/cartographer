@@ -51,6 +51,9 @@ const SUBMAP_DEPTHS = [
  * fields. The Welcome card passes the world archetype and every level, so
  * "Generate a world" builds a world with its regions and towns.
  *
+ * `levels` and `seed` preset those fields. When the GM cancels the replace
+ * confirm, the dialog opens again with the choice the GM made.
+ *
  * `returnFocus` is the element that takes focus back when the dialog closes.
  * The Generate button passes itself: Safari does not focus a button on
  * click, so without this the dismissal lands wherever focus was before the
@@ -61,6 +64,8 @@ const SUBMAP_DEPTHS = [
  *   size?: string,
  *   archetype?: string,
  *   depth?: string,
+ *   levels?: number,
+ *   seed?: number,
  *   stacked?: string[],
  *   maxLevels?: number,
  *   nested?: string[],
@@ -104,7 +109,10 @@ export function generateDialog(options) {
       // there it never shows. `maxLevels` limits the field, because each
       // level is a node of its own.
       const maxLevels = options.maxLevels ?? Infinity;
-      const levelsInput = field('Levels', numberField(1, { min: 1, max: options.maxLevels }));
+      const levelsInput = field(
+        'Levels',
+        numberField(options.levels ?? 1, { min: 1, max: options.maxLevels }),
+      );
       const levelsField = /** @type {HTMLElement} */ (levelsInput.closest('.modal__field'));
       const syncLevels = () =>
         levelsField.classList.toggle(
@@ -129,7 +137,7 @@ export function generateDialog(options) {
       // This is the seed row: the editable seed plus a Reroll button that
       // draws a fresh one. The preview canvas below always shows the
       // layout this exact seed builds.
-      const seedInput = numberField(randomSeed());
+      const seedInput = numberField(options.seed ?? randomSeed());
       // renderPreview is declared below, so the handler reaches it at click time.
       const reroll = textButton('Reroll', () => {
         seedInput.value = String(randomSeed());

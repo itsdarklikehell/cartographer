@@ -225,27 +225,56 @@ export function createNodeActions(app, env) {
   async function editNode(nodeId) {
     const node = grid.getNode(nodeId);
     if (!node) return;
-    const values = await promptModal(
-      'Map settings',
-      [
-        { name: 'name', label: 'Name', value: node.name },
-        { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
-        { name: 'height', label: 'Height (tiles)', type: 'number', value: node.height, min: 1 },
-        ...nodeKindFields(node.kind, node.environ),
-        ...lockFields(node.lock),
-      ],
-      { submitLabel: 'Save', onChange: nodeFieldChange },
-    );
-    if (!values) return;
-    const width = clampInt(values.width, 1, Infinity, node.width);
-    const height = clampInt(values.height, 1, Infinity, node.height);
-    const lost = tilesOutsideBounds(node, width, height);
-    if (lost.length) {
-      const ok = await confirmModal(
-        `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
-        { variant: 'danger', confirmLabel: 'Shrink' },
+    // Cancel on the shrink confirm returns to the form with the values the
+    // GM typed, so the other edits in the form stay.
+    /** @type {Record<string, string> | null} */
+    let typed = null;
+    /** @type {Record<string, string> | null} */
+    let values = null;
+    let width = node.width;
+    let height = node.height;
+    for (;;) {
+      const lock = typed ? readLockFields(typed) : node.lock;
+      values = await promptModal(
+        'Map settings',
+        [
+          { name: 'name', label: 'Name', value: typed?.name ?? node.name },
+          {
+            name: 'width',
+            label: 'Width (tiles)',
+            type: 'number',
+            value: typed?.width ?? node.width,
+            min: 1,
+          },
+          {
+            name: 'height',
+            label: 'Height (tiles)',
+            type: 'number',
+            value: typed?.height ?? node.height,
+            min: 1,
+          },
+          ...nodeKindFields(
+            coerceNodeKind(typed?.kind, node.kind),
+            typed ? typed.environ || null : node.environ,
+          ),
+          ...lockFields(lock ?? undefined),
+        ],
+        { submitLabel: 'Save', onChange: nodeFieldChange },
       );
-      if (!ok) return;
+      if (!values) return;
+      width = clampInt(values.width, 1, Infinity, node.width);
+      height = clampInt(values.height, 1, Infinity, node.height);
+      const lost = tilesOutsideBounds(node, width, height);
+      if (
+        !lost.length ||
+        (await confirmModal(
+          `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
+          { variant: 'danger', confirmLabel: 'Shrink' },
+        ))
+      ) {
+        break;
+      }
+      typed = values;
     }
     const kind = coerceNodeKind(values.kind, node.kind);
     const lock = readLockFields(values);
