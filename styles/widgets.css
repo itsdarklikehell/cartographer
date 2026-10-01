@@ -370,19 +370,17 @@
   color: var(--mana);
 }
 
-/* Spell-slot readout on the collapsed card: a column per spell level, with the
-   ordinal centered over one row of pips. Shares .stat-bar's label column;
-   overflow wraps inside __groups, so continuation rows stay indented past the
-   "Slots" label. */
+/* Spell-slot readout on the sheet: one line per spell level, with the ordinal,
+   the pips, and the free count such as "2 of 3". Shares .stat-bar's label
+   column, so every level line stays indented past the "Slots" label. */
 .slot-line {
   align-items: flex-start;
 
   /* The line reserves one row of groups even when it has nothing to show, so
      selecting a non-caster after a caster does not move the rows below the
-     header. One row is a level label over one 24 px pip button, and the pip
-     key sits under it. A pool keeps at most four slots, so its pips always
-     fit on one row. */
-  min-height: calc(var(--text-label) * 2.6 + 0.1rem + var(--space-1) + 24px);
+     header. One row is one line of 24 px pip buttons. A pool keeps at most four
+     slots, so its pips always fit on one line. */
+  min-height: 24px;
 }
 
 /* The reserved line for a character with no slot pools at all. In the
@@ -399,35 +397,62 @@
   min-width: 0;
 }
 
-/* The key to the filled and empty pip glyphs, in the size of the level labels. */
-.slot-line__legend {
+/* The spell level over its pips and the free count, such as "2 of 3". */
+.slot-line__level {
+  min-width: 2.25rem;
   font-size: var(--text-label);
-  line-height: 1.1;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
-.slot-line__key-pip {
-  color: var(--mana);
+.slot-line__count {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+/* A spent slot: the hollow ring dims and takes a diagonal stroke, so it reads
+   apart from a free pip by its form as well as its weight. */
+.slot-line__pip {
+  position: relative;
+}
+
+.slot-line__pip--spent {
+  opacity: 0.45;
+}
+
+.slot-line__pip--spent::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.85em;
+  height: 2px;
+  background: currentColor;
+  transform: translate(-50%, -50%) rotate(-45deg);
 }
 
 .slot-line__groups {
   flex: 1;
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1) var(--space-3);
+  flex-direction: column;
+  gap: var(--space-1);
   min-width: 0;
 }
 
 .slot-line__group {
   display: inline-flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.1rem;
+  gap: var(--space-2);
 }
 
 .slot-line__pips {
   display: flex;
+  min-width: calc(4 * 24px);
   gap: 0;
-  font-size: var(--text-label);
+  font-size: 1rem;
   line-height: 1.1;
   color: var(--mana);
 }

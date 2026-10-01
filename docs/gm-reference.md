@@ -2239,13 +2239,26 @@ The character detail card in the Sheet tab of the sidebar has four tabs.
 
 ### Sheet contents
 
-The collapsed sheet shows the name, the race, a full-width HP bar with
-damage and heal steppers, and one pip group per spell level for a caster. The
-number field after the heal button sets how many HP each stepper click
-moves. It starts at 1. A filled pip is an unspent slot, and a click spends or
-restores it. A key under the pips reads "Free" and "Spent". Each level
-column names its count for a screen reader and in its tooltip, such as "Level
-1 slots: 2 of 3 free".
+The top of the sheet shows the name, the race, and a tall HP bar the width
+of the card, with the current and maximum HP above it. Under the bar, the
+GM gets a **Damage** button, an amount field, and a **Heal** button. The
+amount field sets how many HP each click moves. It starts at 1. The level
+line gives AC, initiative (**Init**), speed, passive Perception (**PP**),
+the proficiency bonus (**Prof**), and XP.
+
+A caster gets one line per spell level, such as "1st", then the pips, then
+the free count, such as "3 of 4". A filled pip is a free slot. A spent pip is
+a hollow ring, dimmed and struck through. A click on a pip spends or restores
+a slot. Each line names its count for a screen reader and in its tooltip,
+such as "Level 1 slots: 3 of 4 free".
+
+While a character has a level to assign, an ability score improvement, or a
+class feature choice left, a banner at the top of the sheet says so, such as
+"Ready to level up: 1 level to assign." The GM's **Level up** button opens
+**Assign a level** for a pending level. For an improvement or a feature
+choice, it moves focus to the Progression block. A Player tab shows the
+banner with no button. The party row of the character shows a **Level up**
+mark at the same time.
 
 The expanded sheet adds these items:
 

@@ -1,3 +1,4 @@
+import { levelUpText } from './CharacterLevelBanner.js';
 import { bareButton, iconButton, iconLink, textButton, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
@@ -128,6 +129,20 @@ export function mountCharacterRoster(container, options) {
     return button;
   }
 
+  /**
+   * A badge on the row of a character with a level-up step left. A click on
+   * the row opens the sheet, where the level-up banner leads.
+   * @param {Character} character
+   * @returns {HTMLElement | null}
+   */
+  function levelUpBadge(character) {
+    const text = levelUpText(character);
+    if (!text) return null;
+    const mark = el('span', 'character-roster__level-up', 'Level up');
+    mark.title = text;
+    return mark;
+  }
+
   /** @param {boolean} manage @param {Character[]} characters @param {string | null} selectedId */
   function paint(manage, characters, selectedId) {
     // Clearing the root drops focus to the document body, the same hazard
@@ -149,6 +164,7 @@ export function mountCharacterRoster(container, options) {
             `${character.name} `,
             el('span', 'character-roster__level', `(Lv ${character.level})`),
           ),
+          levelUpBadge(character),
           hpMeter(character),
         ],
         () => options.onSelect(character.id),

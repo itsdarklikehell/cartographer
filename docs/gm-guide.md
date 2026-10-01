@@ -606,9 +606,11 @@ that.
    split evenly**, and the caption shows the XP that each character gets. To
    give XP to one character, click the three-dot button on their row and
    then **Grant XP**.
-2. Open the character sheet and find the Progression block. It shows how
-   many levels wait to be assigned.
-3. Click **Assign level**, pick the class, and click **Assign**. To
+2. A **Level up** mark shows on the party row of each character with a
+   level to assign. Click the row to open the sheet. A banner at the top
+   says how many levels wait.
+3. Click **Level up** in the banner (or **Assign level** in the
+   Progression block), pick the class, and click **Assign**. To
    multiclass, click **Add a class** instead. The list shows which classes
    the ability scores of the character allow.
 4. If the level gives an ability score improvement, click **+2 ability** to

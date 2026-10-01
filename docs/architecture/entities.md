@@ -2265,6 +2265,7 @@ The parts of the sheet have their own modules:
 | --- | --- |
 | `ui/CharacterStatBadge.js` | The ability badges and their breakdown popover |
 | `ui/CharacterBars.js` | The HP bar and the slot pips (the elements and the update loop) |
+| `ui/CharacterLevelBanner.js` | The level-up banner at the top of the sheet, and the level-up text that the party roster also shows |
 | `ui/CharacterChecks.js` | The saves, the skills, and passive Perception |
 | `ui/CharacterSpells.js` | The castable-spell list |
 | `ui/CharacterConditions.js` | The condition chips, the held concentration, the exhaustion pips, and the death-save block |
@@ -2274,7 +2275,9 @@ The parts of the sheet have their own modules:
 
 `view/StatBars.js` decides what the HP bar and the slot pips *say*: the fill
 percentage, the low-HP threshold, the column headings, and every string that a
-screen reader gets.
+screen reader gets. `view/LevelUpCue.js` writes the text of the level-up
+banner from the counts of pending levels, improvements, and feature choices,
+and the free count of a slot line, such as "2 of 3".
 
 The two Library authoring forms split the same way. `ui/ItemForm.js` and
 `ui/SpellForm.js` read their controls, and `entities/ItemDraft.js` and

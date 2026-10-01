@@ -21,18 +21,68 @@
   min-width: 0;
 }
 
-/* The HP bar flanked by its damage/heal steppers. */
+/* The HP block: the label and numbers, a tall full-width bar, then the
+   damage and heal buttons with the amount field between them. */
 .character-sheet__hp-line {
+  align-items: stretch;
   min-width: 0;
 }
 
-.character-sheet__hp-line .stat-bar {
-  flex: 1;
+/* The hero bar wraps, so the label and numbers share the first line and the
+   track takes the whole second line. */
+.stat-bar--hero {
+  flex-wrap: wrap;
+  row-gap: var(--space-1);
+}
+
+.stat-bar--hero .stat-bar__label {
+  width: auto;
+  font-weight: 600;
+}
+
+.stat-bar--hero .stat-bar__text {
+  order: 1;
+  margin-left: auto;
   min-width: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stat-bar--hero .stat-bar__bonus {
+  order: 2;
+  font-size: 1rem;
+}
+
+.stat-bar--hero .stat-bar__track {
+  order: 3;
+  flex: 1 0 100%;
+  height: 0.9rem;
+  border: 1px solid var(--border);
+}
+
+.character-sheet__hp-controls {
+  flex-wrap: wrap;
 }
 
 .character-sheet__hp-step {
   flex-shrink: 0;
+}
+
+/* The level-up banner sits above the sheet body, as wide as the body. */
+.character-sheet__level-up {
+  max-width: var(--sheet-measure-body);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+}
+
+.character-sheet__level-up-text {
+  font-weight: 600;
 }
 
 .character-sheet__summary-top {
@@ -128,6 +178,7 @@
    same line. The body's row gap separates it from what follows. */
 .character-sheet__header {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
@@ -140,6 +191,8 @@
 .character-sheet__header-meta {
   display: inline-flex;
   align-items: baseline;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: var(--space-2);
   font-weight: 400;
 }

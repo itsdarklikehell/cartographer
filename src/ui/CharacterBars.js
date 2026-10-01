@@ -8,6 +8,7 @@ import {
   slotGroupReadout,
   slotLineReadout,
 } from '../view/StatBars.js';
+import { slotCount } from '../view/LevelUpCue.js';
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
@@ -38,7 +39,7 @@ export function emptyStatBar() {
  * rebuilding the line.
  * @param {{ current: number, max: number }} pool
  * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
- *   showLabel?: boolean, compact?: boolean, band?: boolean, className?: string,
+ *   showLabel?: boolean, compact?: boolean, band?: boolean, hero?: boolean, className?: string,
  *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
  *   modifier selects the fill color. critical turns on the low-fill red
  *   state. band colors the whole fill by remaining fraction instead, in
@@ -46,7 +47,8 @@ export function emptyStatBar() {
  *   appends a plus-N readout for temporary points on top of the pool, for
  *   example bonus HP. flank places a control, for example a damage or heal
  *   stepper, on each side of the track, and keeps the numeric readout after
- *   them. className adds a caller's own class to the wrapper.
+ *   them. hero wraps the bar onto two lines, the label and the numbers
+ *   over a tall track the full width of the box. className adds a caller's own class to the wrapper.
  * @returns {{ element: HTMLElement, update: (pool: { current: number, max: number },
  *   bonus: number) => void }}
  */
@@ -63,7 +65,12 @@ export function buildStatBar(pool, opts) {
   if (compact) track.appendChild(text);
   const wrap = el(
     'span',
-    classNames(['stat-bar u-row u-g2', compact && 'stat-bar--compact', opts.className]),
+    classNames([
+      'stat-bar u-row u-g2',
+      compact && 'stat-bar--compact',
+      opts.hero && 'stat-bar--hero',
+      opts.className,
+    ]),
     showLabel ? el('span', 'stat-bar__label u-muted', opts.label) : null,
     opts.flank?.before,
     track,
@@ -103,10 +110,10 @@ export function buildStatBar(pool, opts) {
 }
 
 /**
- * A compact spell-slot readout. It shows one column per spell level, with
- * the ordinal centered above a two-wide grid of pips. A filled pip is a
- * slot still unspent. Columns wrap under the pip area, not the label, when
- * a high-level caster outgrows the card width.
+ * A compact spell-slot readout. It shows one line per spell level: the
+ * ordinal, the pips, and the free count, such as "2 of 3". A filled pip is a
+ * free slot, and a spent pip is a hollow ring that the stylesheet dims and
+ * strikes through.
  *
  * If onToggle is set, each pip is a button. A click on a filled pip spends
  * a slot of that level. A click on an empty pip restores one. Slots drain
@@ -128,22 +135,16 @@ export function buildStatBar(pool, opts) {
  */
 export function buildSlotLine(pools, onToggle, allowRestore = true) {
   const groups = el('span', 'slot-line__groups');
-  // A key to the pip glyphs, matching the training-dot key of the skills
-  // block. Screen readers skip it, because each column already says how
-  // many of its slots are free.
-  const legend = el(
-    'span',
-    'slot-line__legend u-row u-g3 u-muted',
-    el('span', '', el('span', 'slot-line__key-pip', '●'), ' Free'),
-    el('span', '', el('span', 'slot-line__key-pip', '○'), ' Spent'),
-  );
-  legend.setAttribute('aria-hidden', 'true');
   const wrap = el(
     'span',
     'stat-bar slot-line u-row u-g2',
     el('span', 'stat-bar__label u-muted', 'Slots'),
-    el('span', 'slot-line__body u-col u-g1', groups, legend),
+    el('span', 'slot-line__body u-col u-g1', groups),
   );
+  // Each group writes its free count in words beside the pips, so the pip
+  // glyphs need no key. Screen readers get the count from the group label.
+  /** @type {HTMLElement[]} */
+  const countEls = [];
   /** @type {HTMLElement[]} */
   const groupEls = [];
   // Each pip element matches one slot, in pool order. update can walk
@@ -179,7 +180,15 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
       row.push(pip);
     }
     pipsByPool.push(row);
-    const group = el('span', 'slot-line__group', el('span', 'u-muted', level), pips);
+    const count = el('span', 'slot-line__count');
+    count.setAttribute('aria-hidden', 'true');
+    countEls.push(count);
+    const group = el(
+      'span',
+      'slot-line__group',
+      el('span', 'slot-line__level', level),
+      el('span', 'slot-line__row u-row u-g1', pips, count),
+    );
     // A named group gives a screen reader the column's count before it
     // reads the pip controls inside.
     if (onToggle) group.setAttribute('role', 'group');
@@ -199,9 +208,15 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
         setTip(group, slotGroupReadout(pool));
         if (onToggle) group.setAttribute('aria-label', slotGroupReadout(pool));
       }
+      const count = countEls[poolIndex];
+      if (count) count.textContent = slotCount(pool);
       pipsByPool[poolIndex]?.forEach((pip, i) => {
         const available = i < pool.current;
+        // A spent pip is a hollow ring, dimmed and struck through (widgets.css),
+        // so it reads apart from a free one without relying on color.
         pip.textContent = available ? '●' : '○';
+        pip.classList.add('slot-line__pip');
+        pip.classList.toggle('slot-line__pip--spent', !available);
         if (!onToggle) return;
         const readout = pipReadout(pool, available, allowRestore);
         pip.toggleAttribute('disabled', readout.disabled);

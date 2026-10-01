@@ -117,6 +117,18 @@
   white-space: nowrap;
 }
 
+/* The level-up mark on the row of a character with a level-up step left. */
+.character-roster__level-up {
+  flex-shrink: 0;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
 .character-roster__add,
 .character-roster__award,
 .character-roster__spectator {

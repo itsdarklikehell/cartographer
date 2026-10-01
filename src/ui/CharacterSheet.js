@@ -7,6 +7,11 @@ import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { exhaustionReadout } from '../view/ExhaustionView.js';
 import { buildProgressSection } from './CharacterProgress.js';
+import { levelUpBanner } from './CharacterLevelBanner.js';
+import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
+import { effectiveStat } from '../entities/Stats.js';
+import { passivePerception } from '../entities/Checks.js';
+import { characterProficiency } from '../entities/Multiclass.js';
 import { buildConditionsSection } from './CharacterConditions.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
@@ -14,7 +19,7 @@ import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { addPoolButton, poolEditButtons } from './PoolEditor.js';
 import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
 import { statBadge } from './CharacterStatBadge.js';
-import { iconButton, emptyState } from './buttons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
 
@@ -159,6 +164,13 @@ export function mountCharacterSheet(
     render();
   }
 
+  /**
+   * The progression section of the last build. The level-up banner moves
+   * focus to it when the next step is an improvement or a feature choice.
+   * @type {HTMLElement | null}
+   */
+  let progressSection = null;
+
   /** The structure the DOM currently reflects, and how to re-point it. */
   /** @type {unknown[] | null} */
   let builtDeps = null;
@@ -230,14 +242,21 @@ export function mountCharacterSheet(
     // both columns keep a readable measure, everything stacks in the order
     // it is appended here. Castable spells go in the body and span both
     // columns, since a caster's list needs the whole width.
+    const levelBanner = levelUpBanner(character, {
+      editBase: perms.editBase,
+      live,
+      onCommit: commit,
+      notify,
+      getProgress: () => progressSection,
+    });
     const body = el('div', 'character-sheet__body', head, headSide);
     const main = el('div', 'character-sheet__col character-sheet__col--main');
     const side = el('div', 'character-sheet__col character-sheet__col--side');
 
     const hp = getHP(character);
     if (hp) {
-      /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
-      let flank;
+      /** @type {HTMLElement | null} */
+      let controls = null;
       if (perms.hp) {
         // The amount field sets how many HP each step button moves, so a big
         // hit or heal is one click. An empty or bad entry counts as 1.
@@ -246,35 +265,49 @@ export function mountCharacterSheet(
         amountInput.setAttribute('aria-label', `HP amount for ${character.name}`);
         const amount = () => (hpAmount = Math.max(1, Math.floor(Number(amountInput.value)) || 1));
         // Bonus HP absorbs the hit before the pool does.
-        const damageButton = iconButton(
-          'minus',
-          `Damage ${character.name}`,
+        const damageButton = textButton(
+          'Damage',
           () =>
             hpStep ? hpStep.onStep(amount(), false) : commit(damageCharacter(live(), amount())),
-          { variant: 'danger', className: 'character-sheet__hp-step' },
+          {
+            icon: 'minus',
+            variant: 'danger',
+            className: 'character-sheet__hp-step',
+            ariaLabel: `Damage ${character.name}`,
+          },
         );
-        const healButton = iconButton(
-          'heal',
-          `Heal ${character.name}`,
+        const healButton = textButton(
+          'Heal',
           () =>
             hpStep
               ? hpStep.onStep(amount(), true)
               : commit(restoreResource(live(), 'hp', amount())),
-          { variant: 'success', className: 'character-sheet__hp-step' },
+          {
+            icon: 'heal',
+            variant: 'success',
+            className: 'character-sheet__hp-step',
+            ariaLabel: `Heal ${character.name}`,
+          },
         );
-        const after = el('span', 'u-row u-g1 character-sheet__hp-step', healButton, amountInput);
-        flank = { before: damageButton, after };
+        controls = el(
+          'div',
+          'character-sheet__hp-controls u-row u-g2',
+          damageButton,
+          amountInput,
+          healButton,
+        );
       }
-      // This reads as "HP - [bar] + current/max +bonus". The steppers sit
-      // next to the track, and the numbers sit after them on the right.
+      // The HP block reads top to bottom: the label and the numbers, a tall
+      // bar the width of the card, then the damage and heal buttons with the
+      // amount between them. A GM reads the bar from across the table.
       const bar = buildStatBar(hp, {
         modifier: 'hp',
         label: 'HP',
         critical: true,
         bonus: character.bonusHP ?? 0,
-        flank,
+        hero: true,
       });
-      head.appendChild(el('div', 'character-sheet__hp-line u-row u-g1', bar.element));
+      head.appendChild(el('div', 'character-sheet__hp-line u-col u-g2', bar.element, controls));
       writers.push(() => {
         const pool = getHP(live());
         if (pool) bar.update(pool, live().bonusHP ?? 0);
@@ -319,6 +352,14 @@ export function mountCharacterSheet(
       'A shield adds its own bonus; other equipped items add their flat bonuses.';
 
     const speedBadge = el('span', 'character-sheet__speed u-muted');
+    // Initiative, passive Perception, and the proficiency bonus are the other
+    // numbers a GM asks for in play, so they join AC and speed on one line.
+    const initBadge = el('span', 'character-sheet__init u-muted');
+    initBadge.title = 'Initiative bonus (DEX modifier)';
+    const ppBadge = el('span', 'character-sheet__pp u-muted');
+    ppBadge.title = 'Passive Perception';
+    const profBadge = el('span', 'character-sheet__prof u-muted');
+    profBadge.title = 'Proficiency bonus';
 
     // A penalty that reaches every d20 roll belongs in the headline, not only
     // beside the conditions. The badge is empty at level 0, which is where most
@@ -335,7 +376,10 @@ export function mountCharacterSheet(
         'span',
         'character-sheet__header-meta u-muted',
         acBadge,
+        initBadge,
         speedBadge,
+        ppBadge,
+        profBadge,
         tiredBadge,
         el('span', 'character-sheet__xp-progress u-muted', xpProgress(character)),
       ),
@@ -351,6 +395,9 @@ export function mountCharacterSheet(
       // Speed follows a STR edit as well, because armor too heavy for the
       // wearer costs 10 feet.
       speedBadge.textContent = `${walkSpeed(shown)} ft`;
+      initBadge.textContent = `Init ${formatModifier(abilityModifier(effectiveStat(shown, 'dex').total))}`;
+      ppBadge.textContent = `PP ${passivePerception(shown)}`;
+      profBadge.textContent = `Prof ${formatModifier(characterProficiency(shown))}`;
       speedBadge.title = speedNote(shown);
       const tired = exhaustionReadout(shown);
       tiredBadge.textContent = tired.badge;
@@ -473,7 +520,9 @@ export function mountCharacterSheet(
     side.appendChild(conditions.element);
     writers.push(conditions.write);
 
+    if (levelBanner) root.appendChild(levelBanner);
     root.appendChild(body);
+    progressSection = progress;
     return () => {
       for (const write of writers) write();
     };

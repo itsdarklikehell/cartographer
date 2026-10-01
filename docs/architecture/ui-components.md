@@ -599,7 +599,7 @@ site.
 
 ```js
 buildStatBar(pool, { modifier, label, critical?, bonus?, showLabel?, compact?,
-                     band?, flank?, className? }) -> { element, update(pool, bonus) }
+                     band?, hero?, flank?, className? }) -> { element, update(pool, bonus) }
 ```
 
 `buildStatBar` in `src/ui/CharacterBars.js` draws a pool such as HP as a
@@ -612,6 +612,9 @@ the numbers, for the character sheet's head:
 - `band` colors the whole fill by the remaining fraction, in three steps.
 - `flank` places a control, such as a damage or heal stepper, on each side
   of the track.
+- `hero` wraps the bar onto two lines, with the label
+  and the numbers over a tall track the full width of its box. The character
+  sheet uses it for HP and puts the damage and heal buttons on a row under it.
 
 The label still names the bar to a screen reader in every form. `update`
 rewrites the fill, the numbers, and the label for a new value of the same
