@@ -406,8 +406,9 @@ export function buildItemForm({
 
   return buildInlineForm({
     nameInput,
+    nameLabel: 'Name',
     rows: [
-      descriptionInput,
+      labeled('Description', descriptionInput),
       // A library template is a blueprint, not a stack. It has no quantity to set.
       template
         ? fieldRow(labeled('Type', typeSelect), presetField)

@@ -273,10 +273,13 @@ export function setOptions(picker, options, value) {
  * action row closes the form. Submitting reads the form through
  * `assemble`, which returns the finished value, or null to refuse the
  * submit. `afterSubmit` runs on an accepted submit, for a form that
- * clears itself to accept another entry.
+ * clears itself to accept another entry. With `nameLabel`, the name input
+ * gets a visible caption, for a long form where a filled placeholder no
+ * longer says what the field is.
  * @template T
  * @param {{
  *   nameInput: HTMLInputElement,
+ *   nameLabel?: string,
  *   rows: HTMLElement[],
  *   assemble: () => T | null,
  *   submitLabel: string,
@@ -289,6 +292,7 @@ export function setOptions(picker, options, value) {
  */
 export function buildInlineForm({
   nameInput,
+  nameLabel = '',
   rows,
   assemble,
   submitLabel,
@@ -315,7 +319,7 @@ export function buildInlineForm({
     onCancel,
   });
 
-  form.append(nameInput, ...rows, actions);
+  form.append(nameLabel ? labeled(nameLabel, nameInput) : nameInput, ...rows, actions);
   return form;
 }
 

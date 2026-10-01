@@ -399,6 +399,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   const form = buildInlineForm({
     nameInput,
+    nameLabel: 'Name',
     rows: [
       fieldRow(labeled('Level', levelSelect), labeled('School', schoolSelect)),
       classesField,

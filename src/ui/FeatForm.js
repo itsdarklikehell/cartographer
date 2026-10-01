@@ -236,6 +236,7 @@ export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = n
 
   const form = buildInlineForm({
     nameInput,
+    nameLabel: 'Name',
     rows: [
       fieldRow(labeled('Prerequisite', prerequisiteInput), repeatable.label),
       labeled('Description', descriptionInput),
