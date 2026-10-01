@@ -123,3 +123,20 @@ body.sheet-full.mode-play #panel-spellbook {
     grid-row: 1 / span 2;
   }
 }
+
+/* Below 68rem the main area is a column that aligns its items to the start,
+   so without a width the view shrinks to the width of its bar. The sheet,
+   the paperdoll, and the item list measure their own width, so they add
+   nothing to it. */
+@media (max-width: 68rem) {
+  #full-sheet {
+    width: 100%;
+  }
+}
+
+/* The phone view bar picks an area of the map screen, and the full sheet
+   hides all of them, so the bar hides too. "Back to the map" leaves the
+   view. */
+body.sheet-full.mode-play .phone-views {
+  display: none;
+}

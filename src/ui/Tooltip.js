@@ -218,7 +218,11 @@ export function mountTooltips(container) {
   });
   document.addEventListener('focusout', hide);
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') hide();
+    if (event.key !== 'Escape') return;
+    // An Escape that hides a shown hint does nothing else, so the full
+    // sheet or a dialog stays open until the next press.
+    if (anchor) event.preventDefault();
+    hide();
   });
   // A scrolled anchor leaves its tooltip behind, since the tooltip is placed
   // in viewport coordinates once. Capture, because most scrolling here

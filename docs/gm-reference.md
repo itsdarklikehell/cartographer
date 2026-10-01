@@ -2276,8 +2276,11 @@ opens and closes it in Play mode. The map, the party dock, and the sidebar
 hide while it is open. The bar along the top has **Back to the map** and one
 tab per party member. Left and Right move between the tabs, and Home and End
 go to the first and last. **Back to the map** or Escape closes it and puts
-focus back on the control that opened it. A switch to Build mode or a fight
-shows that mode, and the full sheet comes back on the return to Play.
+focus back on the control that opened it. In a text field, such as the
+inventory search, Escape clears the field and leaves the sheet open. A
+switch to Build mode or a fight shows that mode, and the full sheet comes
+back on the return to Play. At phone width the view bar at the bottom of
+the screen hides while the full sheet is open.
 
 The full sheet has four tabs.
 

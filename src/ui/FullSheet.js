@@ -16,8 +16,8 @@ import { el } from './dom.js';
  * with no tab strip, and sheet-summary.css shows the long sections and the
  * other tabs here alone. The wide body gives the card room for two columns.
  *
- * Escape closes the view when no dialog is open. Close puts focus back on
- * the control that opened the view.
+ * Escape closes the view, unless a dialog, a text field, or another handler
+ * takes the key. Close puts focus back on the control that opened the view.
  * @param {HTMLElement} container the page section of the view
  * @param {{
  *   card: HTMLElement,
@@ -72,9 +72,19 @@ export function mountFullSheet(container, opts) {
     }
   }
 
-  /** @param {KeyboardEvent} event */
+  /**
+   * Close on an Escape that nothing else used. A handler that consumes the
+   * key, such as the tooltip or a context menu, calls preventDefault. In a
+   * text field Escape clears the field. The view stays open but hidden
+   * outside Play mode, and an Escape there belongs to Build or Library.
+   * @param {KeyboardEvent} event
+   */
   function onKey(event) {
-    if (event.key !== 'Escape' || document.querySelector('dialog[open]')) return;
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    if (document.querySelector('dialog[open]') || !document.body.classList.contains('mode-play'))
+      return;
+    const target = /** @type {HTMLElement} */ (event.target);
+    if (target.isContentEditable || target.matches?.('input, textarea, select')) return;
     event.preventDefault();
     close();
   }
