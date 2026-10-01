@@ -11,7 +11,7 @@
  * restoration and dismissal one single owner.
  */
 
-import { textButton } from './buttons.js';
+import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import {
   captioned,
@@ -370,6 +370,9 @@ export function promptModal(title, fields, options = {}) {
         );
         if (extras[field.name]) label.appendChild(extras[field.name]);
         wrappers[field.name] = label;
+        // An advanced field sits in the disclosure, whose summary names it.
+        if (field.section && !field.advanced)
+          body.push(sectionLabel(field.section, { tag: 'h3', className: 'modal__section' }));
         if (field.advanced) {
           if (!advancedBox) {
             advancedBox = el('div', 'modal__advanced-fields');

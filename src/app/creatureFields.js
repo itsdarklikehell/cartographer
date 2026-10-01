@@ -35,6 +35,7 @@ import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear } from './gearFields.js';
 import { readStats, statFields } from './statFields.js';
+import { arrangeFields, syncDependents } from './creatureLayout.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -128,6 +129,19 @@ function tierOptions() {
  * @returns {ModalField[]}
  */
 export function creatureFields(seed, gear, { stats = true } = {}) {
+  const fields = blueprintFields(seed, gear, stats);
+  const casters = casterFields(seed);
+  return arrangeFields(fields, casters);
+}
+
+/**
+ * The blueprint fields before the sections order them, keyed by name.
+ * @param {CreatureSeed} seed
+ * @param {GearOptions} gear
+ * @param {boolean} stats
+ * @returns {ModalField[]}
+ */
+function blueprintFields(seed, gear, stats) {
   const leveled = seed?.level != null;
   const stamp = leveled
     ? defaultEnemyGear(/** @type {number} */ (seed.level), seed.tier ?? 'mob')
@@ -346,9 +360,8 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
                 ? defaultEnemyStats(/** @type {number} */ (seed.level), seed.tier ?? 'mob')
                 : {}),
           ),
-        ).map((f, i) => (i === 0 ? { ...f, newRow: true } : f))
+        )
       : []),
-    ...casterFields(seed),
   ];
 }
 
@@ -369,6 +382,7 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
 export function creatureFieldsChange({ restampStats }) {
   let statsTouched = false;
   return (name, form) => {
+    syncDependents(name, form);
     if (refilterSpellsOnChange(name, form)) return;
     if (!restampStats) return;
     if (name.startsWith('stat-')) {

@@ -784,13 +784,20 @@ the widget:
 | `'button'` | An action button inside the form | `''`. It acts through `onChange` |
 
 Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
-`disabled`, and `advanced`. The text, number, and textarea fields take
+`disabled`, `advanced`, and `section`. The text, number, and textarea fields take
 `placeholder`.
 
 - With `options.wide`, the form lays out two fields in each row. `full: true`
   spans both columns, and `newRow: true` starts a row. `newRow` keeps a pair
   that belongs together (such as weapon and armor) on one row when an odd
   number of fields comes before it.
+- A field with `section` gets a `section-label` heading of that text above
+  it, across both columns. The creature dialog and the Library template form
+  group their fields this way. An advanced field shows no heading, because
+  the disclosure summary names it.
+- `options.submitRequires` names checkbox and text fields. The submit
+  button stays disabled until each named checkbox is ticked and each named
+  text field has text, and a named text field gets `aria-required`.
 - A field marked `advanced` goes into one collapsed `<details>` block,
   captioned by `options.advancedLabel` (default "More options"). The block
   sits where the first advanced field appears, so a plain submit does not

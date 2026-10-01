@@ -27,6 +27,9 @@ interface FieldBase {
   label: string;
   /** In a `wide` dialog, span both columns instead of taking one. */
   full?: boolean;
+  /** Put a section heading with this text before the field. A long form
+   * (the creature dialog) groups its fields under these headings. */
+  section?: string;
   /** Begin a row rather than pairing with the field before it. This keeps a
    * pair that belongs together, for example weapon and armor, on one row when
    * an odd number of fields comes before it. */

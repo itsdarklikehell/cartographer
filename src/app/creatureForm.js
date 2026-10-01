@@ -56,10 +56,10 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   // keep re-stamping until a stat is hand-edited.
   const statsChange = creatureFieldsChange({ restampStats: !existing && !seed?.stats });
   const partyChange = moveToPartyChange(app);
-  // The layout uses two columns, with fields paired by theme: identity
-  // (name, role), then disposition and hit points, full-width notes, the
-  // level and tier, gear, stats, the caster section, then placement. The
-  // map picker's breadcrumb labels run long, so it spans the full width.
+  // The layout uses two columns under section headings: Basics, Combat,
+  // Proficiencies, the collapsed damage and condition defenses,
+  // Spellcasting, then Placement. The map picker's breadcrumb labels run
+  // long, so it spans the full width.
   const values = await promptModal(
     existing ? 'Edit creature' : 'New creature',
     [
@@ -68,11 +68,16 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       ),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
         partyButton: true,
-      }).map((field) => (field.name === 'nodeId' ? { ...field, full: true } : field)),
+      }).map((field, i) => ({
+        ...field,
+        ...(field.name === 'nodeId' ? { full: true } : {}),
+        ...(i === 0 ? { section: 'Placement' } : {}),
+      })),
     ],
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
+      advancedLabel: 'Damage and condition defenses',
       // A blank name keeps Add disabled, so the dialog never closes on a
       // form that the code below then throws away.
       submitRequires: ['name'],

@@ -24,6 +24,7 @@ import {
   textField,
 } from './formFields.js';
 import { buildMultiselect } from './ModalFields.js';
+import { sectionLabel } from './buttons.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -191,6 +192,10 @@ export function buildSpecForm({
     rendered[field.name] = built;
     if (field.disabled) asInput(built.input).disabled = true;
     if (field.hidden) built.node.hidden = true;
+    if (field.section) {
+      flush();
+      rows.push(sectionLabel(field.section, { tag: 'h3', className: 'modal__section' }));
+    }
     if (field.full) {
       flush();
       rows.push(built.node);

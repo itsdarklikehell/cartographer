@@ -29,6 +29,10 @@ function fakeForm(initial) {
     set: (/** @type {string} */ name, /** @type {string | number} */ value) =>
       values.set(name, String(value)),
     setOptions: () => {},
+    disabled: new Map(),
+    setDisabled(/** @type {string} */ name, /** @type {boolean} */ off) {
+      this.disabled.set(name, off);
+    },
   };
 }
 
@@ -252,4 +256,72 @@ test('the Multiattack box fills from the seed and stores only a count of 2 or mo
     'multiattack' in readCreatureFields({ ...baseValues(), multiattack: '1' }, gear),
     false,
   );
+});
+
+test('creatureFields groups the form under section headings, scores before gear', () => {
+  const fields = creatureFields({ level: 2 }, gearOptions(null));
+  const sections = fields.filter((f) => f.section).map((f) => [f.section, f.name]);
+  assert.deepEqual(sections, [
+    ['Basics', 'name'],
+    ['Combat', 'stat-STR'],
+    ['Proficiencies', 'saves'],
+    ['Defenses', 'resist'],
+    ['Spellcasting', 'casterClass'],
+  ]);
+  const names = fields.map((f) => f.name);
+  assert.ok(names.indexOf('stat-AC') < names.indexOf('weapon'));
+  assert.deepEqual(
+    fields.filter((f) => f.advanced).map((f) => f.name),
+    ['resist', 'vulnerable', 'immune', 'conditionImmunities'],
+  );
+  assert.equal(new Set(names).size, names.length, 'no field repeats');
+});
+
+test('creatureFields opens Combat at the weapon when the stat block is left out', () => {
+  const fields = creatureFields({ level: 2 }, gearOptions(null), { stats: false });
+  assert.equal(field(fields, 'weapon').section, 'Combat');
+  assert.equal(
+    fields.some((f) => f.name.startsWith('stat-')),
+    false,
+  );
+});
+
+test('creatureFields disables a dependent field while its parent is blank', () => {
+  const blank = creatureFields({ level: 2 }, gearOptions(null));
+  for (const name of [
+    'hitSaveDC',
+    'hitSaveCondition',
+    'surpriseDie',
+    'multiattackDisadvantage',
+    'casterLevel',
+  ]) {
+    assert.equal(field(blank, name).disabled, true, `${name} starts disabled`);
+  }
+  const set = creatureFields(
+    {
+      level: 2,
+      multiattack: 2,
+      surpriseAttack: { count: 2, sides: 6 },
+      class: 'wizard',
+      weapon: { name: 'Bite', onHitSave: { ability: 'STR', dc: 11, condition: 'Prone' } },
+    },
+    gearOptions(null),
+  );
+  for (const name of ['hitSaveDC', 'surpriseDie', 'multiattackDisadvantage', 'casterLevel']) {
+    assert.equal(field(set, name).disabled, undefined, `${name} starts enabled`);
+  }
+});
+
+test('creatureFieldsChange enables and disables the dependents of an edited field', () => {
+  const onChange = creatureFieldsChange({ restampStats: false });
+  const form = fakeForm({ hitSaveAbility: 'CON', multiattack: '1', surpriseCount: '' });
+  onChange('hitSaveAbility', form);
+  assert.equal(form.disabled.get('hitSaveDC'), false);
+  assert.equal(form.disabled.get('hitSaveCondition'), false);
+  onChange('multiattack', form);
+  assert.equal(form.disabled.get('multiattackDisadvantage'), true);
+  onChange('surpriseCount', form);
+  assert.equal(form.disabled.get('surpriseDie'), true);
+  onChange('maxHP', form);
+  assert.equal(form.disabled.has('maxHP'), false);
 });

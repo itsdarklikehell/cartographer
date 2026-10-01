@@ -1091,6 +1091,16 @@ low, and the higher multiplier on the rated foes can make it too high.
 The creature dialog defines a foe or an NPC. The same dialog opens from
 Build mode, from Play mode, and from the tile menu.
 
+The fields sit under the headings Basics, Combat, Proficiencies,
+Spellcasting, and Placement. The ability scores and AC open the Combat
+section. The damage and condition defenses sit in a collapsed **Damage and
+condition defenses** group, after Proficiencies. A field that depends on
+another field stays disabled until that field has a value: **On hit: DC**
+and **On hit: condition on a fail** need **On hit: save**, **Surprise
+Attack: die** needs a dice count, **Multiattack: attack with
+disadvantage** needs a Multiattack of 2 or more, and **Caster level**
+needs a caster class.
+
 | Field | Default | Meaning |
 | --- | --- | --- |
 | Name (required) | Empty | The name shown in the panels and the log. **Add** stays disabled while it is blank |
