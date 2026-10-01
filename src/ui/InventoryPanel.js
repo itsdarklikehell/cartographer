@@ -1,3 +1,4 @@
+import { armorClass } from '../entities/Armor.js';
 import { addItem } from '../entities/Character.js';
 import { ITEM_TYPES, filterItems, groupItemsByType } from '../entities/Equipment.js';
 import { emptyState } from './buttons.js';
@@ -98,18 +99,17 @@ export function mountInventoryPanel(
   /**
    * @param {Character} next
    * @param {InventoryEvent} [event] the interaction that produced `next`, when loggable
-   * @param {'all' | 'equipment'} [scope] which hosts the change can be seen in
    */
-  function commit(next, event, scope = 'all') {
+  function commit(next, event) {
     current = next;
     shown = { ...shown, character: next };
     onChange(next);
     if (event) onEvent(event, next);
-    // Equipping never changes a row, but adding or spending an item
-    // changes what the slot pickers can offer. The narrow scope runs one
-    // way for that reason.
+    // An equip changes the "Equipped" mark on the item tiles, and adding or
+    // spending an item changes what the slot pickers can offer, so every
+    // commit refreshes both hosts.
     renderEquipment();
-    if (scope === 'all') refreshList();
+    refreshList();
   }
 
   /** This is the character a row or a slot picker writes against, read
@@ -134,7 +134,7 @@ export function mountInventoryPanel(
     equipmentHost.innerHTML = '';
     equipmentHost.appendChild(
       current
-        ? buildEquipment(liveCharacter, (next) => commit(next, undefined, 'equipment'), canPlay())
+        ? buildEquipment(liveCharacter, (next) => commit(next), canPlay())
         : emptyState('No character selected.'),
     );
   }
@@ -194,7 +194,7 @@ export function mountInventoryPanel(
       view.givingId = null;
       view.adjustingId = null;
       refreshList();
-      // In the sidebar the pane sits under the tiles, so it scrolls into view.
+      // In a narrow full sheet the pane sits under the tiles, so it scrolls into view.
       list?.querySelector('.inventory-panel__detail')?.scrollIntoView({ block: 'nearest' });
       /** @type {HTMLElement | null | undefined} */ (
         list?.querySelector(`.inventory-panel__tile[data-item="${CSS.escape(item.id)}"]`)
@@ -328,6 +328,9 @@ export function mountInventoryPanel(
         shown.editable === canEdit()
       ) {
         shown = { ...shown, character: next };
+        // The paperdoll plate prints the name and the AC, and the AC also
+        // reads conditions, ability scores, base AC, and feature choices.
+        if (prev.name !== next.name || armorClass(prev) !== armorClass(next)) renderEquipment();
         return;
       }
       render();

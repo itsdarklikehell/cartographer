@@ -67,7 +67,10 @@ function slotCard(getCharacter, commit, playable, slot) {
   card.type = 'button';
   card.dataset.slot = slot.key;
   card.disabled = !playable || !!bothHands;
-  card.setAttribute('aria-label', `${slot.label}: ${name}${stat ? `, ${stat}` : ''}. Change`);
+  card.setAttribute(
+    'aria-label',
+    `${slot.label}: ${name}${stat ? `, ${stat}` : ''}${card.disabled ? '' : '. Change'}`,
+  );
   card.addEventListener('click', async () => {
     const picked = await pickItem(getCharacter(), slot, card);
     if (picked === undefined) return;
@@ -125,7 +128,8 @@ function pickItem(character, slot, opener) {
       body: items.length ? [list] : [hint, list],
       actions: [
         textButton('Cancel', () => close('cancel')),
-        textButton('Equip', () => close('equip'), { variant: 'primary' }),
+        // A submit button, so Enter on a radio equips the checked item.
+        textButton('Equip', undefined, { variant: 'primary', type: 'submit', value: 'equip' }),
       ],
       initialFocus: radios.find((r) => r.checked) ?? radios[0],
     }),
