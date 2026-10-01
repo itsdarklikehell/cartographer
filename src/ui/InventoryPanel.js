@@ -7,6 +7,7 @@ import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
+import { shownItem, tileText } from '../view/ItemTiles.js';
 import { capitalize, slugify } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -79,6 +80,7 @@ export function mountInventoryPanel(
     /** @type {string | null} */ editingId: null,
     /** @type {string | null} */ givingId: null,
     /** @type {string | null} */ adjustingId: null,
+    /** @type {string | null} The item tile the GM picked for the detail pane. */ chosenId: null,
   };
 
   /** @type {(() => void) | null} Refill the mounted Inventory tab's item list. */
@@ -142,13 +144,13 @@ export function mountInventoryPanel(
    * open state lives in `collapsedTypes`, so folding a heading away
    * survives the list refills that a consume or a give triggers.
    * @param {{ type: ItemType, items: InventoryItem[] }} group
-   * @param {boolean} playable
+   * @param {string | null} shownId the item that the detail pane shows
    * @returns {HTMLElement}
    */
-  function buildGroup(group, playable) {
+  function buildGroup(group, shownId) {
     const label = capitalize(group.type);
-    const rows = el('div', 'inventory-panel__group-rows');
-    for (const item of group.items) rows.appendChild(buildRow(item, playable, rowContext));
+    const rows = el('div', 'inventory-panel__group-rows inventory-panel__tiles');
+    for (const item of group.items) rows.appendChild(buildTile(item, item.id === shownId));
 
     const { head } = buildDisclosure({
       label,
@@ -161,6 +163,44 @@ export function mountInventoryPanel(
       },
     });
     return el('div', 'inventory-panel__group', head, rows);
+  }
+
+  /**
+   * One item tile: the name, one short stat line, a quantity badge, and an
+   * equipped mark. A click shows the item in the detail pane, which keeps
+   * the actions. The list refill rebuilds the tiles, so focus moves to the
+   * new tile of the same item.
+   * @param {InventoryItem} item
+   * @param {boolean} inPane true for the item in the detail pane
+   * @returns {HTMLElement}
+   */
+  function buildTile(item, inPane) {
+    const text = tileText(liveCharacter(), item);
+    const tile = el(
+      'button',
+      'inventory-panel__tile',
+      el('span', 'inventory-panel__tile-name', text.name),
+      text.stat ? el('span', 'inventory-panel__tile-stat', text.stat) : null,
+      text.count ? el('span', 'inventory-panel__tile-count', text.count) : null,
+      text.equipped ? el('span', 'inventory-panel__tile-worn', 'Equipped') : null,
+    );
+    tile.type = 'button';
+    tile.dataset.item = item.id;
+    tile.setAttribute('aria-pressed', String(inPane));
+    tile.addEventListener('click', () => {
+      const list = tile.closest('.inventory-panel__list');
+      view.chosenId = item.id;
+      view.editingId = null;
+      view.givingId = null;
+      view.adjustingId = null;
+      refreshList();
+      // In the sidebar the pane sits under the tiles, so it scrolls into view.
+      list?.querySelector('.inventory-panel__detail')?.scrollIntoView({ block: 'nearest' });
+      /** @type {HTMLElement | null | undefined} */ (
+        list?.querySelector(`.inventory-panel__tile[data-item="${CSS.escape(item.id)}"]`)
+      )?.focus();
+    });
+    return tile;
   }
 
   /**
@@ -200,7 +240,16 @@ export function mountInventoryPanel(
         );
         return;
       }
-      for (const group of groupItemsByType(visible)) list.appendChild(buildGroup(group, playable));
+      const groups = groupItemsByType(visible);
+      const paneItem = shownItem(
+        groups.flatMap((g) => g.items),
+        view.chosenId,
+      );
+      const tiles = el('div', 'inventory-panel__groups');
+      for (const group of groups) tiles.appendChild(buildGroup(group, paneItem?.id ?? null));
+      const detail = el('div', 'inventory-panel__detail');
+      if (paneItem) detail.appendChild(buildRow(paneItem, playable, rowContext));
+      list.appendChild(el('div', 'inventory-panel__browse', tiles, detail));
     };
     refillList = fillList;
     fillList();

@@ -2668,8 +2668,13 @@ hand, and a pair of daggers can fill both hands. A two-handed weapon in the
 main hand empties the off hand. The Off hand card reads "Both hands on" the weapon, and it stays closed
 until the weapon comes out of the main hand.
 
-The Inventory tab has the item list, a search box over names and
-descriptions, a type filter, and one collapsible heading per item type.
+The Inventory tab has a search box over names and descriptions, a type
+filter, and one collapsible heading per item type. Under each heading, every
+item is a tile with its name, one short stat line, a badge such as "x41" for
+a stack, and an "Equipped" mark for an item in a slot. Click a tile to show
+the item in the detail pane, which has its full effects, its description,
+and the edit, give, count, use, and discard controls. The pane sits under
+the tiles in the sidebar and beside them in the full sheet.
 
 | Item field | Values |
 | --- | --- |
