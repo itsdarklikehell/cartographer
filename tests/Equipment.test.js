@@ -262,7 +262,7 @@ test('itemEffects shows the property badges: versatile dice, flags, and range', 
         damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
       }),
     ),
-    ['1d8 slashing (STR)', 'versatile 1d10 slashing', 'versatile'],
+    ['1d8 slashing (STR)', 'versatile 1d10 slashing'],
   );
   assert.deepEqual(
     itemEffects(

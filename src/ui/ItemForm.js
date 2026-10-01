@@ -1,3 +1,4 @@
+import { capitalize } from '../util/text.js';
 import { ABILITY_SCORES } from '../entities/Character.js';
 import { setTip } from './Tooltip.js';
 import { ITEM_TYPES, ARMOR_WEIGHTS, SHIELD_AC, WEAPON_TYPES } from '../entities/Equipment.js';
@@ -80,8 +81,8 @@ export function buildItemForm({
   // The helmet, gloves, and greaves slots are not part of 5e, so their type
   // names say so in the picker, and a note under the AC row says it again.
   const typeLabel = (/** @type {string} */ t) => {
-    if (t === 'gear') return 'gear (misc.)';
-    return HOUSE_RULE_TYPES.includes(t) ? `${t} (house rule)` : t;
+    if (t === 'gear') return 'Gear (misc.)';
+    return HOUSE_RULE_TYPES.includes(t) ? `${capitalize(t)} (house rule)` : capitalize(t);
   };
   const typeSelect = select(
     ITEM_TYPES.map((t) => ({ value: t, label: typeLabel(t) })),

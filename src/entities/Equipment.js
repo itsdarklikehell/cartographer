@@ -439,10 +439,12 @@ export function itemEffects(item) {
   if (WEAPON_TYPES.includes(type) && item.damage?.length) {
     const dice = formatDamage(item.damage);
     if (dice) parts.push(`${dice} (${abilityLabel(item)})`);
-    if (hasWeaponProperty(item, 'versatile') && item.versatileDamage?.length) {
-      parts.push(`versatile ${formatDamage(item.versatileDamage)}`);
-    }
-    if (item.properties?.length) parts.push(item.properties.join(', '));
+    const versatile = hasWeaponProperty(item, 'versatile') && item.versatileDamage?.length;
+    if (versatile) parts.push(`versatile ${formatDamage(item.versatileDamage ?? [])}`);
+    // The versatile damage part already names the property, so the list
+    // leaves it out rather than print "versatile" twice.
+    const properties = (item.properties ?? []).filter((p) => !(versatile && p === 'versatile'));
+    if (properties.length) parts.push(properties.join(', '));
     if (weaponKind(item) === 'ranged' || hasWeaponProperty(item, 'thrown')) {
       if (item.range) parts.push(`range ${item.range.normal}/${item.range.long}`);
     }

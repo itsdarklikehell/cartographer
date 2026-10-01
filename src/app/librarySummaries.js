@@ -1,5 +1,7 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { riderText } from '../entities/Riders.js';
+import { crLabel } from '../data/challenge.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -17,7 +19,11 @@ import { riderText } from '../entities/Riders.js';
  * @returns {string} */
 export function spellSummary(spell) {
   const level = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-  return [`${level} ${spell.school}`, spell.effect.kind, spell.concentration ? 'concentration' : '']
+  return [
+    `${level} ${capitalize(spell.school)}`,
+    spell.effect.kind,
+    spell.concentration ? 'concentration' : '',
+  ]
     .filter(Boolean)
     .join(' | ');
 }
@@ -50,15 +56,21 @@ export function featSummary(feat) {
 }
 
 /** The one-line summary for a creature row. A foe leads with its combat
- * numbers, and everyone else with who they are.
+ * numbers, and everyone else with who they are. A rated foe shows its
+ * challenge rating first, because the encounter budget reads the rating,
+ * and an unrated foe shows its level and tier instead.
  * @param {CreatureTemplate} entry
  * @returns {string} */
 export function creatureSummary(entry) {
   if (entry.disposition === 'hostile') {
+    const cr = entry.cr != null ? crLabel(entry.cr) : '';
+    const rank = cr
+      ? `CR ${cr}, `
+      : entry.level != null
+        ? `level ${entry.level} ${entry.tier}, `
+        : '';
     return [
-      entry.level != null
-        ? `${entry.maxHP} HP, level ${entry.level} ${entry.tier}`
-        : `${entry.maxHP} HP`,
+      `${rank}${entry.maxHP} HP`,
       entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
     ]
       .filter(Boolean)

@@ -1,3 +1,4 @@
+import { capitalize } from '../util/text.js';
 import { CLASS_LIST } from '../entities/Classes.js';
 import { setTip } from './Tooltip.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
@@ -62,11 +63,19 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     ariaLabel: 'Spell name',
   });
 
+  // The select values stay the stored words, and the labels read as
+  // sentence case ("Cantrip", "Evocation").
   const levelSelect = select(
-    ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+    ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'].map((value) => ({
+      value,
+      label: value === '0' ? 'Cantrip' : value,
+    })),
     String(spell?.level ?? 0),
   );
-  const schoolSelect = select([...SPELL_SCHOOLS], spell?.school ?? SPELL_SCHOOLS[0]);
+  const schoolSelect = select(
+    SPELL_SCHOOLS.map((value) => ({ value, label: capitalize(value) })),
+    spell?.school ?? SPELL_SCHOOLS[0],
+  );
 
   // Class list: a checkbox per playable class. The ticked set is the spell's
   // available spell lists.
@@ -128,7 +137,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
 
   // --- Effect section: swaps controls by kind -----------------------------
-  const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
+  const kindSelect = select(
+    SPELL_EFFECT_KINDS.map((value) => ({ value, label: capitalize(value) })),
+    spell?.effect.kind ?? 'utility',
+  );
   const saveEffect = spell?.effect.kind === 'save' ? spell.effect : null;
   // The two kinds that put a chip on a creature. Both keep a condition name,
   // so both fill the same condition picker.
