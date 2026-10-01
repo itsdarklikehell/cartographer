@@ -783,6 +783,8 @@ On a window wider than about 1,090 pixels, Play mode fits the screen and the pag
 
 **Hide panels** collapses the sidebar and gives the map the full width.
 
+On a phone-width window, Play mode shows one area at a time. A bar at the bottom of the screen picks the area: **Map** shows the map with the Session tab under it, **Party** shows the Party card and the dice tray, and **Sheet**, **Story**, and **Log** show that sidebar tab. The bar takes the place of the sidebar tabs and the **Hide panels** button there. A click on a row of the Party card opens the Sheet view.
+
 The World panel shows the node tree. A GM sees every node, and a player
 sees only the nodes that the party discovered. A discovered node has at
 least one revealed tile, or it is where the party stands.

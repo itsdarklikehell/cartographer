@@ -952,6 +952,16 @@ character. Both locks come from `createHeartbeatLock` in
 Player view. `view/CharacterClaim.js` claims a per-character key from
 `characterLockKey` and yields by dropping to spectator.
 
+### phoneViews.js
+
+`phoneViews.js` mounts the bottom bar of Play mode at phone width. It runs
+after `sessionControls.js`, because it reads the sidebar tabs. The views
+and the tab that each one opens come from the pure `view/PhoneViews.js`.
+A press on a view sets `body[data-phone-view]` and clicks the view's tab,
+and `styles/play-shell.css` hides the other areas from that attribute. The
+bar listens to the tab strip as well, so a tab that opens from code, such
+as the Sheet tab after a click on a party row, moves the bar to its view.
+
 ### diceWiring.js
 
 `diceWiring.js` owns the dice tray and the `rollDice` action, which a weapon

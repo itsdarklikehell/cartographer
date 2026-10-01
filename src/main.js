@@ -24,6 +24,7 @@ import { wireStory } from './app/storyWiring.js';
 import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
 import { wireHeaderMenu } from './app/headerMenu.js';
+import { wirePhoneViews } from './app/phoneViews.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
@@ -122,6 +123,7 @@ function start() {
   // straight away. That refreshes four panels and re-points the character
   // sheet, so everything it touches must already be registered.
   wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
+  wirePhoneViews(); // phone bottom bar; follows the sidebar tabs wired just above
   wireShortcuts(app);
   // The mode comes first, so a tab of the Build rail opens on a shown rail.
   if (reloadView?.mode) app.actions.setMode(reloadView.mode);
