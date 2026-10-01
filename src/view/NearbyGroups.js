@@ -7,10 +7,11 @@ import { isDefeated } from '../entities/Creature.js';
  * One line of the Nearby encounters list. Standing foes that share a name
  * form one group. Every defeated foe goes into one group with the key
  * `DEFEATED_KEY`. `distance` is the distance in tiles of the nearest member,
- * or null when no member is placed on the party's map. `current` and `max`
- * add up the HP of the members.
+ * or null when no member is placed on the party's map. `unplaced` is true
+ * when a member has no place at all, which means it shows on every map.
+ * `current` and `max` add up the HP of the members.
  * @typedef {{ key: string, name: string, title: string, members: Creature[],
- *   distance: number | null, current: number, max: number }} NearbyGroup
+ *   distance: number | null, unplaced: boolean, current: number, max: number }} NearbyGroup
  */
 
 /** The key of the group that collects every defeated foe. */
@@ -31,12 +32,15 @@ export function distanceTo(creature, position) {
 }
 
 /**
- * The distance as the list shows it.
+ * The distance as the list shows it. A group with no member on this map
+ * reads "Not on this map", unless a member is unplaced. An unplaced foe
+ * shows on every map, so the line shows no distance for it.
  * @param {number | null} distance
+ * @param {boolean} [unplaced]
  * @returns {string}
  */
-export function distanceText(distance) {
-  if (distance === null) return 'Not on this map';
+export function distanceText(distance, unplaced = false) {
+  if (distance === null) return unplaced ? '' : 'Not on this map';
   return distance === 1 ? '1 tile away' : `${distance} tiles away`;
 }
 
@@ -96,6 +100,7 @@ function group(key, name, title, members, position) {
     title,
     members,
     distance: distances.length > 0 ? Math.min(...distances) : null,
+    unplaced: members.some((c) => !c.location),
     current: members.reduce((sum, c) => sum + Math.max(0, c.currentHP), 0),
     max: members.reduce((sum, c) => sum + c.maxHP, 0),
   };

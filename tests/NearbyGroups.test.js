@@ -25,6 +25,24 @@ test('distanceText names tiles in the singular and plural', () => {
   assert.equal(distanceText(1), '1 tile away');
   assert.equal(distanceText(4), '4 tiles away');
   assert.equal(distanceText(null), 'Not on this map');
+  assert.equal(distanceText(null, false), 'Not on this map');
+  assert.equal(distanceText(null, true), '', 'an unplaced foe shows on every map');
+  assert.equal(distanceText(3, true), '3 tiles away');
+});
+
+test('groupNearby marks a group with an unplaced member', () => {
+  const groups = groupNearby(
+    [foe('a', 'Ghost', null), foe('b', 'Wolf', '1,1', 7, 7, 'other'), foe('c', 'Imp', '6,5')],
+    here,
+  );
+  assert.deepEqual(
+    groups.map((g) => [g.title, g.distance, g.unplaced]),
+    [
+      ['Imp', 1, false],
+      ['Ghost', null, true],
+      ['Wolf', null, false],
+    ],
+  );
 });
 
 test('groupNearby groups copies by name and adds up their HP', () => {

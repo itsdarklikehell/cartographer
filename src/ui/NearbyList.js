@@ -19,10 +19,11 @@ import { hpBand } from '../view/ViewRole.js';
  * of each member below it, built by a list panel from `list`. A player
  * sees each line as plain text, with the coarse HP band instead of the bar.
  *
- * `update()` repaints only when the groups, their members, the GM flag,
- * the open line, or `list.dependsOn` change. Otherwise it moves the HP
- * bars and asks the open list to update, which keeps the amount a GM typed
- * into a member row.
+ * `update()` repaints only when the groups, their order, their members, the
+ * GM flag, the open line, or `list.dependsOn` change. Otherwise it moves
+ * the HP bars, the HP bands, and the distances in place and asks the open
+ * list to update, which keeps the amount a GM typed into a member row. A
+ * party step changes the distances, so they stay out of the signature.
  * @param {HTMLElement} container
  * @param {{
  *   getRows: () => Creature[],
@@ -44,8 +45,9 @@ export function mountNearbyList(container, opts) {
   let signature = null;
   /** @type {NearbyGroup[]} */
   let groups = [];
-  /** Each line's HP bar update, by group key. @type {Map<string, (g: NearbyGroup) => void>} */
-  let bars = new Map();
+  /** Each line's in-place update of its HP and distance, by group key.
+   * @type {Map<string, (g: NearbyGroup) => void>} */
+  let lines = new Map();
   /** @type {{ update: () => void } | null} */
   let open = null;
 
@@ -55,7 +57,7 @@ export function mountNearbyList(container, opts) {
       gm,
       expanded,
       opts.list.dependsOn?.() ?? null,
-      groups.map((g) => [g.key, g.distance, g.members.map((m) => m.id)]),
+      groups.map((g) => [g.key, g.members.map((m) => m.id)]),
     ]);
 
   function update() {
@@ -64,7 +66,7 @@ export function mountNearbyList(container, opts) {
     if (!groups.some((g) => g.key === expanded)) expanded = null;
     const next = structure(gm);
     if (next === signature) {
-      for (const g of groups) bars.get(g.key)?.(g);
+      for (const g of groups) lines.get(g.key)?.(g);
       open?.update();
       return;
     }
@@ -76,7 +78,7 @@ export function mountNearbyList(container, opts) {
   function paint(gm) {
     const memo = captureFocus(root, document.activeElement);
     root.innerHTML = '';
-    bars = new Map();
+    lines = new Map();
     open = null;
     if (groups.length === 0) root.appendChild(emptyState(opts.emptyMessage));
     for (const g of groups) root.appendChild(gm ? gmLine(g) : playerLine(g));
@@ -105,14 +107,24 @@ export function mountNearbyList(container, opts) {
 
   /** @param {NearbyGroup} g @returns {HTMLElement} */
   function playerLine(g) {
+    const band = el('span', 'u-muted', hpBand(g.current, g.max));
+    const distance = distanceSpan(g);
+    lines.set(g.key, (next) => {
+      band.textContent = hpBand(next.current, next.max);
+      distance.textContent = distanceText(next.distance, next.unplaced);
+    });
     return el(
       'div',
       'encounter-panel__line u-row u-g2',
       el('span', 'encounter-panel__line-name', g.title),
-      el('span', 'u-muted', hpBand(g.current, g.max)),
-      el('span', 'encounter-panel__distance u-muted', distanceText(g.distance)),
+      band,
+      distance,
     );
   }
+
+  /** @param {NearbyGroup} g @returns {HTMLElement} */
+  const distanceSpan = (g) =>
+    el('span', 'encounter-panel__distance u-muted', distanceText(g.distance, g.unplaced));
 
   /** @param {NearbyGroup} g @returns {HTMLElement} */
   function gmLine(g) {
@@ -129,14 +141,17 @@ export function mountNearbyList(container, opts) {
     button.dataset.focusKey = `nearby:${g.key}`;
     button.setAttribute('aria-expanded', String(isOpen));
     if (isOpen) button.setAttribute('aria-controls', slotId);
-    if (!defeated) {
+    if (defeated) {
+      button.appendChild(el('span', 'encounter-panel__distance u-muted', ''));
+    } else {
       const bar = buildStatBar(g, { modifier: 'hp', label: 'HP', compact: true, band: true });
-      button.appendChild(bar.element);
-      bars.set(g.key, (next) => bar.update(next, 0));
+      const distance = distanceSpan(g);
+      button.append(bar.element, distance);
+      lines.set(g.key, (next) => {
+        bar.update(next, 0);
+        distance.textContent = distanceText(next.distance, next.unplaced);
+      });
     }
-    button.appendChild(
-      el('span', 'encounter-panel__distance u-muted', defeated ? '' : distanceText(g.distance)),
-    );
     button.addEventListener('click', () => {
       expanded = isOpen ? null : g.key;
       update();
