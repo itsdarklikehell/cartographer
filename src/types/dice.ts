@@ -29,8 +29,7 @@ export type RandomFn = () => number;
 
 /** Options for a roll that a caller loads into the dice tray. */
 export interface TrayRollOptions {
-  /** Roll without expanding the tray, against the target the GM typed, and
-   * put the GM's dice and modifier back afterward. */
+  /** Roll without expanding the tray, against the target the GM typed. */
   keep?: boolean;
 }
 

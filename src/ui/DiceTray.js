@@ -6,6 +6,7 @@ import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { capitalize } from '../util/text.js';
 import { parseTarget, rollTarget } from '../dice/TrayTarget.js';
+import { resultSummary } from '../dice/ResultLine.js';
 
 /** @type {import('../types/dice.js').RollMode[]} */
 const MODES = ['normal', 'advantage', 'disadvantage'];
@@ -20,14 +21,15 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * the app records it in the travelogue.
  *
  * `rollSelection` rolls the tray programmatically, for example for a weapon
- * attack from the initiative panel. It loads the given counts and modifier
- * into the tray, expands the tray so the result is visible, and rolls
- * against the given target. That target applies to this roll only, and the
- * target field keeps the value the GM typed. It does not fire `onRoll`, because such callers log the roll under
- * their own name. With `keep`, it rolls without expanding the tray, uses the
- * target that the GM typed, and puts the GM's dice and modifier back
- * afterward. A save or a check from the character sheet rolls this way, so
- * the GM can type a DC once and roll several checks against it.
+ * attack from the initiative panel. It rolls the given counts and modifier
+ * against the given target and shows the result. The dice, the modifier, and
+ * the target field keep what the GM set, so the GM's next Roll does not
+ * repeat the attack. It does not fire `onRoll`, because such callers log the
+ * roll under their own name. Without `keep`, it expands the tray so the
+ * result is visible. With `keep`, the tray stays closed and the roll uses
+ * the target that the GM typed. A save or a check from the character sheet
+ * rolls this way, so the GM can type a DC once and roll several checks
+ * against it.
  * @param {HTMLElement} container
  * @param {{ onRoll?: (text: string) => void }} [opts]
  * @returns {{
@@ -42,10 +44,12 @@ export function mountDiceTray(container, opts = {}) {
 
   const root = el('div', 'dice-tray');
   const disclosure = buildDisclosure({
-    headChildren: [icon('d20', { size: 28, className: 'dice-tray__d20' })],
+    headChildren: [
+      icon('d20', { size: 28, className: 'dice-tray__d20' }),
+      el('span', 'dice-tray__title', 'Roll dice'),
+    ],
     body: root,
     className: 'dice-tray__summary',
-    ariaLabel: 'Dice tray',
   });
   container.appendChild(disclosure.head);
 
@@ -168,7 +172,20 @@ export function mountDiceTray(container, opts = {}) {
     if (target !== null) {
       text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
     }
-    resultEl.textContent = text;
+    const summary = resultSummary(result, target);
+    const verdict =
+      summary.verdict === null
+        ? null
+        : el(
+            'span',
+            `dice-tray__verdict${result.total >= (target ?? 0) ? '' : ' dice-tray__verdict--fail'}`,
+            summary.verdict,
+          );
+    resultEl.replaceChildren(
+      el('span', 'dice-tray__total', String(summary.total)),
+      el('span', 'dice-tray__detail u-muted', summary.detail),
+      verdict ?? '',
+    );
     resultEl.hidden = false;
     return { result, text };
   }
@@ -179,10 +196,10 @@ export function mountDiceTray(container, opts = {}) {
   return {
     getSelection: () => selection,
     rollSelection: (next, target = null, { keep = false } = {}) => {
-      // With `keep`, the roll borrows the tray. The dice and the modifier the
-      // GM set up come back after the roll, the target field is the target of
-      // this roll, and the tray stays closed. Without `keep`, the roll uses the
-      // target it passed, and the field still keeps the GM's typed value.
+      // The roll borrows the tray. The dice and the modifier the GM set up
+      // come back after the roll, so the GM's next Roll is the GM's own dice.
+      // With `keep`, the target field is the target of this roll and the tray
+      // stays closed. Without `keep`, the roll uses the target it passed.
       const saved = { counts: { ...selection.counts }, modifier: selection.modifier };
       for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
       selection.modifier = next.modifier ?? 0;
@@ -191,10 +208,7 @@ export function mountDiceTray(container, opts = {}) {
       // caller that names one uses it for this roll only: the toggle goes
       // back to the GM's own choice afterward.
       selection.mode = next.mode ?? standingMode;
-      if (!keep) {
-        for (const refresh of refreshers) refresh();
-        disclosure.setExpanded(true);
-      }
+      if (!keep) disclosure.setExpanded(true);
       // The restore runs even when the roll throws, so a failed programmatic
       // roll cannot leave the toggle showing a mode the GM never picked.
       try {
@@ -202,10 +216,8 @@ export function mountDiceTray(container, opts = {}) {
         return { ...performRoll(used), target: used };
       } finally {
         selection.mode = standingMode;
-        if (keep) {
-          for (const die of DIE_TYPES) selection.counts[die] = saved.counts[die] ?? 0;
-          selection.modifier = saved.modifier;
-        }
+        for (const die of DIE_TYPES) selection.counts[die] = saved.counts[die] ?? 0;
+        selection.modifier = saved.modifier;
         for (const refresh of refreshers) refresh();
       }
     },

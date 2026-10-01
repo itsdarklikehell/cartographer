@@ -2785,7 +2785,7 @@ the round, such as "Round 2".
 
 ### Dice tray
 
-The Dice Tray collapses to a d20 icon. The full tray builds a roll from
+The Dice Tray collapses to a d20 icon with the label **Roll dice**. The full tray builds a roll from
 steppers, and it does not read typed dice expressions.
 
 | Control | Values |
@@ -2796,16 +2796,19 @@ steppers, and it does not read typed dice expressions.
 | Target / DC | An optional number to meet or beat. Each roll then reports success or failure. A save or a skill rolled from the character sheet uses it as the DC |
 | Roll | Rolls the selection |
 
-The tray shows the latest result, with each face and the total. Every roll
+The tray shows the latest result. The total is large, and the dice faces and
+the modifier sit beside it in small type, as in "d20 (5) + 3". A roll with a
+target ends with a line such as "vs 15: fail". Every roll
 also goes into the Travelogue under the name of the roller. The name is
 "The GM" for a GM tab, the character name for a bound tab, and "A player"
 for a spectator tab.
 
-An attack or a death save from the app loads the tray, opens it, and rolls
-it. An attack judges against the AC of its target for that roll only, and
-the Target / DC field keeps the value that you typed. A save or a
-skill from the character sheet rolls in the tray without opening it, and it
-puts your dice and modifier back after the roll. A roll that names its own
+An attack or a death save from the app opens the tray and shows its roll
+there. The dice counts and the modifier keep what you set, so your next
+**Roll** is your own roll and not a repeat of the attack. An attack judges
+against the AC of its target for that roll only, and the Target / DC field
+keeps the value that you typed. A save or a skill from the character sheet
+rolls in the tray without opening it. A roll that names its own
 mode uses that mode for one roll only, and it leaves the d20 mode as it was.
 
 ## The library

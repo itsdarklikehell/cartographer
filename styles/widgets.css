@@ -102,14 +102,46 @@
 }
 
 .dice-tray__result {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
   margin-top: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
+  min-height: 1.5rem;
+}
+
+/* The total reads first and large, so the GM can call it out from across the
+   table. The dice and the modifier sit beside it in small type. */
+.dice-tray__total {
+  font-family: var(--font-mono);
+  font-size: var(--text-display);
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.dice-tray__detail {
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  white-space: pre-wrap;
-  min-height: 1.5rem;
+}
+
+.dice-tray__verdict {
+  flex-basis: 100%;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--success);
+}
+
+.dice-tray__verdict--fail {
+  color: var(--danger);
+}
+
+.dice-tray__title {
+  font-size: var(--text-label);
+  font-weight: 600;
 }
 
 /* ==========================================================================
