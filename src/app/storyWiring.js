@@ -197,6 +197,9 @@ export function wireStory(app) {
     onEdit: (npc) => creatureForm(app, npc, null),
     onToggleCompanion: (npc) => toggleCompanion(app, npc),
     onBringToParty: (npc) => bringToParty(app, npc),
+    // The chips and pips show only for an NPC in the running fight, or one
+    // that still has a condition or exhaustion.
+    inFight: (npc) => state.combat?.order.some((p) => p.id === npc.id) ?? false,
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
   });

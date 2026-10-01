@@ -2710,13 +2710,19 @@ met until the party lands on its new tile. A move onto the party tile keeps
 the NPC met, whether it comes from **Move to the party** in the edit dialog
 or from the buttons below.
 
-In a GM tab, each row of the NPCs panel has two more buttons. The flag
-button, "travels with the party", makes the NPC a companion. A companion
-moves to the party tile each time the party moves, into and out of child
-maps too. A companion at 0 HP stays behind. Turning the flag on also brings
-the NPC to the party, and turning it off leaves the NPC where it stands.
-Each change writes a GM-only travelogue line. The arrow button, "Bring to
-the party", moves the NPC to the party tile once.
+In a GM tab, each row of the NPCs panel has two more controls. The
+**Travels with party** toggle makes the NPC a companion, and it shows a
+check mark while it is on. A companion moves to the party tile each time
+the party moves, into and out of child maps too. A companion at 0 HP stays
+behind. Turning the toggle on also brings the NPC to the party, and turning
+it off leaves the NPC where it stands. Each change writes a GM-only
+travelogue line. The arrow button, "Bring to the party", moves the NPC to
+the party tile once.
+
+Long notes show two lines, and **More** shows the rest. The condition
+chips and the exhaustion pips of an NPC row show only while the NPC is in
+the running fight, or while it still has a condition or a level of
+exhaustion.
 
 An NPC stands on any map at a column and a row, or it stays unplaced. An
 unplaced NPC appears everywhere. Columns and rows count from 1, the same as

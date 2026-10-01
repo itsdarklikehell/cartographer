@@ -192,6 +192,37 @@
   opacity: 0.7;
 }
 
+/* Long notes show two lines until the GM presses More. */
+.npc-panel__notes--folded {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.npc-panel__more {
+  align-self: flex-start;
+  padding: 0 var(--space-1);
+  min-height: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: var(--text-label);
+  text-decoration: underline;
+}
+
+/* The "Travels with party" toggle reads as on while it is pressed. */
+.npc-panel__companion {
+  align-self: flex-start;
+  font-size: var(--text-label);
+}
+
+.npc-panel__companion[aria-pressed='true'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .npc-panel__location {
   font-size: var(--text-label);
 }

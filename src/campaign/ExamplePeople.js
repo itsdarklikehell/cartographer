@@ -21,7 +21,7 @@ export function people(at) {
       disposition: 'neutral',
       met: true,
       notes:
-        'Blunt and impatient. He came west from the Eastmarch with six crates sealed in gray wax and a fee paid twice over not to open them. They go to "the Castellan, Thornhold". He does not know what is inside, and he does not want to know. He points anyone capable at Bram in Briarwick. He pays each guard 25 gp when the caravan reaches Thornhold, and 25 gp more if crate four arrives with its wax unbroken. He can ride along with the party on the escort: press the flag button on his NPC card, Travels with the party.',
+        'Blunt and impatient. He came west from the Eastmarch with six crates sealed in gray wax and a fee paid twice over not to open them. They go to "the Castellan, Thornhold". He does not know what is inside, and he does not want to know. He points anyone capable at Bram in Briarwick. He pays each guard 25 gp when the caravan reaches Thornhold, and 25 gp more if crate four arrives with its wax unbroken. He can ride along with the party on the escort: press Travels with party on his NPC card.',
       stats: { STR: 12, CON: 14, CHA: 12 },
       location: at('dorn'),
     }),

@@ -717,13 +717,13 @@ Build mode and click **New NPC here**.
 ### Bring an NPC along
 
 1. Open the **Story** tab and find the NPC in the **NPCs** panel.
-2. Click the flag button, "travels with the party". The NPC moves to the
-   party tile.
+2. Click **Travels with party** on its card. The NPC moves to the party
+   tile.
 3. Move the party as usual. The NPC follows each move.
-4. When the NPC leaves the party, click the flag button again. The NPC
-   stays on the tile where it stands.
+4. When the NPC leaves the party, click **Travels with party** again. The
+   NPC stays on the tile where it stands.
 
-To move an NPC to the party once, without the flag, click the arrow button,
+To move an NPC to the party once, without the toggle, click the arrow button,
 "Bring to the party".
 
 ### Reveal a handout

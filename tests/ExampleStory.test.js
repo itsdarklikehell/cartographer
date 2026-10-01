@@ -215,7 +215,7 @@ test('the quest rewards pay what the story promises and bring the party near lev
 test('Dorn can join the escort as a companion, but starts at the crossroads', () => {
   const dorn = creature('caravan-master-dorn');
   assert.equal(dorn.travelsWithParty, undefined);
-  assert.match(dorn.notes, /Travels with the party/);
+  assert.match(dorn.notes, /Travels with party/);
 });
 
 test('King Ostrand alone takes legendary actions, and his notes open on the wardstone rule', () => {

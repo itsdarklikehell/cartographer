@@ -1,10 +1,11 @@
 import { settleHPBuffs } from '../entities/HPBuffs.js';
-import { badge } from './buttons.js';
+import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountListPanel } from './listPanel.js';
+import { foldsNotes, showsCombatBars } from '../view/NpcCard.js';
 
 /** @typedef {import('../types/creature.js').Creature} NPC */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -41,7 +42,13 @@ export function keepPairs(label) {
  * shows it. Without the callback the row has no chips, which is what the
  * authoring rail wants. `onSetExhaustion` adds the exhaustion pips beside them,
  * and it is a callback of its own because the sixth level kills the NPC, which
- * is more than a write of one field.
+ * is more than a write of one field. With `inFight`, the chips and the pips
+ * show only while the NPC is in the fight or still has a condition or a
+ * level of exhaustion.
+ *
+ * `onToggleCompanion` adds a "Travels with party" toggle button with a
+ * visible label below the text. Long notes fold to two lines behind a More
+ * button, and the panel keeps which cards the GM opened.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
@@ -52,6 +59,7 @@ export function keepPairs(label) {
  *   onEdit?: (npc: NPC) => Promise<unknown>,
  *   onToggleCompanion?: (npc: NPC) => void,
  *   onBringToParty?: (npc: NPC) => void,
+ *   inFight?: (npc: NPC) => boolean,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
  *   getRole?: () => ViewRole,
@@ -60,7 +68,48 @@ export function keepPairs(label) {
  * @returns {{ update: () => void }}
  */
 export function mountNPCPanel(container, callbacks) {
+  /** The ids of the NPCs whose long notes the GM opened. @type {Set<string>} */
+  const openNotes = new Set();
+  const inFight = callbacks.inFight;
+
+  /**
+   * The notes, folded to two lines when long, with the More or Less button.
+   * @param {NPC} npc
+   * @param {() => void} render
+   * @returns {Node[]}
+   */
+  function notesOf(npc, render) {
+    if (!npc.notes) return [];
+    const text = el('span', 'npc-panel__notes', npc.notes);
+    if (!foldsNotes(npc.notes)) return [text];
+    const open = openNotes.has(npc.id);
+    text.classList.toggle('npc-panel__notes--folded', !open);
+    const more = textButton(
+      open ? 'Less' : 'More',
+      () => {
+        if (open) openNotes.delete(npc.id);
+        else openNotes.add(npc.id);
+        render();
+      },
+      { className: 'npc-panel__more' },
+    );
+    more.setAttribute('aria-expanded', String(open));
+    more.setAttribute('aria-label', `${open ? 'Fold' : 'Show all'} notes on ${npc.name}`);
+    more.dataset.focusKey = `notes:${npc.id}`;
+    return [text, more];
+  }
+
   return mountListPanel(container, {
+    // A fight that starts or ends changes which cards show the chips, while
+    // the rows stay the same objects.
+    dependsOn: () =>
+      inFight
+        ? callbacks
+            .getNPCs()
+            .filter((npc) => inFight(npc))
+            .map((npc) => npc.id)
+            .join(',')
+        : null,
     className: 'npc-panel',
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
     getRows: () => callbacks.getNPCs(),
@@ -96,12 +145,28 @@ export function mountNPCPanel(container, callbacks) {
           npc.role && el('span', 'npc-panel__role', npc.role),
           getLocationLabel &&
             el('span', 'npc-panel__location u-muted', keepPairs(getLocationLabel(npc))),
-          ctx.gm && npc.notes && el('span', 'npc-panel__notes', npc.notes),
+          ...(ctx.gm ? notesOf(npc, ctx.render) : []),
         ].filter(Boolean)
       );
     },
     buildExtras: (npc, row, ctx) => {
       if (!ctx.gm) return;
+      const { onToggleCompanion } = callbacks;
+      if (onToggleCompanion) {
+        const travels = npc.travelsWithParty === true;
+        const toggle = textButton(
+          'Travels with party',
+          async () => {
+            await onToggleCompanion(npc);
+            ctx.render();
+          },
+          { icon: travels ? 'check' : 'flag', className: 'npc-panel__companion' },
+        );
+        toggle.setAttribute('aria-pressed', String(travels));
+        toggle.dataset.focusKey = `companion:${npc.id}`;
+        row.appendChild(toggle);
+      }
+      if (inFight && !showsCombatBars(npc, inFight(npc))) return;
       const onUpdate = callbacks.onUpdate;
       if (onUpdate) {
         mountConditionsBar(row, {
@@ -124,19 +189,9 @@ export function mountNPCPanel(container, callbacks) {
     },
     actions: (npc, ctx) => {
       if (!ctx.gm) return [];
-      const { onToggleCompanion, onBringToParty } = callbacks;
-      const travels = npc.travelsWithParty === true;
+      const { onBringToParty } = callbacks;
       const onEdit = callbacks.onEdit;
       return [
-        onToggleCompanion
-          ? {
-              icon: /** @type {const} */ ('flag'),
-              label: `${npc.name} travels with the party`,
-              title: travels ? 'Travels with the party' : 'Does not travel with the party',
-              pressed: travels,
-              onClick: () => onToggleCompanion(npc),
-            }
-          : null,
         onBringToParty
           ? {
               icon: /** @type {const} */ ('give'),
