@@ -22,7 +22,7 @@ import { wireTabs } from '../ui/Tabs.js';
 import { mountBuildToolChip } from '../ui/BuildToolChip.js';
 import { PAINT_TAB, effectiveBrush, toolChipLabel } from '../view/BuildTool.js';
 import { isDefeated } from '../entities/Creature.js';
-import { isGM } from '../view/ViewRole.js';
+import { isGM, seesThroughFog } from '../view/ViewRole.js';
 import { hiddenHandoutTiles } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -487,7 +487,7 @@ export function wireMapView(app) {
 
   // A GM in Play mode sees the art under the fog, dimmed. A player sees solid
   // fog, so the screen the players watch shows nothing ahead.
-  const syncFogDim = () => mapCanvas.setFogDim(state.mode !== 'build' && isGM(state.role));
+  const syncFogDim = () => mapCanvas.setFogDim(seesThroughFog(state.mode, state.role));
   syncFogDim();
 
   // The map-facing effects of a mode switch. sessionControls calls this

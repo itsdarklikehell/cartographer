@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isGM, hpBand, VIEW_ROLES } from '../src/view/ViewRole.js';
+import { isGM, hpBand, seesThroughFog, VIEW_ROLES } from '../src/view/ViewRole.js';
 
 test('VIEW_ROLES lists gm and player', () => {
   assert.deepEqual(VIEW_ROLES, ['gm', 'player']);
@@ -39,4 +39,13 @@ test('hpBand reads zero or below as Down', () => {
 
 test('hpBand guards a non-positive max as Unknown', () => {
   assert.equal(hpBand(0, 0), 'Unknown');
+});
+
+test('seesThroughFog is true only for a GM outside Build mode', () => {
+  for (const mode of /** @type {const} */ (['play', 'combat', 'library'])) {
+    assert.equal(seesThroughFog(mode, 'gm'), true, mode);
+    assert.equal(seesThroughFog(mode, 'player'), false, mode);
+  }
+  assert.equal(seesThroughFog('build', 'gm'), false);
+  assert.equal(seesThroughFog('build', 'player'), false);
 });

@@ -44,3 +44,16 @@ export function hpBand(current, max) {
   if (fraction > CRITICAL_RATIO) return 'Bloodied';
   return 'Badly wounded';
 }
+
+/**
+ * Whether the main map draws the art under a see-through fog. Only a GM
+ * outside Build mode sees it, because Build mode shows every tile with no
+ * fog. A player always gets solid fog, so the screen at the table shows
+ * nothing the party has not explored.
+ * @param {import('../types/app.js').AppMode} mode
+ * @param {ViewRole} role
+ * @returns {boolean}
+ */
+export function seesThroughFog(mode, role) {
+  return mode !== 'build' && isGM(role);
+}
