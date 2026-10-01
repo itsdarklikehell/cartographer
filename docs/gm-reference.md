@@ -385,7 +385,7 @@ right end of the map toolbar names the tool that a click uses, such as
 | Interior | Floors, walls, doors, and stairs |
 | Furnishings | Furniture and decoration |
 
-The Size row (1x, 2x, 3x) sets how large the next painted tile draws. At 2x
+The Art size row (1x, 2x, 3x) sets how large the next painted tile draws. At 2x
 or 3x, one click stamps one tile whose image stretches across a 2x2 or 3x3
 block. A scaled stamp places one block per click, and roads always paint at
 1x.

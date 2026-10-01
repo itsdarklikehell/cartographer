@@ -192,7 +192,7 @@ export function mountPalettePanel(
   const scaleRow = el(
     'div',
     'palette__scale u-row u-g2',
-    el('span', 'palette__scale-label u-muted', 'Size'),
+    el('span', 'palette__scale-label u-muted', 'Art size'),
   );
   /** @type {HTMLButtonElement[]} */
   const scaleButtons = [];
