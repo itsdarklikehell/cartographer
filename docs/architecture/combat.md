@@ -21,7 +21,7 @@ combat screen, because the player takes the turn of their own character
 there. A player tab hides the header's mode switch, so a player gets to the
 map through the ribbon's Back to map control.
 
-The [wiring layer](app-wiring.md#encounterwiringjs-plus-creatureformjs-weaponattackjs-the-four-cast-modules-combatantsjs)
+The [wiring layer](app-wiring.md#encounterwiringjs-plus-encounterpanelsjs-creatureformjs-weaponattackjs-attackfieldsjs-the-four-cast-modules-combatantsjs-combatantwritesjs)
 and [Entities](entities.md) document the 5e resolution of an attack, a cast,
 and a damage application.
 
