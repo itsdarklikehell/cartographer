@@ -1098,7 +1098,9 @@ anchor to. It shares the look and nothing else.
 ## Context menus
 
 ```js
-openContextMenu(items: { label, onSelect, danger? }[], { clientX, clientY })
+openContextMenu(items: { label, onSelect, danger? }[], { clientX, clientY }, trigger?)
+toggleMenuFrom(trigger, items)
+markMenuButton(button)
 clampToViewport(x, y, width, height, viewportWidth, viewportHeight, margin?)
 ```
 
@@ -1116,8 +1118,18 @@ menu:
 `openContextMenu` has no return value, because the items' own callbacks are
 the result.
 
+A menu button, such as the More button of a party row or a world-tree row,
+opens its menu with `toggleMenuFrom(trigger, items)`. The menu opens below
+the button and takes the button's accessible name as its own. The button
+gets `aria-expanded="true"` while the menu is open, and a second press on it
+closes the menu. The capture-phase press listener ignores a press on the
+button, because it would close the menu and the click that follows would
+open it again. `markMenuButton(button)` sets `aria-haspopup="menu"` and
+`aria-expanded="false"` when the button is built.
+
 An item with `danger: true` draws in the `--danger` colour, with a rule
-above it when other items come first. The World tree marks Delete this way.
+above it when other items come first. The World tree and the party-row More
+menu mark Delete this way.
 
 `clampToViewport` is the pure positioning helper, in its own function so
 that a unit test can reach it. It flips the menu away from a viewport edge,

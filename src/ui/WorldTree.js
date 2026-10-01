@@ -3,7 +3,7 @@ import { setTip } from './Tooltip.js';
 import { bareButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { textField } from './formFields.js';
-import { openContextMenu } from './ContextMenu.js';
+import { markMenuButton, openContextMenu, toggleMenuFrom } from './ContextMenu.js';
 import { ancestorIds, buildWorldTree, filterWorldTree, matchesQuery } from '../map/WorldTree.js';
 import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 import { treeKeyAction } from '../view/TreeKeys.js';
@@ -290,13 +290,13 @@ export function mountWorldTree(container, opts) {
       [icon('more', { size: 16 })],
       () => {
         focusItem(item);
-        const rect = button.getBoundingClientRect();
-        openContextMenu(menuItems(node), { clientX: rect.left, clientY: rect.bottom });
+        toggleMenuFrom(button, menuItems(node));
       },
       { className: 'world-tree__more' },
     );
     button.tabIndex = -1;
     button.setAttribute('aria-label', label);
+    markMenuButton(button);
     setTip(button, label);
     menuOpeners.set(node.id, () => button.click());
     return button;

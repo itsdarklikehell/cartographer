@@ -5,7 +5,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
 import { buildStatBar, emptyStatBar } from './CharacterBars.js';
-import { openContextMenu } from './ContextMenu.js';
+import { markMenuButton, toggleMenuFrom } from './ContextMenu.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -118,18 +118,19 @@ export function mountCharacterRoster(container, options) {
         ? [{ label: 'Open full sheet', onSelect: () => onOpenSheet(character.id) }]
         : []),
       ...(onGrantXP ? [{ label: 'Grant XP', onSelect: () => onGrantXP(character.id) }] : []),
-      { label: `Delete ${character.name}`, onSelect: () => options.onDelete(character.id) },
+      {
+        label: `Delete ${character.name}`,
+        danger: true,
+        onSelect: () => options.onDelete(character.id),
+      },
     ];
     const button = iconButton(
       'more',
       `More actions for ${character.name}`,
-      () => {
-        const rect = button.getBoundingClientRect();
-        openContextMenu(items, { clientX: rect.left, clientY: rect.bottom });
-      },
+      () => toggleMenuFrom(button, items),
       { className: 'character-roster__more', title: 'Grant XP or delete' },
     );
-    button.setAttribute('aria-haspopup', 'menu');
+    markMenuButton(button);
     return button;
   }
 

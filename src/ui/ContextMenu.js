@@ -35,6 +35,9 @@ export function clampToViewport(x, y, width, height, viewportWidth, viewportHeig
 
 /** @type {(() => void) | null} */
 let closeCurrent = null;
+/** The menu button of the open menu, or null for a menu opened at a pointer.
+ * @type {HTMLElement | null} */
+let openTrigger = null;
 
 /**
  * Open the context menu at a screen position. This function returns nothing.
@@ -43,8 +46,11 @@ let closeCurrent = null;
  * @param {{ label: string, onSelect: () => void, danger?: boolean }[]} items an item with
  *   `danger` deletes or discards something, and draws in the danger colour
  * @param {{ clientX: number, clientY: number }} position
+ * @param {HTMLElement | null} [trigger] the menu button that opened the menu.
+ *   It gets `aria-expanded` while the menu is open, and its accessible name
+ *   names the menu. A press on it does not count as a press outside.
  */
-export function openContextMenu(items, position) {
+export function openContextMenu(items, position, trigger = null) {
   closeCurrent?.();
   if (items.length === 0) return;
 
@@ -54,6 +60,8 @@ export function openContextMenu(items, position) {
 
   const menu = el('div', 'context-menu u-col');
   menu.setAttribute('role', 'menu');
+  const name = trigger?.getAttribute('aria-label');
+  if (name) menu.setAttribute('aria-label', name);
 
   const buttons = items.map((item) => {
     const button = bareButton(
@@ -77,6 +85,8 @@ export function openContextMenu(items, position) {
     document.removeEventListener('pointerdown', onOutsidePointer, true);
     menu.remove();
     closeCurrent = null;
+    openTrigger = null;
+    trigger?.setAttribute('aria-expanded', 'false');
     opener?.focus();
   }
 
@@ -85,7 +95,12 @@ export function openContextMenu(items, position) {
    * event propagation.
    * @param {PointerEvent} event */
   function onOutsidePointer(event) {
-    if (!(event.target instanceof Node) || !menu.contains(event.target)) close();
+    const target = event.target instanceof Node ? event.target : null;
+    // A press on the menu button leaves the menu to the click that follows,
+    // which closes it in toggleMenuFrom. Closing here too would let that
+    // click open the menu again.
+    if (target && (menu.contains(target) || trigger?.contains(target))) return;
+    close();
   }
 
   menu.addEventListener('keydown', (event) => {
@@ -111,6 +126,8 @@ export function openContextMenu(items, position) {
   document.addEventListener('pointerdown', onOutsidePointer, true);
   document.body.appendChild(menu);
   closeCurrent = close;
+  openTrigger = trigger;
+  trigger?.setAttribute('aria-expanded', 'true');
 
   // Position the menu after mounting it, so the clamp can measure its real
   // size.
@@ -126,4 +143,30 @@ export function openContextMenu(items, position) {
   menu.style.left = `${spot.x}px`;
   menu.style.top = `${spot.y}px`;
   buttons[0].focus();
+}
+
+/**
+ * Open the menu of a menu button below the button, or close it when that
+ * button's menu is already open. A second press on the button then closes
+ * the menu, as a native menu button does.
+ * @param {HTMLElement} trigger
+ * @param {{ label: string, onSelect: () => void, danger?: boolean }[]} items
+ */
+export function toggleMenuFrom(trigger, items) {
+  if (openTrigger === trigger) {
+    closeCurrent?.();
+    return;
+  }
+  const rect = trigger.getBoundingClientRect();
+  openContextMenu(items, { clientX: rect.left, clientY: rect.bottom }, trigger);
+}
+
+/**
+ * Mark a button as the opener of a menu: `aria-haspopup="menu"`, and
+ * `aria-expanded="false"` until toggleMenuFrom opens its menu.
+ * @param {HTMLElement} button
+ */
+export function markMenuButton(button) {
+  button.setAttribute('aria-haspopup', 'menu');
+  button.setAttribute('aria-expanded', 'false');
 }
