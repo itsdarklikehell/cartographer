@@ -598,11 +598,17 @@ a:hover {
     display: inline-block;
   }
 
+  /* The grid rule above sets align-self: start, which on a fixed box keeps
+     its content height and drops the bottom inset, so the list runs off
+     the screen. stretch fills the space between top and bottom, and the
+     list scrolls inside it. */
   .sidebar {
     position: fixed;
     top: var(--header-height);
     left: 0;
     bottom: 0;
+    align-self: stretch;
+    overscroll-behavior: contain;
     z-index: 9;
     width: min(20rem, 85vw);
     max-height: none;
