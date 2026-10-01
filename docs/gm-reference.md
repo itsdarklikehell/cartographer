@@ -1278,7 +1278,7 @@ several targets, and a new turn sets it back to 1.
 | Control | Who | What it does |
 | --- | --- | --- |
 | Back to map | Everyone | Leaves the screen without an end to the fight. The Initiative card in the sidebar shows the round and has **Open combat** |
-| End combat | GM only | Opens the XP dialog, which ends the fight. While a hostile creature still stands, the dialog says so first |
+| End combat | GM only | Opens the XP dialog when the party did not lose, a character is alive to earn XP, and the fight has XP to award or a standing foe. The dialog ends the fight. While foes stand and no character can earn XP, a confirm asks first. A lost fight, or a won fight with no XP to award, ends with no question |
 
 Unless the party lost, End combat offers the XP of the defeated foes. The
 XP is split evenly among the living characters and rounded down, and the
@@ -1286,7 +1286,8 @@ dialog states any XP that the split leaves over. A foe with no challenge
 rating is worth nothing. You can change the amount. The dialog opens
 before the fight ends, so **Back to the fight** keeps the fight, the XP,
 and every foe as they are. **End and award** ends the fight and gives the
-XP.
+XP. A foe that falls while the dialog is open gets no fate, so a dead
+foe is never logged as fled.
 
 Each hostile creature that still stands gets a select with three choices.
 

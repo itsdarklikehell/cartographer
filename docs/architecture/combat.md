@@ -132,7 +132,8 @@ label for a target by id. Every log and toast line in the combat modules
 uses one of the two. A line built from `entity.name` would read "Gray Wolf"
 for both wolves, and a source-text test in `tests/uiVocabulary.test.js`
 fails on it. The fight-end lines run after the fight clears, so
-`confirmFightEnd` takes the labels while the order still exists.
+`fightSummary` in `app/combatEnd.js` takes the labels while the order
+still exists.
 
 ### The turn advance
 
@@ -1027,6 +1028,11 @@ change the amount. When the GM picks **Back to the fight**, `endCombat`
 returns before `setCombat(null)`, so the fight and its foes stay as they
 are. Otherwise the fight closes and `applyFightXP` gives each character the
 amount through `addXP`, so a new level becomes pending in the usual way.
+The fight keeps running while the dialog is open, and a Player tab can take
+a turn in that time. So `endCombat` reads `fightSummary` again before it
+closes the fight, and `applyFightXP` uses that summary. A fate lands only
+on a foe that still stands, and the XP goes only to a character still
+alive. The amount stays what the GM typed.
 
 ### The automatic end
 

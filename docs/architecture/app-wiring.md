@@ -619,7 +619,7 @@ the same code. The fight itself renders in combat mode, which
 | --- | --- |
 | `turnAdvance.js` | Moving the turn pointer to the next combatant who can act, and running the turn boundaries on the way |
 | `turnEffects.js` | The start and the end of one turn: repeated saves, the damage that chips deal on later turns, and the chips that end at a turn boundary |
-| `combatEnd.js` | The confirm before End combat drops a fight that hostile creatures still stand in, and the XP offer after a victory |
+| `combatEnd.js` | The fight summary, the XP dialog that opens before the fight ends, the confirm for a fight with standing foes and no character to earn XP, and the award after the fight closes |
 | `summons.js` | Spawning the creatures of a summoning spell, placing them, and joining them to a running fight |
 | `riderSpend.js` | Removing one-roll rider chips, such as Guidance, after the roll that used them |
 | `shieldWard.js` | The pause before a hit lands on a defender that can raise its AC with a reaction (Shield), for a weapon swing and for an attack spell |

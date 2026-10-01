@@ -28,7 +28,13 @@ import { applyConditionToTarget, endSpellEffects } from './combatantWrites.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { dropTurnChips, endFightEffects, startTurnEffects } from './turnEffects.js';
 import { focusMapCanvas } from './combatWiring.js';
-import { applyFightXP, askFightXP, confirmFightEnd, standDownFoes } from './combatEnd.js';
+import {
+  applyFightXP,
+  askFightXP,
+  confirmFightEnd,
+  fightSummary,
+  standDownFoes,
+} from './combatEnd.js';
 import { wireEncounterPanels } from './encounterPanels.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -358,6 +364,10 @@ export function wireEncounters(app) {
     const award = await askFightXP(end);
     // The fight can end in another tab while the dialog is open.
     if (!award || !current()) return;
+    // The fight kept running while the dialog was open, and a Player tab can
+    // have taken a turn. Read the summary again, so a fate lands only on a
+    // foe that still stands and the XP goes only to a character still alive.
+    const now = fightSummary(app) ?? end;
     const onScreen = state.mode === 'combat';
     setCombat(null);
     app.views.initiativePanel.update(); // hides the panel again
@@ -366,7 +376,7 @@ export function wireEncounters(app) {
     // The End combat button leaves with the screen. Focus moves to the map,
     // which is what the GM looks at next, instead of falling to the body.
     if (onScreen) focusMapCanvas();
-    if (award !== 'none') applyFightXP(app, end, award);
+    if (award !== 'none') applyFightXP(app, now, award);
   };
 
   const initiativeContainer = mustGetElement('initiative-container');

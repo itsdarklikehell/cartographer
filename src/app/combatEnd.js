@@ -10,26 +10,41 @@ import { combatLabels, commitCreatures, findCombatant } from './combatants.js';
 /** @typedef {import('../combat/FightEnd.js').FightEnd} FightEnd */
 
 /**
- * Ask before End combat drops a fight that hostile creatures still stand
- * in. The button sits next to Next turn, so one stray click would otherwise
- * throw away a live fight. A won or lost fight closes with no question. When
- * the XP dialog opens anyway, it names the standing foes and offers "Back to
- * the fight", so this confirm stays closed and the GM sees one dialog.
+ * The summary of the running fight from the live state, or null when no
+ * fight runs. The fight keeps running while a dialog is open, and a
+ * Player-bound tab can still send turn writes, so a caller reads this again
+ * after each await.
  * @param {AppContext} app
- * @returns {Promise<FightEnd | null>} the fight's summary, or null when the
- *   GM keeps the fight or no fight is running
+ * @returns {FightEnd | null}
  */
-export async function confirmFightEnd(app) {
+export function fightSummary(app) {
   const combat = app.state.combat;
   if (!combat) return null;
   const labels = combatLabels(
     app,
     combat.order.map((p) => p.id),
   );
-  const end = fightEnd(combat, (id) => findCombatant(app, id), labels);
+  return fightEnd(combat, (id) => findCombatant(app, id), labels);
+}
+
+/**
+ * Ask before End combat drops a fight that hostile creatures still stand
+ * in. The button sits next to Next turn, so one stray click would otherwise
+ * throw away a live fight. A won or lost fight closes with no question. When
+ * the XP dialog opens anyway, it names the standing foes and offers "Back to
+ * the fight", so this confirm stays closed and the GM sees one dialog.
+ * @param {AppContext} app
+ * @param {{ confirm?: typeof confirmModal }} [opts] `confirm` renders the
+ *   dialog, and a test passes its own
+ * @returns {Promise<FightEnd | null>} the fight's summary, or null when the
+ *   GM keeps the fight or no fight is running
+ */
+export async function confirmFightEnd(app, { confirm = confirmModal } = {}) {
+  const end = fightSummary(app);
+  if (!end) return null;
   if (end.standing === 0 || end.outcome === 'defeat' || opensXPDialog(end)) return end;
   const n = end.standing;
-  const ok = await confirmModal(
+  const ok = await confirm(
     `${n} ${n === 1 ? 'foe is' : 'foes are'} still standing. End the fight anyway?`,
     { title: 'End combat', confirmLabel: 'End combat', variant: 'danger' },
   );

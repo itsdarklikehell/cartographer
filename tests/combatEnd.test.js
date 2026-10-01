@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { applyFightXP, askFightXP, opensXPDialog } from '../src/app/combatEnd.js';
+import {
+  applyFightXP,
+  askFightXP,
+  confirmFightEnd,
+  fightSummary,
+  opensXPDialog,
+} from '../src/app/combatEnd.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp } from './helpers/app.js';
@@ -139,4 +145,112 @@ test('opensXPDialog is true only when the dialog has something to ask', () => {
   assert.equal(opensXPDialog({ ...end, standingFoes: [] }), false);
   assert.equal(opensXPDialog({ ...end, earners: [] }), false);
   assert.equal(opensXPDialog({ ...end, outcome: 'defeat' }), false);
+});
+
+/** A running fight of Wren against two wolves. `hp` sets the HP of each wolf. */
+function running(hp = 11) {
+  const wolf = (/** @type {string} */ id) => ({
+    ...createCreature(id, 'Gray Wolf', {
+      disposition: 'hostile',
+      maxHP: 11,
+      location: HERE,
+      cr: 0.25,
+    }),
+    currentHP: hp,
+  });
+  return stubApp({
+    state: /** @type {any} */ ({
+      characters: [createCharacter('wren', 'Wren')],
+      creatures: [wolf('w1'), wolf('w2')],
+      combat: {
+        round: 1,
+        index: 0,
+        order: ['wren', 'w1', 'w2'].map((id) => ({ id, initiative: 10, modifier: 0 })),
+      },
+    }),
+  });
+}
+
+/** A confirm stub that records each question and answers `answer`. */
+function confirmer(/** @type {boolean} */ answer) {
+  /** @type {string[]} */
+  const asked = [];
+  const confirm = /** @type {any} */ (
+    async (/** @type {string} */ message) => {
+      asked.push(message);
+      return answer;
+    }
+  );
+  return { asked, confirm };
+}
+
+test('confirmFightEnd stays closed when the XP dialog opens', async () => {
+  const { asked, confirm } = confirmer(false);
+  const end = await confirmFightEnd(running(), { confirm });
+  assert.equal(end?.standing, 2);
+  assert.equal(opensXPDialog(/** @type {any} */ (end)), true);
+  assert.deepEqual(asked, []);
+});
+
+test('confirmFightEnd stays closed when no foe stands', async () => {
+  const { asked, confirm } = confirmer(false);
+  const end = await confirmFightEnd(running(0), { confirm });
+  assert.equal(end?.outcome, 'victory');
+  assert.equal(end?.xp, 100);
+  assert.deepEqual(asked, []);
+});
+
+test('confirmFightEnd asks when foes stand and no character can earn', async () => {
+  const app = running();
+  app.state.characters = [];
+  const yes = confirmer(true);
+  assert.equal((await confirmFightEnd(app, { confirm: yes.confirm }))?.standing, 2);
+  assert.deepEqual(yes.asked, ['2 foes are still standing. End the fight anyway?']);
+  app.state.creatures = app.state.creatures.slice(0, 1);
+  const no = confirmer(false);
+  assert.equal(await confirmFightEnd(app, { confirm: no.confirm }), null);
+  assert.deepEqual(no.asked, ['1 foe is still standing. End the fight anyway?']);
+});
+
+test('confirmFightEnd and fightSummary return null with no fight running', async () => {
+  const app = running();
+  app.state.combat = null;
+  assert.equal(await confirmFightEnd(app, { confirm: confirmer(true).confirm }), null);
+  assert.equal(fightSummary(app), null);
+});
+
+test('a fate picked for a foe that fell while the dialog was open does not land', () => {
+  const app = running();
+  assert.deepEqual(
+    fightSummary(app)?.standingFoes.map((f) => f.id),
+    ['w1', 'w2'],
+  );
+  // A Player tab kills w1 while the XP dialog is open.
+  app.state.creatures = app.state.creatures.map((c) =>
+    c.id === 'w1' ? { ...c, currentHP: 0 } : c,
+  );
+  const now = /** @type {any} */ (fightSummary(app));
+  assert.deepEqual(
+    now.standingFoes.map((/** @type {{ id: string }} */ f) => f.id),
+    ['w2'],
+  );
+  applyFightXP(app, now, { 'fate:w1': 'fled', 'fate:w2': 'hostile', amount: 0 });
+  assert.equal(app.state.creatures.length, 2, 'the dead wolf is not removed as fled');
+  assert.deepEqual(app.log, []);
+});
+
+test('the award reaches only the earners, and the toast counts them', () => {
+  const app = running(0);
+  app.state.characters = [...app.state.characters, createCharacter('dorn', 'Dorn')];
+  /** @type {string[]} */
+  const toasts = [];
+  app.toasts = { show: (/** @type {string} */ text) => toasts.push(text) };
+  const end = /** @type {any} */ (fightSummary(app));
+  applyFightXP(app, end, { amount: 10 });
+  applyFightXP(app, { ...end, earners: ['wren', 'dorn'] }, { amount: 5 });
+  assert.deepEqual(
+    app.state.characters.map((c) => c.xp),
+    [15, 5],
+  );
+  assert.deepEqual(toasts, ['Awarded 10 XP to 1 character.', 'Awarded 5 XP to 2 characters.']);
 });
