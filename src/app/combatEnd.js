@@ -54,35 +54,30 @@ export function standDownFoes(app, ids) {
 const fateField = (/** @type {string} */ id) => `fate:${id}`;
 
 /**
- * When a fight ends with no defeat of the party, offer the experience points
- * of the defeated foes to the characters still alive. A foe that still
- * stands gets a fate select: still hostile, surrendered or captured, or fled.
- * In 5e a foe that surrenders, flees, or is captured is worth its points too,
- * so each of the last two adds that foe's points and restates the
- * per-character amount. The GM can
- * still change the amount or cancel. Each earner gets the amount through
- * addXP, so a new level becomes pending the usual way.
- *
- * A foe that surrendered turns neutral (see standDownFoes), so a captive
- * does not start a new encounter each time the party steps onto its tile. A
- * foe that fled leaves the campaign, and the log reads "Gray Wolf 2 flees.",
- * with the label that `end` took before the fight cleared. It does not become
- * unplaced, because an unplaced creature shows on every tile.
- * @param {AppContext} app
+ * Ask for the experience points of a fight while the fight still runs, so
+ * Cancel returns the GM to the fight with nothing lost. The dialog offers
+ * the points of the defeated foes to the characters still alive. A foe that
+ * still stands gets a fate select: still hostile, surrendered or captured,
+ * or fled. In 5e a foe that surrenders, flees, or is captured is worth its
+ * points too, so each of the last two adds that foe's points and restates
+ * the per-character amount. The GM can still change the amount.
  * @param {FightEnd} end
  * @param {{ prompt?: typeof promptModal }} [opts] `prompt` renders the dialog, and a test passes its own
+ * @returns {Promise<Record<string, string | number | boolean> | 'none' | null>}
+ *   the answers, 'none' when the fight has nothing to award and no dialog
+ *   opens, or null when the GM goes back to the fight
  */
-export async function offerFightXP(app, end, { prompt = promptModal } = {}) {
+export async function askFightXP(end, { prompt = promptModal } = {}) {
   const count = end.earners.length;
-  if (end.outcome === 'defeat' || count === 0) return;
+  if (end.outcome === 'defeat' || count === 0) return 'none';
   const foes = end.standingFoes;
-  if (end.xp <= 0 && foes.length === 0) return;
+  if (end.xp <= 0 && foes.length === 0) return 'none';
   /** @param {(name: string) => string} get */
   const totalOf = (get) => end.xp + sortFates(foes, (id) => get(fateField(id))).xp;
   const caption = (/** @type {number} */ total) =>
     `XP per character (${splitCaption(total, count)})`;
-  const values = await prompt(
-    'Award XP for the fight',
+  return prompt(
+    'End the fight and award XP',
     [
       ...foes.map((foe) => ({
         name: fateField(foe.id),
@@ -100,7 +95,8 @@ export async function offerFightXP(app, end, { prompt = promptModal } = {}) {
       },
     ],
     {
-      submitLabel: 'Award',
+      submitLabel: 'End and award',
+      cancelLabel: 'Back to the fight',
       onChange: (name, form) => {
         if (name === 'amount') return;
         const total = totalOf(form.get);
@@ -109,12 +105,28 @@ export async function offerFightXP(app, end, { prompt = promptModal } = {}) {
       },
     },
   );
-  if (!values) return;
-  const fates = sortFates(foes, (id) => String(values[fateField(id)]));
+}
+
+/**
+ * Apply the answers of askFightXP after the fight closes. Each earner gets
+ * the amount through addXP, so a new level becomes pending the usual way.
+ *
+ * A foe that surrendered turns neutral (see standDownFoes), so a captive
+ * does not start a new encounter each time the party steps onto its tile. A
+ * foe that fled leaves the campaign, and the log reads "Gray Wolf 2 flees.",
+ * with the label that `end` took before the fight cleared. It does not become
+ * unplaced, because an unplaced creature shows on every tile.
+ * @param {AppContext} app
+ * @param {FightEnd} end
+ * @param {Record<string, string | number | boolean>} values
+ */
+export function applyFightXP(app, end, values) {
+  const fates = sortFates(end.standingFoes, (id) => String(values[fateField(id)]));
   standDownFoes(app, fates.surrendered);
   removeFled(app, fates.fled);
   const amount = clampInt(values.amount, 0);
   if (amount <= 0) return;
+  const count = end.earners.length;
   const earners = new Set(end.earners);
   app.state.characters = app.state.characters.map((c) =>
     earners.has(c.id) ? addXP(c, amount) : c,

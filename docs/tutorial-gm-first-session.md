@@ -138,7 +138,7 @@ A banner says that the party is victorious. The fight stays open, so the
 party can heal and you can read the log.
 
 9. Click **End combat**.
-10. In the **Award XP for the fight** dialog, click **Award**. Each
+10. In the **End the fight and award XP** dialog, click **End and award**. Each
     character gets an equal share of the XP.
 
 The map comes back. The Encounters panel still lists the goblin at 0 HP.

@@ -980,13 +980,15 @@ creatures still stand and the party has not lost, the GM confirms in a dialog.
 The button sits next to Next turn, so one stray click would otherwise drop a
 live fight. A won or lost fight closes with no question.
 
-After a victory, `offerFightXP` offers the experience points of the defeated
-foes. `FightEnd.fightEnd` adds up the `crXP` value of each defeated hostile
-creature, and a foe with no challenge rating is worth nothing. The share goes
-to every character in the order who is still alive, a dying one included,
-split evenly and rounded down. The GM can change the amount or cancel. Each
-character gets the amount through `addXP`, so a new level becomes pending in
-the usual way.
+After a victory, `askFightXP` offers the experience points of the defeated
+foes while the fight still runs. `FightEnd.fightEnd` adds up the `crXP`
+value of each defeated hostile creature, and a foe with no challenge rating
+is worth nothing. The share goes to every character in the order who is
+still alive, a dying one included, split evenly and rounded down. The GM can
+change the amount. When the GM picks **Back to the fight**, `endCombat`
+returns before `setCombat(null)`, so the fight and its foes stay as they
+are. Otherwise the fight closes and `applyFightXP` gives each character the
+amount through `addXP`, so a new level becomes pending in the usual way.
 
 ### The automatic end
 

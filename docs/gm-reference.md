@@ -1199,11 +1199,14 @@ A dying ally stays selected, so you can heal it on a foe's turn.
 Unless the party lost, End combat offers the XP of the defeated foes. The
 XP is split evenly among the living characters and rounded down, and the
 dialog states any XP that the split leaves over. A foe with no challenge
-rating is worth nothing. You can change the amount or cancel.
+rating is worth nothing. You can change the amount. The dialog opens
+before the fight ends, so **Back to the fight** keeps the fight, the XP,
+and every foe as they are. **End and award** ends the fight and gives the
+XP.
 
 Each hostile creature that still stands gets a select with three choices.
 
-| Choice | On **Award** |
+| Choice | On **End and award** |
 | --- | --- |
 | Still hostile | No change, and no XP |
 | Surrendered or captured | The foe becomes neutral, so the Encounter alert does not fire again when the party steps onto its tile. Its XP joins the split |
