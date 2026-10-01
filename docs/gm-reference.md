@@ -362,7 +362,8 @@ tree opens the rows above it and scrolls to its row.
 
 The Palette card has four tool buttons and five sections of swatches. A
 click on a swatch picks it as the brush, and a drag paints it on every cell
-that the pointer crosses.
+that the pointer crosses. The name of the picked swatch shows above the swatch
+sections, for example **Brush: Grass (random variant)**.
 
 A brush paints only while the Paint tab is open. On the Tile and Encounters
 tabs, a click on the map selects the cell, the same as Inspect. A chip at the

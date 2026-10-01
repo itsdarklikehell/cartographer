@@ -99,6 +99,11 @@ export function mountPalettePanel(
       s.classList.toggle('palette__item--active', active);
       s.setAttribute('aria-pressed', String(active));
     }
+    // Swatches show art only, and several terrains look alike, so the name
+    // of the picked swatch shows as text above the swatch sections.
+    const isSwatch = node.classList.contains('palette__swatch');
+    picked.hidden = !isSwatch;
+    picked.textContent = isSwatch ? `Brush: ${node.getAttribute('aria-label') ?? ''}` : '';
     syncTabStops();
     regionPicker.root.hidden = brush !== 'region';
     if (brush === 'region') regionPicker.refresh();
@@ -221,6 +226,10 @@ export function mountPalettePanel(
     applyVisibility();
   });
   root.appendChild(variantsToggle.label);
+
+  const picked = el('p', 'palette__picked');
+  picked.hidden = true;
+  root.appendChild(picked);
 
   // Swatches group into collapsible sections, so terrain, overlays (roads,
   // rivers, coasts), buildings, interior pieces, and furnishings do not mix

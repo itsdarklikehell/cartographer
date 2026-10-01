@@ -379,3 +379,11 @@ body.mode-build .app-sidebar {
 body:not(.mode-build) .map-controls__tool {
   display: none;
 }
+
+/* The name of the picked swatch, above the swatch sections. */
+.palette__picked {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text);
+}
