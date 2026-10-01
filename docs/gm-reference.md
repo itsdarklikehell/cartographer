@@ -745,7 +745,7 @@ people.
 | Control | What it does |
 | --- | --- |
 | New creature | Opens the creature dialog for a new foe |
-| From bestiary | Opens the Bestiary dialog. Type part of a name in **Filter by name** to narrow the list, pick a template and a count, then add that many full-health copies at a map and tile |
+| From bestiary | Opens the Bestiary dialog. Type part of a name in **Filter by name** to narrow the list, pick a template and a count, then add that many full-health copies at a map and tile. **Pick on map** fills the map and tile from one click on the map |
 | Remove template | Removes one campaign template from the bestiary. It shows while the campaign bestiary has a template |
 | Clear defeated (count) | Removes the defeated foes on the map in view, after one confirmation |
 | Edit, Delete on a row | Edits or deletes that creature |
@@ -1133,6 +1133,7 @@ needs a caster class.
 | Caster level | Blank | The level that sets the spell slots of the creature |
 | Spells | None | The spells that the creature knows |
 | Location (map), Column, Row | The selected cell, or the middle of the map when no cell is selected | Where the creature stands. Columns and rows count from 1. Unplaced means that it appears everywhere. The map list groups each map under its parent map |
+| Pick on map | | Closes the dialog until you click a tile of the map in view. Then the dialog opens again with your values, and the map, column, and row of that tile. Press Escape to go back without a change. A click while the dialog waits does not move the party or paint |
 | Move to the party | | Sets the map, column, and row to the party's tile |
 
 A line under **Row** warns when the tile is outside the map, has no

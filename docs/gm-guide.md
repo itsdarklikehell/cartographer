@@ -409,7 +409,8 @@ region.
 7. Change **Weapon** and **Armor** if you want. For a beast that has no
    weapon or armor, pick **None (unarmed)** or **None (unarmored)**.
 8. To place the encounter elsewhere, change **Location (map)**, **Column**,
-   and **Row**.
+   and **Row**. You can also click **Pick on map** and then click the tile
+   on the map. The dialog opens again with the tile filled in.
 9. Click **Add**.
 
 The foe shows in the Foes list and on its tile. You can also right-click a
@@ -708,6 +709,7 @@ in-game clock forward.
 4. To place the NPC elsewhere, pick a map in **Location (map)**, then set
    **Column** and **Row**. Both count from 1, the same as the numbers along
    the edges of the map.
+   You can also click **Pick on map** and then click the tile.
 5. To make the NPC show everywhere, pick **Unplaced (appears everywhere)**.
 6. Click **Add**.
 

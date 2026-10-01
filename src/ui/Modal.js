@@ -117,6 +117,12 @@ export function openDialog(spec) {
     document.body.appendChild(dialog);
 
     dialog.addEventListener('close', () => {
+      // A suspended form (see `suspend` on the form handle) closes only to
+      // let the map take clicks, and opens again with its values.
+      if (dialog.dataset.suspended) {
+        delete dialog.dataset.suspended;
+        return;
+      }
       /** @param {any} value */
       const finish = (value) => {
         dialog.remove();
@@ -435,6 +441,18 @@ export function promptModal(title, fields, options = {}) {
             wrappers[name].classList.toggle('modal__field--hidden', hidden);
           },
           setTotal: (name, total) => totals[name]?.(total),
+          suspend: async (name, work) => {
+            const button = inputs[name];
+            const dialog = /** @type {HTMLDialogElement} */ (button.closest('dialog'));
+            dialog.dataset.suspended = 'true';
+            dialog.close();
+            try {
+              await work();
+            } finally {
+              dialog.showModal();
+              button.focus();
+            }
+          },
         };
         for (const [name, input] of Object.entries(inputs)) {
           input.addEventListener('input', () => onChange(name, handle));

@@ -1,0 +1,61 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import { armTilePick } from '../src/app/mapPick.js';
+
+/** A stand-in for the MapCanvas callbacks, which record each call. */
+function host() {
+  /** @type {string[]} */
+  const calls = [];
+  const h = {
+    calls,
+    onCellClick: (/** @type {number} */ x, /** @type {number} */ y) =>
+      calls.push(`click ${x},${y}`),
+    onStrokeCell: (/** @type {number} */ x, /** @type {number} */ y) =>
+      calls.push(`paint ${x},${y}`),
+    onStrokeEnd: () => calls.push('end'),
+    onExitClick: () => calls.push('exit'),
+    onCellContextMenu: () => calls.push('menu'),
+  };
+  return h;
+}
+
+test('a Play-mode click picks the cell and puts the callbacks back', () => {
+  const h = host();
+  /** @type {number[][]} */
+  const picks = [];
+  armTilePick(/** @type {any} */ (h), (x, y) => picks.push([x, y]));
+  h.onExitClick();
+  h.onCellContextMenu();
+  h.onCellClick(3, 4);
+  assert.deepEqual(picks, [[3, 4]]);
+  assert.deepEqual(h.calls, []);
+  h.onCellClick(1, 1);
+  assert.deepEqual(h.calls, ['click 1,1']);
+});
+
+test('a Build-mode drag picks its first cell at the end and paints nothing', () => {
+  const h = host();
+  /** @type {number[][]} */
+  const picks = [];
+  armTilePick(/** @type {any} */ (h), (x, y) => picks.push([x, y]));
+  h.onStrokeEnd();
+  assert.deepEqual(picks, []);
+  h.onStrokeCell(2, 5);
+  h.onStrokeCell(3, 5);
+  assert.deepEqual(picks, []);
+  h.onStrokeEnd();
+  assert.deepEqual(picks, [[2, 5]]);
+  h.onStrokeCell(0, 0);
+  assert.deepEqual(h.calls, ['paint 0,0']);
+});
+
+test('disarm cancels the pick', () => {
+  const h = host();
+  let picked = false;
+  const disarm = armTilePick(/** @type {any} */ (h), () => (picked = true));
+  disarm();
+  h.onCellClick(1, 2);
+  assert.equal(picked, false);
+  assert.deepEqual(h.calls, ['click 1,2']);
+});

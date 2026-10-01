@@ -767,7 +767,10 @@ as a `ModalField[]`:
 `ui/SpecForm.js` renders it as an inline rail form. A field, a default, a
 range limit, and a cross-field rule are each written once, in the shared
 module. A dialog adds the placement fields from `locationFields.js` around
-the spec. A template form leaves them out, because a template has no
+the spec. Their "Pick on map" button calls `pickMapTile` in `mapPick.js`.
+The dialog closes through the form handle's `suspend`, and
+`armTilePick` takes over the map callbacks for one click. Then the dialog
+opens again with its values, and the picked tile goes into the fields. A template form leaves them out, because a template has no
 position.
 
 ### combatWiring.js

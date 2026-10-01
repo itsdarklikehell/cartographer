@@ -5,6 +5,7 @@ import {
   locationFields,
   locationOptions,
   moveToPartyChange,
+  pickOnMapChange,
   placementChange,
   placementWarning,
   readLocation,
@@ -216,4 +217,59 @@ test('placementChange rewrites the warning after a placement edit only', () => {
     ['label', 'placementNote', ''],
     ['hidden', 'placementNote', true],
   ]);
+});
+
+test('the pick button field comes before the party button', () => {
+  const names = locationFields(app, null, { pickButton: true, partyButton: true }).map(
+    (f) => f.name,
+  );
+  assert.deepEqual(names.slice(-2), ['pickOnMap', 'toParty']);
+  assert.ok(!locationFields(app, null).some((f) => f.name === 'pickOnMap'));
+});
+
+/**
+ * A form stub whose `suspend` runs the work at once and records the field
+ * it refocuses.
+ * @param {import('../src/types/entities.js').EncounterLocation | null} picked
+ */
+async function pickForm(picked) {
+  /** @type {Record<string, string>} */
+  const values = { nodeId: 'world', tileX: '1', tileY: '1' };
+  /** @type {any[]} */
+  const calls = [];
+  /** @type {Promise<void>[]} */
+  const pending = [];
+  const form = /** @type {any} */ ({
+    get: (/** @type {string} */ n) => values[n],
+    set: (/** @type {string} */ n, /** @type {string | number} */ v) => {
+      values[n] = String(v);
+    },
+    setLabel: (/** @type {string} */ n, /** @type {string} */ t) => calls.push(['label', n, t]),
+    setHidden: (/** @type {string} */ n, /** @type {boolean} */ h) => calls.push(['hidden', n, h]),
+    suspend: (/** @type {string} */ n, /** @type {() => Promise<void>} */ work) => {
+      calls.push(['suspend', n]);
+      pending.push(work());
+    },
+  });
+  const change = pickOnMapChange(app, async () => picked);
+  assert.equal(change('tileX', form), false);
+  assert.equal(change('pickOnMap', form), true);
+  await Promise.all(pending);
+  return { values, calls };
+}
+
+test('a map pick writes the picked map, column, and row, and updates the warning', async () => {
+  const { values, calls } = await pickForm({ nodeId: 'vale', tileId: '2,4' });
+  assert.deepEqual(values, { nodeId: 'vale', tileX: '3', tileY: '5' });
+  assert.deepEqual(calls, [
+    ['suspend', 'pickOnMap'],
+    ['label', 'placementNote', 'That tile has no terrain.'],
+    ['hidden', 'placementNote', false],
+  ]);
+});
+
+test('a cancelled map pick leaves the fields as they were', async () => {
+  const { values, calls } = await pickForm(null);
+  assert.deepEqual(values, { nodeId: 'world', tileX: '1', tileY: '1' });
+  assert.deepEqual(calls, [['suspend', 'pickOnMap']]);
 });

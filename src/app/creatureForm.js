@@ -6,6 +6,7 @@ import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import {
   locationFields,
   moveToPartyChange,
+  pickOnMapChange,
   placementChange,
   readLocation,
   viewedPlacement,
@@ -63,6 +64,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   const statsChange = creatureFieldsChange({ restampStats: !existing && !seed?.stats });
   const partyChange = moveToPartyChange(app);
   const placeChange = placementChange(app);
+  const mapPick = pickOnMapChange(app);
   // The layout uses two columns under section headings: Basics, Combat,
   // Proficiencies, the collapsed damage and condition defenses,
   // Spellcasting, then Placement. The map picker's breadcrumb labels run
@@ -75,6 +77,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       ),
       ...locationFields(app, existing ? existing.location : defaultLocation, {
         partyButton: true,
+        pickButton: true,
         warn: true,
       }).map((field, i) => ({
         ...field,
@@ -90,7 +93,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
       // form that the code below then throws away.
       submitRequires: ['name'],
       onChange: (name, form) => {
-        if (!partyChange(name, form)) statsChange(name, form);
+        if (!partyChange(name, form) && !mapPick(name, form)) statsChange(name, form);
         placeChange(name, form);
       },
     },
@@ -201,6 +204,7 @@ export async function addFromLibrary(app) {
     return null;
   }
   const placeChange = placementChange(app);
+  const mapPick = pickOnMapChange(app);
   const values = await promptModal(
     'Add from bestiary',
     [
@@ -215,11 +219,12 @@ export async function addFromLibrary(app) {
       // This uses the same node picker and tile X/Y group as the creature
       // dialog. It defaults to the tile that the GM selected in the node
       // being viewed.
-      ...locationFields(app, viewedPlacement(app), { warn: true }),
+      ...locationFields(app, viewedPlacement(app), { pickButton: true, warn: true }),
     ],
     {
       submitLabel: 'Add',
       onChange: (name, form) => {
+        mapPick(name, form);
         placeChange(name, form);
         if (name === 'filter')
           form.setOptions('template', templateOptions(state.bestiary, library, form.get('filter')));

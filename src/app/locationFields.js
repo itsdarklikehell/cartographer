@@ -2,6 +2,7 @@ import { displayCoords, tileIdFromDisplay } from '../map/TileCoords.js';
 import { clampInt } from '../util/num.js';
 import { getTile } from '../map/TileGrid.js';
 import { isBlocked, isDeepWater } from '../map/TileKinds.js';
+import { pickMapTile } from './mapPick.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -55,11 +56,13 @@ export function locationOptions(nodes, pathOf) {
  * the map into the dialog.
  * @param {AppContext} app
  * @param {EncounterLocation | null} location
- * @param {{ unplacedLabel?: string, partyButton?: boolean, warn?: boolean }} [options]
+ * @param {{ unplacedLabel?: string, partyButton?: boolean, pickButton?: boolean, warn?: boolean }} [options]
  *   `unplacedLabel` is the label for the null-location option. For example,
  *   "with the party" reads better than "unplaced" for a character.
  *   `partyButton` adds a "Move to the party" button, which
  *   `moveToPartyChange` handles.
+ *   `pickButton` adds a "Pick on map" button, which `pickOnMapChange`
+ *   handles.
  *   `warn` adds a live line under the row that names a doubtful tile (see
  *   `placementWarning`), which `placementChange` keeps current.
  */
@@ -105,6 +108,9 @@ export function locationFields(app, location, options = {}) {
           },
         ]
       : []),
+    ...(options.pickButton
+      ? [{ name: 'pickOnMap', label: 'Pick on map', type: /** @type {'button'} */ ('button') }]
+      : []),
     ...(options.partyButton
       ? [{ name: 'toParty', label: 'Move to the party', type: /** @type {'button'} */ ('button') }]
       : []),
@@ -121,11 +127,44 @@ export function locationFields(app, location, options = {}) {
 export function moveToPartyChange(app) {
   return (name, form) => {
     if (name !== 'toParty') return false;
-    const { nodeId, tileId } = app.partyTracker.getPosition();
-    const { column, row } = displayCoords(tileId) ?? { column: 1, row: 1 };
-    form.set('nodeId', nodeId);
-    form.set('tileX', column);
-    form.set('tileY', row);
+    setPlacement(form, app.partyTracker.getPosition());
+    return true;
+  };
+}
+
+/**
+ * Write a location into the map, column, and row fields.
+ * @param {ModalFormHandle} form
+ * @param {EncounterLocation} location
+ */
+function setPlacement(form, { nodeId, tileId }) {
+  const { column, row } = displayCoords(tileId) ?? { column: 1, row: 1 };
+  form.set('nodeId', nodeId);
+  form.set('tileX', column);
+  form.set('tileY', row);
+}
+
+/**
+ * The `onChange` part of the "Pick on map" button. The dialog closes while
+ * the map waits for one click, and then it opens again with every value
+ * kept. A pick writes the map in view and the clicked column and row into
+ * the placement fields and updates the warning line. A cancel leaves the
+ * fields as they were. It answers true when it handled the change.
+ * @param {AppContext} app
+ * @param {(app: AppContext) => Promise<EncounterLocation | null>} [pick]
+ *   the map wait, replaced in tests
+ * @returns {(name: string, form: ModalFormHandle) => boolean}
+ */
+export function pickOnMapChange(app, pick = pickMapTile) {
+  const warn = placementChange(app);
+  return (name, form) => {
+    if (name !== 'pickOnMap') return false;
+    form.suspend?.(name, async () => {
+      const at = await pick(app);
+      if (!at) return;
+      setPlacement(form, at);
+      warn('nodeId', form);
+    });
     return true;
   };
 }

@@ -177,6 +177,12 @@ export interface ModalFormHandle {
   setHidden(name: string, hidden: boolean): void;
   /** Allocation fields only: restate how many there are to distribute. */
   setTotal(name: string, total: number): void;
+  /**
+   * Close the dialog while `work` runs, so the page behind it takes clicks,
+   * then open it again with every value kept and focus on the field `name`.
+   * Only `promptModal` forms have it.
+   */
+  suspend?(name: string, work: () => Promise<void>): Promise<void>;
 }
 
 /**

@@ -827,8 +827,12 @@ A dialog rebuilt by hand tends to lose these behaviors:
   another (a tier select that stamps default stats again, or a class select
   that filters a spell list). The handle is
   `{ get, set, setOptions, setDisabled, setLabel, setRange, setHidden,
-  setTotal }`, all keyed by field name. `get` is always synchronous, and
-  `setTotal` applies to allocation fields only.
+  setTotal, suspend }`, all keyed by field name. `get` is always
+  synchronous, and `setTotal` applies to allocation fields only.
+  `suspend(name, work)` closes the dialog while `work` runs, then opens it
+  again with every value kept and focus on the field `name`. The "Pick on
+  map" button uses it, because the page behind a modal dialog takes no
+  clicks. `buildSpecForm` has no `suspend`.
 
 The composite fields (`multiselect`, `tags`, `pillgrid`, `allocation`) keep
 their own local state and redraw themselves. A refilter through
