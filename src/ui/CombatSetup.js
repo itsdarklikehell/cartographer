@@ -2,6 +2,7 @@ import { formatModifier } from '../entities/Modifiers.js';
 import { setTip } from './Tooltip.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { checkbox, numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 import { rollUnsettled } from '../combat/InitiativeRoll.js';
@@ -133,7 +134,9 @@ export function combatSetupModal(roster, callbacks = {}) {
           el(
             'span',
             'initiative-panel__name',
+            view.side === 'foe' ? foeMark() : null,
             view.name,
+            view.side === 'foe' ? el('span', 'sr-only', ', foe') : null,
             note ? el('span', 'combat-setup__distance u-muted', note) : null,
           ),
           modifier,
@@ -267,6 +270,16 @@ export function combatSetupModal(roster, callbacks = {}) {
   const dialog = dialogs[dialogs.length - 1];
   if (dialog) dialog.scrollTop = 0;
   return shown;
+}
+
+/**
+ * The sword beside a foe's name, as on the combat cards. A screen reader
+ * hears ", foe" after the name instead.
+ */
+function foeMark() {
+  const mark = el('span', 'combat-setup__foe-mark', icon('sword'));
+  mark.setAttribute('aria-hidden', 'true');
+  return mark;
 }
 
 /** @param {number} distance */

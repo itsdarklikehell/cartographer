@@ -258,7 +258,13 @@ body.role-player .npc-scope {
   border-radius: var(--radius-sm);
 }
 
-.initiative-panel__row--foe .initiative-panel__name {
+/* A foe row marks its side with the sword of the combat cards, in the danger
+   color, and keeps its name in the text color, so the name does not read as
+   a link. */
+.combat-setup__foe-mark {
+  display: inline-flex;
+  vertical-align: -0.125em;
+  margin-right: var(--space-1);
   color: var(--danger);
 }
 
