@@ -1,3 +1,5 @@
+import { capitalize } from '../util/text.js';
+
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
 
 /**
@@ -88,8 +90,5 @@ export function allowsPaletteType(kind, entryType) {
 export function environFieldOptions(kind, current) {
   const tags = environOptions(kind);
   const all = current && !tags.includes(current) ? [...tags, current] : tags;
-  return [
-    { value: '', label: '(none)' },
-    ...all.map((e) => ({ value: e, label: e.charAt(0).toUpperCase() + e.slice(1) })),
-  ];
+  return [{ value: '', label: '(none)' }, ...all.map((e) => ({ value: e, label: capitalize(e) }))];
 }
