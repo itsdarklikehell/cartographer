@@ -185,6 +185,7 @@ export function wireGenerateAction(app, env) {
       if (
         node.tiles.length === 0 ||
         (await confirmModal(replaceQuestion(node, removed), {
+          title: `Replace the map of ${node.name}?`,
           variant: 'danger',
           confirmLabel: 'Replace',
         }))

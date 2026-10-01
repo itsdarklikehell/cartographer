@@ -69,6 +69,7 @@ test('cancel on the Night warning leaves the party and the clock alone', async (
     {
       message: 'The walk takes 20 hours, and Night falls on the way.',
       choices: ['walk', 'stop'],
+      title: 'Night falls',
     },
   ]);
 });
@@ -132,6 +133,7 @@ test('a forced move adds the Night warning to its own confirm', async () => {
     /^Walls, obstacles, .* anyway\? The walk takes 12 hours/,
   );
   assert.deepEqual(w.dialogs.asked[0].choices, ['walk'], 'a forced move has no path to cut');
+  assert.equal(w.dialogs.asked[0].title, 'Move the party?');
   assert.equal(w.at(), '0,0');
 });
 
@@ -140,5 +142,6 @@ test('a forced move short of Night asks only the move confirm', async () => {
   w.click('1,2');
   await settle();
   assert.deepEqual(w.dialogs.asked[0].choices, ['confirm']);
+  assert.equal(w.dialogs.asked[0].title, 'Move the party?');
   assert.equal(w.at(), '1,2');
 });

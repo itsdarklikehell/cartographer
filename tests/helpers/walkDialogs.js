@@ -7,19 +7,23 @@
  * @param {{ choice?: string, checked?: boolean, confirm?: boolean }} [answer]
  */
 export function walkDialogs({ choice = 'walk', checked = false, confirm = true } = {}) {
-  /** @type {{ message: string, choices: string[] }[]} */
+  /** @type {{ message: string, choices: string[], title?: string }[]} */
   const asked = [];
   return {
     asked,
     choiceModal: async (
       /** @type {string} */ message,
       /** @type {{ value: string }[]} */ choices,
+      /** @type {{ title?: string }} */ opts = {},
     ) => {
-      asked.push({ message, choices: choices.map((c) => c.value) });
+      asked.push({ message, choices: choices.map((c) => c.value), title: opts.title });
       return { choice, checked };
     },
-    confirmModal: async (/** @type {string} */ message) => {
-      asked.push({ message, choices: ['confirm'] });
+    confirmModal: async (
+      /** @type {string} */ message,
+      /** @type {{ title?: string }} */ opts = {},
+    ) => {
+      asked.push({ message, choices: ['confirm'], title: opts.title });
       return confirm;
     },
   };

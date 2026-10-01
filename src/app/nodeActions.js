@@ -202,7 +202,11 @@ export function createNodeActions(app, env) {
       questLinks: linksIn(state.quests, doomed).length,
       inLastSave: inLastSave(nodeId),
     });
-    const ok = await confirmModal(question, { variant: 'danger', confirmLabel: 'Delete' });
+    const ok = await confirmModal(question, {
+      title: `Delete ${node.name}?`,
+      variant: 'danger',
+      confirmLabel: 'Delete',
+    });
     if (!ok) return;
     if (stranded()) {
       app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`, {
@@ -291,7 +295,7 @@ export function createNodeActions(app, env) {
         !lost.length ||
         (await confirmModal(
           `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
-          { variant: 'danger', confirmLabel: 'Shrink' },
+          { title: `Shrink ${node.name}?`, variant: 'danger', confirmLabel: 'Shrink' },
         ))
       ) {
         break;

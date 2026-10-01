@@ -18,7 +18,7 @@ import { isGM } from '../view/ViewRole.js';
 /**
  * The move question of a dialog that opens anyway, such as a forced move
  * across walls, with the label of its confirm button.
- * @typedef {{ question: string, label: string }} MoveQuestion
+ * @typedef {{ question: string, label: string, title: string }} MoveQuestion
  */
 
 /**
@@ -44,7 +44,7 @@ export function createWalkQuestion(dialogs = { choiceModal, confirmModal }) {
     if (!night) {
       if (!move) return 'walk';
       const ok = await dialogs.confirmModal(move.question, {
-        title: 'Move',
+        title: move.title,
         confirmLabel: move.label,
       });
       return ok ? 'walk' : 'cancel';
@@ -53,7 +53,7 @@ export function createWalkQuestion(dialogs = { choiceModal, confirmModal }) {
     if (night.stop) choices.push({ value: 'stop', label: 'Stop at Dusk' });
     const message = move ? `${move.question} ${night.message}` : night.message;
     const { choice, checked } = await dialogs.choiceModal(message, choices, {
-      title: move ? 'Move' : 'Night falls',
+      title: move?.title ?? 'Night falls',
       checkLabel: "Don't ask again tonight",
     });
     if (checked) quietNight = night.night;
@@ -191,7 +191,7 @@ export function createWalkGate(app, deps, dialogs) {
     }[reason];
     const label = { elsewhere: 'Move', forced: 'Move anyway', fogged: 'Enter' }[reason];
     const warning = reason === 'elsewhere' ? null : warningFor(tile, walkPath(tile));
-    const choice = await walkQuestion.ask(warning, { question, label });
+    const choice = await walkQuestion.ask(warning, { question, label, title: `Move ${who}?` });
     answerWalk(choice, view.id, tile, warning);
   }
 

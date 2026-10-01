@@ -77,7 +77,7 @@ export function wireHistorySteps(
       isDirty() &&
       !(await confirmModal(
         `${verb} steps between saves. Your changes since the last save are discarded. Save first to keep them.`,
-        { variant: 'danger', confirmLabel: verb },
+        { title: `${verb} and discard changes?`, variant: 'danger', confirmLabel: verb },
       ))
     ) {
       return;

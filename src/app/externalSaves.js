@@ -205,7 +205,7 @@ export function wireExternalSaves(app, { isDirty, setDirty, buildCurrentState, p
     syncPromptOpen = true;
     const ok = await confirmModal(
       'Another tab saved this campaign. Reload to match it? Your unsaved changes here are discarded.',
-      { variant: 'danger', confirmLabel: 'Reload' },
+      { title: 'Reload from the other tab?', variant: 'danger', confirmLabel: 'Reload' },
     );
     syncPromptOpen = false;
     if (ok) {

@@ -172,6 +172,7 @@ export function buildRow(item, playable, ctx) {
       // click, so it gets the same confirm step as every other destructive action.
       if (item.quantity > 1) {
         const ok = await confirmModal(`Discard all ${item.quantity} ${item.name}?`, {
+          title: `Discard ${item.name}?`,
           variant: 'danger',
           confirmLabel: 'Discard',
         });

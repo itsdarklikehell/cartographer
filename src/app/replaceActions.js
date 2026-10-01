@@ -86,7 +86,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
         replaceIsUndoable(state),
         UNDO_NOTE,
       ),
-      { variant: 'danger', confirmLabel: 'New campaign' },
+      { title: 'Start a new campaign?', variant: 'danger', confirmLabel: 'New campaign' },
     );
     if (ok) persistAndReload(state, 'Started a new blank campaign.');
   });
@@ -101,7 +101,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
           replaceIsUndoable(state),
           UNDO_NOTE,
         ),
-        { variant: 'danger', confirmLabel: 'Load example' },
+        { title: 'Load the example campaign?', variant: 'danger', confirmLabel: 'Load example' },
       ));
     if (ok) persistAndReload(state, 'Loaded the example campaign.');
   });
@@ -151,7 +151,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
           replaceIsUndoable(state),
           UNDO_NOTE,
         ),
-        { variant: 'danger', confirmLabel: 'Import' },
+        { title: 'Import this campaign?', variant: 'danger', confirmLabel: 'Import' },
       ));
     if (!replace) return;
     // A file with a bundled library adopts it into the browser's customs,
@@ -164,7 +164,7 @@ export function wireReplaceActions(app, { buildCurrentState, setDirty, assetWait
       adopt = await confirmModal(
         'This campaign file includes library customizations. Replace yours ' +
           'with them? Built-in defaults are unaffected.',
-        { variant: 'danger', confirmLabel: 'Replace' },
+        { title: 'Replace your library?', variant: 'danger', confirmLabel: 'Replace' },
       );
     }
     if (adopt && library && !saveCustomLibrary(library)) {

@@ -205,7 +205,7 @@ export function wireSessionControls(app) {
   const lockBtn = iconButton('lock', 'Lock this tab to the Player view', async () => {
     const ok = await confirmModal(
       'Lock this tab to the Player view? The GM view stays unavailable in this tab until it is closed.',
-      { confirmLabel: 'Lock' },
+      { title: 'Lock this tab?', confirmLabel: 'Lock' },
     );
     if (!ok) return;
     sessionStorage.setItem(PLAYER_LOCK_SESSION_KEY, '1');
