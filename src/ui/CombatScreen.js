@@ -92,7 +92,7 @@ import { mountCombatRibbon, roveGroup, wireRoving } from './CombatRibbon.js';
  * Its buttons attack with each weapon from `getWeapons`, and report through
  * `onLegendaryAttack` with the id.
  *
- * `diceDock` is an empty slot under the active column. The host parks the
+ * `diceDock` is an empty slot under the log. The host parks the
  * app's dice-tray card there while the mode is active. The right column
  * shows the fight's log (`getLogEntries`, already filtered by the host). A
  * visually hidden live region announces each turn. The ribbon and the board
@@ -134,10 +134,11 @@ export function mountCombatScreen(container, callbacks) {
   const log = mountCombatLog();
   const board = el('div', 'combat-board');
   const diceDock = el('div', 'combat-screen__dice-dock');
-  // The left rail shows the active combatant over the borrowed dice tray. The
-  // numbers a turn needs and the dice it rolls sit under one hand.
-  const left = el('div', 'combat-screen__left', column.element, diceDock);
-  const side = el('aside', 'combat-screen__log', log.element);
+  // The borrowed dice tray sits under the log in the right column, which
+  // sticks to the top of the screen (see combat.css). A long active column
+  // would otherwise push the tray below the bottom of the screen.
+  const left = el('div', 'combat-screen__left', column.element);
+  const side = el('aside', 'combat-screen__log', log.element, diceDock);
   // A turn change is announced, not only shown with a highlight. The polite
   // setting lets a screen reader finish speaking first. This element stays
   // outside the cleared regions.

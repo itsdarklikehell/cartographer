@@ -895,7 +895,11 @@ The dice tray sits under the log. The app has one tray. While combat mode is
 active, the screen moves the whole `#dice-tray-container` card into the column
 with `appendChild`, and it puts the card back in the play dock on exit. Moving
 the element keeps the handle of `diceWiring.js` valid, because the app mounts
-the tray once and never looks it up again.
+the tray once and never looks it up again. The right column is `position:
+sticky` and no taller than the screen, so the tray stays in view while the
+GM scrolls the board or a long active column. The log list scrolls inside
+the height that the tray leaves. Below 1100px the columns stack, and the
+column scrolls with the page.
 
 ### The turn ribbon
 

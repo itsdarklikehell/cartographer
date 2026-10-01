@@ -334,21 +334,39 @@ body.mode-combat .app-buildrail {
 
 /* The right column: the fight's log, wide enough that a rolled attack's line
    (attacker, weapon, modifiers, total, outcome) wraps once rather than four
-   times. */
+   times. The dice tray sits under the log. The column sticks to the top of
+   the screen and never grows past its height, so the tray stays in view
+   while the GM scrolls the board or a long active column, and the log list
+   scrolls inside the space that is left. */
 .combat-screen__log {
   flex: 0 0 27rem;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
+  position: sticky;
+  top: var(--space-3);
+  max-height: calc(100dvh - 2 * var(--space-3));
 }
 
-/* The dice tray keeps its own .card styling; the rail only sizes it. */
+/* The dice tray keeps its own .card styling; the column only sizes it. A
+   tall open tray scrolls inside the dock, so the log keeps some room. */
+.combat-screen__dice-dock {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 60%;
+  overflow-y: auto;
+}
+
 .combat-screen__dice-dock > .card {
   min-width: 0;
 }
 
 .combat-log {
-  flex: 1;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 10rem;
   padding: var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -356,12 +374,8 @@ body.mode-combat .app-buildrail {
 }
 
 .combat-log__list {
-  /* Bounded by the viewport, not a fixed length: the page does not scroll in
-     combat mode on a typical screen, so the list takes whatever height sits
-     between the ribbon (and the card's own header) and the bottom edge, and
-     scrolls internally past that. The subtraction is that chrome's measured
-     height with a little slack; a taller monitor gets a taller log for free. */
-  max-height: max(12rem, calc(100dvh - 18rem));
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   margin: var(--space-2) 0 0;
   padding: 0;
@@ -583,5 +597,20 @@ body.mode-combat .app-buildrail {
   .combat-screen__left,
   .combat-screen__log {
     flex: 0 0 auto;
+  }
+
+  /* The stacked log column scrolls with the page, so its list gets a fixed
+     cap instead of the screen height. */
+  .combat-screen__log {
+    position: static;
+    max-height: none;
+  }
+
+  .combat-screen__dice-dock {
+    max-height: none;
+  }
+
+  .combat-log__list {
+    max-height: 20rem;
   }
 }
