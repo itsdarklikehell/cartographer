@@ -323,12 +323,8 @@ body.role-player .npc-scope {
 
 /* The "Add the whole group" box sits above the foes of one tile. */
 .combat-setup__group-row {
-  align-items: baseline;
+  align-items: center;
   margin-top: var(--space-2);
-}
-
-.combat-setup__group-row .combat-setup__distance {
-  display: inline;
 }
 
 /* The dialog opens at its top, and the button row stays in view at the

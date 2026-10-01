@@ -294,7 +294,9 @@ const tilesAway = (distance) => `${distance} ${distance === 1 ? 'tile' : 'tiles'
  * @param {HTMLInputElement[]} boxes the Join boxes, filled in after this call
  */
 function groupBox(count, distance, boxes) {
-  const all = checkbox(`Add the whole group (${count})`, false, {
+  // The distance goes in the label text, so it shares the baseline of the
+  // checkbox label instead of floating beside it.
+  const all = checkbox(`Add the whole group (${count}), ${tilesAway(distance)}`, false, {
     className: 'combat-setup__group',
   });
   all.input.addEventListener('change', () => {
@@ -306,11 +308,6 @@ function groupBox(count, distance, boxes) {
     all.input.checked = ticked === boxes.length;
     all.input.indeterminate = ticked > 0 && ticked < boxes.length;
   };
-  const row = el(
-    'div',
-    'combat-setup__group-row u-row u-g2',
-    all.label,
-    el('span', 'combat-setup__distance u-muted', tilesAway(distance)),
-  );
+  const row = el('div', 'combat-setup__group-row u-row u-g2', all.label);
   return { row, sync };
 }
