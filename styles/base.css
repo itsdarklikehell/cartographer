@@ -1001,9 +1001,9 @@ select.field option::checkmark {
   grid-column-start: 1;
 }
 
-/* A section heading inside a long form (Basics, Combat, Placement). The type
-   comes from .section-label, and this rule adds the rule above it and spans
-   both columns of a wide dialog. */
+/* A section heading inside a long form (Basics, Combat, Placement), in a
+   dialog or an inline rail form. The type comes from .section-label, and
+   this rule adds the rule above it and spans both columns of a wide dialog. */
 .modal__section {
   grid-column: 1 / -1;
   margin-top: var(--space-3);

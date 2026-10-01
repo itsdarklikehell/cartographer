@@ -798,9 +798,11 @@ Every field also takes `name`, `label`, `value`, `full`, `newRow`, `hidden`,
   that belongs together (such as weapon and armor) on one row when an odd
   number of fields comes before it.
 - A field with `section` gets a `section-label` heading of that text above
-  it, across both columns. The creature dialog and the Library template form
-  group their fields this way. An advanced field shows no heading, because
-  the disclosure summary names it.
+  it, across both columns, with the `modal__section` class. The creature
+  dialog and the Library template form group their fields this way. In the
+  dialog, an advanced field shows no heading, because the disclosure summary
+  names it. The Library form (`buildSpecForm`) has no disclosure, so it
+  shows the advanced fields open under their own section heading.
 - `options.submitRequires` names checkbox and text fields. The submit
   button stays disabled until each named checkbox is ticked and each named
   text field has text, and a named text field gets `aria-required`.
@@ -1255,6 +1257,7 @@ layout (margins, grid placement) in the component's own class.
 | `.seg-switch`, `__btn`, `__btn--active` | `base.css` | The segmented toggle (mode, theme, role, dice-tray d20) |
 | `.row-select`, `--current` | `base.css` | The selectable full-width list row (world tree, roster) |
 | `.section-label` | `base.css` | The in-panel sub-heading: uppercase, tracked, muted, built through `sectionLabel` |
+| `.modal__section` | `base.css` | A section heading inside a long dialog, and inside the rail form that `buildSpecForm` builds from the same spec: a rule above it, and both columns of a wide dialog |
 | `.empty-state` | `base.css` | The "nothing here yet" paragraph. The class sets margin, padding, and italic only. `emptyState()` adds `u-muted` for the color and size |
 | `.chip`, `.chip__remove` | `base.css` | A small labeled tag, with or without an x, built through `buttons.js` |
 | `.badge` + `--success`, `--danger`, `--neutral` | `base.css` | A read-only status marker on a list row. A color outside the three shared readings comes from a feature modifier |

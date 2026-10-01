@@ -145,7 +145,9 @@ function renderField(field) {
  * entity's name: it becomes the form's wide name input, and a blank name
  * refuses the submit, as in every other rail form. The rest lay out two per
  * row, with a `full` field taking a row of its own and a `newRow` field
- * beginning one.
+ * beginning one. A field with `section`, the name field too, gets a heading
+ * above it. The rail form has no disclosure, so an `advanced` field shows
+ * open under its section heading.
  *
  * `assemble` receives the same field-name-to-string record that `promptModal`
  * resolves to, so both surfaces read a form back through the same functions.
@@ -194,7 +196,7 @@ export function buildSpecForm({
     if (field.hidden) built.node.hidden = true;
     if (field.section) {
       flush();
-      rows.push(sectionLabel(field.section, { tag: 'h3', className: 'modal__section' }));
+      rows.push(sectionHeading(field.section));
     }
     if (field.full) {
       flush();
@@ -238,7 +240,7 @@ export function buildSpecForm({
   const values = () =>
     Object.fromEntries(Object.entries(rendered).map(([field, built]) => [field, built.get()]));
 
-  return buildInlineForm({
+  const form = buildInlineForm({
     nameInput: asInput(name.input),
     rows,
     assemble: () => assemble(values()),
@@ -247,4 +249,14 @@ export function buildSpecForm({
     onCancel,
     className,
   });
+  if (nameField.section) form.prepend(sectionHeading(nameField.section));
+  return form;
+}
+
+/**
+ * A section heading of the rail form, the same heading the dialog uses.
+ * @param {string} text
+ */
+function sectionHeading(text) {
+  return sectionLabel(text, { tag: 'h3', className: 'modal__section' });
 }
