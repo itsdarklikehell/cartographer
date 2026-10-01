@@ -36,6 +36,9 @@ export const INK = {
   fog: '#48412f',
   /** An unrevealed interior tile beside explored floor: lighter than fog, darker than art. */
   fogFrontier: '#6e6448',
+  /** The fog over tile art that a GM sees in Play mode: the fog colors, part see-through. */
+  fogDim: 'rgba(72, 65, 47, 0.78)',
+  fogDimFrontier: 'rgba(110, 100, 72, 0.7)',
   /** Stands in for tile art that has not decoded yet, so no tile is a hole. */
   missingArt: '#333',
 

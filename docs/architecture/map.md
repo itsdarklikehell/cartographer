@@ -132,9 +132,10 @@ The border line is twice its drawn width and centered on the cell edge, and
 the clip to the region cells keeps only the inner half. Two regions that
 share an edge then each show their own color on their own side of it.
 
-In Play mode, the clip covers the revealed cells only, and the name sits on
-the first revealed cell in reading order. A region therefore never shows its
-extent through the fog.
+In a Player view, the clip covers the revealed cells only, and the name sits
+on the first revealed cell in reading order. A region therefore never shows
+its extent through the fog. The GM view in Play mode draws the full regions
+under its see-through fog.
 
 ### Group images
 
@@ -230,7 +231,11 @@ name stays small over tile art.
 ### Tile rasters
 
 For each tile, the draw pass draws a fog rectangle if the tile is not
-revealed, and otherwise draws the image at `tile.imageRef`. The group, span,
+revealed, and otherwise draws the image at `tile.imageRef`. With
+`view.fogDim` set (a GM in Play mode, from `mapWiring.js`), an unrevealed
+tile draws its image and overlays and then a see-through fog rectangle
+(`INK.fogDim`). The frame then has no revealed set, so the group, span,
+grid, and region passes draw as in Build mode under that fog. The group, span,
 and marker passes described on this page add to that base.
 
 Tile art does not come straight from the SVG file. `TileRaster`

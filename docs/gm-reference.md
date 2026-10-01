@@ -971,6 +971,13 @@ party that stands in a doorway sees into the rooms on both sides. A room of
 more than 100 floor tiles, such as a great hall, shows only within the
 sight of the party. The rooms of a dungeon, a cave, or a cellar stay dark.
 
+In a GM tab in Play mode, the fog is part see-through. The GM sees the
+terrain, the region names, and the region outlines under it, dimmed, so the
+way ahead is readable without a switch to Build mode. Markers and point of
+interest outlines on fogged tiles stay hidden. A Player tab, and a GM tab
+switched to the Player view, draw solid fog. The mini-map always draws
+solid fog.
+
 Inside a building, a fogged tile beside explored floor, a door, or stairs
 draws a lighter fog. The lighter band shows where the explored part ends,
 for example past a door that the party has not opened.

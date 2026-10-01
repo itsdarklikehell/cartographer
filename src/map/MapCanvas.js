@@ -100,6 +100,9 @@ export class MapCanvas {
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag. This lets a GM author against the whole map, not through fog. */
     this.revealAll = false;
+    /** When true (a GM in Play mode), unrevealed tiles draw their art under a
+     * see-through fog, so the GM can read the map ahead of the party. */
+    this.fogDim = false;
     /** When true (Build mode), the left button strokes cells through
      * onStrokeCell and onStrokeEnd, and panning moves to the right button.
      * This way authoring gestures and navigation do not share one button. */
@@ -579,6 +582,16 @@ export class MapCanvas {
   }
 
   /**
+   * Toggle the see-through fog of the GM view (see `fogDim`).
+   * @param {boolean} value
+   */
+  setFogDim(value) {
+    if (this.fogDim === value) return;
+    this.fogDim = value;
+    this.render();
+  }
+
+  /**
    * Toggle authoring interaction (Build mode). In this mode, left-drag
    * strokes cells, right-drag pans, and the context menu is suppressed. When
    * off (Play mode), the left button pans, and short drags fire onCellClick
@@ -607,6 +620,7 @@ export class MapCanvas {
       offsetY: this.offsetY,
       scale: this.scale,
       revealAll: this.revealAll,
+      fogDim: this.fogDim,
       markerRange: this.markerRange,
       partyTileId: this.partyTileId,
       partyInNode: this.partyInNode,

@@ -438,10 +438,16 @@ export function wireMapView(app) {
 
   narration = mountMapNarration(app, mapCanvas);
 
+  // A GM in Play mode sees the art under the fog, dimmed. A player sees solid
+  // fog, so the screen the players watch shows nothing ahead.
+  const syncFogDim = () => mapCanvas.setFogDim(state.mode !== 'build' && isGM(state.role));
+  syncFogDim();
+
   // The map-facing effects of a mode switch. sessionControls calls this
   // after it flips the body classes.
   app.actions.onModeChanged = (mode) => {
     mapCanvas.setRevealAll(mode === 'build');
+    syncFogDim();
     if (mode === 'build') palettePanel.show();
     tileTooltip.hide();
     // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
@@ -469,6 +475,7 @@ export function wireMapView(app) {
   // brush and no authoring gesture. An open tooltip can now show too much.
   app.actions.onRoleChanged = (role) => {
     if (role === 'player') setFogTool(null);
+    syncFogDim();
     tileTooltip.hide();
     // The sidebar world tree shows everything to the GM, but shows only
     // discovered nodes to a player. The Build-rail tree is empty for a

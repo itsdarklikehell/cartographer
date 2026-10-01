@@ -48,6 +48,7 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {number} offsetY
  * @property {number} scale
  * @property {boolean} revealAll draw every tile's image regardless of fog of war (Build mode)
+ * @property {boolean} [fogDim] draw unrevealed tiles as art under a see-through fog (a GM in Play mode). Markers and POI outlines on those tiles stay hidden.
  * @property {number} markerRange detection range in grid cells: encounter, NPC, and POI markers draw only within this Euclidean distance of the party or a character token
  * @property {string | null} partyTileId
  * @property {boolean} [partyInNode] false when partyTileId is the link toward the party on a map above it. That tile is not a marker anchor.
@@ -175,7 +176,7 @@ export class MapRenderer {
    * @returns {RevealedIds | null}
    */
   _revealedIds(view) {
-    if (view.revealAll || !view.node) return null;
+    if (view.revealAll || view.fogDim || !view.node) return null;
     return revealedIdsOf(view.node);
   }
 
@@ -414,7 +415,8 @@ export class MapRenderer {
    */
   _renderTile(view, tile, sx, sy, w, h, groupCover, frontier) {
     const { ctx } = this;
-    if (!tile.revealed && !view.revealAll) {
+    const fogged = !tile.revealed && !view.revealAll;
+    if (fogged && !view.fogDim) {
       // This fill is distinctly lighter than the map backdrop and the
       // empty-canvas background, so an unexplored but real tile reads as
       // fog, not void.
@@ -442,6 +444,12 @@ export class MapRenderer {
     for (const ref of overlayList(tile)) {
       const overlay = this._raster.source(ref, w, h);
       if (overlay) ctx.drawImage(overlay, sx, sy, w, h);
+    }
+
+    if (fogged) {
+      ctx.fillStyle = frontier.has(tile.id) ? INK.fogDimFrontier : INK.fogDim;
+      ctx.fillRect(sx, sy, w, h);
+      return;
     }
 
     // A drawn tile carrying a POI type gets a prominent outline. A POI
