@@ -127,10 +127,19 @@ test('a flag rewrite with the same key count updates the footprint', () => {
 
 test('no code outside src/storage/ writes localStorage directly', () => {
   const root = fileURLToPath(new URL('../src/', import.meta.url));
-  const direct = /localStorage\s*\.\s*(setItem|removeItem|clear)\b/;
+  // A write through any handle counts, so `storage?.setItem(...)` on a
+  // passed-in localStorage fails the test too. Lines that name
+  // sessionStorage are exempt, because sessionStorage has its own quota.
+  // ReloadView.js takes sessionStorage as a parameter, so its lines do not
+  // name it.
+  const direct = /localStorage\s*\.\s*clear\b|\??\.\s*(setItem|removeItem)\s*\(/;
+  const sessionOnly = new Set([join('view', 'ReloadView.js')]);
+  const writesLocal = (/** @type {string} */ text) =>
+    text.split('\n').some((line) => direct.test(line) && !line.includes('sessionStorage'));
   const offenders = readdirSync(root, { recursive: true })
     .map(String)
     .filter((path) => path.endsWith('.js') && !path.startsWith(`storage${sep}`))
-    .filter((path) => direct.test(readFileSync(join(root, path), 'utf8')));
+    .filter((path) => !sessionOnly.has(path))
+    .filter((path) => writesLocal(readFileSync(join(root, path), 'utf8')));
   assert.deepEqual(offenders, [], 'use writeStored and removeStored from storage/Footprint.js');
 });

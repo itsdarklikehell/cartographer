@@ -38,11 +38,11 @@ test('readFolds gives the defaults when the read throws or the value is not a li
   assert.deepEqual([...readFolds(storage, 'k', ['a'])], ['a']);
 });
 
-test('toggleFold stores the set, and readFolds reads it back without stray entries', () => {
+test('toggleFold writes the set, and readFolds reads it back without stray entries', () => {
   const storage = memoryStorage();
   const folds = readFolds(storage, 'k', ['Completed']);
-  assert.equal(toggleFold(storage, 'k', folds, 'Completed'), false);
-  assert.equal(toggleFold(storage, 'k', folds, 'npcs'), true);
+  assert.equal(toggleFold(storage.setItem, 'k', folds, 'Completed'), false);
+  assert.equal(toggleFold(storage.setItem, 'k', folds, 'npcs'), true);
   assert.deepEqual([...readFolds(storage, 'k', ['Completed'])], ['npcs']);
   storage.setItem('k', '["x", 3]');
   assert.deepEqual([...readFolds(storage, 'k', [])], ['x']);
@@ -50,7 +50,7 @@ test('toggleFold stores the set, and readFolds reads it back without stray entri
 
 test('toggleFold changes the set in memory when the write throws', () => {
   const folds = new Set();
-  assert.equal(toggleFold(broken, 'k', folds, 'a'), true);
+  assert.equal(toggleFold(broken.setItem, 'k', folds, 'a'), true);
   assert.ok(folds.has('a'));
   assert.equal(toggleFold(undefined, 'k', folds, 'a'), false);
 });

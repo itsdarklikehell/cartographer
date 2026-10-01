@@ -15,8 +15,8 @@
  * A direct `setItem` that rewrites an existing key with a new length keeps
  * the key count the same, so no backstop below detects it and the footprint
  * stays wrong until the next re-read. A test in `tests/Footprint.test.js`
- * fails when code outside `src/storage/` calls `localStorage.setItem`,
- * `removeItem`, or `clear` directly.
+ * fails when code outside `src/storage/` calls `setItem` or `removeItem` on
+ * a storage handle, or calls `localStorage.clear`.
  *
  * Other tabs write the same keys. Their writes reach this tab as `storage`
  * events, and `SaveManager.onExternalSave` passes every such event to

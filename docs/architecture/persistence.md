@@ -94,8 +94,10 @@ quota. Images count toward it only on the localStorage fallback (see
 `storage/Footprint.js` keeps a ledger from each key to its stored length, so
 the footprint check does not read every stored value after each save. Every
 localStorage write in the app goes through `writeStored` and `removeStored`,
-which record the write in the ledger. The theme switch and the onboarding
-overlay use them too, although they live in `src/ui/` and `src/app/`.
+which record the write in the ledger. The theme switch, the onboarding
+overlay, and the fold memory of the Story tab use them too, although they
+live outside `src/storage/`. `view/FoldMemory.js` takes the writer as a
+parameter, so its unit test can pass a stub.
 
 `HistoryLog.trimToCap` reads delta sizes from the same ledger. Writes from
 other tabs arrive as `storage` events, and `onExternalSave` passes each one to
@@ -105,7 +107,10 @@ its own size.
 A direct `setItem` that writes a new length to an existing key does not
 change the key count, so the ledger cannot detect it. A test in
 `tests/Footprint.test.js` scans `src/` for this reason. It fails when a file
-outside `src/storage/` calls `localStorage.setItem`, `removeItem`, or `clear`.
+outside `src/storage/` calls `setItem` or `removeItem` on any handle, or calls
+`localStorage.clear`. A line that names `sessionStorage` does not count,
+because sessionStorage has its own quota. `view/ReloadView.js` is also exempt,
+because it receives sessionStorage as a parameter.
 
 ### Campaign files
 

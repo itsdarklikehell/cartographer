@@ -2,8 +2,9 @@ import { textButton } from './buttons.js';
 import { buildDisclosure } from './Disclosure.js';
 import { el } from './dom.js';
 import { browserStorage, readFolds, toggleFold } from '../view/FoldMemory.js';
+import { writeStored } from '../storage/Footprint.js';
 
-const FOLD_KEY = 'campaign-builder.story-cards';
+const FOLD_KEY = 'campaign-builder:story-cards';
 
 /**
  * Give each card of the Story tab a fold button, and put a jump row at the top
@@ -44,7 +45,7 @@ export function mountStoryCards(panel, cards) {
     function setFolded(folded, store) {
       card?.classList.toggle('card--folded', folded);
       head.setAttribute('aria-label', `${folded ? 'Show' : 'Hide'} ${spec.label}`);
-      if (store && folds.has(spec.id) !== folded) toggleFold(storage, FOLD_KEY, folds, spec.id);
+      if (store && folds.has(spec.id) !== folded) toggleFold(writeStored, FOLD_KEY, folds, spec.id);
     }
     ready = true;
     setFolded(folds.has(spec.id), false);

@@ -7,8 +7,9 @@ import { mountListPanel } from './listPanel.js';
 import { buildDisclosure } from './Disclosure.js';
 import { gmQuestDetail, playerObjectives } from './QuestDetail.js';
 import { browserStorage, readFolds, toggleFold } from '../view/FoldMemory.js';
+import { writeStored } from '../storage/Footprint.js';
 
-const FOLD_KEY = 'campaign-builder.quest-groups';
+const FOLD_KEY = 'campaign-builder:quest-groups';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -80,7 +81,7 @@ export function mountQuestPanel(container, callbacks) {
           // stored fold and so changes nothing.
           onToggle: (open) => {
             if (open !== folds.has(group)) return;
-            toggleFold(storage, FOLD_KEY, folds, group);
+            toggleFold(writeStored, FOLD_KEY, folds, group);
             repaint();
           },
         });

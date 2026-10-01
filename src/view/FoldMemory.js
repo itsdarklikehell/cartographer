@@ -4,6 +4,11 @@
  * can throw (a private window, blocked site data), so every read and write
  * falls back: a failed read gives the defaults, and a failed write changes
  * only the set in memory.
+ *
+ * Reads take a storage handle, and writes take a writer function. In the
+ * browser the writer is `writeStored` from `storage/Footprint.js`, so the
+ * footprint ledger records the new length of the key. A direct `setItem`
+ * would leave the ledger wrong by the size of the record.
  */
 
 /**
@@ -26,20 +31,20 @@ export function readFolds(storage, key, defaults) {
 }
 
 /**
- * Fold or open `name` in `folds`, then store the set. Returns the new state:
- * true when `name` is folded.
- * @param {Pick<Storage, 'setItem'> | null | undefined} storage
+ * Fold or open `name` in `folds`, then store the set through `write`.
+ * Returns the new state: true when `name` is folded.
+ * @param {((key: string, value: string) => void) | null | undefined} write
  * @param {string} key
  * @param {Set<string>} folds
  * @param {string} name
  * @returns {boolean}
  */
-export function toggleFold(storage, key, folds, name) {
+export function toggleFold(write, key, folds, name) {
   const folded = !folds.has(name);
   if (folded) folds.add(name);
   else folds.delete(name);
   try {
-    storage?.setItem(key, JSON.stringify([...folds]));
+    write?.(key, JSON.stringify([...folds]));
   } catch {
     // The set in memory still changes.
   }
