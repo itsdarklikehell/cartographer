@@ -1,3 +1,4 @@
+import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { isSafeImageRef } from '../storage/ImageRefs.js';
 import { isGM } from '../view/ViewRole.js';
@@ -89,7 +90,15 @@ export function mountHandoutPanel(container, callbacks) {
         handout,
       );
 
-      return [toggle, el('span', 'handout-panel__title', handout.title)];
+      // The eye shows the state, and the badge says it in words, so the GM
+      // does not have to guess whether the icon names the state or the action.
+      return [
+        toggle,
+        el('span', 'handout-panel__title', handout.title),
+        handout.revealed
+          ? badge('Shown', { variant: 'success' })
+          : badge('Hidden', { variant: 'neutral' }),
+      ];
     },
     actions: (handout, ctx) =>
       ctx.gm
