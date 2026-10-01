@@ -6,9 +6,9 @@ import {
   pipReadout,
   slotColumnLabel,
   slotGroupReadout,
+  slotCount,
   slotLineReadout,
 } from '../view/StatBars.js';
-import { slotCount } from '../view/LevelUpCue.js';
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
@@ -39,15 +39,13 @@ export function emptyStatBar() {
  * rebuilding the line.
  * @param {{ current: number, max: number }} pool
  * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
- *   showLabel?: boolean, compact?: boolean, band?: boolean, hero?: boolean, className?: string,
- *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
+ *   showLabel?: boolean, compact?: boolean, band?: boolean, hero?: boolean,
+ *   className?: string }} opts
  *   modifier selects the fill color. critical turns on the low-fill red
  *   state. band colors the whole fill by remaining fraction instead, in
  *   three steps, for a bar read at a glance rather than watched. bonus
  *   appends a plus-N readout for temporary points on top of the pool, for
- *   example bonus HP. flank places a control, for example a damage or heal
- *   stepper, on each side of the track, and keeps the numeric readout after
- *   them. hero wraps the bar onto two lines, the label and the numbers
+ *   example bonus HP. hero wraps the bar onto two lines, the label and the numbers
  *   over a tall track the full width of the box. className adds a caller's own class to the wrapper.
  * @returns {{ element: HTMLElement, update: (pool: { current: number, max: number },
  *   bonus: number) => void }}
@@ -72,12 +70,10 @@ export function buildStatBar(pool, opts) {
       opts.className,
     ]),
     showLabel ? el('span', 'stat-bar__label u-muted', opts.label) : null,
-    opts.flank?.before,
     track,
-    opts.flank?.after,
     compact ? null : text,
   );
-  if (!opts.flank) wrap.setAttribute('role', 'img');
+  wrap.setAttribute('role', 'img');
 
   // The bonus readout exists only while there is a bonus. update creates
   // and removes it instead of hiding it.

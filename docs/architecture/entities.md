@@ -2279,10 +2279,10 @@ The parts of the sheet have their own modules:
 | `ui/ImprovementFlow.js` | The dialogs of an ability score improvement or a feat |
 
 `view/StatBars.js` decides what the HP bar and the slot pips *say*: the fill
-percentage, the low-HP threshold, the column headings, and every string that a
-screen reader gets. `view/LevelUpCue.js` writes the text of the level-up
-banner from the counts of pending levels, improvements, and feature choices,
-and the free count of a slot line, such as "2 of 3".
+percentage, the low-HP threshold, the column headings, the free count of a
+slot line, such as "2 of 3", and every string that a screen reader gets.
+`view/LevelUpCue.js` writes the text of the level-up banner from the counts
+of pending levels, improvements, and feature choices.
 
 The two Library authoring forms split the same way. `ui/ItemForm.js` and
 `ui/SpellForm.js` read their controls, and `entities/ItemDraft.js` and

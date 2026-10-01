@@ -15,13 +15,3 @@ export function levelUpCue({ levels, improvements, choices }) {
   ].filter(Boolean);
   return parts.length === 0 ? null : `Ready to level up: ${parts.join(', ')}.`;
 }
-
-/**
- * A short count of free slots for one spell level, such as "2 of 3". It sits
- * beside the pips, so a reader does not need a key to the pip glyphs.
- * @param {{ current: number, max: number }} pool
- * @returns {string}
- */
-export function slotCount(pool) {
-  return `${pool.current} of ${pool.max}`;
-}

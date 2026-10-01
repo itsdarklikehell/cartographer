@@ -10,6 +10,7 @@ import {
   slotColumnLabel,
   slotLineReadout,
   slotGroupReadout,
+  slotCount,
 } from '../src/view/StatBars.js';
 
 /** @param {number} current @param {number} max @param {object} [extra] */
@@ -140,4 +141,8 @@ test('a slot column names its free and total slots', () => {
     slotGroupReadout({ id: 'pact-3', name: 'Pact slots', current: 0, max: 2 }),
     'Level 3 pact slots: 0 of 2 free',
   );
+});
+
+test('the slot count names free slots against the maximum', () => {
+  assert.equal(slotCount({ current: 2, max: 3 }), '2 of 3');
 });

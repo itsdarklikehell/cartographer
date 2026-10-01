@@ -130,3 +130,13 @@ export function slotGroupReadout(pool) {
 export function slotLineReadout(pools) {
   return ['Spell slots', ...pools.map(slotGroupReadout)].join('. ');
 }
+
+/**
+ * A short count of free slots for one spell level, such as "2 of 3". It sits
+ * beside the pips, so a reader does not need a key to the pip glyphs.
+ * @param {{ current: number, max: number }} pool
+ * @returns {string}
+ */
+export function slotCount(pool) {
+  return `${pool.current} of ${pool.max}`;
+}
