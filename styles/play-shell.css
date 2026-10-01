@@ -153,6 +153,13 @@
     padding-bottom: 5rem;
   }
 
+  /* The bar is 2.75rem of buttons plus its padding. In the views that hide
+     the breadcrumb row, the toast stack takes its CSS place in the
+     bottom-right corner, and there the bar would cover it. */
+  body.mode-play .toast-stack {
+    bottom: calc(2.75rem + 2 * var(--space-2) + var(--space-3) + env(safe-area-inset-bottom));
+  }
+
   body.mode-play #sidebar-tabs,
   body.mode-play #sidebar-toggle {
     display: none;
