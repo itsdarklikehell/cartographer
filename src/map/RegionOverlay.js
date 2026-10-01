@@ -57,17 +57,20 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize, getNodeNa
     }
     if (!any) continue;
     const hue = INK.regionHues[(slots.get(group.childNodeId) ?? 0) % INK.regionHues.length];
+    // The target of the Region brush draws its tint three times over and a
+    // wider border, so its cells stand out from the other regions.
+    const emphasis = group.childNodeId === view.highlightRegionId ? 3 : 1;
 
     ctx.save();
     ctx.clip(clip);
     ctx.fillStyle = hue.tint;
-    ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    for (let i = 0; i < emphasis; i++) ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     const outline = new Path2D();
     for (const e of groupOutline(group)) {
       outline.moveTo(cellEdge(e.x1, size, view.offsetX), cellEdge(e.y1, size, view.offsetY));
       outline.lineTo(cellEdge(e.x2, size, view.offsetX), cellEdge(e.y2, size, view.offsetY));
     }
-    const width = Math.max(2, Math.min(4, size / 12)) * px;
+    const width = Math.max(2, Math.min(4, size / 12)) * px * (emphasis > 1 ? 2 : 1);
     ctx.lineCap = 'square';
     ctx.strokeStyle = INK.regionRim;
     ctx.lineWidth = width * 2 + 2 * px;

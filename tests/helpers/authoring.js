@@ -53,6 +53,7 @@ export function authoring({ mode = 'build', scale = 1 } = {}) {
     activeBrush: { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` },
     buildTab: 'build-tab-paint',
     fogTool: null,
+    syncBuildTool: () => {},
     mapCanvas: {
       refreshNodeTiles: () => {},
       refreshNode: () => {},

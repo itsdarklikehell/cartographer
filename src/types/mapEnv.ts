@@ -34,6 +34,8 @@ export interface MapEnv {
   activeBrush: Brush;
   /** The id of the open Build rail tab. A brush paints only on the Paint tab. */
   buildTab: string;
+  /** Refreshes the Build tool chip and the region highlight on the map. */
+  syncBuildTool: () => void;
   fogTool: 'reveal' | 'hide' | null;
   goToNode: (nodeId: string) => void;
   selectTile: (tileId: string) => void;

@@ -42,6 +42,7 @@ function recordingEnv(currentNodeId = 'node-a') {
     worldTree: { update: () => calls.push('worldTree') },
     regionTree: { update: () => calls.push('regionTree') },
     palettePanel: { regionPicker: { refresh: () => calls.push('regionPicker') } },
+    syncBuildTool: () => calls.push('syncBuildTool'),
   });
   return { app, env, calls, node, canvasNodes };
 }
@@ -58,6 +59,7 @@ test('reframe re-frames the canvas, drops the selection, and re-syncs party and 
     'worldTree',
     'regionTree',
     'regionPicker',
+    'syncBuildTool',
   ]);
 });
 
@@ -71,6 +73,7 @@ test('without reframe the canvas redraws in place, keeping the selection and fra
     'worldTree',
     'regionTree',
     'regionPicker',
+    'syncBuildTool',
   ]);
 });
 
@@ -84,6 +87,7 @@ test('omitting the options behaves like reframe: false', () => {
     'worldTree',
     'regionTree',
     'regionPicker',
+    'syncBuildTool',
   ]);
 });
 

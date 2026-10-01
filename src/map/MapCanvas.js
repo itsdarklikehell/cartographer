@@ -78,6 +78,8 @@ export class MapCanvas {
     this.focusTileId = null;
     /** @type {string | null} tile id highlighted as the Build-mode selection, if any */
     this.selectedTileId = null;
+    /** @type {string | null} the region whose blocks draw with emphasis */
+    this.highlightRegionId = null;
     /** @type {string[]} tile ids in the current node carrying a live encounter */
     this.encounterTileIds = [];
     /** @type {string[]} tile ids in the current node holding a placed NPC */
@@ -421,6 +423,18 @@ export class MapCanvas {
   }
 
   /**
+   * Draw the blocks linked to one child node with a stronger tint and a
+   * wider border, or none with null. Build mode passes the region that the
+   * Region brush paints, so the GM sees which cells already belong to it.
+   * @param {string | null} nodeId
+   */
+  setHighlightRegion(nodeId) {
+    if (this.highlightRegionId === nodeId) return;
+    this.highlightRegionId = nodeId;
+    this.render();
+  }
+
+  /**
    * Set the tile ids in the current node that carry a live encounter, so the
    * renderer can mark them. The renderer draws them only within markerRange
    * of the party or a character token, so distant dangers stay unknown until
@@ -632,6 +646,7 @@ export class MapCanvas {
       occluders: this.occluders,
       armedExitSide: this.armedExitSide,
       selectedTileId: this.selectedTileId,
+      highlightRegionId: this.highlightRegionId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,
       pixelRatio: globalThis.devicePixelRatio || 1,

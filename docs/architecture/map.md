@@ -123,6 +123,11 @@ draws the box. `groupOutline` in `src/map/RegionOutline.js` lists the cell
 edges that the border follows, which are the sides of member cells whose
 neighbor on that side is outside the group.
 
+The view field `highlightRegionId` names one child node. Its groups draw the
+tint three times over and a border twice as wide. Build mode sets it to the
+target of the Region brush while that brush paints on the Paint tab, so the
+GM sees which cells already link to the region.
+
 Each region takes a color from `INK.regionHues`. `regionSlots` gives two
 regions that touch two different slots. It removes the region with the fewest
 neighbors, one at a time, and then colors the regions in the reverse order.

@@ -71,6 +71,7 @@ export function wireMapView(app) {
         return buildTab;
       },
       fogTool: null, // active Play-mode GM fog brush
+      syncBuildTool: () => syncToolChip(),
       goToNode,
       selectTile,
       clearSelection,
@@ -441,10 +442,18 @@ export function wireMapView(app) {
   miniMap = chrome.miniMap;
   mapControls = chrome.mapControls;
   const { syncMapOccluders } = chrome;
-  syncToolChip = mountBuildToolChip(mapControls.element, () => {
+  const toolChip = mountBuildToolChip(mapControls.element, () => {
     const region = grid.getNode(palettePanel.regionPicker.getTarget() ?? '');
     return toolChipLabel(effectiveBrush(env.activeBrush, buildTab), region?.name ?? null);
-  }).sync;
+  });
+  // While the Region brush paints, the map draws the blocks of its target
+  // region with emphasis, so the GM sees which cells already link there.
+  syncToolChip = () => {
+    toolChip.sync();
+    const painting =
+      state.mode === 'build' && effectiveBrush(env.activeBrush, buildTab) === 'region';
+    mapCanvas.setHighlightRegion(painting ? palettePanel.regionPicker.getTarget() : null);
+  };
   palettePanel.regionPicker.root.addEventListener('change', syncToolChip);
 
   // Escape puts a held fog brush down, the same way it dismisses a dialog.

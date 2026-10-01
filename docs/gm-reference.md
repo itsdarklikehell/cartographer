@@ -379,7 +379,7 @@ right end of the map toolbar names the tool that a click uses, such as
 | Tool | What a click or drag does |
 | --- | --- |
 | Inspect | Selects one cell and opens it in the Tile tab. This is the starting tool |
-| Region | Links every cell that the pointer crosses to the node in **Paint region**, and moves the cell out of any other region. It skips site entrances and says how many it skipped |
+| Region | Links every cell that the pointer crosses to the node in **Paint region**, and moves the cell out of any other region. It skips site entrances and says how many it skipped. While the Region tool is active, the cells that already link to the node in **Paint region** show a stronger tint and a wider border |
 | Erase path | Removes the road or path overlay of a cell. The terrain, the metadata, and the region link stay |
 | Erase tile | Clears the whole cell back to empty |
 
