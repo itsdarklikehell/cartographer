@@ -27,7 +27,9 @@ the full width. See [Combat screen](#combat-screen).
 ## Roles
 
 The role switch sits at the right end of the header. Its accessible name is
-Viewer, and its options are GM and Player.
+Viewer, and its options are GM and Player. The first switch to Player in a
+browser shows the toast "Player view. Click GM to return.", because the
+Player view hides the mode switch and the campaign controls.
 
 | Role | Sees | Can change |
 | --- | --- | --- |
@@ -155,8 +157,8 @@ header.
 | Load example | Replaces the campaign with the example campaign after a confirmation. See [The example campaign](#the-example-campaign) |
 | Save | Writes the campaign to the local storage of the browser. The line under the title reads "No unsaved changes" after the page loads, "Unsaved changes" while changes wait for a write, and "Saved just now", "Saved 5 min ago", or "Saved 2 h ago" after a manual save or an autosave from this tab. The button keeps an outline while changes are unsaved |
 | Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again. If changes are unsaved, the app asks first, because the step discards them. The toast after the step names the parts of the campaign that changed, such as characters or the clock. The tab keeps the mode, the selected character, and the open tabs |
-| Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
-| Import | Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
+| Export | Its accessible name is "Export campaign". Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
+| Import | Its accessible name is "Import campaign". Loads a campaign from a `.json` file. If the current campaign is not blank, the app asks first. If the file has library customizations, a prompt offers to replace yours. The campaign imports whichever answer you give |
 
 A save from a stepped-back position discards the steps that were left to
 redo.
@@ -2829,9 +2831,9 @@ customizations, and a campaign import offers to restore them. See
 
 | Library file control | What it does |
 | --- | --- |
-| Export | Downloads `campaign-library.json` |
-| Import | Loads an exported file into this browser, and replaces the customizations after a confirmation |
-| Reset | Removes all customizations and restores the built-in defaults |
+| Export library | Downloads `campaign-library.json` |
+| Import library | Loads an exported file into this browser, and replaces the customizations after a confirmation |
+| Reset library | Removes all customizations and restores the built-in defaults |
 
 At startup, if the browser has no customizations, the app loads
 `library/campaign-library.json` from the project directory. The merged

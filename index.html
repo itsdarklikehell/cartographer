@@ -60,8 +60,8 @@
           <button id="redo-btn" class="btn" type="button">Redo</button>
         </div>
         <div class="btn-cluster" role="group" aria-label="Transfer">
-          <button id="export-btn" class="btn" type="button">Export</button>
-          <button id="import-btn" class="btn" type="button">Import</button>
+          <button id="export-btn" class="btn" type="button" aria-label="Export campaign" data-tip="Download the whole campaign as a JSON file">Export</button>
+          <button id="import-btn" class="btn" type="button" aria-label="Import campaign" data-tip="Load a campaign from a JSON file">Import</button>
         </div>
         <input id="import-input" type="file" accept="application/json" hidden />
       </div>
@@ -255,9 +255,9 @@
         <h2 class="card__title">Library file</h2>
         <p class="library-io__hint">Customizations save in this browser. Export them as a JSON file — kept as <code>library/campaign-library.json</code> it stays out of version control and auto-loads in a fresh browser — and import one to hot-load it here.</p>
         <div class="library-io__actions">
-          <button id="library-export-btn" class="btn" type="button">Export</button>
-          <button id="library-import-btn" class="btn" type="button">Import</button>
-          <button id="library-reset-btn" class="btn" type="button">Reset</button>
+          <button id="library-export-btn" class="btn" type="button">Export library</button>
+          <button id="library-import-btn" class="btn" type="button">Import library</button>
+          <button id="library-reset-btn" class="btn" type="button">Reset library</button>
           <input id="library-import-input" type="file" accept="application/json" hidden />
         </div>
       </section>

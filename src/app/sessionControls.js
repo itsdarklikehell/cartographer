@@ -5,6 +5,10 @@ import { GM_LOCK_KEY, createHeartbeatLock } from '../storage/GMLock.js';
 import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
 import { confirmModal } from '../ui/Modal.js';
 import { iconButton, segSwitch } from '../ui/buttons.js';
+import { writeStored } from '../storage/Footprint.js';
+
+/** localStorage key set once the first switch to the Player view showed its toast. */
+const PLAYER_HINT_KEY = 'campaign-builder:player-hint-shown';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/app.js').AppMode} AppMode */
@@ -167,6 +171,14 @@ export function wireSessionControls(app) {
         queueMicrotask(() => roleSwitch.setValue('player'));
       }
       if (role === 'player') gmLock.release();
+      // The first switch to Player in this browser hides the mode switch and
+      // the campaign controls, so a toast names the way back.
+      if (role === 'player' && next === 'player' && app.state.role === 'gm') {
+        if (localStorage.getItem(PLAYER_HINT_KEY) !== '1') {
+          writeStored(PLAYER_HINT_KEY, '1');
+          app.toasts.show('Player view. Click GM to return.');
+        }
+      }
       app.state.role = role;
       sessionStorage.setItem('campaign-builder:role', role);
       applyRole();
