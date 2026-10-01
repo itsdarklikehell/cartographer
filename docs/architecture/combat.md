@@ -330,7 +330,11 @@ The action bar draws the budget as pips. Each cost has one pip, struck through
 once spent, and the bar shows the swing count when more than one swing is
 left. The pips show the budget and never gate a button. `CombatantRow`
 includes `used` and `attacksLeft`, so the screen reads them from the same row
-that it draws everything else from.
+that it draws everything else from. `combat/SpentCost.js` names the spent
+cost behind each button (`costNote`, `attackNote`, `spellNote`). The bar dims
+such a button and adds the note to its tooltip and accessible name, as in
+"Cast Message, action spent". The button stays live, because its dialog
+offers the GM the waiver.
 
 Each pip is a toggle button with `aria-pressed`. A press calls
 `toggleBudget` in `src/app/turnActions.js`, which goes through the

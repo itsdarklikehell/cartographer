@@ -3,6 +3,8 @@ import { bareButton, sectionLabel, textButton } from './buttons.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { groupSpellsByLevel } from '../entities/SpellView.js';
 import { ACTION_COSTS, COST_LABELS } from '../combat/ActionBudget.js';
+import { attackNote, costNote, spellNote } from '../combat/SpentCost.js';
+import { setTip } from './Tooltip.js';
 
 /** @typedef {import('../types/combat.js').ActionBudget} ActionBudget */
 /** @typedef {import('../types/combat.js').ActionCost} ActionCost */
@@ -66,18 +68,38 @@ export function combatActionBar(actions, callbacks, budget = null) {
     groups,
   );
   if (budget) bar.insertBefore(budgetRow(budget, callbacks.onToggleBudget), groups);
+  /**
+   * Dim a button whose cost the turn already spent, and name the reason in
+   * its tooltip and accessible name. With no budget, nothing is dimmed.
+   * @param {HTMLButtonElement} button
+   * @param {(b: { used: ActionBudget, attacksLeft: number }) => string | null} noteOf
+   */
+  const mark = (button, noteOf) => {
+    const note = budget && noteOf(budget);
+    if (!note) return button;
+    button.classList.add('combat-action-bar__button--spent');
+    setTip(button, `${note}. ${button.dataset.tip ?? ''}`.trim());
+    button.setAttribute(
+      'aria-label',
+      `${button.getAttribute('aria-label')}, ${note.toLowerCase()}`,
+    );
+    return button;
+  };
 
   if (actions.weapons.length > 0) {
     groups.appendChild(
       group(
         'Weapons',
         actions.weapons.map((weapon) =>
-          textButton(weapon.name, () => callbacks.onWeaponAttack(weapon), {
-            icon: 'sword',
-            className: 'combat-action-bar__attack',
-            ariaLabel: `Attack with ${weapon.name}`,
-            title: `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
-          }),
+          mark(
+            textButton(weapon.name, () => callbacks.onWeaponAttack(weapon), {
+              icon: 'sword',
+              className: 'combat-action-bar__attack',
+              ariaLabel: `Attack with ${weapon.name}`,
+              title: `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
+            }),
+            (b) => attackNote(b.attacksLeft),
+          ),
         ),
       ),
     );
@@ -90,12 +112,15 @@ export function combatActionBar(actions, callbacks, budget = null) {
       group(
         'Off-hand (bonus action)',
         offhand.map((weapon) =>
-          textButton(weapon.name, () => onOffhand(weapon), {
-            icon: 'sword',
-            className: 'combat-action-bar__attack',
-            ariaLabel: `Attack with ${weapon.name} in the off hand`,
-            title: `Roll an off-hand attack with ${weapon.name}. It adds no ability bonus to damage without the Two-Weapon Fighting style`,
-          }),
+          mark(
+            textButton(weapon.name, () => onOffhand(weapon), {
+              icon: 'sword',
+              className: 'combat-action-bar__attack',
+              ariaLabel: `Attack with ${weapon.name} in the off hand`,
+              title: `Roll an off-hand attack with ${weapon.name}. It adds no ability bonus to damage without the Two-Weapon Fighting style`,
+            }),
+            (b) => costNote(b.used, 'bonus'),
+          ),
         ),
       ),
     );
@@ -106,12 +131,15 @@ export function combatActionBar(actions, callbacks, budget = null) {
       group(
         level.label,
         level.spells.map((spell) =>
-          textButton(spell.name, () => callbacks.onCastSpell(spell), {
-            icon: 'sparkles',
-            className: 'combat-action-bar__cast',
-            ariaLabel: `Cast ${spell.name}`,
-            title: `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
-          }),
+          mark(
+            textButton(spell.name, () => callbacks.onCastSpell(spell), {
+              icon: 'sparkles',
+              className: 'combat-action-bar__cast',
+              ariaLabel: `Cast ${spell.name}`,
+              title: `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
+            }),
+            (b) => spellNote(b.used, spell),
+          ),
         ),
       ),
     );
@@ -124,15 +152,18 @@ export function combatActionBar(actions, callbacks, budget = null) {
         group(
           label,
           entries.map((action) =>
-            textButton(action.name, () => onTurn(action), {
-              className: 'combat-action-bar__turn',
-              ariaLabel:
-                action.ariaLabel ??
-                (action.cost === 'action' || action.cost === null
-                  ? `Take the ${action.name} action`
-                  : `Take the ${action.name} action as a ${COST_LABELS[action.cost].toLowerCase()}`),
-              title: action.title,
-            }),
+            mark(
+              textButton(action.name, () => onTurn(action), {
+                className: 'combat-action-bar__turn',
+                ariaLabel:
+                  action.ariaLabel ??
+                  (action.cost === 'action' || action.cost === null
+                    ? `Take the ${action.name} action`
+                    : `Take the ${action.name} action as a ${COST_LABELS[action.cost].toLowerCase()}`),
+                title: action.title,
+              }),
+              (b) => costNote(b.used, action.cost),
+            ),
           ),
         ),
       );

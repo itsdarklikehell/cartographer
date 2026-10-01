@@ -378,29 +378,59 @@ body.mode-combat .app-buildrail {
   gap: var(--space-2);
 }
 
-/* What the turn has left. A spent pip loses its border and gains a line
-   through it, so the row reads without relying on color. */
+/* What the turn has left, as a status row. A free pip shows a filled dot,
+   and a spent pip shows an empty ring with its label muted and struck
+   through, so the row reads without relying on color. */
 .combat-action-bar__budget {
   padding-left: var(--space-2);
   font-size: var(--text-label);
 }
 
 .combat-action-bar__pip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   padding: 0 var(--space-1);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: var(--radius-sm);
   color: var(--text);
 }
 
+.combat-action-bar__pip::before {
+  content: '';
+  flex: 0 0 auto;
+  width: 0.6em;
+  height: 0.6em;
+  border: 2px solid var(--success);
+  border-radius: 50%;
+  background: var(--success);
+}
+
 .combat-action-bar__pip--spent {
-  border-color: transparent;
   color: var(--text-muted);
   text-decoration: line-through;
 }
 
-/* A pip the GM can press. A spent toggle keeps a dashed border, so it
-   still reads as a control. */
+.combat-action-bar__pip--spent::before {
+  border-color: var(--text-muted);
+  background: transparent;
+}
+
+/* A button whose cost the turn already spent. It stays live, because its
+   dialog lets the GM waive the cost, and its tooltip names the reason. */
+.combat-action-bar__button--spent {
+  opacity: 0.55;
+}
+
+.combat-action-bar__button--spent:hover,
+.combat-action-bar__button--spent:focus-visible {
+  opacity: 1;
+}
+
+/* A pip the GM can press keeps a border, so it reads as a control. A spent
+   toggle has a dashed border. */
 .combat-action-bar__pip--toggle {
+  border-color: var(--border);
   cursor: pointer;
 }
 
