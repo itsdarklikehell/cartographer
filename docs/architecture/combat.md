@@ -223,7 +223,10 @@ defeated combatant on purpose. An id that stops resolving falls back to
 whoever's turn it is. The app releases the target on the refresh that shows
 it defeated, out of the order, or with the fight over. Otherwise the card of
 a defeated foe would keep its pressed ring after the attack dialog stopped
-using the pick.
+using the pick. `heldTarget` in `view/CombatSelection.js` also releases the
+target when the turn changes, because a target picked for one combatant's
+attack would otherwise open the next combatant's dialogs and HP box on the
+same card, which can be that combatant's own card.
 
 ## The action budget
 

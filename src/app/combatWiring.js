@@ -6,6 +6,7 @@ import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
+import { heldTarget, turnKey } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
 import { applyToTarget, endSpellEffects } from './combatantWrites.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
@@ -50,19 +51,25 @@ export function wireCombatScreen(app) {
    * `releaseStaleTarget`). The dialogs also ignore an id that matches no
    * living foe, so a race between the two has no cost. */
   let selectedTargetId = /** @type {string | null} */ (null);
+  /** The turn that the held target was picked on (see `turnKey`). */
+  let heldTurn = /** @type {string | null} */ (null);
 
   /**
-   * Release the held target once it leaves the fight for good: a defeated
-   * creature, a dead character, removed from the order, or the fight over. A
-   * dying ally stays selected, so the HP box of the combat screen can target
-   * it for a heal. A released target drops the pressed ring from its card and
-   * its name from the active column, which the attack dialog also ignores.
+   * Release the held target when the turn changes or when it leaves the
+   * fight for good (see `heldTarget`). A released target drops the pressed
+   * ring from its card and its name from the active column, which the
+   * attack dialog also ignores.
    */
   function releaseStaleTarget() {
-    if (!selectedTargetId) return;
-    const inOrder = state.combat?.order.some((p) => p.id === selectedTargetId) ?? false;
-    const found = inOrder ? findCombatant(app, selectedTargetId) : null;
-    if (!found || isGone(found)) selectedTargetId = null;
+    ({ selectedId: selectedTargetId, heldTurn } = heldTarget({
+      selectedId: selectedTargetId,
+      heldTurn,
+      combat: state.combat,
+      gone: (id) => {
+        const found = findCombatant(app, id);
+        return !found || isGone(found);
+      },
+    }));
   }
 
   const screen = mountCombatScreen(mustGetElement('combat-screen'), {
@@ -103,6 +110,7 @@ export function wireCombatScreen(app) {
     // Clicking the held card releases it, so the toggle acts like a checkbox.
     onSelectTarget: (id) => {
       selectedTargetId = selectedTargetId === id ? null : id;
+      heldTurn = turnKey(state.combat);
     },
     // These are the current turn's weapons and spells, the same
     // derivations the sidebar strip used. The screen decides whether to
