@@ -2230,30 +2230,46 @@ always opens a new browser tab, and it has no link menu.
 | Bonus HP (temporary) | Temporary points on top of the real HP. Damage drains them first, and healing never refills them. A typed amount stays after the spell that granted the old amount ends |
 | Unarmored base AC | The unarmored baseline, normally 10 |
 
-### Character detail card
+### Character summary card
 
-The character detail card in the Sheet tab of the sidebar has four tabs.
+The Sheet tab of the sidebar shows a summary card of the selected
+character. It has what a GM reads during play:
 
-| Tab | Contents |
-| --- | --- |
-| Character | The character sheet |
-| Equipment | The nine equipment slots |
-| Inventory | The item list |
-| Spellbook | The spells that the character can learn, knows, and prepared. See [Spellbook tab](#spellbook-tab) |
+- the name, the race, the HP bar, and the **Damage** and **Heal** controls
+- the level line with AC, initiative, speed, passive Perception, the
+  proficiency bonus, and XP
+- the spell slot lines
+- the level-up banner
+- **Checks and saves**, a grid with a button for each plain ability check
+  and each saving throw. A click rolls it through the dice tray. A solid dot
+  marks a proficient save
+- the counters of limited resources, such as Second Wind
+- the Conditions block, with exhaustion
+- the 18 skills, one line each with the bonus. A click rolls the skill
+
+**Open full sheet** at the top of the card opens everything else. A Player
+tab bound to a character shows the same card and the same button.
 
 ### Full sheet
 
-**Open full sheet** at the top of the sheet card opens the sheet the width
+**Open full sheet** at the top of the summary card opens the sheet the width
 of the page, in the way the combat screen takes the page. The party row
 menu (the three-dot button) has **Open full sheet** too, and the C key
 opens and closes it in Play mode. The map, the party dock, and the sidebar
 hide while it is open. The bar along the top has **Back to the map** and one
 tab per party member. Left and Right move between the tabs, and Home and End
-go to the first and last. The full sheet shows the same Character,
-Equipment, Inventory, and Spellbook tabs as the sidebar, with room for two
-columns. **Back to the map** or Escape closes it and puts focus back on the
-control that opened it. A switch to Build mode or a fight shows that mode,
-and the full sheet comes back on the return to Play.
+go to the first and last. **Back to the map** or Escape closes it and puts
+focus back on the control that opened it. A switch to Build mode or a fight
+shows that mode, and the full sheet comes back on the return to Play.
+
+The full sheet has four tabs.
+
+| Tab | Contents |
+| --- | --- |
+| Character | The whole character sheet. See [Sheet contents](#sheet-contents) |
+| Equipment | The nine equipment slots |
+| Inventory | The item list |
+| Spellbook | The spells that the character can learn, knows, and prepared. See [Spellbook tab](#spellbook-tab) |
 
 ### Sheet contents
 
@@ -2274,21 +2290,20 @@ While a character has a level to assign, an ability score improvement, or a
 class feature choice left, a banner at the top of the sheet says so, such as
 "Ready to level up: 1 level to assign." The GM's **Level up** button opens
 the full sheet. For a pending level, it then opens **Assign a level**. For
-an improvement or a feature choice, it moves focus to the Progression block. A Player tab shows the
-banner with no button. The party row of the character shows a **Level up**
-mark at the same time.
+an improvement or a feature choice, it moves focus to the Progression block.
+A Player tab shows the banner with no button. The party row of the character
+shows a **Level up** mark at the same time.
 
-The expanded sheet adds these items:
+The Character tab of the full sheet adds these items to the summary:
 
-- the ability scores with their modifiers
-- the XP award control
-- custom resource pools
-- the Progression block
-- the hit-dice pool
-- the Features section, with one card for each class feature, race trait, and feat. A class feature with a claimed choice has a **Change** button for the GM
-- the six saving throws and the 18 skills, with the bonus of each
-- passive Perception
-- the Conditions block
+- the ability scores with their modifiers, which replace the quick-roll grid
+- the six saving throws, with the bonus of each
+- **Add pool** and the edit buttons of custom resource pools
+- the Progression block, with the hit-dice pool
+- the Features section, with one card for each class feature, race trait,
+  and feat. A class feature with a claimed choice has a **Change** button
+  for the GM
+- the castable spells
 
 A dot in front of each save or skill shows how trained the character is.
 

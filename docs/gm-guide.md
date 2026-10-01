@@ -630,8 +630,8 @@ that.
 3. Pick a subclass from the list. To type a name that is not in the list,
    pick **Other…** and type the name.
 4. Click **Choose**.
-5. If the list marked the subclass "casts spells", open the **Spellbook**
-   tab and learn the cantrips and spells of the character.
+5. If the list marked the subclass "casts spells", open the full sheet and
+   its **Spellbook** tab, and learn the cantrips and spells of the character.
 
 ### Choose eldritch invocations
 
@@ -668,7 +668,8 @@ what the app does for each invocation.
 Only the GM adds items. A player uses, gives away, and discards what their
 character carries.
 
-1. Open the character sheet, then the **Inventory** tab.
+1. Click **Open full sheet** on the character sheet, then the **Inventory**
+   tab.
 2. In the form below the list, set the item type, the description, and any
    damage roll, AC bonus, or ability buff.
 3. To start from a standard item, pick it in **Preset**, then change the

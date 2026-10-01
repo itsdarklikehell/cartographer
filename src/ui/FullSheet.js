@@ -12,9 +12,9 @@ import { el } from './dom.js';
  *
  * The view does not build a second sheet. It moves the sheet card, with its
  * Character, Equipment, Inventory, and Spellbook tabs, from the sidebar into
- * its body, and moves it back on close. Every control of the card keeps
- * working in both places, and the wide body gives the card the room for its
- * two-column layout.
+ * its body, and moves it back on close. In the sidebar the card is a summary
+ * with no tab strip, and sheet-summary.css shows the long sections and the
+ * other tabs here alone. The wide body gives the card room for two columns.
  *
  * Escape closes the view when no dialog is open. Close puts focus back on
  * the control that opened the view.

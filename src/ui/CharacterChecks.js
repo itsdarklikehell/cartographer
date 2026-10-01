@@ -100,6 +100,26 @@ export function saveRows(character) {
 }
 
 /**
+ * A row per plain ability check, such as a STR check with no skill. No
+ * proficiency applies to one, so the bonus is the modifier and any
+ * exhaustion penalty.
+ * @param {Character} character
+ * @returns {CheckRow[]}
+ */
+export function abilityRows(character) {
+  return ABILITY_SCORES.map((ability) => ({
+    kind: 'check',
+    key: ability,
+    name: ability,
+    ability,
+    bonus: checkBonus(character, ability),
+    proficient: false,
+    expert: false,
+    description: `${abilityName(ability)}. ${abilityDescription(ability)}`,
+  }));
+}
+
+/**
  * A row per skill, in the skill table's display order. As with saves, an
  * untrained skill still gets a row, since anyone can attempt one.
  * @param {Character} character
@@ -214,4 +234,55 @@ export function buildSkillsBlock(character, opts = {}) {
   );
   const footer = el('div', 'u-col u-g1 check-block__footer', passive, legend);
   return buildBlock('Skills', skillRows(character), opts, footer);
+}
+
+/**
+ * The quick rolls of the summary card: the six abilities across the top,
+ * with a row of plain ability checks and a row of saving throws under them.
+ * Each number is a button that rolls when the host wires `onCheck`. A save
+ * the character is proficient in has the solid training dot.
+ * @param {Character} character
+ * @param {ChecksOptions} [opts]
+ * @returns {HTMLElement}
+ */
+export function buildQuickRolls(character, opts = {}) {
+  const onCheck = opts.onCheck ?? null;
+  const grid = el('div', 'quick-rolls__grid');
+  /** @param {string} text */
+  const label = (text) => {
+    const span = el('span', 'quick-rolls__label u-muted', text);
+    span.setAttribute('aria-hidden', 'true');
+    return span;
+  };
+  grid.append(el('span', 'quick-rolls__corner'), ...ABILITY_SCORES.map(label));
+  /** @param {string} title @param {CheckRow[]} rows @param {string} noun */
+  const addLine = (title, rows, noun) => {
+    grid.appendChild(label(title));
+    for (const row of rows) {
+      const state = training(row);
+      const dot = el('span', `check-row__dot check-row__dot--${state}`);
+      dot.setAttribute('aria-hidden', 'true');
+      const parts = [
+        row.proficient ? dot : null,
+        el('span', 'check-row__bonus', formatModifier(row.bonus)),
+      ];
+      const trained = row.proficient ? `, ${TRAINING_TEXT[state]}` : '';
+      const reading = `${row.name} ${noun} ${formatModifier(row.bonus)}${trained}`;
+      if (onCheck) {
+        grid.appendChild(
+          bareButton(parts, () => onCheck({ kind: row.kind, key: row.key }), {
+            className: 'quick-rolls__cell quick-rolls__cell--roll',
+            ariaLabel: `Roll ${reading}`,
+            title: `Roll ${reading}`,
+          }),
+        );
+      } else {
+        const cell = el('span', 'quick-rolls__cell', ...parts, el('span', 'sr-only', reading));
+        grid.appendChild(cell);
+      }
+    }
+  };
+  addLine('Check', abilityRows(character), 'check');
+  addLine('Save', saveRows(character), 'saving throw');
+  return el('div', 'quick-rolls u-col u-g1', sectionLabel('Checks and saves'), grid);
 }

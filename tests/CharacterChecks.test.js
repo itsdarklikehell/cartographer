@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { training, saveRows, skillRows } from '../src/ui/CharacterChecks.js';
+import { training, saveRows, skillRows, abilityRows } from '../src/ui/CharacterChecks.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { withProficiencies, withExpertise } from '../src/entities/Proficiencies.js';
 import { SKILL_IDS } from '../src/data/skills.js';
@@ -136,4 +136,17 @@ test('the printed bonus already carries the exhaustion penalty', () => {
   assert.equal(row(saveRows(tired), 'CON').bonus, 2, '+3 CON, +3 proficiency, less 4');
   assert.equal(row(skillRows(tired), 'stealth').bonus, 3, '+1 DEX, +6 expertise, less 4');
   assert.equal(row(skillRows(tired), 'athletics').bonus, -4, '+0 STR, less 4');
+});
+
+test('ability check rows add the modifier alone, even with a proficient save', () => {
+  const rows = abilityRows(expert());
+  assert.deepEqual(
+    rows.map((r) => r.key),
+    ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'],
+  );
+  assert.equal(row(rows, 'CON').bonus, 3);
+  assert.equal(row(rows, 'CON').kind, 'check');
+  assert.equal(row(rows, 'CON').proficient, false);
+  assert.equal(row(rows, 'WIS').bonus, -1);
+  assert.match(row(rows, 'DEX').description, /^Dexterity\. /);
 });

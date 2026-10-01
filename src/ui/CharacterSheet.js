@@ -15,7 +15,7 @@ import { passivePerception } from '../entities/Checks.js';
 import { characterProficiency } from '../entities/Multiclass.js';
 import { buildConditionsSection } from './CharacterConditions.js';
 import { buildSpellsSection } from './CharacterSpells.js';
-import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
+import { buildQuickRolls, buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
 import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { addPoolButton, poolEditButtons } from './PoolEditor.js';
 import { isCustomPool, rechargeLabel } from '../entities/CustomPools.js';
@@ -177,6 +177,19 @@ export function mountCharacterSheet(
    * @type {HTMLElement | null}
    */
   let progressSection = null;
+
+  /**
+   * Mark a piece of the sheet for the full sheet alone. The sidebar card is
+   * the summary, and full-sheet.css hides these pieces there. The same DOM
+   * moves between the two places, so the mark is a class, not a second build.
+   * @template {HTMLElement} T
+   * @param {T} node
+   * @returns {T}
+   */
+  const fullOnly = (node) => {
+    node.classList.add('sheet-full-only');
+    return node;
+  };
 
   /** The structure the DOM currently reflects, and how to re-point it. */
   /** @type {unknown[] | null} */
@@ -426,7 +439,7 @@ export function mountCharacterSheet(
     for (const key of Object.keys(character.stats)) {
       statsList.appendChild(statBadge(character, key));
     }
-    main.appendChild(statsList);
+    main.appendChild(fullOnly(statsList));
 
     // The saves and the skills read from the ability scores, the level, the
     // proficiency lists, and the equipped items, and every one of those is
@@ -436,7 +449,12 @@ export function mountCharacterSheet(
     const checkOpts = onCheck && perms.play ? { onCheck } : {};
     // The six saves belong with the ability scores they derive from, so they
     // close the left column's block of numbers.
-    main.appendChild(buildSavesBlock(character, checkOpts));
+    main.appendChild(fullOnly(buildSavesBlock(character, checkOpts)));
+    // The summary card rolls the same checks and saves from one compact grid
+    // in place of the badges and the save list.
+    const quick = buildQuickRolls(character, checkOpts);
+    quick.classList.add('sheet-summary-only');
+    main.appendChild(quick);
 
     // The progression section owns classes, pending levels and
     // improvements, features, and hit dice. It returns null for a
@@ -449,7 +467,7 @@ export function mountCharacterSheet(
       onCommit: commit,
       notify,
     });
-    if (progress) side.appendChild(progress);
+    if (progress) side.appendChild(fullOnly(progress));
 
     // HP and spell slots are managed on the always-visible head lines. Hit
     // dice are managed in the progression section. The stepper list at the
@@ -489,11 +507,12 @@ export function mountCharacterSheet(
           );
         }
         if (perms.editBase && isCustomPool(pool))
-          row.append(...poolEditButtons(pool, live, commit));
+          row.append(...poolEditButtons(pool, live, commit).map(fullOnly));
         resources.appendChild(row);
       });
-      if (perms.editBase) resources.appendChild(el('div', 'u-row', addPoolButton(live, commit)));
-      main.appendChild(resources);
+      if (perms.editBase)
+        resources.appendChild(fullOnly(el('div', 'u-row', addPoolButton(live, commit))));
+      main.appendChild(pools.length > 0 ? resources : fullOnly(resources));
     }
 
     // The 18 skills go in the body rather than in either column, so they span
@@ -506,7 +525,7 @@ export function mountCharacterSheet(
     // The feature cards span the full width under the skills, so the grid
     // takes as many card columns as the sheet is wide.
     const features = buildFeaturesSection(live, { editBase: perms.editBase, onCommit: commit });
-    if (features) body.appendChild(features);
+    if (features) body.appendChild(fullOnly(features));
 
     // This is a read-only list of castable spells grouped by level, each
     // opening a Cast or Close detail. It shows only for casters, since the
@@ -519,7 +538,7 @@ export function mountCharacterSheet(
         resolveSpells: spells.resolveSpells,
         onCast: (spell) => spells.onCast(live(), spell),
       });
-      if (spellsSection) body.appendChild(spellsSection);
+      if (spellsSection) body.appendChild(fullOnly(spellsSection));
     }
 
     const conditions = buildConditionsSection(character, {

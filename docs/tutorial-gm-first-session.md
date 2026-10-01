@@ -148,8 +148,8 @@ The app keeps the record of a defeated foe instead of deleting it.
 
 1. In the **Party** panel, click **Mirelle**. The character
    sheet opens in the Sheet tab of the sidebar.
-2. Find the HP bar. The minus button on the left does 1 damage, and the
-   plus button on the right heals 1.
+2. Find the HP bar. Under it, **Damage** and **Heal** move HP by the amount
+   in the field between them, which starts at 1.
 3. Find the **Slots** row. Mirelle is a cleric, so the sheet shows spell slots.
 4. Click a filled slot pip. The pip empties, and the slot is spent.
 5. In the **Session** tab, find the **Time** panel.
