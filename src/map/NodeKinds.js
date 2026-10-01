@@ -76,3 +76,20 @@ export function allowsPaletteType(kind, entryType) {
   const indoor = entryType === 'interior' || entryType === 'furnishing';
   return kind === 'interior' ? indoor : !indoor;
 }
+
+/**
+ * The Environment options of the node dialog for a kind: "(none)", the
+ * suggestions for that kind, and the current value when it is not one of
+ * them, so a custom or other-kind tag on a saved node still shows.
+ * @param {string} kind
+ * @param {string | null} current
+ * @returns {{ value: string, label: string }[]}
+ */
+export function environFieldOptions(kind, current) {
+  const tags = environOptions(kind);
+  const all = current && !tags.includes(current) ? [...tags, current] : tags;
+  return [
+    { value: '', label: '(none)' },
+    ...all.map((e) => ({ value: e, label: e.charAt(0).toUpperCase() + e.slice(1) })),
+  ];
+}

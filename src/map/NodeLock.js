@@ -85,7 +85,14 @@ export function lockFields(lock) {
         { value: 'open', label: 'Unlocked' },
       ],
     },
-    { name: 'lockRequires', label: 'Key item (name)', value: lock?.requires ?? '' },
+    {
+      name: 'lockRequires',
+      label: 'Key item (name)',
+      value: lock?.requires ?? '',
+      // A key item means nothing without a lock. The node dialog enables
+      // the field when Lock changes to Locked or Unlocked.
+      disabled: !lock,
+    },
   ];
 }
 

@@ -1,6 +1,6 @@
 import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.js';
 import { collectSubtreeIds } from '../map/WorldTree.js';
-import { NODE_KINDS, ENVIRONS, coerceNodeKind } from '../map/NodeKinds.js';
+import { NODE_KINDS, coerceNodeKind, environFieldOptions } from '../map/NodeKinds.js';
 import { freshNodeId } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { forgetEntries } from '../map/EntryMemory.js';
@@ -18,17 +18,14 @@ import { lockFields, readLockFields } from '../map/NodeLock.js';
 
 /**
  * These are the modal fields (kind and environment) shared by the new-node
- * and edit-node prompts. Environ is a single flat list of every suggested
- * tag across kinds, because the modal is static and cannot repopulate when
- * the kind select changes. So the GM can pick, for example, an interior
- * "temple" tag even while the select still shows its default value. The
- * model stores whatever string is chosen.
+ * and edit-node prompts. Environment lists the tags of the chosen kind, and
+ * `nodeFieldChange` refills it when Kind changes, so a region never offers
+ * "Inn". The model stores whatever string is chosen.
  * @param {NodeKind} kind
  * @param {string | null} environ
  * @returns {import('../types/modal.js').ModalField[]}
  */
 function nodeKindFields(kind, environ) {
-  const environs = [...ENVIRONS.region, ...ENVIRONS.interior];
   return [
     {
       name: 'kind',
@@ -42,12 +39,24 @@ function nodeKindFields(kind, environ) {
       label: 'Environment',
       type: 'select',
       value: environ ?? '',
-      options: [
-        { value: '', label: '(none)' },
-        ...environs.map((e) => ({ value: e, label: capitalize(e) })),
-      ],
+      options: environFieldOptions(kind, environ),
     },
   ];
+}
+
+/**
+ * The onChange of the node dialogs. A Kind change refills Environment with
+ * the tags of the new kind, and a Lock change enables Key item only for a
+ * lock.
+ * @param {string} name
+ * @param {import('../types/modal.js').ModalFormHandle} form
+ */
+export function nodeFieldChange(name, form) {
+  if (name === 'kind') {
+    form.setOptions('environ', environFieldOptions(form.get('kind'), null));
+  } else if (name === 'lockState') {
+    form.setDisabled('lockRequires', form.get('lockState') === '');
+  }
 }
 
 /**
@@ -76,12 +85,16 @@ export function createNodeActions(app, env) {
    * @returns {Promise<string | null>}
    */
   async function addChildNode(parentId) {
-    const values = await promptModal('New node', [
-      { name: 'name', label: 'Name', value: 'New region' },
-      { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
-      { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
-      ...nodeKindFields('region', null),
-    ]);
+    const values = await promptModal(
+      'New node',
+      [
+        { name: 'name', label: 'Name', value: 'New region' },
+        { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
+        { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
+        ...nodeKindFields('region', null),
+      ],
+      { onChange: nodeFieldChange },
+    );
     if (!values) return null;
     const id = freshNodeId(nodeExists);
     const width = clampInt(values.width, 1);
@@ -221,7 +234,7 @@ export function createNodeActions(app, env) {
         ...nodeKindFields(node.kind, node.environ),
         ...lockFields(node.lock),
       ],
-      { submitLabel: 'Save' },
+      { submitLabel: 'Save', onChange: nodeFieldChange },
     );
     if (!values) return;
     const width = clampInt(values.width, 1, Infinity, node.width);

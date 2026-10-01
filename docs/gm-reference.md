@@ -319,9 +319,9 @@ fields.
 | Width (tiles) | 6 | 1 or more |
 | Height (tiles) | 6 | 1 or more |
 | Kind | Region | Region or Interior |
-| Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags |
+| Environment | (none) | For a region: grassland, forest, mountain, desert, water, coast, swamp, tundra, or cave. For an interior: shop, inn, tavern, and other interior tags. The list follows Kind, so a change of Kind refills it and clears a tag of the other kind |
 | Lock | No lock | No lock, Locked, or Unlocked |
-| Key item (name) | (blank) | The name of the item that opens the lock |
+| Key item (name) | (blank) | The name of the item that opens the lock. The field is off while Lock is No lock |
 
 The environment tag is a description only. It has no effect on painting,
 generation, or rules.
