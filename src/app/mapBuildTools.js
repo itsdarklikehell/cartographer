@@ -22,6 +22,11 @@ export function wireMapBuildTools(app, env, undoStroke) {
   mustGetElement('header-stroke-undo-btn').addEventListener('click', undoStroke);
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
+    // An empty map exports a blank image, so the GM hears why instead.
+    if (!node.tiles.some((tile) => tile?.imageRef)) {
+      toasts.show(`"${node.name}" has no tiles yet, so there is nothing to export.`);
+      return;
+    }
     // Browsers cap the area and the sides of a canvas. The render scales the
     // tiles down to fit, and refuses a node that cannot fit at any readable
     // size. The toast below names the size it settled on.

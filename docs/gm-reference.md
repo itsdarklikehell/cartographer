@@ -411,7 +411,7 @@ road, the road stays on top.
 | Control | What it does |
 | --- | --- |
 | Undo stroke | Reverts the last edit. A whole drag, a region link, and a generation each count as one edit. The header shows a second Undo stroke button in Build mode, left of Undo, and Ctrl/Cmd+Z presses it |
-| Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored |
+| Export PNG | Downloads the current map at 64 pixels per tile, with fog ignored. A map with no tiles downloads nothing, and a message says so |
 
 Undo stroke reverts only the cells and fields that the edit changed. Fog
 that the party revealed and notes written after the edit stay. A tile link
