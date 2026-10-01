@@ -17,6 +17,7 @@ import { createHeartbeatLock } from '../storage/GMLock.js';
 import {
   BOUND_CHARACTER_SESSION_KEY,
   characterLockKey,
+  characterParam,
   initialBinding,
 } from './CharacterBinding.js';
 import { el } from '../ui/dom.js';
@@ -111,6 +112,11 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
       picker,
     ),
   );
+
+  // A tab opened from the GM's player-tab link (?character=<id>) plays
+  // that character only, so the picker locks and a player cannot switch
+  // to another sheet. A spectator tab, or a tab bound by a pick, keeps it.
+  picker.disabled = characterParam(location.search) !== null && boundId !== null;
 
   picker.addEventListener('change', () => {
     const took = setBinding(picker.value === '' ? null : picker.value);
