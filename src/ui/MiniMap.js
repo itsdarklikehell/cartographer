@@ -1,9 +1,9 @@
 import { el } from './dom.js';
 import { INK } from '../map/CanvasInk.js';
-import { compassArea, miniMapTileSize, paintTerrain } from '../map/MiniMap.js';
+import { compassArea, miniMapStartsOpen, miniMapTileSize, paintTerrain } from '../map/MiniMap.js';
 import { groupOutline } from '../map/RegionOutline.js';
 import { TileRaster } from '../map/TileRaster.js';
-import { removeStored, writeStored } from '../storage/Footprint.js';
+import { writeStored } from '../storage/Footprint.js';
 
 /** @typedef {import('../map/MiniMap.js').MiniMapView} MiniMapView */
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -11,7 +11,7 @@ import { removeStored, writeStored } from '../storage/Footprint.js';
 /** The longest side of the mini-map, in CSS pixels. */
 const MAX_SIDE = 176;
 
-/** localStorage key of the mini-map choice. Absent means shown. */
+/** localStorage key of the mini-map choice: `1` hidden, `0` shown, absent the default. */
 const HIDDEN_KEY = 'campaign-builder:minimap-hidden';
 
 /**
@@ -58,12 +58,14 @@ export function mountMiniMap(container, options) {
    */
   const bases = new Map();
   let loadPending = false;
-  let open = localStorage.getItem(HIDDEN_KEY) !== '1';
+  let open = miniMapStartsOpen(
+    localStorage.getItem(HIDDEN_KEY),
+    matchMedia('(max-width: 40rem)').matches,
+  );
 
   function toggle() {
     open = !open;
-    if (open) removeStored(HIDDEN_KEY);
-    else writeStored(HIDDEN_KEY, '1');
+    writeStored(HIDDEN_KEY, open ? '0' : '1');
     update();
   }
 

@@ -4,6 +4,7 @@ import { INK } from '../src/map/CanvasInk.js';
 import {
   approximateCell,
   compassArea,
+  miniMapStartsOpen,
   miniMapTileSize,
   miniMapView,
   paintTerrain,
@@ -181,4 +182,11 @@ test('paintTerrain draws the frontier of an interior a lighter fog', () => {
   const ctx = recordingContext();
   paintTerrain(/** @type {any} */ (ctx), parent, 3, false, loaded);
   assert.deepEqual(ctx.fills.at(-1), [INK.fogFrontier, 3, 0, 3, 3]);
+});
+
+test('miniMapStartsOpen follows the stored choice, then the window width', () => {
+  assert.equal(miniMapStartsOpen('1', false), false);
+  assert.equal(miniMapStartsOpen('0', true), true);
+  assert.equal(miniMapStartsOpen(null, false), true);
+  assert.equal(miniMapStartsOpen(null, true), false);
 });

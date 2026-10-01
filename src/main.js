@@ -23,6 +23,7 @@ import { wireCombatScreen } from './app/combatWiring.js';
 import { wireStory } from './app/storyWiring.js';
 import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
+import { wireHeaderMenu } from './app/headerMenu.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
@@ -116,6 +117,7 @@ function start() {
   const mapEnv = wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
   wireGenerateAction(app, mapEnv); // shares the map's context rather than routing through actions
   wireDiceTray(app); // dice tray + the roll entries it writes to the travelogue
+  wireHeaderMenu();
   // This must run last: mounting the role switch applies the starting role
   // straight away. That refreshes four panels and re-points the character
   // sheet, so everything it touches must already be registered.

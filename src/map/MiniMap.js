@@ -83,6 +83,21 @@ export function miniMapTileSize(width, height, maxSide) {
 }
 
 /**
+ * Whether the mini-map starts open. The stored choice wins: `'1'` means
+ * hidden and `'0'` means shown. With no choice stored, a narrow window
+ * starts with the mini-map hidden, because on a phone it covers about a third
+ * of the map.
+ * @param {string | null} stored
+ * @param {boolean} narrow
+ * @returns {boolean}
+ */
+export function miniMapStartsOpen(stored, narrow) {
+  if (stored === '1') return false;
+  if (stored === '0') return true;
+  return !narrow;
+}
+
+/**
  * The part of a map a cell is in, as a compass word, with the map cut into
  * thirds on each axis. The screen-reader label of the mini-map uses it,
  * because a canvas dot tells assistive technology nothing.

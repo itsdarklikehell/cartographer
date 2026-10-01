@@ -143,7 +143,10 @@ display can run at the same time.
 ## Campaign controls
 
 The header buttons create, save, and move the whole campaign. They show in
-a GM tab only.
+a GM tab only. On a phone-width window, the header buttons and the theme and role
+switches fold into the **Menu** button beside the title. A press on a
+button in the menu closes it, and so do Escape and a click outside the
+header.
 
 | Control | What it does |
 | --- | --- |
@@ -797,7 +800,7 @@ The map controls sit in a row over the map.
 | Zoom in, Zoom out | Change the zoom one step |
 | Fit map to view | Fits the whole map in the viewport, even when its tiles then draw small |
 | Center on party | Brings the party back into view at the current zoom |
-| Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice |
+| Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice. On a phone-width window the mini-map starts hidden until you show it |
 | Zoom readout | Shows the zoom as a percentage |
 | Reveal fog (brush) | GM only. Picks up the reveal brush. A click or Enter on a tile reveals it |
 | Hide fog (brush) | GM only. Picks up the hide brush. A click or Enter on a tile hides it |
