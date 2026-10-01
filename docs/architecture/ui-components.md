@@ -1467,7 +1467,7 @@ have unit tests where they sit:
 | `tests/CharacterRoster.test.js` | `rosterDependsOn` |
 | `tests/CharacterChecks.test.js` | `training`, `saveRows`, `skillRows` |
 | `tests/InitiativePanel.test.js` | `initiativeStatus` |
-| `tests/CombatRibbon.test.js` | `initialsOf` |
+| `tests/CombatRibbon.test.js` | `chipName` |
 
 When you add a decision to a panel, export it as a pure function beside the
 panel and test it the same way.

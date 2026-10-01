@@ -56,10 +56,16 @@ export function mountCombatRibbon(callbacks) {
       const current = i === view.turnIndex;
       const name = row.name ?? 'Unknown combatant';
       const down = downState(row);
+      const label = chipName(row.name);
       const button = bareButton(
         [
           row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
-          el('span', 'combat-ribbon__initials', initialsOf(row.name)),
+          el(
+            'span',
+            'combat-ribbon__name',
+            el('span', 'combat-ribbon__base', label.base),
+            label.number && el('span', 'combat-ribbon__number', label.number),
+          ),
           el('span', 'combat-ribbon__init', String(row.initiative)),
         ],
         () => callbacks.onInspect(row.id),
@@ -175,21 +181,16 @@ export function wireRoving(scope, selector) {
 }
 
 /**
- * A name's initials for the ribbon chip, at most two characters. Returns a
- * question mark when no name resolves for the id.
+ * A ribbon chip's name, split into the base and the trailing number that
+ * tells two foes of one name apart. The chip cuts a long base short with an
+ * ellipsis and always shows the number, so "Gray Wolf 3" never reads as
+ * "Gray Wolf". Returns a question mark when no name resolves for the id.
  * @param {string | null} name
+ * @returns {{ base: string, number: string | null }}
  */
-export function initialsOf(name) {
-  if (!name) return '?';
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '?';
-  return (
-    parts
-      .slice(0, 2)
-      // Spread the string before indexing. Indexing with [0] can split a
-      // surrogate pair. This can turn a name that starts with an emoji or a
-      // rare CJK character into garbage.
-      .map((part) => [...part][0].toUpperCase())
-      .join('')
-  );
+export function chipName(name) {
+  const text = (name ?? '').trim().replace(/\s+/g, ' ');
+  if (!text) return { base: '?', number: null };
+  const match = /^(.+) (\d+)$/.exec(text);
+  return match ? { base: match[1], number: match[2] } : { base: text, number: null };
 }

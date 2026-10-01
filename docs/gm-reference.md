@@ -1166,7 +1166,7 @@ The combat screen runs one fight at the full width of the page.
 | Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, the Damage and Heal box, and the loadout |
 | Center | The board: one card per combatant, with an HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for its state |
 | Right column | The combat log, with the dice tray docked below it |
-| Bottom | The turn ribbon: one chip per combatant in initiative order |
+| Bottom | The turn ribbon: one chip per combatant in initiative order, with its name and number, as in "Gray Wolf 2" |
 
 | Ribbon or card mark | Meaning |
 | --- | --- |

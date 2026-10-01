@@ -896,7 +896,9 @@ the tray once and never looks it up again.
 ### The turn ribbon
 
 The turn ribbon runs under the columns. It shows one chip per participant, in
-order, with initials and initiative. The current turn is ringed and marked
+order, with the name and initiative. A long name ends in an ellipsis, and the
+number that tells two foes of one name apart stays whole (`chipName`). The
+current turn is ringed and marked
 `aria-current`. An icon marks each foe, so the side does not depend on color
 alone, and a defeated chip is struck through. A click on a chip inspects that
 combatant without advancing the turn.

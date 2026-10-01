@@ -1,21 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { initialsOf } from '../src/ui/CombatRibbon.js';
+import { chipName } from '../src/ui/CombatRibbon.js';
 
-test('initialsOf takes at most two initials', () => {
-  assert.equal(initialsOf('Ser Aldric'), 'SA');
-  assert.equal(initialsOf('Mirelle'), 'M');
-  assert.equal(initialsOf('Goblin Scout Chief'), 'GS');
-  assert.equal(initialsOf('  goblin  scout '), 'GS');
+test('chipName splits the number that tells two foes apart', () => {
+  assert.deepEqual(chipName('Gray Wolf 3'), { base: 'Gray Wolf', number: '3' });
+  assert.deepEqual(chipName('  Gray   Wolf  12 '), { base: 'Gray Wolf', number: '12' });
 });
 
-test('initialsOf marks an unresolved name', () => {
-  assert.equal(initialsOf(null), '?');
-  assert.equal(initialsOf('   '), '?');
+test('chipName keeps a name with no number whole', () => {
+  assert.deepEqual(chipName('Ser Aldric'), { base: 'Ser Aldric', number: null });
+  assert.deepEqual(chipName('7'), { base: '7', number: null });
 });
 
-// The escapes are each two UTF-16 code units: indexing [0] would cut them in half.
-test('initialsOf keeps a leading surrogate pair whole', () => {
-  assert.equal(initialsOf('\u{1F409} Dragon'), '\u{1F409}D');
-  assert.equal(initialsOf('\u{20BB7}\u91CE Chief'), '\u{20BB7}C');
+test('chipName marks an unresolved name', () => {
+  assert.deepEqual(chipName(null), { base: '?', number: null });
+  assert.deepEqual(chipName('   '), { base: '?', number: null });
 });

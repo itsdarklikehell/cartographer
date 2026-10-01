@@ -491,7 +491,7 @@ body.mode-combat .app-buildrail {
   outline-offset: 1px;
 }
 
-.combat-ribbon__chip--defeated .combat-ribbon__initials {
+.combat-ribbon__chip--defeated .combat-ribbon__name {
   text-decoration: line-through;
 }
 
@@ -511,8 +511,24 @@ body.mode-combat .app-buildrail {
   color: var(--danger);
 }
 
-.combat-ribbon__initials {
+/* A long base name ends in an ellipsis, and the number
+   after it stays whole, so "Gray Wolf 3" never reads as "Gray Wolf". */
+.combat-ribbon__name {
+  display: inline-flex;
+  gap: 0.25em;
+  min-width: 0;
   font-weight: 700;
+}
+
+.combat-ribbon__base {
+  max-width: 9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combat-ribbon__number {
+  flex: 0 0 auto;
 }
 
 .combat-ribbon__init {
