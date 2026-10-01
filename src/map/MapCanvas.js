@@ -5,6 +5,7 @@ import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
 import { parseCoords, clampZoom, fitSides, fitToExtent, readableScale } from './MapGeometry.js';
 import { exitBandDepth } from './ExitBands.js';
 import { COORD_SCALE } from './CoordLabels.js';
+import { revealedExtent } from './FitArea.js';
 import { FollowScheduler, followOffset } from './MapFollow.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
@@ -181,22 +182,26 @@ export class MapCanvas {
     this._userView = false;
     if (options) this._fitWhole = Boolean(options.whole);
     const sides = this._fitSides();
-    const fitted = fitToExtent(
-      node.width * this.tileSize,
-      node.height * this.tileSize,
-      canvas.width,
-      canvas.height,
-      {
-        minScale: this.minZoom,
-        maxScale: this.maxZoom,
-        sides,
-        readableScale: this._fitWhole ? 0 : readableScale(this.tileSize),
-        focus: this._focusPoint(),
-      },
-    );
+    // In Play mode a fit frames the revealed tiles plus a margin, so the
+    // explored part fills the canvas instead of a corner of the fog.
+    const area = (!this.revealAll && revealedExtent(node)) || {
+      x: 0,
+      y: 0,
+      width: node.width,
+      height: node.height,
+    };
+    const ts = this.tileSize;
+    const focus = this._focusPoint();
+    const fitted = fitToExtent(area.width * ts, area.height * ts, canvas.width, canvas.height, {
+      minScale: this.minZoom,
+      maxScale: this.maxZoom,
+      sides,
+      readableScale: this._fitWhole ? 0 : readableScale(ts),
+      focus: focus && { x: focus.x - area.x * ts, y: focus.y - area.y * ts },
+    });
     this.scale = fitted.scale;
-    this.offsetX = fitted.offsetX;
-    this.offsetY = fitted.offsetY;
+    this.offsetX = fitted.offsetX - area.x * ts * fitted.scale;
+    this.offsetY = fitted.offsetY - area.y * ts * fitted.scale;
     this.render();
   }
 

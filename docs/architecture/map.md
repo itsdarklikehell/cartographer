@@ -302,7 +302,12 @@ links down toward the party's map, and the party marker and the fit focus
 use that tile. `MapMarkers.partyDot` shrinks the marker into the lower-left
 corner of a tile with a point of interest, a child link, or a way out, so
 the tile art and the exit badge stay in view. Build mode fits with no focus,
-so a large map starts at its top-left corner past the mini-map. The map
+so a large map starts at its top-left corner past the mini-map. In
+Play mode, `MapCanvas.fit` frames `revealedExtent` (`src/map/FitArea.js`):
+the box of revealed tiles, grown by two cells and to at least 12 cells on
+each axis. A fit to the whole region frames mostly fog, so a small explored
+area shows at a few percent of the canvas. A map with no revealed tile fits
+whole. The map
 wiring skips a canvas resize while the map is hidden, so the combat screen
 leaves the pan and zoom as they were.
 

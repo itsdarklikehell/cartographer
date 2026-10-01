@@ -798,7 +798,7 @@ The map controls sit in a row over the map.
 | Control | What it does |
 | --- | --- |
 | Zoom in, Zoom out | Change the zoom one step |
-| Fit map to view | Fits the whole map in the viewport, even when its tiles then draw small |
+| Fit map to view | Fits the map in the viewport, even when its tiles then draw small. In Play mode it fits the revealed tiles with a margin of two tiles, and at least 12 tiles on each side. Build mode, and a map with no revealed tile, fit the whole map |
 | Center on party | Brings the party back into view at the current zoom |
 | Mini-map of the parent map | Shows or hides the mini-map. Each browser keeps the choice. On a phone-width window the mini-map starts hidden until you show it |
 | Zoom readout | Shows the zoom as a percentage |
