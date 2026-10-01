@@ -156,6 +156,41 @@ body.role-locked #role-switch-container {
   display: contents;
 }
 
+/* On a laptop screen the full header is about 1,380 pixels wide, so it wraps
+   onto a second row and takes that height from the map. Between phone width
+   and 100rem the header buttons and the gaps between clusters shrink, and
+   the title steps down, so the Play header fits one row at 1280 pixels. The
+   reserved switch widths above shrink with the buttons. */
+@media (min-width: 40.0625rem) and (max-width: 100rem) {
+  .app-header {
+    column-gap: var(--space-2);
+  }
+
+  .app-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .app-header .btn {
+    padding-inline: var(--space-2);
+  }
+
+  .app-header__view {
+    gap: var(--space-2);
+  }
+
+  #mode-switch-container {
+    min-width: 14.25rem;
+  }
+
+  #theme-toggle-container {
+    min-width: 6.625rem;
+  }
+
+  #role-switch-container {
+    min-width: 9.125rem;
+  }
+}
+
 /* At phone width the header has the title and the Menu button on the first
    row and the mode switch on the second. The actions and the view switches
    fold into the menu, which opens as a full-width row under them. */
