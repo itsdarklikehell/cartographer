@@ -541,8 +541,8 @@ export function confirmModal(message, options = {}) {
 /**
  * The standard delete confirmation: the title `Delete <name>?`, the message
  * `This deletes "<name>".`, and the danger-styled Delete button. This makes
- * every delete across the app read and look the same. `detail` appends a consequence sentence, for example what else is
- * lost.
+ * every delete across the app read and look the same. `detail` appends a
+ * consequence sentence, for example what else is lost.
  * @param {string} name what's being deleted, shown quoted in the message
  * @param {string} [detail]
  * @returns {Promise<boolean>}
