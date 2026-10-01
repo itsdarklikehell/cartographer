@@ -62,6 +62,17 @@
   margin-left: 0.55rem;
 }
 
+/* The tree item is the li, and it contains its whole branch, so its focus
+   ring goes on the name button of its own row. */
+.world-tree__item:focus-visible {
+  outline: none;
+}
+
+.world-tree__item:focus-visible > .world-tree__row .row-select {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 /* The node rows are .row-select buttons (base.css). */
 .world-tree__row .row-select {
   min-width: 0;
@@ -132,7 +143,7 @@
 }
 
 .world-tree__row:hover .world-tree__more,
-.world-tree__row:focus-within .world-tree__more {
+.world-tree__item:focus > .world-tree__row .world-tree__more {
   opacity: 1;
 }
 

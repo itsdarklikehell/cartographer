@@ -42,7 +42,12 @@ test('Shift+F10 and the ContextMenu key open the row menu', () => {
   assert.equal(act('F10', 'town'), null);
 });
 
+test('Enter and Space select the row', () => {
+  assert.deepEqual(act('Enter', 'region'), { select: 'region' });
+  assert.deepEqual(act(' ', 'town'), { select: 'town' });
+});
+
 test('other keys and an unknown row give null', () => {
-  assert.equal(act('Enter', 'world'), null);
+  assert.equal(act('a', 'world'), null);
   assert.equal(act('ArrowDown', 'missing'), null);
 });

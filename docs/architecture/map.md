@@ -1607,6 +1607,20 @@ with one name, such as five Temples, and the label "Temple, Ashogate" tells
 them apart. The Location (map) select of the creature form shows the full
 path of each map for the same reason.
 
+The markup follows the WAI-ARIA tree view pattern. Each `li` is the
+`treeitem`, and the `ul` of its children is a `group` inside it, so the tree
+and its groups contain only tree items and groups. A screen reader then
+counts the position and the level of a row from the markup. The chevron,
+the name button, the warning badges, and the actions button sit in a row
+with `aria-hidden`, and only the pointer uses them. The tree item has the
+node name as its `aria-label`, the visible badges as its
+`aria-describedby`, and `aria-keyshortcuts` for the row menu. Only one tree
+item has `tabIndex = 0`, and `view/TreeKeys.js` maps each key to a move, an
+open, a close, a select, or the menu. A chevron click and every key press
+re-pick that tab stop among the visible rows, so a closed branch never
+hides the only tab stop. When a rebuild removes the focused row, as a
+delete does, focus moves to its parent row.
+
 ## The mini-map
 
 The mini-map is the small picture of the parent map in the top-left corner of

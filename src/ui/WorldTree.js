@@ -28,8 +28,14 @@ let mountCount = 0;
  * calls to update(). A world with 12 or more nodes also gets a search box,
  * which reduces the tree to the matching places and the paths to them.
  *
- * The tree follows the ARIA tree pattern. It is one tab stop, and the arrow
- * keys move between rows and open or close branches (see TreeKeys.js).
+ * The tree follows the ARIA tree pattern. Each `li` is a tree item, and the
+ * `ul` of its children is a group inside it, so a screen reader reads the
+ * nesting and the "n of m" count from the markup. The buttons of a row
+ * (chevron, name, warning badges, actions) sit in an `aria-hidden` row for
+ * the pointer. For a keyboard and a screen reader the tree item takes their
+ * place: it has the name as its label, the badges as its description, and
+ * Shift+F10 for the menu. The tree is one tab stop, and the arrow keys move
+ * between rows and open or close branches (see TreeKeys.js).
  *
  * A click on a node runs onSelect. If onAddChild, onEdit, or onDelete are
  * set, each row gets one actions button that opens a menu with those
@@ -69,8 +75,10 @@ export function mountWorldTree(container, opts) {
   const closedInSearch = new Set();
   /** The open-or-close function of each chevron on screen, by node id. @type {Map<string, (isCollapsed: boolean) => void>} */
   const toggles = new Map();
-  /** The select button of each row on screen, by node id. @type {Map<string, HTMLButtonElement>} */
+  /** The tree item of each row on screen, by node id. @type {Map<string, HTMLLIElement>} */
   const rows = new Map();
+  /** The name button of each row on screen, by node id. @type {Map<string, HTMLButtonElement>} */
+  const selects = new Map();
   /** Opens the actions menu of each row on screen, by node id. @type {Map<string, () => void>} */
   const menuOpeners = new Map();
 
@@ -92,17 +100,28 @@ export function mountWorldTree(container, opts) {
   const hasActions = Boolean(opts.onAddChild || opts.onEdit || opts.onDelete);
 
   /**
+   * Focus a tree item and scroll its own row into view. The item contains
+   * its whole branch, so the browser scroll on focus would show the branch
+   * and not the row.
+   * @param {HTMLLIElement} item
+   */
+  function focusItem(item) {
+    item.focus({ preventScroll: true });
+    item.firstElementChild?.scrollIntoView({ block: 'nearest' });
+  }
+
+  /**
    * Build the chevron for a row with children. A collapse hides the child
    * list in place instead of rerendering the tree, so the scroll position and
    * focus stay where they are.
    * @param {WorldTreeNode} treeNode
    * @param {HTMLUListElement} childList
    * @param {HTMLElement | null} hiddenBadge shown only while the branch is closed
-   * @param {HTMLButtonElement} select the tree item, which reports the open state
+   * @param {HTMLLIElement} item the tree item, which reports the open state
    * @param {() => void} describe refreshes the description of the tree item
    * @returns {HTMLButtonElement}
    */
-  function collapseToggle(treeNode, childList, hiddenBadge, select, describe) {
+  function collapseToggle(treeNode, childList, hiddenBadge, item, describe) {
     const nodeId = treeNode.node.id;
     const closed = query ? closedInSearch : collapsed;
     const toggle = bareButton([icon('chevron', { size: 14 })], undefined, {
@@ -111,18 +130,13 @@ export function mountWorldTree(container, opts) {
     // The pointer uses the chevron. A keyboard opens and closes the branch
     // with the arrow keys on the tree item, which reports aria-expanded.
     toggle.tabIndex = -1;
-    toggle.setAttribute('aria-hidden', 'true');
 
     /** @param {boolean} isCollapsed */
     const apply = (isCollapsed) => {
       if (isCollapsed) closed.add(nodeId);
       else closed.delete(nodeId);
       toggle.classList.toggle('world-tree__toggle--open', !isCollapsed);
-      select.setAttribute('aria-expanded', String(!isCollapsed));
-      toggle.setAttribute(
-        'aria-label',
-        `${isCollapsed ? 'Expand' : 'Collapse'} ${treeNode.node.name}`,
-      );
+      item.setAttribute('aria-expanded', String(!isCollapsed));
       childList.hidden = isCollapsed;
       if (hiddenBadge) {
         hiddenBadge.hidden = !isCollapsed;
@@ -130,7 +144,16 @@ export function mountWorldTree(container, opts) {
       }
     };
 
-    toggle.addEventListener('click', () => apply(!closed.has(nodeId)));
+    toggle.addEventListener('click', () => {
+      const closing = !closed.has(nodeId);
+      // A row that has focus inside the branch would lose it to the page
+      // body when the branch hides, so focus moves up to this row.
+      if (closing && childList.contains(document.activeElement)) focusItem(item);
+      apply(closing);
+      // The tab stop can be a row inside the closed branch, and then no
+      // visible row is in the tab order.
+      syncTabStop();
+    });
     toggles.set(nodeId, apply);
     apply(closed.has(nodeId));
     return toggle;
@@ -170,24 +193,36 @@ export function mountWorldTree(container, opts) {
     const rendered = treeNode.children.map((child) => renderNode(child, openPath, node.id));
     const below = rendered.reduce((sum, r) => sum + r.warnings, 0);
 
-    // The tree item is the select button. The arrow keys move focus between
-    // these buttons, and only one of them is in the tab order at a time.
     // A search result names its parent too, since a generated world has many
     // places with one name ("Temple, Ashogate").
     const parentName =
       parentId && query && matchesQuery(node, query) ? names.get(parentId) : undefined;
+
+    // The arrow keys move focus between the tree items, and only one of them
+    // is in the tab order at a time.
+    const item = /** @type {HTMLLIElement} */ (el('li', 'world-tree__item'));
+    item.setAttribute('role', 'treeitem');
+    item.setAttribute('aria-level', String(treeNode.depth + 1));
+    item.setAttribute('aria-label', parentName ? `${node.name}, ${parentName}` : node.name);
+    if (hasActions) item.setAttribute('aria-keyshortcuts', 'Shift+F10 ContextMenu');
+    item.tabIndex = -1;
+    item.dataset.nodeId = node.id;
+    if (parentId) item.dataset.parentId = parentId;
+    rows.set(node.id, item);
+
     const label = parentName
       ? [node.name, el('span', 'world-tree__parent', `, ${parentName}`)]
       : [node.name];
-    const select = bareButton(label, () => opts.onSelect(node.id), {
-      className: 'row-select',
-    });
-    select.setAttribute('role', 'treeitem');
-    select.setAttribute('aria-level', String(treeNode.depth + 1));
+    const select = bareButton(
+      label,
+      () => {
+        focusItem(item);
+        opts.onSelect(node.id);
+      },
+      { className: 'row-select' },
+    );
     select.tabIndex = -1;
-    select.dataset.nodeId = node.id;
-    if (parentId) select.dataset.parentId = parentId;
-    rows.set(node.id, select);
+    selects.set(node.id, select);
 
     const warning = opts.getWarning?.(node) ?? null;
     const ownBadge = warning ? warningBadge(warning) : null;
@@ -199,12 +234,12 @@ export function mountWorldTree(container, opts) {
           )
         : null;
     hiddenBadge?.classList.add('world-tree__warning--hidden');
-    // A screen reader in the tree reads only the tree items, so each item
-    // names the warning badges beside it as its description.
+    // The badges sit in the hidden row, so the tree item names the ones on
+    // screen as its description.
     const describe = () => {
       const ids = [ownBadge, hiddenBadge].filter((b) => b && !b.hidden).map((b) => b?.id);
-      if (ids.length) select.setAttribute('aria-describedby', ids.join(' '));
-      else select.removeAttribute('aria-describedby');
+      if (ids.length) item.setAttribute('aria-describedby', ids.join(' '));
+      else item.removeAttribute('aria-describedby');
     };
 
     const childList = hasChildren
@@ -218,42 +253,50 @@ export function mountWorldTree(container, opts) {
       // Every row gets a fixed-width toggle slot, so labels line up. Only a
       // row with children gets a live chevron in that slot.
       childList
-        ? collapseToggle(treeNode, childList, hiddenBadge, select, describe)
+        ? collapseToggle(treeNode, childList, hiddenBadge, item, describe)
         : el('span', 'world-tree__toggle world-tree__toggle--leaf'),
       select,
       ownBadge,
       hiddenBadge,
-      hasActions && actionsButton(node),
+      hasActions && actionsButton(node, item),
     );
-    row.setAttribute('role', 'none');
+    row.setAttribute('aria-hidden', 'true');
+    // A press on a row button would focus the button, which sits outside
+    // the accessibility tree. The click handlers focus the tree item instead.
+    row.addEventListener('mousedown', (event) => event.preventDefault());
     describe();
     if (hasActions) {
       row.addEventListener('contextmenu', (event) => {
         event.preventDefault();
+        focusItem(item);
         openContextMenu(menuItems(node), event);
       });
     }
 
-    const item = el('li', 'world-tree__item', row, childList);
-    item.setAttribute('role', 'none');
+    item.append(row);
+    if (childList) item.append(childList);
     return { item, warnings: below + (warning ? 1 : 0) };
   }
 
-  /** @param {MapNode} node @returns {HTMLButtonElement} */
-  function actionsButton(node) {
+  /**
+   * @param {MapNode} node
+   * @param {HTMLLIElement} item the tree item, which takes focus first so the
+   *   menu gives focus back to it
+   * @returns {HTMLButtonElement}
+   */
+  function actionsButton(node, item) {
     const label = `Actions for ${node.name}`;
     const button = bareButton(
       [icon('more', { size: 16 })],
       () => {
+        focusItem(item);
         const rect = button.getBoundingClientRect();
         openContextMenu(menuItems(node), { clientX: rect.left, clientY: rect.bottom });
       },
       { className: 'world-tree__more' },
     );
     button.tabIndex = -1;
-    button.setAttribute('aria-keyshortcuts', 'Shift+F10');
     button.setAttribute('aria-label', label);
-    button.setAttribute('aria-haspopup', 'menu');
     setTip(button, label);
     menuOpeners.set(node.id, () => button.click());
     return button;
@@ -263,7 +306,7 @@ export function mountWorldTree(container, opts) {
   let shownSignature = null;
   /** @type {string | null} the node whose row is marked as current */
   let currentId = null;
-  /** @type {HTMLButtonElement | null} */
+  /** @type {HTMLLIElement | null} */
   let currentRow = null;
   /** True while the current row still needs to scroll into view. */
   let scrollPending = false;
@@ -274,10 +317,11 @@ export function mountWorldTree(container, opts) {
    * waits until the resize observer below sees the box appear.
    */
   function scrollToCurrent() {
-    if (!scrollPending || !currentRow || root.clientHeight === 0) return;
+    const line = currentRow?.firstElementChild;
+    if (!scrollPending || !line || root.clientHeight === 0) return;
     scrollPending = false;
     const box = root.getBoundingClientRect();
-    const row = currentRow.getBoundingClientRect();
+    const row = line.getBoundingClientRect();
     const margin = row.height;
     if (row.top < box.top) root.scrollTop -= box.top - row.top + margin;
     else if (row.bottom > box.bottom) root.scrollTop += row.bottom - box.bottom + margin;
@@ -300,16 +344,16 @@ export function mountWorldTree(container, opts) {
       }
       scrollPending = true;
     }
-    currentId = id;
     if (next !== currentRow) {
-      currentRow?.classList.remove('row-select--current');
+      if (currentId) selects.get(currentId)?.classList.remove('row-select--current');
+      selects.get(id)?.classList.add('row-select--current');
       currentRow?.removeAttribute('aria-current');
-      next?.classList.add('row-select--current');
-      next?.setAttribute('aria-current', 'true');
       currentRow?.removeAttribute('aria-selected');
+      next?.setAttribute('aria-current', 'true');
       next?.setAttribute('aria-selected', 'true');
       currentRow = next;
     }
+    currentId = id;
     syncTabStop();
     scrollToCurrent();
   }
@@ -333,9 +377,10 @@ export function mountWorldTree(container, opts) {
 
   /** @param {MapNode[]} nodes */
   function rebuild(nodes) {
-    const focusedId = [...rows].find(([, row]) => row === document.activeElement)?.[0];
+    const focused = [...rows.values()].find((row) => row === document.activeElement);
     const scrollTop = root.scrollTop;
     rows.clear();
+    selects.clear();
     toggles.clear();
     menuOpeners.clear();
     currentRow = null;
@@ -360,7 +405,13 @@ export function mountWorldTree(container, opts) {
       root.replaceChildren();
     }
     root.scrollTop = scrollTop;
-    if (focusedId) rows.get(focusedId)?.focus();
+    if (!focused) return;
+    // A delete removes the focused row. Focus then goes to its parent row,
+    // or to the current map, so it does not drop to the page body.
+    const { nodeId = '', parentId = '' } = focused.dataset;
+    const next =
+      rows.get(nodeId) ?? rows.get(parentId) ?? rows.get(opts.getCurrentId()) ?? visibleItems()[0];
+    if (next) focusItem(next);
   }
 
   function render() {
@@ -385,7 +436,7 @@ export function mountWorldTree(container, opts) {
   /** The tree items not hidden inside a closed branch, in screen order. */
   const visibleItems = () =>
     [...root.querySelectorAll('[role="treeitem"]')]
-      .map((row) => /** @type {HTMLButtonElement} */ (row))
+      .map((row) => /** @type {HTMLLIElement} */ (row))
       .filter((row) => !row.closest('[hidden]'));
 
   /**
@@ -423,9 +474,14 @@ export function mountWorldTree(container, opts) {
     const action = treeKeyAction(event, items, id);
     if (!action) return;
     event.preventDefault();
-    if ('focus' in action) rows.get(action.focus)?.focus();
+    const go = (/** @type {string} */ to) => {
+      const row = rows.get(to);
+      if (row) focusItem(row);
+    };
+    if ('focus' in action) go(action.focus);
     else if ('expand' in action) toggles.get(action.expand)?.(false);
     else if ('collapse' in action) toggles.get(action.collapse)?.(true);
+    else if ('select' in action) opts.onSelect(action.select);
     else menuOpeners.get(action.menu)?.();
     syncTabStop();
   });
