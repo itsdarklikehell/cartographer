@@ -77,6 +77,29 @@
   font-display: swap;
 }
 
+/* Skip links at the top of the page. Each stays off screen until it has
+   keyboard focus, and then shows over the top left of the header. */
+.skip-link {
+  position: absolute;
+  left: var(--space-2);
+  top: var(--space-2);
+  z-index: 1000;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  transform: translateY(-200%);
+}
+
+.skip-link:focus {
+  transform: none;
+}
+
+body:not(.mode-build) .skip-link--build {
+  display: none;
+}
+
 /* Visually hidden but exposed to assistive tech (live regions, labels). */
 .sr-only {
   position: absolute;

@@ -32,6 +32,11 @@
        element. The module graph below is deferred, so this always runs first. -->
   <script src="src/boot.js"></script>
 
+  <!-- Skip links: the first Tab stops here, so a keyboard user can pass the
+       header and the World tree. The build link shows only in Build mode. -->
+  <a class="skip-link" href="#map-canvas">Skip to the map</a>
+  <a class="skip-link skip-link--build" href="#build-tools">Skip to the build tools</a>
+
   <header class="app-header u-row u-wrap u-g4">
     <!-- The save status sits under the title, where it costs no width in a
          header row that is close to full on a laptop screen. -->
@@ -172,7 +177,7 @@
       </div>
     </aside>
 
-    <aside id="build-tools" class="app-buildrail app-buildrail--stack" aria-label="Build tools">
+    <aside id="build-tools" class="app-buildrail app-buildrail--stack" aria-label="Build tools" tabindex="-1">
       <p id="build-warning" class="build-warning" role="status"></p>
       <div id="build-tabs" class="tabs" role="tablist" aria-label="Build panels">
         <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-paint" aria-controls="build-panel-paint" aria-selected="true">Paint</button>

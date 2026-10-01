@@ -358,6 +358,12 @@ A branch is closed when the tree first shows it. The exceptions are the top
 node and the rows above the current map. When the map in view changes, the
 tree opens the rows above it and scrolls to its row.
 
+The tree takes one Tab stop. Inside it, Up and Down move between rows, and
+Home and End go to the first and last row. Right opens a closed row or
+moves into an open one, and Left closes an open row or moves to the row
+above it. Enter opens the map of the row. In Build mode, Shift+F10 or the
+Menu key opens the actions menu of the row.
+
 ### Palette tools
 
 The Palette card has four tool buttons and five sections of swatches. A
@@ -2950,6 +2956,8 @@ Press `?` anywhere for the shortcut reference.
 | +, - on the map | Zoom |
 | Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, and the second press travels |
 | Shift+F10, Menu key on the map | Open the tile menu for the cursor cell (Build mode) |
+| Arrows, Home, End in the World tree | Move between rows, and open or close a row |
+| Tab, first press on the page | Show the skip links **Skip to the map** and, in Build mode, **Skip to the build tools** |
 
 Save, Undo, Redo, and the mode keys work in a GM tab only. The map keys
 work after you click the map or move focus to it.
