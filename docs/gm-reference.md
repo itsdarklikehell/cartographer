@@ -1170,7 +1170,9 @@ The combat screen runs one fight at the full width of the page.
 
 | Ribbon or card mark | Meaning |
 | --- | --- |
-| Ring | The current turn |
+| Ring on a chip | The current turn |
+| **Current turn** tag and blue edge on a card | The current turn |
+| Accent ring on a card | The selected target |
 | Sword on a chip | A foe |
 | Strike-through | A defeated combatant |
 | Dashed edge | A combatant that cannot act, such as a stunned one, which is still in the fight but loses its turn. A dying or stable character at 0 HP shows the same edge, because it is still alive |

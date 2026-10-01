@@ -209,6 +209,24 @@ body.mode-combat .app-buildrail {
   outline-offset: 1px;
 }
 
+/* The card whose turn it is gets a raised fill and a "Current turn" tag in
+   the mana tint, so it reads apart from the accent ring of the selected
+   target and the danger edge of a foe. The tag spells the state out in text. */
+.combatant-card--current {
+  background: var(--surface-raised);
+  border-left-color: var(--mana);
+}
+
+.combatant-card__turn {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--mana);
+  color: var(--mana-contrast);
+  font-size: var(--text-label);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .combatant-card--defeated .combatant-card__name {
   text-decoration: line-through;
 }

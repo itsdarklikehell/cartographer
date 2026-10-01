@@ -70,6 +70,7 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  * @param {CombatantRow} row
  * @param {{
  *   selected?: boolean,
+ *   current?: boolean,
  *   onSelect?: (id: string) => void,
  *   loadout?: Loadout | null,
  *   reaction?: ReactionControl | null,
@@ -87,6 +88,7 @@ export function combatantCard(row, selection = {}) {
     down && down.kind !== 'defeated' ? 'combatant-card--incapacitated' : '',
     selectable ? 'combatant-card--selectable' : '',
     selection.selected ? 'combatant-card--selected' : '',
+    selection.current ? 'combatant-card--current' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -97,6 +99,7 @@ export function combatantCard(row, selection = {}) {
     'combatant-card__header u-row u-g2',
     row.side === 'foe' ? foeMark() : null,
     name,
+    selection.current ? el('span', 'combatant-card__turn', 'Current turn') : null,
     el('span', 'combatant-card__init', `Init ${row.initiative}`),
   );
 

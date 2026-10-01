@@ -358,6 +358,7 @@ export function mountCombatScreen(container, callbacks) {
             ...rows.map((row) =>
               combatantCard(row, {
                 selected: row.id === selectedId,
+                current: row.id === activeId,
                 loadout: loadoutOf(row.id),
                 reaction: reactionFor(row, activeId),
                 legendary: legendaryFor(row, activeId),
