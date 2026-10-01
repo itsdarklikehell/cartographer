@@ -1,4 +1,6 @@
+import { previewFrame, previewRegionTiles } from '../map/GeneratePreview.js';
 import { MapRenderer } from '../map/MapRenderer.js';
+import { findRegionGroups } from '../map/RegionGroups.js';
 import { TileRaster } from '../map/TileRaster.js';
 import { randomSeed } from '../util/Rng.js';
 import { clampInt } from '../util/num.js';
@@ -69,7 +71,7 @@ const SUBMAP_DEPTHS = [
  *   stacked?: string[],
  *   maxLevels?: number,
  *   nested?: string[],
- *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
+ *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[], sites?: import('../types/map.js').GeneratedSite[] },
  *   imageCache?: Map<string, HTMLImageElement>,
  *   returnFocus?: HTMLElement | null,
  * }} options
@@ -202,7 +204,12 @@ export function generateDialog(options) {
           const candidate = options.makeCandidate(choice);
           preview = {
             key,
-            node: /** @type {any} */ ({ ...candidate, id: 'preview', name: 'preview' }),
+            node: /** @type {any} */ ({
+              ...candidate,
+              tiles: previewRegionTiles(candidate.tiles, candidate.sites),
+              id: 'preview',
+              name: 'preview',
+            }),
           };
         }
         return preview.node;
@@ -211,16 +218,16 @@ export function generateDialog(options) {
       function renderPreview() {
         if (closed) return;
         const node = previewNode();
-        const tileSize = Math.max(1, Math.floor(canvas.width / Math.max(node.width, node.height)));
+        const { tileSize, offsetX, offsetY } = previewFrame(canvas.width, node.width, node.height);
         const renderer = new MapRenderer(ctx, { tileSize, raster });
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderer.render({
           canvasWidth: canvas.width,
           canvasHeight: canvas.height,
           node,
-          regionGroups: [],
-          offsetX: Math.floor((canvas.width - node.width * tileSize) / 2),
-          offsetY: Math.floor((canvas.height - node.height * tileSize) / 2),
+          regionGroups: findRegionGroups(node),
+          offsetX,
+          offsetY,
           scale: 1,
           revealAll: true,
           markerRange: 0,

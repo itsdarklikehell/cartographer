@@ -470,6 +470,9 @@ keyboard cursor.
 
 The Generate card fills the current node with a generated layout. The
 dialog shows a preview of the exact layout before it changes anything.
+The preview numbers the columns and rows when the tiles are large enough,
+and it outlines each block that Generate links to a sub-map, such as each
+region of the World archetype.
 
 | Field | Default | Values |
 | --- | --- | --- |

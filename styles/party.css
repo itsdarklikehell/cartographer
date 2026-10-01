@@ -81,7 +81,9 @@
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
-  background: var(--surface-sunken);
+  /* The map backdrop, so the light coordinate labels in the gutter read the
+     same as on the map canvas. */
+  background: var(--overlay-bg);
 }
 
 .character-sheet__conditions {
