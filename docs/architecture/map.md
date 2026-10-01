@@ -149,7 +149,7 @@ share an edge then each show their own color on their own side of it.
 In a Player view, the clip covers the revealed cells only, and the name sits
 on the first revealed cell in reading order. A region therefore never shows
 its extent through the fog. The GM view in Play mode draws the full regions
-under its see-through fog.
+over its see-through fog.
 
 ### Group images
 
@@ -249,9 +249,12 @@ revealed, and otherwise draws the image at `tile.imageRef`. With
 `view.fogDim` set (a GM outside Build mode, by `seesThroughFog` in
 `src/view/ViewRole.js`), an unrevealed
 tile draws its image and overlays and then a see-through fog rectangle
-(`INK.fogDim`). The frame then has no revealed set, so the group, span,
-grid, and region passes draw as in Build mode under that fog. The group, span,
-and marker passes described on this page add to that base.
+(`INK.fogDim`). The frame then has no revealed set, so the group and span
+images draw as in Build mode under that fog. The grid, region outline, and
+region name passes run after the tiles, so they draw over the fog at full
+strength. Point of interest outlines and exit badges skip a fogged tile, and
+the creature markers follow the detection range as under solid fog. The
+group, span, and marker passes described on this page add to that base.
 
 Tile art does not come straight from the SVG file. `TileRaster`
 (`src/map/TileRaster.js`) draws each image ref once into an offscreen canvas

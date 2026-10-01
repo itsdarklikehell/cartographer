@@ -16,16 +16,18 @@ const REGION_LABEL_PX = 12;
  * cells and a border along its outline. `renderRegionNames` draws the names
  * in a later pass, over the selection outline. Each region takes the
  * color of its `regionSlots` slot, so two regions that share a border show
- * two colors. The tint and the border are clipped to the region's cells, and
- * in Play mode to the cells the party has revealed, so a region never shows
- * its extent through the fog. The border line is twice its drawn width and
- * centered on the cell edge, and the clip keeps only the inner half. Two
- * regions that touch then each draw their own color on their own side of
- * the shared edge. Outside Build mode, a region with no revealed cell draws
+ * two colors. The tint and the border are clipped to the region's cells.
+ * Under solid fog they are also clipped to the cells the party has
+ * revealed, so a Player view never shows the extent of a region through
+ * the fog. The GM see-through fog passes no revealed set, so the full
+ * regions draw. The border line is twice its drawn width and centered on
+ * the cell edge, and the clip keeps only the inner half. Two regions that
+ * touch then each draw their own color on their own side of the shared
+ * edge. Under solid fog, a region with no revealed cell draws
  * nothing, so the world map does not show where each unexplored region is.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
- * @param {import('./TileIndex.js').RevealedIds | null} revealedIds the revealed tile ids, or null in Build mode
+ * @param {import('./TileIndex.js').RevealedIds | null} revealedIds the revealed tile ids, or null in Build mode and under see-through fog
  * @param {number} tileSize base tile size in buffer px at scale 1
  */
 export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {

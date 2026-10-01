@@ -1032,12 +1032,14 @@ party that stands in a doorway sees into the rooms on both sides. A room of
 more than 100 floor tiles, such as a great hall, shows only within the
 sight of the party. The rooms of a dungeon, a cave, or a cellar stay dark.
 
-In a GM tab in Play mode, the fog is part see-through. The GM sees the
-terrain, the region names, and the region outlines under it, dimmed, so the
-way ahead is readable without a switch to Build mode. Markers and point of
-interest outlines on fogged tiles stay hidden. A Player tab, and a GM tab
-switched to the Player view, draw solid fog. The mini-map always draws
-solid fog.
+In a GM tab in Play mode, the fog is part see-through. The terrain draws
+dimmed under the fog, and the grid, the region outlines, and the region
+names draw over it, so the GM reads the way ahead without a switch to Build
+mode. Point of interest outlines and exit badges on fogged tiles stay
+hidden. Creature markers show within the detection range, as they do under
+solid fog, and the badge of a hidden handout shows at any range. A Player
+tab, and a GM tab switched to the Player view, draw solid fog. In Play mode
+the mini-map draws solid fog, in a GM tab too.
 
 Inside a building, a fogged tile beside explored floor, a door, or stairs
 draws a lighter fog. The lighter band shows where the explored part ends,
@@ -1069,8 +1071,8 @@ outlined tiles. So a party at the east edge of a town shows at the east
 side of the block of that town. While the party is split, a Player tab
 follows its bound character.
 
-The mini-map draws fog the same way as the main map. In Play mode, a tile
-that the party has not seen draws as fog. In Build mode, every tile shows.
+In Play mode, a tile of the mini-map that the party has not seen draws as
+solid fog, also in a GM tab. In Build mode, every tile shows.
 
 A click on the mini-map does nothing, so it never moves the party to a tile
 hidden under it.

@@ -577,13 +577,13 @@ Every icon is `aria-hidden="true"`. Icons here are decorative, and the
 control around them owns the accessible name. `iconButton` therefore
 requires a label.
 
-These are the 36 names in `IconName`:
+These are the 40 names in `IconName`:
 
 ```
 plus  minus  heal  remove  edit  save  export  import  dice  d20  add
-check  chevron  circle  map  fit  target  sword  shield  clock  flag
-scroll  sparkles  eye  eye-off  lock  give  sun  moon  monitor  warning
-external  up  down  more  minimap
+check  chevron  circle  box  boxChecked  map  fit  target  sword  shield
+clock  flag  scroll  sparkles  eye  eye-off  lock  give  sun  moon
+monitor  warning  external  up  down  more  minimap  revert  pointer
 ```
 
 An unknown name gives an empty SVG and no error, so a typo shows as a blank

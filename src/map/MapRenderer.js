@@ -49,12 +49,12 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {number} offsetY
  * @property {number} scale
  * @property {boolean} revealAll draw every tile's image regardless of fog of war (Build mode)
- * @property {boolean} [fogDim] draw unrevealed tiles as art under a see-through fog (a GM in Play mode). Markers and POI outlines on those tiles stay hidden.
+ * @property {boolean} [fogDim] draw unrevealed tiles as art under a see-through fog (a GM outside Build mode). POI outlines and exit badges on those tiles stay hidden, and creature markers follow the detection range as under solid fog.
  * @property {number} markerRange detection range in grid cells: encounter, NPC, and POI markers draw only within this Euclidean distance of the party or a character token
  * @property {string | null} partyTileId
  * @property {boolean} [partyInNode] false when partyTileId is the link toward the party on a map above it. That tile is not a marker anchor.
- * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
- * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
+ * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked within detection range
+ * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked within detection range
  * @property {string[]} [handoutTileIds] tiles with a hidden handout, badged for the GM at any range
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
  * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. This array is empty in Build mode, where authoring the map is not the same as traveling it.
@@ -554,7 +554,7 @@ export class MapRenderer {
   /**
    * The tiles that a region name keeps clear of: the party tile, each
    * character token, and each creature marker that draws this frame. A
-   * marker hidden by range or fog does not count, so a name never moves
+   * marker out of detection range does not count, so a name never moves
    * away from a creature that the map does not show.
    * @param {MapView} view
    * @returns {string[]}
