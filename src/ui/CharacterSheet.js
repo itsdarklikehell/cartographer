@@ -367,21 +367,22 @@ export function mountCharacterSheet(
       headSide.appendChild(spacer);
     }
 
-    const acBadge = el('span', 'character-sheet__ac');
-    acBadge.title =
+    const acBadge = tipBadge(
+      el('span', 'character-sheet__ac'),
       'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
-      '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX, ' +
-      'or the unarmored defense of a Barbarian or a Monk when that is higher. ' +
-      'A shield adds its own bonus; other equipped items add their flat bonuses.';
+        '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX, ' +
+        'or the unarmored defense of a Barbarian or a Monk when that is higher. ' +
+        'A shield adds its own bonus; other equipped items add their flat bonuses.',
+    );
 
     const speedBadge = el('span', 'character-sheet__speed u-muted');
     // Initiative, passive Perception, and the proficiency bonus are the other
     // numbers a GM asks for in play, so they join AC and speed on one line.
     const initBadge = el('span', 'character-sheet__init u-muted');
     const ppBadge = el('span', 'character-sheet__pp u-muted');
-    setTip(ppBadge, 'Passive Perception');
+    tipBadge(ppBadge, 'Passive Perception');
     const profBadge = el('span', 'character-sheet__prof u-muted');
-    setTip(profBadge, 'Proficiency bonus');
+    tipBadge(profBadge, 'Proficiency bonus');
 
     // A penalty that reaches every d20 roll belongs in the headline, not only
     // beside the conditions. The badge is empty at level 0, which is where most
@@ -421,7 +422,7 @@ export function mountCharacterSheet(
       const dex = abilityModifier(effectiveStat(shown, 'dex').total);
       const tiredInit = d20Penalty(shown);
       initBadge.textContent = `Init ${formatModifier(dex + tiredInit)}`;
-      setTip(
+      tipBadge(
         initBadge,
         tiredInit
           ? `Initiative bonus: DEX modifier ${formatModifier(dex)}, exhaustion ${tiredInit}`
@@ -429,10 +430,10 @@ export function mountCharacterSheet(
       );
       ppBadge.textContent = `PP ${passivePerception(shown)}`;
       profBadge.textContent = `Prof ${formatModifier(characterProficiency(shown))}`;
-      speedBadge.title = speedNote(shown);
+      tipBadge(speedBadge, speedNote(shown));
       const tired = exhaustionReadout(shown);
       tiredBadge.textContent = tired.badge;
-      tiredBadge.title = tired.note;
+      tipBadge(tiredBadge, tired.badge && tired.note);
       tiredBadge.classList.toggle('character-sheet__exhaustion--fatal', tired.fatal);
     });
 
@@ -579,4 +580,19 @@ export function mountCharacterSheet(
       render();
     },
   };
+}
+
+/**
+ * Give a headline badge a tooltip and put it in the Tab order, so a keyboard
+ * user reads the same hint that a hover shows. A badge with no hint, such as
+ * the empty exhaustion badge at level 0, leaves the Tab order.
+ * @param {HTMLElement} badge
+ * @param {string} text
+ * @returns {HTMLElement}
+ */
+function tipBadge(badge, text) {
+  setTip(badge, text);
+  if (text) badge.tabIndex = 0;
+  else badge.removeAttribute('tabindex');
+  return badge;
 }
