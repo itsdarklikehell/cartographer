@@ -575,3 +575,10 @@
   font-size: var(--text-label);
   text-decoration: underline;
 }
+
+/* FoldText.js hides the button while the text fits. The .btn display rule
+   otherwise wins over the hidden attribute and shows a More that folds
+   nothing. */
+.fold-text__more[hidden] {
+  display: none;
+}
