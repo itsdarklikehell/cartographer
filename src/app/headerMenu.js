@@ -33,6 +33,9 @@ export function wireHeaderMenu() {
   });
   header.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape' || button.getAttribute('aria-expanded') !== 'true') return;
+    // The full sheet closes on an Escape that no other handler used, so a
+    // key that closes the menu marks itself used and leaves the sheet open.
+    event.preventDefault();
     setOpen(false);
     button.focus();
   });

@@ -7,7 +7,7 @@ import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { heldRepeat } from '../entities/SpellRepeat.js';
-import { isGM } from '../view/ViewRole.js';
+import { isGM, seesThroughFog } from '../view/ViewRole.js';
 import { heldTarget, turnKey } from '../view/CombatSelection.js';
 import { combatLabels, findCombatant, spellsOf, weaponsOf } from './combatants.js';
 import { applyToTarget, endSpellEffects } from './combatantWrites.js';
@@ -96,7 +96,7 @@ export function wireCombatScreen(app) {
     isGM: () => isGM(state.role),
     // The read-only fight map draws the party node around the party, with
     // the fog, the marker range, and the foe markers of the Play map. The GM
-    // sees the terrain under a see-through fog, as on the Play map.
+    // sees the terrain under a see-through fog, by the rule of the Play map.
     getMapView: () => {
       if (!state.combat) return null;
       const position = app.partyTracker.getPosition();
@@ -107,7 +107,7 @@ export function wireCombatScreen(app) {
         partyTileId: position.tileId,
         encounterTileIds: foeTiles(state.combat.order, node.id, (id) => findCombatant(app, id)),
         revealAll: false,
-        fogDim: isGM(state.role),
+        fogDim: seesThroughFog(state.mode, state.role),
         markerRange: app.partyTracker.revealRadius * 2,
         label: `Map of the fight area in ${node.name}, centered on the party`,
       };

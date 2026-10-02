@@ -925,7 +925,8 @@ passes `getMapView`, which reads the party position from `partyTracker`.
 order that still stands, which is the rule of the Play map. A companion, a
 summoned ally, or a defeated foe gets no marker. The view also passes the
 marker range of the Play map (twice the reveal radius of `partyTracker`)
-and `fogDim` for the GM role. So the GM sees the terrain under a
+and sets `fogDim` by `seesThroughFog` in `src/view/ViewRole.js`, the
+same rule as the Play map. So the GM sees the terrain under a
 see-through fog, and a Player tab gets opaque fog and shows nothing that
 its Play map hides. The screen redraws the map on each render while the
 Map tab shows, and when the GM opens the tab.

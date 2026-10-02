@@ -247,7 +247,8 @@ name stays small over tile art.
 For each tile, the draw pass draws a fog rectangle if the tile is not
 revealed, and otherwise draws the image at `tile.imageRef`. With
 `view.fogDim` set (a GM outside Build mode, by `seesThroughFog` in
-`src/view/ViewRole.js`), an unrevealed
+`src/view/ViewRole.js`, which also decides the fog of the fight map in
+combat mode), an unrevealed
 tile draws its image and overlays and then a see-through fog rectangle
 (`INK.fogDim`). The frame then has no revealed set, so the group and span
 images draw as in Build mode under that fog. The grid, region outline, and
