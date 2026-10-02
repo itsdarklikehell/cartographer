@@ -6,7 +6,7 @@ The app runs entirely in one browser tab. It has no server and no account. It ke
 
 This site has the guides for GMs who run a campaign in the app, and for contributors who change its code. To try the app, open the [hosted build](https://cartographer.tbmh.org).
 
-![Play mode: the fog-revealed map with the session panels alongside](images/play-mode-light.png)
+![Play mode: the party and the dice tray on the left, the fog-revealed map, and the Session tab on the right](images/play-mode-light.png)
 
 ## Where to start
 
@@ -90,9 +90,9 @@ The Player role hides GM information on the screen, but it is not a security con
 
 ![Build mode: world tree, editable map, and the paint palette](images/build-mode.png)
 
-![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)
+![Combat: the full-width fight screen with the turn ribbon, the board, the combat log, and the dice tray](images/combat-screen.png)
 
-![Play mode in the dark theme](images/play-mode-dark.png)
+![Play mode in the dark theme, with the character sheet of Ser Aldric in the Sheet tab](images/play-mode-dark.png)
 
 ## Local setup
 

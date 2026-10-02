@@ -4,7 +4,7 @@ Campaign Builder is a browser app for building and running the world of a D&D ca
 
 The app runs entirely in one browser tab. It has no server and no account. It keeps each campaign in the local storage of the browser, and you move a campaign between browsers with a JSON export file.
 
-![Play mode: the fog-revealed map with the session panels alongside](docs/images/play-mode-light.png)
+![Play mode: the party and the dice tray on the left, the fog-revealed map, and the Session tab on the right](docs/images/play-mode-light.png)
 
 ## Quick start
 
@@ -98,9 +98,9 @@ The Player role hides GM information on the screen, but it is not a security con
 
 ![Build mode: world tree, editable map, and the paint palette](docs/images/build-mode.png)
 
-![Combat: the full-width fight screen with the board, log, and turn ribbon](docs/images/combat-screen.png)
+![Combat: the full-width fight screen with the turn ribbon, the board, the combat log, and the dice tray](docs/images/combat-screen.png)
 
-![Play mode in the dark theme](docs/images/play-mode-dark.png)
+![Play mode in the dark theme, with the character sheet of Ser Aldric in the Sheet tab](docs/images/play-mode-dark.png)
 
 ## Documentation for GMs
 

@@ -322,10 +322,12 @@ each warning.
 
 ## Run a session
 
-Switch to **Play** mode. The sidebar has the **Session**, **Story**, and
-**Log** tabs. To give the map the full width, click **Hide panels**.
+Switch to **Play** mode. The **Party** panel and the dice tray are on the
+left of the map. The sidebar on the right has the **Session**, **Story**,
+**Log**, and **Sheet** tabs. To hide the sidebar and widen the map, click
+**Hide panels**.
 
-![Play mode: the fog-revealed map with the session panels alongside](images/play-mode-light.png)
+![Play mode: the party and the dice tray on the left, the fog-revealed map, and the Session tab on the right](images/play-mode-light.png)
 
 ### Move the party
 
@@ -484,7 +486,7 @@ still open stays until you end the fight. To bring the foes back, click
 6. Click **Start combat**. The app rolls for each row that you did not roll
    or type, and the combat screen replaces the map.
 
-![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)
+![Combat: the full-width fight screen with the turn ribbon, the board, the combat log, and the dice tray](images/combat-screen.png)
 
 7. Click a board card to make it the target. Click it again to clear the
    target.
@@ -857,7 +859,7 @@ fields as a built-in one, so you do not need to change any code.
 [Curated spells](spells-missing.md) says what the app can and cannot apply
 for you.
 
-![Library mode: the Spells tab, with the spells grouped by level and each row naming its school and effect kind](images/library-spells.png)
+![Library mode: the Spells tab, with filters for class, level, and school, and the spells grouped by level with the school and effect kind on each row](images/library-spells.png)
 
 1. In Library mode, open the **Spells** tab.
 2. Click **New spell**.
@@ -950,4 +952,4 @@ The browser downloads the map as a PNG image, for printing or for a virtual
 tabletop. The image ignores fog. A browser limits how large an image can
 be, so a large map comes out at a smaller tile size.
 
-![Play mode in the dark theme](images/play-mode-dark.png)
+![Play mode in the dark theme, with the character sheet of Ser Aldric in the Sheet tab](images/play-mode-dark.png)
