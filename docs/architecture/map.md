@@ -1624,7 +1624,13 @@ The markup follows the WAI-ARIA tree view pattern. Each `li` is the
 and its groups contain only tree items and groups. A screen reader then
 counts the position and the level of a row from the markup. The chevron,
 the name button, the warning badges, and the actions button sit in a row
-with `aria-hidden`, and only the pointer uses them. The tree item has the
+with `aria-hidden`, and only the pointer uses them. Each of those buttons
+has `tabIndex = -1`, and the row cancels `mousedown`, so a press does not
+focus a button. A press focuses the tree item instead. When a button of
+the row takes focus by any other path, a `focusin` handler on the tree
+moves focus to its tree item. An actions menu opened from the row names
+itself from the actions button and gives focus back to the tree item when
+it closes. The tree item has the
 node name as its `aria-label`, the visible badges as its
 `aria-describedby`, and `aria-keyshortcuts` for the row menu. Only one tree
 item has `tabIndex = 0`, and `view/TreeKeys.js` maps each key to a move, an

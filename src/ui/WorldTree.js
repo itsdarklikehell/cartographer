@@ -145,11 +145,11 @@ export function mountWorldTree(container, opts) {
     };
 
     toggle.addEventListener('click', () => {
-      const closing = !closed.has(nodeId);
-      // A row that has focus inside the branch would lose it to the page
-      // body when the branch hides, so focus moves up to this row.
-      if (closing && childList.contains(document.activeElement)) focusItem(item);
-      apply(closing);
+      // Focus moves to this row, as for a press on the name. A row that has
+      // focus inside a closing branch would otherwise lose it to the page
+      // body when the branch hides.
+      focusItem(item);
+      apply(!closed.has(nodeId));
       // The tab stop can be a row inside the closed branch, and then no
       // visible row is in the tab order.
       syncTabStop();
@@ -455,7 +455,17 @@ export function mountWorldTree(container, opts) {
   }
 
   root.addEventListener('focusin', (event) => {
-    const id = /** @type {HTMLElement} */ (event.target).dataset?.nodeId;
+    const target = /** @type {HTMLElement} */ (event.target);
+    // A button of the aria-hidden row that takes focus by some other path,
+    // such as a script, hands it to its tree item. A screen reader would
+    // otherwise sit on a control that it cannot read.
+    const hiddenRow = target.closest?.('.world-tree__row');
+    if (hiddenRow) {
+      const item = hiddenRow.closest('[role=treeitem]');
+      if (item instanceof HTMLLIElement) focusItem(item);
+      return;
+    }
+    const id = target.dataset?.nodeId;
     if (!id) return;
     tabStopId = id;
     syncTabStop();
