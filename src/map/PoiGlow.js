@@ -8,7 +8,7 @@
  * when a few points of interest are in view. Chromium draws the same shadow
  * in well under 0.1 ms.
  * This module draws the outline and its glow once for each size into an
- * offscreen canvas, and later frames blit that canvas. The sprite holds the
+ * offscreen canvas, and later frames blit that canvas. The sprite contains the
  * glow composited over transparent pixels, and source-over compositing is
  * associative, so the blit gives the same pixels as drawing the shadow and
  * the stroke onto the map.
@@ -28,7 +28,7 @@ export const GLOW_LIMIT = 48;
 
 /**
  * The stroke and blur for an outline of `size` pixels, and the pad that the
- * sprite keeps around the tile for the glow that spills past it. The blur's
+ * sprite adds around the tile for the glow that spills past it. The blur's
  * Gaussian has a sigma of half the `shadowBlur` value, and it fades out at
  * about three sigma.
  * @param {number} size outline extent in device pixels

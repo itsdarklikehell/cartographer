@@ -34,7 +34,7 @@ function canvasFactory() {
   return { factory, made };
 }
 
-test('glowMetrics pads past the blur tail and keeps a 2 px stroke floor', () => {
+test('glowMetrics pads past the blur tail and uses a 2 px stroke floor', () => {
   const small = glowMetrics(10);
   assert.equal(small.lineWidth, 2);
   assert.equal(small.inset, 2);

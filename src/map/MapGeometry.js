@@ -164,11 +164,20 @@ export function tileRect(x, y, tileSize, offsetX, offsetY, scale) {
  * and the antialiased tile edge doubled some grid lines and not others.
  * @param {number} k grid line index (a cell at x spans cellEdge(x) to cellEdge(x + 1))
  * @param {number} size tile size in screen px (tileSize * scale)
+ *
+ * A whole-pixel offset is added after the rounding. The terrain layer draws
+ * at one offset and copies the pixels to another, so an edge has to move by
+ * exactly the difference. `Math.round(k * size + offset)` does not always do
+ * that: when `k * size` falls a hair under a half, the floating-point sum
+ * rounds to the half at some offsets and not at others, and a whole column
+ * of tiles shifts by a pixel.
+ * @param {number} k grid line index (a cell at x spans cellEdge(x) to cellEdge(x + 1))
+ * @param {number} size tile size in screen px (tileSize * scale)
  * @param {number} offset pan offset in screen px
  * @returns {number}
  */
 export function cellEdge(k, size, offset) {
-  return Math.round(k * size + offset);
+  return Number.isInteger(offset) ? Math.round(k * size) + offset : Math.round(k * size + offset);
 }
 
 /**

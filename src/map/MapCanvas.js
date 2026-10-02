@@ -129,6 +129,8 @@ export class MapCanvas {
       tileSize: this.tileSize,
       getNodeName: this.getNodeName,
       onImageLoad: () => this.render(),
+      // Cache the terrain across a pan (see TerrainLayer).
+      layer: true,
     });
 
     /** @type {number | null} pending requestAnimationFrame id for a coalesced redraw */

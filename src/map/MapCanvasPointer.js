@@ -202,9 +202,12 @@ export class MapCanvasPointer {
       host.canvas.width,
       host.canvas.height,
     );
+    // The renderer draws from whole-pixel offsets (see MapRenderer.render).
+    // A band placed from the unrounded offsets can land on the other side
+    // of the party tile, and a click on the drawn arrow then misses it.
     const view = {
-      offsetX: host.offsetX,
-      offsetY: host.offsetY,
+      offsetX: Math.round(host.offsetX),
+      offsetY: Math.round(host.offsetY),
       scale: host.scale,
       canvasWidth: host.canvas.width,
       canvasHeight: host.canvas.height,

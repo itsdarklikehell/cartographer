@@ -152,6 +152,14 @@ test('cellEdge rounds each grid line to a whole pixel', () => {
   assert.equal(cellEdge(3, 17.4, 0.25), 52);
 });
 
+test('cellEdge moves by exactly a whole-pixel change of offset', () => {
+  // 233.49999999999997 + 100 rounds up to 333.5 in floating point, and
+  // 233.49999999999997 - 67 does not. The edge must not depend on that.
+  const size = 233.49999999999997;
+  assert.equal(cellEdge(1, size, 100), cellEdge(1, size, -67) + 167);
+  assert.equal(cellEdge(1, size, 100), 333);
+});
+
 test('adjacent cells built from cellEdge share their boundary exactly', () => {
   const size = 17.4;
   const offset = 3.7;

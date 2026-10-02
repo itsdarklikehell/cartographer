@@ -10,6 +10,7 @@ import { INK } from './CanvasInk.js';
 import { frontierIds } from './FogOfWar.js';
 import { renderRegionNames, renderRegionOverlays } from './RegionOverlay.js';
 import { isBlankMap } from './BlankMap.js';
+import { TerrainLayer } from './TerrainLayer.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
 // the PNG export, resolve a ref through this module.
@@ -82,7 +83,7 @@ export function anyRevealed(tileIds, revealedIds) {
 export class MapRenderer {
   /**
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void, rasterize?: boolean, raster?: TileRaster, createCanvas?: (width: number, height: number) => HTMLCanvasElement | null }} options
+   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void, rasterize?: boolean, raster?: TileRaster, createCanvas?: (width: number, height: number) => HTMLCanvasElement | null, layer?: boolean }} options
    */
   constructor(ctx, options) {
     this.ctx = ctx;
@@ -95,10 +96,18 @@ export class MapRenderer {
     // A caller that rebuilds this class per draw, such as the generator
     // preview, passes its own cache in. Otherwise every rebuild re-rasterizes
     // art it already has.
+    // The live map caches its terrain across a pan. A one-shot render, such
+    // as the PNG export or the generator preview, draws each pass direct.
+    /** @type {TerrainLayer | null} */
+    this._terrain = options.layer ? new TerrainLayer({ createCanvas: this.createCanvas }) : null;
     this._raster =
       options.raster ??
       new TileRaster({
-        onLoad: () => this.onImageLoad?.(),
+        onLoad: () => {
+          // Art that finishes loading replaces a placeholder fill in the layer.
+          this._terrain?.invalidate();
+          this.onImageLoad?.();
+        },
         enabled: options.rasterize ?? true,
       });
     this._markers = new MapMarkers(this);
@@ -128,30 +137,42 @@ export class MapRenderer {
 
   /**
    * Draw one frame of the map from a view snapshot.
-   * @param {MapView} view
+   * @param {MapView} snapshot
    */
-  render(view) {
+  render(snapshot) {
     const { ctx } = this;
+    // The terrain layer copies pixels at whole-pixel offsets. Every pass
+    // draws from the same rounded offsets, so markers and labels stay on the
+    // pixels of the tiles they mark. Hit testing uses the unrounded offsets,
+    // at most half a pixel away.
+    const view = this._terrain
+      ? {
+          ...snapshot,
+          offsetX: Math.round(snapshot.offsetX),
+          offsetY: Math.round(snapshot.offsetY),
+        }
+      : snapshot;
     ctx.clearRect(0, 0, view.canvasWidth, view.canvasHeight);
     if (view.node) {
-      this._renderMapBounds(view);
       // Derived data shared by the passes below, computed once per frame
       // instead of once per pass. Without this, the fog set was rebuilt
       // three times and span blocks were rescanned.
-      const frame = {
-        revealedIds: this._revealedIds(view),
-        spanBlocks: spanBlocks(view.node),
-        /** @type {{ x: number, y: number, w: number, h: number }[]} */
-        vectorBlocks: [],
-      };
-      const groupCover = this._renderGroupImages(view, frame);
-      this._renderSpanImages(view, frame, groupCover);
-      this._renderTiles(view, groupCover);
-      // An empty map in Play mode draws no grid and no coordinate labels,
-      // so the empty-state card sits on a plain canvas. Build mode keeps
-      // them, because the GM paints the first tiles against the grid.
+      const frame = this._frame(view);
+      const size = this.tileSize * view.scale;
+      const layered = this._terrain?.draw(ctx, view, size, (layerCtx, layerView) => {
+        this.ctx = layerCtx;
+        try {
+          this._renderTerrain(layerView, this._frame(layerView));
+        } finally {
+          this.ctx = ctx;
+        }
+      });
+      if (!layered) this._renderTerrain(view, frame);
+      // An empty map in Play mode draws no grid (see _renderTerrain) and no
+      // coordinate labels, so the empty-state card sits on a plain canvas.
+      // Build mode draws them, because the GM paints the first tiles against
+      // the grid.
       const bare = !view.revealAll && isBlankMap(view.node);
-      if (!bare) this._renderCellGrid(view, frame);
       this._renderRegionGroups(view, frame);
       this._decorations.renderSelection(view);
       // Names draw after the selection outline, so the outline never cuts
@@ -178,6 +199,36 @@ export class MapRenderer {
     // the renderer from holding the finished view, and through it a whole
     // node's tiles, for as long as the map sits idle between draws.
     this._markers.releaseFrame();
+  }
+
+  /**
+   * The derived data that the passes of one draw share.
+   * @param {MapView} view
+   * @returns {Frame}
+   */
+  _frame(view) {
+    return {
+      revealedIds: this._revealedIds(view),
+      spanBlocks: view.node ? spanBlocks(view.node) : [],
+      vectorBlocks: [],
+    };
+  }
+
+  /**
+   * The terrain passes: the map backdrop, the region-block and span images,
+   * the tiles, and the cell grid. They read only what `terrainKey` lists and
+   * the scale, so `TerrainLayer` can cache their pixels across a pan. They
+   * draw onto this.ctx, which is the layer context while the layer paints.
+   * @param {MapView} view
+   * @param {Frame} frame
+   */
+  _renderTerrain(view, frame) {
+    if (!view.node) return;
+    this._renderMapBounds(view);
+    const groupCover = this._renderGroupImages(view, frame);
+    this._renderSpanImages(view, frame, groupCover);
+    this._renderTiles(view, groupCover);
+    if (view.revealAll || !isBlankMap(view.node)) this._renderCellGrid(view, frame);
   }
 
   /**

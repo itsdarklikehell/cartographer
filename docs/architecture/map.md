@@ -213,6 +213,7 @@ The canvas code is split so that each file owns one concern:
     |
     +-- MapRenderer ......... terrain / fog / grid / region passes
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
+    |     +-- TerrainLayer ..... terrain pixels kept across a pan
     |     +-- MapMarkers ....... party, encounter, NPC, handout, token markers
     |     +-- MapDecorations ... cursor, selection, POI,
     |     |                      coordinate chrome
@@ -290,8 +291,8 @@ outline costs about 1.5 ms per frame there on a desktop, and several times
 that on a phone, while Chromium draws it in under 0.1 ms. `PoiGlow`
 (`src/map/PoiGlow.js`) draws the outline and its glow once for each size
 into an offscreen canvas, and every frame copies that sprite. The sprite
-keeps a pad around the tile for the glow that spills past it, and the cache
-keeps the 48 most recently used sizes.
+pads the tile for the glow that spills past it, and the cache stores the 48
+most recently used sizes.
 
 ### The cell grid
 
@@ -306,6 +307,49 @@ shows the backdrop and so never shows a grid. Some tiles still draw from the
 vector art: the PNG export, and any zoom past the raster size limit. There
 the boundary line is already present, so the pass does not run, and no
 boundary gets a second, darker line.
+
+### The terrain layer
+
+The live map stores its terrain in an offscreen canvas, so a pan copies
+pixels and does not draw every tile again. `MapRenderer._renderTerrain` runs
+the terrain passes: the map backdrop, the region-block and span images, the
+tiles with their fog, overlays, and POI outlines, and the cell grid.
+`TerrainLayer` (`src/map/TerrainLayer.js`) calls it to fill the layer, and
+each frame copies the view out of the layer. The region overlays, names,
+markers, labels, and exit bands still draw on every frame, on top of the
+copy.
+
+In Firefox, each tile, fog rectangle, and overlay draw costs several times
+what it costs in Chromium. A Play-mode region view draws about 150 tiles and
+140 fog rectangles per frame, so a pan on a phone drops frames when it draws
+them all. With the layer, a desktop Firefox frame of that pan costs about
+2.3 ms of script where a full draw costs about 4 ms.
+
+The layer is a torus. Map pixel (x, y) lives at layer pixel (x mod width,
+y mod height). A pan past the cached rect draws only the strip that comes
+into view, plus a margin of a quarter of the shorter canvas side, and the
+pixels already drawn stay where they are. The frame copies the view in up to
+four pieces, one on each side of the wrap lines. Each strip draws with one
+cell of slack around it and a clip to its own rect, so a POI glow from a
+cell beside the strip reaches into it.
+
+`terrainKey` lists what the terrain passes read: the node, the region
+groups, the fog mode, the marker range, the party tile, and the token tiles.
+A change to any of them drops the cache, and the next frame fills just the
+view. A paint stroke or a party step therefore costs one normal draw. A
+change of scale draws the passes straight onto the map canvas instead,
+because a pinch changes the scale on every frame and would never read a
+cached copy. A tile image that finishes loading drops the cache too, because
+the layer still contains the placeholder fill.
+
+The copy lands on the same pixels as a direct draw only at whole-pixel
+offsets, so the live renderer rounds the pan offsets before it draws.
+`cellEdge` rounds `k * size` first and then adds a whole offset, so an edge
+moves by exactly the change in offset. The pointer code rounds the offsets
+the same way when it places the exit bands for a click test, because a band
+beside the party tile can move to the other side of it when the offsets
+change by a fraction of a pixel. The PNG export, the generator preview, and
+the combat map draw once and use no layer.
 
 ### Clicks and navigation
 
