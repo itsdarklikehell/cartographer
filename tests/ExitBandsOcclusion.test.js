@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { avoidOccluders, edgeExitBand, exitBandGeometry } from '../src/map/ExitBands.js';
+import {
+  avoidOccluders,
+  edgeExitBand,
+  edgeExitBands,
+  exitBandGeometry,
+  insideBand,
+} from '../src/map/ExitBands.js';
+import { tileIdAt } from '../src/map/MapGeometry.js';
 import { createMapNode } from '../src/map/TileGrid.js';
 
 /** @typedef {import('../src/map/ExitBands.js').Rect} Rect */
@@ -155,4 +162,40 @@ test('the geometry lists the HTML and the party tile as required', () => {
   );
   assert.deepEqual(geomOut.required, [html, { x: 196, y: 148, w: 48, h: 48 }]);
   assert.deepEqual(exitBandGeometry(node, view, 48, exit).required, []);
+});
+
+test('edgeExitBands moves a later band off an earlier one', () => {
+  const node = createMapNode('vale', 'Briarwick Vale', 'world', 10, 10);
+  const view = {
+    offsetX: 20,
+    offsetY: 20,
+    scale: 1,
+    canvasWidth: 400,
+    canvasHeight: 500,
+    partyTileId: tileIdAt(8, 9),
+  };
+  /** @type {import('../src/types/map.js').MapExit[]} */
+  const exits = [
+    { kind: 'edge', side: 'east', targetNodeId: 'peaks', targetName: 'Graypeak Highlands' },
+    { kind: 'edge', side: 'south', targetNodeId: 'reach', targetName: 'The Ashen Reach' },
+    { kind: 'node', targetNodeId: 'world', targetName: 'The Marches' },
+  ];
+  const alone = exits
+    .slice(0, 2)
+    .map((exit) => edgeExitBand(exit, exitBandGeometry(node, view, 48, exit)));
+  assert.ok(overlap(alone[0], alone[1]), 'the corner layout collides without the pass');
+  const placed = edgeExitBands(node, view, 48, exits);
+  assert.deepEqual(
+    placed.map((p) => p.exit.kind === 'edge' && p.exit.side),
+    ['east', 'south'],
+  );
+  assert.deepEqual(placed[0].band, alone[0]);
+  assert.ok(!overlap(placed[0].band, placed[1].band));
+});
+
+test('insideBand includes the edges of the rect', () => {
+  const rect = { x: 10, y: 10, w: 20, h: 10 };
+  assert.equal(insideBand(rect, 10, 20), true);
+  assert.equal(insideBand(rect, 31, 15), false);
+  assert.equal(insideBand(rect, 15, 9), false);
 });

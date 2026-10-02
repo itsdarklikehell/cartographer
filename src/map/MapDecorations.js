@@ -1,6 +1,6 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, exitLabel } from './MapExits.js';
-import { edgeExitBand, exitBandGeometry } from './ExitBands.js';
+import { edgeExitBands } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel } from './CanvasText.js';
 import { coordLabelLayout, visibleCoordLabels } from './CoordLabels.js';
@@ -81,13 +81,11 @@ export class MapDecorations {
   renderEdgeExits(view) {
     const node = view.node;
     if (!node || !view.exits?.length) return;
-    for (const exit of view.exits) {
-      if (exit.kind !== 'edge') continue;
-      const dir = EXIT_SIDES.find((s) => s.side === exit.side);
+    for (const { exit, band } of edgeExitBands(node, view, this.host.tileSize, view.exits)) {
+      const dir = EXIT_SIDES.find((s) => exit.kind === 'edge' && s.side === exit.side);
       if (!dir) continue;
-      const geom = exitBandGeometry(node, view, this.host.tileSize, exit);
-      const armed = view.armedExitSide === exit.side;
-      this._drawExitBand(exit, edgeExitBand(exit, geom), dir.dx, dir.dy, armed);
+      const armed = exit.kind === 'edge' && view.armedExitSide === exit.side;
+      this._drawExitBand(exit, band, dir.dx, dir.dy, armed);
     }
   }
 

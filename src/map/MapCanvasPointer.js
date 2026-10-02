@@ -1,5 +1,5 @@
 import { getTile } from './TileGrid.js';
-import { exitBandGeometry, hitExitBand } from './ExitBands.js';
+import { edgeExitBands, insideBand } from './ExitBands.js';
 import {
   screenToTile,
   clampZoom,
@@ -212,12 +212,10 @@ export class MapCanvasPointer {
       occluders: host.occluders,
       pixelRatio: globalThis.devicePixelRatio || 1,
     };
-    for (const exit of host.exits) {
-      if (exit.kind !== 'edge') continue;
-      const geom = exitBandGeometry(host.node, view, host.tileSize, exit);
-      if (hitExitBand(exit, geom, buffer.x, buffer.y)) return exit;
-    }
-    return null;
+    const hit = edgeExitBands(host.node, view, host.tileSize, host.exits).find(({ band }) =>
+      insideBand(band, buffer.x, buffer.y),
+    );
+    return hit?.exit ?? null;
   }
 
   /**

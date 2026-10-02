@@ -198,6 +198,36 @@ export function edgeExitBand(exit, geom) {
 }
 
 /**
+ * The bands of every edge exit of a view, in the order of `exits`. Each band
+ * keeps off the bands placed before it, as it keeps off the party's tile.
+ * On a narrow canvas an east band and a south band both clamp toward the
+ * same corner, and without this they draw one over the other. The renderer
+ * and the pointer both place bands here, so a click lands on the band the
+ * GM sees.
+ * @param {MapNode} node
+ * @param {ExitBandView} view
+ * @param {number} tileSize
+ * @param {MapExit[]} exits
+ * @returns {{ exit: MapExit, band: ExitBand }[]}
+ */
+export function edgeExitBands(node, view, tileSize, exits) {
+  /** @type {{ exit: MapExit, band: ExitBand }[]} */
+  const placed = [];
+  for (const exit of exits) {
+    if (exit.kind !== 'edge') continue;
+    const geom = exitBandGeometry(node, view, tileSize, exit);
+    const others = placed.map(({ band: b }) => ({ x: b.x, y: b.y, w: b.w, h: b.h }));
+    const band = edgeExitBand(exit, {
+      ...geom,
+      occluders: [...(geom.occluders ?? []), ...others],
+      required: [...(geom.required ?? []), ...others],
+    });
+    placed.push({ exit, band });
+  }
+  return placed;
+}
+
+/**
  * The room a north or south exit band takes beyond the room for the
  * coordinate labels, at the smallest band height, in buffer px. A fit keeps
  * this much room, so the band sits beside the map rather than over it.
@@ -323,7 +353,17 @@ function nearestClear(band, alongX, geom) {
  * @returns {boolean}
  */
 export function hitExitBand(exit, geom, bufferX, bufferY) {
-  const band = edgeExitBand(exit, geom);
+  return insideBand(edgeExitBand(exit, geom), bufferX, bufferY);
+}
+
+/**
+ * Whether a buffer-space point falls inside a band rect.
+ * @param {Rect} band
+ * @param {number} bufferX
+ * @param {number} bufferY
+ * @returns {boolean}
+ */
+export function insideBand(band, bufferX, bufferY) {
   return (
     bufferX >= band.x &&
     bufferX <= band.x + band.w &&
