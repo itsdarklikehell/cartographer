@@ -141,6 +141,15 @@ body.sheet-full.mode-play .phone-views {
   display: none;
 }
 
+/* styles/play-shell.css leaves 5rem under the last card for the bar. With
+   the bar hidden, that room shows as an empty band under the sheet, so the
+   page takes back its usual padding. */
+@media (max-width: 40rem) {
+  body.sheet-full.mode-play {
+    padding-bottom: var(--space-4);
+  }
+}
+
 /* partyWiring.js hides the open button while no character is selected. */
 .sheet-card__open[hidden] {
   display: none;
