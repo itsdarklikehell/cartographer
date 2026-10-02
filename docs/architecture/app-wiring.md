@@ -1010,6 +1010,8 @@ A press on a view sets `body[data-phone-view]` and clicks the view's tab,
 and `styles/play-shell.css` hides the other areas from that attribute. The
 bar listens to the tab strip as well, so a tab that opens from code, such
 as the Sheet tab after a click on a party row, moves the bar to its view.
+A `MutationObserver` on `body[data-phone-view]` marks the view that other
+code sets, such as the Map view that `pickMapTile` shows for a pick.
 
 ### diceWiring.js
 

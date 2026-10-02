@@ -8,6 +8,9 @@ import { PHONE_VIEWS, phoneViewForTab, tabForPhoneView } from '../view/PhoneView
  * in `body[data-phone-view]`. A view with a sidebar tab opens that tab
  * through the tab's own click handler. A tab that opens some other way, such
  * as the Sheet tab after a click on a party row, moves the bar to its view.
+ * Code outside the bar can set `body[data-phone-view]` too, as a map pick
+ * does to show the map. The bar watches the attribute and marks the view
+ * that it names, so the selected button always matches the area on screen.
  */
 export function wirePhoneViews() {
   const tablist = mustGetElement('sidebar-tabs');
@@ -41,4 +44,8 @@ export function wirePhoneViews() {
   nav.setAttribute('aria-label', 'Play views');
   document.body.append(nav);
   show(bar.getValue());
+  new MutationObserver(() => {
+    const viewId = document.body.dataset.phoneView;
+    if (viewId) bar.sync(viewId);
+  }).observe(document.body, { attributes: true, attributeFilter: ['data-phone-view'] });
 }
