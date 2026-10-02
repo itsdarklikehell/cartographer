@@ -256,26 +256,36 @@ export async function addFromLibrary(app) {
 export async function removeTemplate(app) {
   const { state } = app;
   if (state.bestiary.length === 0) return false;
-  const values = await promptModal(
-    'Remove a bestiary template',
-    [
-      {
-        name: 'template',
-        label: 'Template',
-        type: 'select',
-        options: [...state.bestiary]
-          .sort((a, b) => a.name.localeCompare(b.name))
-          .map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` })),
-      },
-    ],
-    { submitLabel: 'Remove' },
-  );
-  const template = values && state.bestiary.find((t) => t.id === values.template);
-  if (!template) return false;
+  const options = [...state.bestiary]
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` }));
+  /** @type {string | undefined} */
+  let picked;
   // The pick dialog opens with focus on the select, so Enter submits it at
-  // once. The danger confirm opens with focus on Cancel.
-  if (!(await confirmDelete(template.name, 'Creatures already placed from it stay on the map.')))
-    return false;
+  // once. The danger confirm opens with focus on Cancel. Cancel on the
+  // confirm opens the pick dialog again with the same template selected.
+  for (;;) {
+    const values = await promptModal(
+      'Remove a bestiary template',
+      [{ name: 'template', label: 'Template', type: 'select', options, value: picked }],
+      { submitLabel: 'Remove' },
+    );
+    const template = values && state.bestiary.find((t) => t.id === values.template);
+    if (!template) return false;
+    if (await confirmDelete(template.name, 'Creatures already placed from it stay on the map.'))
+      return dropTemplate(app, template);
+    picked = template.id;
+  }
+}
+
+/**
+ * Remove a confirmed template from the campaign bestiary and say so.
+ * @param {AppContext} app
+ * @param {{ id: string, name: string }} template
+ * @returns {true}
+ */
+function dropTemplate(app, template) {
+  const { state } = app;
   state.bestiary = removeById(state.bestiary, template.id);
   app.actions.markDirty();
   app.toasts.show(`Removed "${template.name}" from the bestiary.`);
