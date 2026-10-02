@@ -4,6 +4,7 @@ import { edgeExitBands } from './ExitBands.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel } from './CanvasText.js';
 import { coordLabelLayout, visibleCoordLabels } from './CoordLabels.js';
+import { PoiGlow } from './PoiGlow.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -22,6 +23,7 @@ export class MapDecorations {
   /** @param {MapRenderer} host */
   constructor(host) {
     this.host = host;
+    this._glow = new PoiGlow({ createCanvas: host.createCanvas });
   }
 
   /**
@@ -163,15 +165,7 @@ export class MapDecorations {
    * @param {number} size
    */
   renderPoiOutline(sx, sy, size) {
-    const { ctx } = this.host;
-    ctx.save();
-    ctx.strokeStyle = INK.goldLit;
-    ctx.lineWidth = Math.max(2, size * 0.06);
-    ctx.shadowColor = INK.goldGlow;
-    ctx.shadowBlur = size * 0.18;
-    const inset = ctx.lineWidth / 2 + 1;
-    ctx.strokeRect(sx + inset, sy + inset, size - inset * 2, size - inset * 2);
-    ctx.restore();
+    this._glow.draw(this.host.ctx, sx, sy, size);
   }
 
   /** Draw the keyboard cursor cell while the canvas has focus. This is

@@ -82,13 +82,16 @@ export function anyRevealed(tileIds, revealedIds) {
 export class MapRenderer {
   /**
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void, rasterize?: boolean, raster?: TileRaster }} options
+   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void, rasterize?: boolean, raster?: TileRaster, createCanvas?: (width: number, height: number) => HTMLCanvasElement | null }} options
    */
   constructor(ctx, options) {
     this.ctx = ctx;
     this.tileSize = options.tileSize;
     this.getNodeName = options.getNodeName;
     this.onImageLoad = options.onImageLoad;
+    // Offscreen canvases for cached sprites. Tests inject a fake, and
+    // without a DOM the default returns null, which draws straight onto ctx.
+    this.createCanvas = options.createCanvas;
     // A caller that rebuilds this class per draw, such as the generator
     // preview, passes its own cache in. Otherwise every rebuild re-rasterizes
     // art it already has.

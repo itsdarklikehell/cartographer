@@ -215,7 +215,8 @@ The canvas code is split so that each file owns one concern:
     |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- MapMarkers ....... party, encounter, NPC, handout, token markers
     |     +-- MapDecorations ... cursor, selection, POI,
-    |                            coordinate chrome
+    |     |                      coordinate chrome
+    |     |     +-- PoiGlow .... POI outline glow, drawn once per size
     |
     +-- MapCanvasPointer .... right-drag/touch pan, cursor-anchored wheel
     |                         and pinch zoom, authoring strokes, hover
@@ -282,6 +283,15 @@ screen.
 A destination wider than 256 pixels skips the cache and draws the vector
 art, so one large landmark stays sharp at high zoom. The cache clears itself
 when it reaches 32 MB.
+
+The gold outline around a point of interest uses the same idea. Its glow is
+a canvas shadow (`shadowBlur`), and Firefox blurs a shadow on the CPU. One
+outline costs about 1.5 ms per frame there on a desktop, and several times
+that on a phone, while Chromium draws it in under 0.1 ms. `PoiGlow`
+(`src/map/PoiGlow.js`) draws the outline and its glow once for each size
+into an offscreen canvas, and every frame copies that sprite. The sprite
+keeps a pad around the tile for the glow that spills past it, and the cache
+keeps the 48 most recently used sizes.
 
 ### The cell grid
 
