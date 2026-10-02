@@ -496,7 +496,12 @@ export function wireMapView(app) {
     mapCanvas.setRevealAll(mode === 'build');
     syncFogDim();
     syncMapOccluders();
-    if (mode === 'build') palettePanel.show();
+    // A Play view frames the revealed tiles, at a zoom that can cut off the
+    // rest of the map. Build mode edits the whole map, so it fits it.
+    if (mode === 'build') {
+      mapCanvas.fit();
+      palettePanel.show();
+    }
     syncToolChip();
     tileTooltip.hide();
     // The fog brush is a Play-mode tool. Changing modes drops it. Putting it
