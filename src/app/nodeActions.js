@@ -181,7 +181,9 @@ export function createNodeActions(app, env) {
     if (!node) return;
     const doomed = collectSubtreeIds([...grid.nodes.values()], nodeId);
     if (doomed.size >= grid.nodes.size) {
-      await alertModal('Cannot delete the last node in the campaign.');
+      await alertModal('Cannot delete the last node in the campaign.', {
+        title: `Cannot delete ${node.name}`,
+      });
       return;
     }
     const landing = deleteLanding([...grid.nodes.values()], nodeId, doomed);
