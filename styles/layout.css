@@ -102,6 +102,12 @@ body.mode-build .app-dock {
   background: transparent;
 }
 
+/* The shared .btn hover fill is the light sunken surface, which hides the
+   light icon on the dark toolbar. */
+.map-controls__btn:hover {
+  background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
+}
+
 /* GM fog cluster: visually separated from zoom, hidden from players and in
    Build mode (Build already reveals everything). */
 .map-controls__fog {
