@@ -269,7 +269,7 @@ export function mountWorldTree(container, opts) {
       row.addEventListener('contextmenu', (event) => {
         event.preventDefault();
         focusItem(item);
-        openContextMenu(menuItems(node), event);
+        openContextMenu(menuItems(node), event, null, `Actions for ${node.name}`);
       });
     }
 

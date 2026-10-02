@@ -49,8 +49,10 @@ let openTrigger = null;
  * @param {HTMLElement | null} [trigger] the menu button that opened the menu.
  *   It gets `aria-expanded` while the menu is open, and its accessible name
  *   names the menu. A press on it does not count as a press outside.
+ * @param {string} [label] the accessible name of a menu opened with no menu
+ *   button, for example by a right-click on a world-tree row
  */
-export function openContextMenu(items, position, trigger = null) {
+export function openContextMenu(items, position, trigger = null, label = undefined) {
   closeCurrent?.();
   if (items.length === 0) return;
 
@@ -60,7 +62,7 @@ export function openContextMenu(items, position, trigger = null) {
 
   const menu = el('div', 'context-menu u-col');
   menu.setAttribute('role', 'menu');
-  const name = trigger?.getAttribute('aria-label');
+  const name = trigger?.getAttribute('aria-label') ?? label;
   if (name) menu.setAttribute('aria-label', name);
 
   const buttons = items.map((item) => {
