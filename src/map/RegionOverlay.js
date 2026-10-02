@@ -2,7 +2,8 @@ import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js
 import { groupOutline, regionSlots } from './RegionOutline.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel, labelFont } from './CanvasText.js';
-import { labelSpots, placeLabels } from './RegionLabels.js';
+import { keepClearOfEdges, labelSpots, placeLabels } from './RegionLabels.js';
+import { coordLabelLayout } from './CoordLabels.js';
 
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -96,6 +97,8 @@ export function renderRegionOverlays(ctx, view, revealedIds, tileSize) {
  * character token, or a visible creature marker, often to the spot above
  * the region. The layout covers the regions out of view too, so a
  * name does not change spot when a pan moves another region off the canvas.
+ * After the layout, `keepClearOfEdges` slides a name off the pinned
+ * coordinate digits, or leaves it out when its anchor cell is out of view.
  * @param {CanvasRenderingContext2D} ctx
  * @param {MapView} view
  * @param {import('./TileIndex.js').RevealedIds | null} revealedIds
@@ -132,9 +135,14 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
     spots.push(labelSpots(cells, node.height));
   }
   ctx.restore();
+  // placeLabels stops at the spot that it keeps, so the last spot asked for
+  // each name is the anchor of its placed box.
+  /** @type {LabelSpot[]} */
+  const anchors = [];
   const boxes = placeLabels(
     spots,
     (i, spot) => {
+      anchors[i] = spot;
       const y = cellEdge(spot.y, size, view.offsetY);
       return {
         x: cellEdge(spot.x, size, view.offsetX),
@@ -147,7 +155,10 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
     // A name also keeps out from under the floating mini-map.
     [...cellBoxes(blockedIds, view, size), ...(view.occluders ?? []).filter((o) => o.float)],
   );
-  boxes.forEach((box, i) => {
+  const edge = mapAreaEdge(view, tileSize);
+  boxes.forEach((placed, i) => {
+    const { x, y } = anchors[i];
+    const box = placed && keepClearOfEdges(placed, cellBoxes([`${x},${y}`], view, size)[0], edge);
     if (!box || box.x > view.canvasWidth || box.y > view.canvasHeight) return;
     if (box.x + box.w < 0 || box.y + box.h < 0) return;
     drawPlatedLabel(ctx, names[i], box.x + padX, box.y + padY, {
@@ -162,6 +173,25 @@ export function renderRegionNames(ctx, view, revealedIds, tileSize, getNodeName,
       padY,
     });
   });
+}
+
+/**
+ * The least x and y where a region name may start: the canvas edge, or the
+ * far side of a row or column digit strip pinned to that edge. A strip that
+ * sits off the map, beside its edge, lies left of or above every cell, so it
+ * moves no name.
+ * @param {import('./CoordLabels.js').CoordView} view
+ * @param {number} tileSize base tile size in buffer px at scale 1
+ * @returns {{ x: number, y: number }}
+ */
+export function mapAreaEdge(view, tileSize) {
+  const layout = coordLabelLayout(view, tileSize);
+  const rows = layout?.rows;
+  const columns = layout?.columns;
+  return {
+    x: Math.max(0, rows ? rows.x + rows.w : 0),
+    y: Math.max(0, columns ? columns.y + columns.h : 0),
+  };
 }
 
 /**

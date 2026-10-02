@@ -226,10 +226,6 @@ export function wireMapView(app) {
     // carries it into another node, the next click paints fog there instead
     // of moving the party. Only a pressed icon explains why.
     setFogTool(null);
-    // The pointer can rest on the canvas through a map change, and no new
-    // hover event arrives. A tooltip left up would name a tile of the old map
-    // over fog on the new one.
-    env.tileTooltip?.hide();
     navigator.goTo(nodeId);
     resyncMapViews(app, env, { reframe: true });
   }

@@ -129,6 +129,12 @@ clear of the names already placed. The renderer also passes the tiles of the
 party token, each character token, and each visible creature marker. A name
 skips a spot that covers one of those tiles, and often moves to the spot
 above the region instead.
+After the layout, `keepClearOfEdges` checks each name against the left and
+top edges of the map area. Those edges are the canvas edges, or the far side
+of a row or column digit strip pinned there. A name whose anchor cell lies
+past an edge is left out, so the name of a region just off the left edge does
+not draw as a fragment over the row digits. A name whose anchor cell still
+shows slides right or down to the edge.
 The names draw in their own pass after the selection outline, so the outline
 of a selected tile never cuts through a name plate.
 

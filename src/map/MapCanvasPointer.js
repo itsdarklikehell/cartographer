@@ -305,6 +305,16 @@ export class MapCanvasPointer {
     host.onCellHover(tile, event.clientX, event.clientY);
   }
 
+  /** Forget the hovered cell and tell the handler that no cell is hovered.
+   * The host calls this when it loads a new node. The pointer can rest on
+   * the canvas through the change, and a keyboard Enter can make the change
+   * with no pointer at all, so no hover event follows it. Without this call,
+   * the tooltip of a tile on the old node stays open over the new node. */
+  resetHover() {
+    this._hoverCellId = null;
+    this.host.onCellHover?.(null, 0, 0);
+  }
+
   /** Reset hover state and tell the handler that the pointer left the grid.
    * Also clear the exit arrow pointer cursor. Otherwise the cursor stays set
    * when the pointer leaves the canvas over an arrow. */

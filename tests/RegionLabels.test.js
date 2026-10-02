@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { boxesOverlap, labelSpots, placeLabels } from '../src/map/RegionLabels.js';
+import {
+  boxesOverlap,
+  keepClearOfEdges,
+  labelSpots,
+  placeLabels,
+} from '../src/map/RegionLabels.js';
 
 test('labelSpots lists the cells in reading order, then above and below the region', () => {
   const cells = [
@@ -124,4 +129,25 @@ test('placeLabels skips a spot that overlaps a blocked box', () => {
   const blocked = [{ x: 0, y: 10, w: 10, h: 10 }];
   assert.deepEqual(placeLabels(spots, at, 0, blocked), [{ x: 0, y: 5, w: 10, h: 5 }]);
   assert.deepEqual(placeLabels([[spots[0][0]]], at, 0, blocked), [null]);
+});
+
+test('keepClearOfEdges leaves a name inside the map area where it is', () => {
+  const box = { x: 50, y: 60, w: 80, h: 16 };
+  const cell = { x: 50, y: 60, w: 40, h: 40 };
+  assert.deepEqual(keepClearOfEdges(box, cell, { x: 30, y: 20 }), box);
+});
+
+test('keepClearOfEdges slides a name off the row and column digits', () => {
+  const box = { x: 10, y: 5, w: 80, h: 16 };
+  const cell = { x: 10, y: 5, w: 40, h: 40 };
+  assert.deepEqual(keepClearOfEdges(box, cell, { x: 30, y: 20 }), { x: 30, y: 20, w: 80, h: 16 });
+});
+
+test('keepClearOfEdges leaves out a name whose anchor cell is past an edge', () => {
+  const box = { x: -60, y: 100, w: 120, h: 16 };
+  assert.equal(keepClearOfEdges(box, { x: -60, y: 100, w: 40, h: 40 }, { x: 0, y: 0 }), null);
+  // The cell's far edge on the strip edge counts as out of view.
+  assert.equal(keepClearOfEdges(box, { x: -10, y: 100, w: 40, h: 40 }, { x: 30, y: 0 }), null);
+  const above = { x: 100, y: -20, w: 80, h: 16 };
+  assert.equal(keepClearOfEdges(above, { x: 100, y: -40, w: 40, h: 40 }, { x: 0, y: 0 }), null);
 });

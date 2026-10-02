@@ -170,6 +170,7 @@ export class MapCanvas {
     this.disarmExit();
     this.selectedTileId = null;
     this.cursorCellId = null;
+    this._pointer.resetHover();
     this.fit({ whole: false });
   }
 

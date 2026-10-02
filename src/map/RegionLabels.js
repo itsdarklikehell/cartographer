@@ -90,3 +90,23 @@ export function placeLabels(spots, boxAt, gap = 0, blocked = []) {
     return null;
   });
 }
+
+/**
+ * Keep a placed name clear of the left and top edges of the map area. The
+ * edges are the canvas edges, or the far side of a coordinate digit strip
+ * pinned there. A name whose anchor cell lies wholly past an edge is left
+ * out, and the result is null. Without this rule, a name whose region sits
+ * just off the left edge draws as a fragment over the row digits. A name
+ * whose anchor cell still shows past the edge slides right or down to the
+ * edge, so the plate reads in full and does not cover a digit. The slide
+ * comes after `placeLabels`, so the layout does not change as a pan moves
+ * the edge.
+ * @param {LabelBox} box the placed box of the name
+ * @param {LabelBox} cell the screen box of the name's anchor cell
+ * @param {{ x: number, y: number }} edge the least x and y where a plate may start
+ * @returns {LabelBox | null}
+ */
+export function keepClearOfEdges(box, cell, edge) {
+  if (cell.x + cell.w <= edge.x || cell.y + cell.h <= edge.y) return null;
+  return { ...box, x: Math.max(box.x, edge.x), y: Math.max(box.y, edge.y) };
+}
