@@ -19,11 +19,12 @@ import { hpBand } from '../view/ViewRole.js';
  * of each member below it, built by a list panel from `list`. A player
  * sees each line as plain text, with the coarse HP band instead of the bar.
  *
- * `update()` repaints only when the groups, their order, their members, the
- * GM flag, the open line, or `list.dependsOn` change. Otherwise it moves
- * the HP bars, the HP bands, and the distances in place and asks the open
- * list to update, which keeps the amount a GM typed into a member row. A
- * party step changes the distances, so they stay out of the signature.
+ * `update()` repaints only when the groups, their members, the GM flag, the
+ * open line, or `list.dependsOn` change. Otherwise it moves the HP bars, the
+ * HP bands, and the distances in place, puts the lines in their new order,
+ * and asks the open list to update, which keeps the amount a GM typed into a
+ * member row. A party step changes the distances, and the groups sort by
+ * distance, so neither the distances nor the order are in the signature.
  * @param {HTMLElement} container
  * @param {{
  *   getRows: () => Creature[],
@@ -48,6 +49,8 @@ export function mountNearbyList(container, opts) {
   /** Each line's in-place update of its HP and distance, by group key.
    * @type {Map<string, (g: NearbyGroup) => void>} */
   let lines = new Map();
+  /** Each line's outer element, by group key. @type {Map<string, HTMLElement>} */
+  let wraps = new Map();
   /** @type {{ update: () => void } | null} */
   let open = null;
 
@@ -57,7 +60,7 @@ export function mountNearbyList(container, opts) {
       gm,
       expanded,
       opts.list.dependsOn?.() ?? null,
-      groups.map((g) => [g.key, g.members.map((m) => m.id)]),
+      groups.map((g) => [g.key, g.members.map((m) => m.id)]).sort(),
     ]);
 
   function update() {
@@ -67,6 +70,7 @@ export function mountNearbyList(container, opts) {
     const next = structure(gm);
     if (next === signature) {
       for (const g of groups) lines.get(g.key)?.(g);
+      reorder();
       open?.update();
       return;
     }
@@ -79,9 +83,14 @@ export function mountNearbyList(container, opts) {
     const memo = captureFocus(root, document.activeElement);
     root.innerHTML = '';
     lines = new Map();
+    wraps = new Map();
     open = null;
     if (groups.length === 0) root.appendChild(emptyState(opts.emptyMessage));
-    for (const g of groups) root.appendChild(gm ? gmLine(g) : playerLine(g));
+    for (const g of groups) {
+      const line = gm ? gmLine(g) : playerLine(g);
+      wraps.set(g.key, line);
+      root.appendChild(line);
+    }
     if (gm) {
       for (const spec of opts.addButtons()) {
         if (!spec) continue;
@@ -102,6 +111,23 @@ export function mountNearbyList(container, opts) {
     // the page body.
     if (memo && !restoreFocus(root, memo)) {
       /** @type {HTMLElement | null} */ (root.querySelector('button'))?.focus();
+    }
+  }
+
+  /**
+   * Move the lines into the order of `groups`, ahead of the add buttons.
+   * Moving an element takes its focus away, so the focused control gets it
+   * back after the move.
+   */
+  function reorder() {
+    const want = groups.map((g) => wraps.get(g.key));
+    const have = [...root.children].filter((n) => want.includes(/** @type {HTMLElement} */ (n)));
+    if (want.every((n, i) => n === have[i])) return;
+    const active = /** @type {HTMLElement | null} */ (document.activeElement);
+    const before = root.querySelector(':scope > .encounter-panel__add');
+    for (const line of want) if (line) root.insertBefore(line, before);
+    if (active && active !== document.activeElement && root.contains(active)) {
+      active.focus({ preventScroll: true });
     }
   }
 
