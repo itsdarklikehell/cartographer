@@ -327,6 +327,13 @@ body.role-player .npc-scope {
   margin-top: var(--space-2);
 }
 
+/* The label names every creature in the group, so it wraps. A label kept on
+   one line widens the dialog past a 390 px screen and scrolls it sideways. */
+.combat-setup__group {
+  min-width: 0;
+  white-space: normal;
+}
+
 /* The dialog opens at its top, and the button row stays in view at the
    bottom, so the focused Start combat button shows on a long roster. */
 .combat-setup .modal__actions {
