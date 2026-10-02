@@ -340,7 +340,13 @@ export class TerrainLayer {
       return true;
     }
     const canvas = this.createCanvas(width, height);
-    const ctx = canvas?.getContext('2d') ?? null;
+    // `willReadFrequently` asks for a CPU-backed canvas. Firefox on Android
+    // draws a default canvas on the GPU, and there one strip of about 250 tile
+    // draws costs 48 ms on a Pixel, where the CPU canvas takes 2 ms. The GPU
+    // work runs after the script, so it shows as a stalled frame of 100 ms or
+    // more, not as script time. Copying the CPU layer onto the map canvas
+    // costs about 2 ms a frame.
+    const ctx = canvas?.getContext('2d', { willReadFrequently: true }) ?? null;
     if (!canvas || !ctx) {
       this.available = false;
       return false;

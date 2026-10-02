@@ -333,6 +333,13 @@ four pieces, one on each side of the wrap lines. Each strip draws with one
 cell of slack around it and a clip to its own rect, so a POI glow from a
 cell beside the strip reaches into it.
 
+The layer context asks for `willReadFrequently`, which gives a canvas that
+draws on the CPU. Firefox on Android draws a default canvas on the GPU, and
+there a strip of about 250 tile draws costs 48 ms on a Pixel, against 2 ms on
+the CPU canvas. The GPU work runs after the script returns, so a profile of
+the script misses it, and the pan stalls for 100 ms or more after each strip.
+The copy from the CPU layer onto the map canvas costs about 2 ms a frame.
+
 `terrainKey` lists what the terrain passes read: the node, the region
 groups, the fog mode, the marker range, the party tile, and the token tiles.
 A change to any of them drops the cache, and the next frame fills just the
