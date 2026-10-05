@@ -33,6 +33,18 @@ import { openAssetMirror } from './storage/AssetMirror.js';
 import { sightRadius } from './party/Sight.js';
 import { openIndexedDbAssets } from './storage/IndexedDbAssets.js';
 
+// Register the service worker for offline support. This is fire-and-forget:
+// the app works without it, and the worker takes over caching in the
+// background. Only register in a secure context (https or localhost).
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      // Registration failed (e.g. file:// protocol): the app still works,
+      // just without offline support.
+    });
+  });
+}
+
 // Image payloads live in IndexedDB, and every reader of a stored campaign
 // reads them from an in-memory copy (`storage/AssetMirror.js`). The copy is
 // filled once, before the campaign loads, and nothing else waits here. The

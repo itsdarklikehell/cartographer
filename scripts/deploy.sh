@@ -24,6 +24,6 @@ git commit -m "Deploy version $VERSION"
 
 # Deploy to the gh-pages branch on GitHub
 echo "Deploying version $VERSION to GitHub Pages..."
-git push -f https://github.com/wetherc/cartographer.git HEAD:gh-pages
+git push -f https://github.com/itsdarklikehell/cartographer.git HEAD:gh-pages
 
 cd -

@@ -52,6 +52,11 @@ async function build() {
   // Copy assets
   await fs.cp('assets', path.join(outdir, 'assets'), { recursive: true });
   await fs.cp('CNAME', path.join(outdir, 'CNAME'));
+  // Copy PWA files to the dist root (manifest, service worker, offline page, icons)
+  await fs.cp('public/manifest.json', path.join(outdir, 'manifest.json'));
+  await fs.cp('public/sw.js', path.join(outdir, 'sw.js'));
+  await fs.cp('public/offline.html', path.join(outdir, 'offline.html'));
+  await fs.cp('public/icons', path.join(outdir, 'icons'), { recursive: true });
   // The app fetches this at startup, so ship it rather than letting the
   // request 404. Only this one file, so a GM's other library/ contents stay
   // out of a published build.
